@@ -2689,7 +2689,7 @@ size_t vOliEngine::findTopLevelKeyword(const std::wstring& line, const std::wstr
             std::wstring lineW(size_needed, 0);
             MultiByteToWideChar(CP_UTF8, 0, &lineA[0], (int)lineA.size(), &lineW[0], size_needed);
 #else
-            lineW = utf8_to_wstring(lineA);
+            std::wstring lineW = utf8_to_wstring(lineA);
 #endif
             // 2. Curățăm BOM-ul dacă e prima linie
             if (firstLine && !lineW.empty() && lineW[0] == 0xFEFF) {

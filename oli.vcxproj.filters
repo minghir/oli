@@ -63,7 +63,11 @@
     <ClInclude Include="src\vShell.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\stringUtils.hpp" />
-    <ClInclude Include="src\vmath.hpp" />
+    <ClInclude Include="src\stringUtils.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\vmath.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

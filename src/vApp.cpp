@@ -86,13 +86,13 @@ bool vApp::init() {
     // Ramificarea logicii
     switch (m_runMode) {
     case RunMode::GUI:
-
+        /*
         INITCOMMONCONTROLSEX icex;
         icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
         icex.dwICC = ICC_USEREX_CLASSES | ICC_STANDARD_CLASSES | ICC_DATE_CLASSES;
         InitCommonControlsEx(&icex);
         SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-
+        */
         return initGui(); // Apează inițializarea GUI
     case RunMode::CONSOLE:
         return initConsole(); // Apează inițializarea Console

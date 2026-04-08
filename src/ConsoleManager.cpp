@@ -278,7 +278,8 @@ bool ConsoleManager::enableFileLogging(const std::wstring& filePath) {
     if (logFile.is_open())closeLogFile();
     // Deschidem ca ofstream normal (fără imbue)
     // Convertim calea la string dacă e nevoie, sau folosim varianta wide pentru Windows
-    logFile.open(filePath, std::ios::out | std::ios::app);
+    std::string utf8Path = wstring_to_utf8(filePath);
+    logFile.open(utf8Path, std::ios::out | std::ios::app);
 
     if (logFile.is_open() && logFile.tellp() == 0) {
         // Scrie BOM-ul pentru UTF-8: EF BB BF

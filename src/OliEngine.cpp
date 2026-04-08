@@ -8,6 +8,7 @@
 #include <random>
 #include <vector>
 #include <string>
+#include <thread>
 
 
 void vOliEngine::execute(const std::wstring& line) {
@@ -2670,7 +2671,8 @@ size_t vOliEngine::findTopLevelKeyword(const std::wstring& line, const std::wstr
         }
 
         // Deschidem ca ifstream NORMAL (nu wifstream), citim octeți bruti (UTF-8)
-        std::ifstream file(pathStr);
+        std::string utf8 = wstring_to_utf8(pathStr);
+        std::ifstream file(utf8);
         if (!file.is_open()) {
             LOG_ERROR(L"Could not open script: " + pathStr);
             return;
@@ -3149,7 +3151,7 @@ size_t vOliEngine::findTopLevelKeyword(const std::wstring& line, const std::wstr
       std::wstring dllPath = sc.args[0];
       LOG_DEBUG(dllPath);
       // 2. Încărcăm DLL-ul (Windows API)
-      HMODULE hLib = LoadLibrary(dllPath.c_str());
+      HMODULE hLib = LoadLibraryW(dllPath.c_str());
       if (!hLib) {
           DWORD lastError = GetLastError();
           LOG_ERROR(L"Could not load DLL: " + dllPath + L" (Code: " + std::to_wstring(lastError) + L")");

@@ -13,6 +13,10 @@
 #include <unordered_map>
 #include <regex>
 #include <windows.h>
+#include <cmath>
+using std::pow;
+using std::round;
+
 
 
 using namespace std;

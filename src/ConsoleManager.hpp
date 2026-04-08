@@ -9,6 +9,7 @@
 #include <string>    // Pentru std::wstring
 #include <vector>
 #include <mutex>     // Pentru std::mutex (opțional, pentru thread-safety)
+#include <algorithm>
 #include <chrono>
 #include <iomanip>
 

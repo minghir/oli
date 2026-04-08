@@ -1,3 +1,6 @@
 dir
 ppp
 1+1
+/quit
+/set a={"mimi"{"fifi","lili"}}
+/set a={"mimi"{"lili"}}

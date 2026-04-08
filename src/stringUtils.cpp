@@ -12,8 +12,13 @@
 #include <cctype>
 #include <unordered_map>
 #include <regex>
-#include <windows.h>
+
 #include <cmath>
+
+#ifdef _WIN32
+#include <windows.h>
+#endif 
+
 using std::pow;
 using std::round;
 

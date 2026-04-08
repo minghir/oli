@@ -984,51 +984,125 @@ std::wstring convertCp1250ToWideChar(const std::string& input) {
         return L"";
     }
 
-    // Dimensiunea necesară în caractere wide (inclusiv terminatorul null)
-    int sizeNeeded = MultiByteToWideChar(1250, 0, input.c_str(), (int)input.length(), NULL, 0);
+#ifdef _WIN32
+    // ---------------- WINDOWS ----------------
+    int sizeNeeded = MultiByteToWideChar(
+        1250, 0,
+        input.c_str(), (int)input.length(),
+        NULL, 0
+    );
 
     std::wstring output(sizeNeeded, 0);
-    MultiByteToWideChar(1250, 0, input.c_str(), (int)input.length(), &output[0], sizeNeeded);
 
-    // Eliminăm terminatorul null dacă a fost inclus în sizeNeeded
-    if (sizeNeeded > 0 && output.back() == L'\0') {
+    MultiByteToWideChar(
+        1250, 0,
+        input.c_str(), (int)input.length(),
+        &output[0], sizeNeeded
+    );
+
+    // Eliminăm terminatorul null dacă apare
+    if (!output.empty() && output.back() == L'\0') {
         output.pop_back();
     }
 
     return output;
+
+#else
+    // ---------------- LINUX (iconv) ----------------
+    // Linux nu are CP1250 nativ, dar iconv îl suportă
+    iconv_t cd = iconv_open("WCHAR_T", "CP1250");
+    if (cd == (iconv_t)-1) {
+        return L""; // fallback
+    }
+
+    size_t inBytes = input.size();
+    size_t outBytes = (input.size() + 1) * sizeof(wchar_t);
+
+    std::wstring output;
+    output.resize(input.size() + 1);
+
+    char* inBuf = const_cast<char*>(input.data());
+    char* outBuf = reinterpret_cast<char*>(&output[0]);
+
+    if (iconv(cd, &inBuf, &inBytes, &outBuf, &outBytes) == (size_t)-1) {
+        iconv_close(cd);
+        return L"";
+    }
+
+    iconv_close(cd);
+
+    // Ajustăm dimensiunea reală
+    output.resize((reinterpret_cast<wchar_t*>(outBuf) - output.data()));
+
+    return output;
+#endif
 }
 
 std::wstring convertSingleByteToWideChar(const std::string& input, unsigned int codePage) {
     if (input.empty()) return L"";
 
-    // Lungimea este 1, deoarece procesăm un singur octet RTF
+#ifdef _WIN32
+    // ---------------- WINDOWS ----------------
     const int len = 1;
 
-    // Asigurați-vă că 'codePage' (1250) este folosit!
     int sizeNeeded = MultiByteToWideChar(
         codePage,
         0,
         input.c_str(),
-        len, // FIXAT LA 1
+        len,
         NULL,
         0
     );
 
     if (sizeNeeded == 0) {
-        // Dacă GetLastError() == ERROR_NO_UNICODE_TRANSLATION, înseamnă că octetul nu e valid în CP.
         return L"";
     }
 
     std::wstring output(sizeNeeded, L'\0');
-    MultiByteToWideChar(codePage, 0, input.c_str(), len, &output[0], sizeNeeded); // FIXAT LA 1
 
-    // Eliminăm terminatorul null dacă sizeNeeded este mai mare de 1, deși pentru un singur octet nu ar trebui.
-    if (output.length() > 0 && output.back() == L'\0') {
+    MultiByteToWideChar(
+        codePage,
+        0,
+        input.c_str(),
+        len,
+        &output[0],
+        sizeNeeded
+    );
+
+    if (!output.empty() && output.back() == L'\0') {
         output.pop_back();
     }
 
     return output;
+
+#else
+    // ---------------- LINUX (iconv) ----------------
+    // Construim numele encoding-ului Windows (ex: "CP1250")
+    std::string fromEncoding = "CP" + std::to_string(codePage);
+
+    iconv_t cd = iconv_open("WCHAR_T", fromEncoding.c_str());
+    if (cd == (iconv_t)-1) {
+        return L"";
+    }
+
+    size_t inBytes = 1; // un singur octet
+    size_t outBytes = sizeof(wchar_t) * 2; // suficient pentru un singur caracter wide
+
+    wchar_t wbuf[2] = { 0 };
+    char* inBuf = const_cast<char*>(input.data());
+    char* outBuf = reinterpret_cast<char*>(wbuf);
+
+    if (iconv(cd, &inBuf, &inBytes, &outBuf, &outBytes) == (size_t)-1) {
+        iconv_close(cd);
+        return L"";
+    }
+
+    iconv_close(cd);
+
+    return std::wstring(1, wbuf[0]);
+#endif
 }
+
 
 /*
 std::vector<std::wstring> split_to_words(const std::wstring& text) {

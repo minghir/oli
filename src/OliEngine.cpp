@@ -3576,7 +3576,8 @@ size_t vOliEngine::findTopLevelKeyword(const std::wstring& line, const std::wstr
 
       }
       catch (const std::exception& e) {
-          LOG_ERROR(L"Return error: " + std::wstring(e.what(), e.what() + strlen(e.what())));
+          std::wstring msg = utf8_to_wstring(e.what());
+          LOG_ERROR(L"Return error: " + msg);
       }
   }
 

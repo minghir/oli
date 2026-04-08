@@ -5,8 +5,17 @@
 #include <fcntl.h> // Pentru _O_U8TEXT
 #include <io.h>    // Pentru _fileno
 #else
+
 using WORD = unsigned short;
+
+// Echivalente ANSI pentru Linux
+#define FOREGROUND_BLUE   0x01
+#define FOREGROUND_GREEN  0x02
+#define FOREGROUND_RED    0x04
+#define FOREGROUND_INTENSITY 0x08
+#define BACKGROUND_RED    0x10
 #endif
+
 
 #include <codecvt>
 #include <locale>
@@ -248,7 +257,12 @@ std::wstring ConsoleManager::getTimestamp() {
     auto now = std::chrono::system_clock::now();
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
     std::tm bt;
+
+#ifdef _WIN32
     localtime_s(&bt, &in_time_t);
+#else
+    localtime_r(&in_time_t, &bt);
+#endif
 
     std::wstringstream ss;
     ss << std::put_time(&bt, L"%Y-%m-%d %H:%M:%S");

@@ -19,7 +19,7 @@ class vApp {
 public:
     // Constructorul inițializează aplicația cu handle-ul instanței.
     // Setează pointerul static s_instance pentru delegarea globală a mesajelor.
-    explicit vApp(HINSTANCE hInstance, RunMode mode = RunMode::GUI);
+    explicit vApp(RunMode mode = RunMode::GUI);
 
     // Destructorul implicit este suficient, deoarece unique_ptr gestionează memoria.
     // virtual este o bună practică pentru clasele de bază.
@@ -44,7 +44,7 @@ public:
    // virtual LRESULT handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     // Accesor pentru handle-ul instanței aplicației.
-    HINSTANCE getInstance() const { return m_instance; }
+   // HINSTANCE getInstance() const { return m_instance; }
 
     static vApp* getAppInstance() { return s_instance; }
     // Returnează HWND-ul ferestrei principale.
@@ -75,7 +75,7 @@ protected:
     // Gestionează proprietatea și ciclul de viață al obiectelor vWindow.
     //EventDispatcher m_eventDispatcher;
     //WindowManager m_windowManager;
-    HINSTANCE m_instance;         // Handle-ul instanței aplicației
+    //HINSTANCE m_instance;         // Handle-ul instanței aplicației
 
     void setRunMode(RunMode mode) { m_runMode = mode; }
 

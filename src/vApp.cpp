@@ -21,8 +21,8 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 vApp* vApp::s_instance = nullptr;
 
 // --- Constructor ---
-vApp::vApp(HINSTANCE hInstance, RunMode mode)
-    : m_instance(hInstance) {
+vApp::vApp( RunMode mode)
+     {
     s_instance = this;
     m_runMode = mode;
 }

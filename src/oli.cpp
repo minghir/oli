@@ -12,7 +12,7 @@
 
 class oli : public vApp {
 public:
-    oli(HINSTANCE hInstance, RunMode rm) :vApp(hInstance) { setRunMode(rm); };
+    oli( RunMode rm) :vApp() { setRunMode(rm); };
     ~oli() {};
 
     bool initConsole() override {
@@ -25,7 +25,7 @@ public:
 };
 
 int main(int argc, char* argv[]) {
-    oli app(NULL, RunMode::CONSOLE);
+    oli app(RunMode::CONSOLE);
     app.startConsole();
     return app.run();
 }

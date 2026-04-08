@@ -12,101 +12,48 @@
 
 // --- Implementarea metodei initialize ---
 void ConsoleManager::initialize() {
-    // Alocă o nouă consolă pentru procesul curent.
-    // Necesare pentru ca o aplicație GUI să aibă o consolă vizibilă.
+#ifdef _WIN32
     AllocConsole();
-
-    // Setează codificarea de ieșire a consolei la UTF-8.
-    // Crucial pentru afișarea corectă a caracterelor Unicode și diacriticelor.
     SetConsoleOutputCP(CP_UTF8);
 
-    // Redirecționează stream-urile standard C (`stdout`, `stderr`, `stdin`) către noua consolă.
-    // Fără aceste apeluri, std::cout/cerr/cin nu ar funcționa în consola nouă.
     FILE* stream;
-    freopen_s(&stream, "CONOUT$", "w", stdout); // Ieșire standard
-    freopen_s(&stream, "CONOUT$", "w", stderr); // Ieșire erori
-    freopen_s(&stream, "CONIN$", "r", stdin);   // Intrare standard
+    freopen_s(&stream, "CONOUT$", "w", stdout);
+    freopen_s(&stream, "CONOUT$", "w", stderr);
+    freopen_s(&stream, "CONIN$", "r", stdin);
 
-    // Sincronizează stream-urile C++ cu stream-urile C.
-    // Aceasta asigură că funcțiile `freopen_s` afectează și `std::wcout`/`std::cout`.
     std::ios::sync_with_stdio(true);
-
-    // Setează modul pentru `stdout` la UTF-8 text.
-    // Important pentru ca `std::wcout` să afișeze corect caracterele late (wide characters).
     _setmode(_fileno(stdout), _O_U8TEXT);
 
-    // Curăță orice erori de stare anterioare ale stream-urilor C++.
-    std::cout.clear();
-    std::cerr.clear();
-
-    // Inhiba pierderea focusului ferestreu orincipale
-    
-    //HANDLE hInput = GetStdHandle(STD_INPUT_HANDLE);
-    //DWORD dwMode;
-    //if (GetConsoleMode(hInput, &dwMode)) {
-        //dwMode &= ~(ENABLE_QUICK_EDIT_MODE);
-        //SetConsoleMode(hInput, dwMode);
-    //}
-    
-    // Rulează un test rapid pentru a verifica funcționalitatea logării și a diacriticelor.
-    //logTest();
-    //log(L"Consola a fost inițializată cu succes și este gata de utilizare.");
-}
-
-
-/*
-void ConsoleManager::initialize() {
-    // 1. Încercăm atașarea sau alocarea
-    if (!AttachConsole(ATTACH_PARENT_PROCESS)) {
-        AllocConsole();
-    }
-
-    // 2. Redirecționăm stream-urile standard
-    FILE* fDummy;
-    freopen_s(&fDummy, "CONOUT$", "w", stdout);
-    freopen_s(&fDummy, "CONOUT$", "w", stderr);
-    freopen_s(&fDummy, "CONIN$", "r", stdin);
-
-    // 3. Sincronizăm stream-urile C++
+#else
+    // Linux: nu ai nevoie de nimic special.
+    // Terminalul suportă UTF-8 nativ.
     std::ios::sync_with_stdio(true);
+#endif
 
-    // 4. SOLUȚIA PENTRU LITERE SPAȚIATE:
-    // Folosim U16TEXT pentru wcout. NU mai apela SetConsoleOutputCP aici.
-    _setmode(_fileno(stdout), _O_U16TEXT);
-    _setmode(_fileno(stderr), _O_U16TEXT);
-
-    std::wcout.clear();
-
-    // Testăm imediat
-    logTest();
-    log(L"Consola a fost inițializată în mod Unicode Nativ.");
 }
-*/
-// --- Implementarea metodei setColor ---
+
 void ConsoleManager::setColor(WORD color) {
-    // Obține handle-ul de ieșire al consolei și setează atributele de culoare.
-    // Dacă ai activat mutex-ul pentru thread-safety, blochează-l aici.
-    // std::lock_guard<std::mutex> lock(mtxLog);
+#ifdef _WIN32
     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color);
+#else
+    // Linux folosește ANSI escape codes
+    switch (color) {
+    case 1:  std::cout << "\033[34m"; break; // albastru
+    case 2:  std::cout << "\033[32m"; break; // verde
+    case 4:  std::cout << "\033[31m"; break; // roșu
+    default: std::cout << "\033[0m";  break; // reset
+    }
+#endif
 }
 
-// --- Implementarea metodei resetColor ---
 void ConsoleManager::resetColor() {
-    // Resetează culoarea la alb standard (combinația de roșu, verde, albastru).
+#ifdef _WIN32
     setColor(FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE);
+#else
+    std::cout << "\033[0m";
+#endif
 }
 
-/*
-// --- Implementarea metodei log ---
-void ConsoleManager::getInstance().log(const std::wstring& message) {
-    // Pentru thread-safety, decomentează linia de mai jos:
-    // std::lock_guard<std::mutex> lock(mtxLog);
-    //if (message.find(L"ERROR") == std::wstring::npos) return;
-
-    std::wcout << L"[LOG] " << message << std::endl;
-
-}
-*/
 
 // Funcție ajutătoare pentru a obține prefixul și culoarea
 void ConsoleManager::log(const std::wstring& message, LogLevel level) {
@@ -214,14 +161,6 @@ void ConsoleManager::shutdown() {
     log(L"Consola a fost închisă (dacă FreeConsole() a fost apelat).");
 }
 
-/*
-void ConsoleManager::writeRaw(const std::wstring& message, WORD color) {
-    std::lock_guard<std::recursive_mutex> lock(mtxLog);
-    if (color != 0) setColor(color);
-    std::wcout << message << std::endl;
-    if (color != 0) resetColor();
-}
-*/
 void ConsoleManager::writeRaw(const std::wstring& message, WORD color) {
     std::lock_guard<std::recursive_mutex> lock(mtxLog);
 
@@ -247,28 +186,24 @@ void ConsoleManager::writeRaw(const std::wstring& message, WORD color) {
 }
 
 void ConsoleManager::clear() {
+#ifdef _WIN32
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     COORD topLeft = { 0, 0 };
 
-    // 1. Obținem dimensiunile curente ale buffer-ului consolei
-    if (!GetConsoleScreenBufferInfo(hConsole, &csbi)) {
-        return;
-    }
+    if (!GetConsoleScreenBufferInfo(hConsole, &csbi)) return;
 
     DWORD dwConSize = csbi.dwSize.X * csbi.dwSize.Y;
     DWORD dwCharsWritten;
 
-    // 2. Umplem tot ecranul cu spații (' ')
-    FillConsoleOutputCharacter(hConsole, (TCHAR)' ', dwConSize, topLeft, &dwCharsWritten);
-
-    // 3. Resetăm atributele de culoare pentru tot ecranul
+    FillConsoleOutputCharacter(hConsole, ' ', dwConSize, topLeft, &dwCharsWritten);
     FillConsoleOutputAttribute(hConsole, csbi.wAttributes, dwConSize, topLeft, &dwCharsWritten);
-
-    // 4. Mutăm cursorul înapoi în colțul din stânga-sus
     SetConsoleCursorPosition(hConsole, topLeft);
 
-
+#else
+    // Linux: clear screen
+    std::cout << "\033[2J\033[H";
+#endif
 }
 
 

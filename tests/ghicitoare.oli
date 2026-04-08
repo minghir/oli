@@ -1,0 +1,9 @@
+# Ghicitoare.oli
+/set tinta = 7
+/set incercare = INPUT("Ghicește numărul (1-10): ")
+/dm
+/if $incercare == $tinta /then \
+    /echo "Bravo! Ai ghicit." \
+/else \
+    /echo "Din păcate, numărul era " + $tinta \
+/endif

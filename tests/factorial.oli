@@ -1,0 +1,8 @@
+# Script Oli pentru Factorial
+/set n = 1
+/set fact = 1
+/while $n <= 10 /do \
+    /set fact = $fact * $n \
+    /set n = $n + 1 \
+/endwhile
+/echo "Gata! Rezultatul este: " + $fact

@@ -1,0 +1,14 @@
+/plugin oli_plugin.dll
+/echo DB_CONNECT("odbc","ANC_Server")
+/echo DB_QUERY("select * from fsna.fsna_2025 limit 10")
+/set i = 1
+ /while DB_FETCH_NEXT_ROW() /DO \
+	/set a = DB_FETCH_MAP() \
+	/if $a["fpl_id"] < 0 \
+		/then \
+			/echo "INVALID" \
+		/else \
+			/echo "Aeronava "+ $i + " este: " + $a["arctyp"] \
+	/endif \
+	/set $i = $i + 1 \
+/endwhile

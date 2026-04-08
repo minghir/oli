@@ -1,0 +1,14 @@
+/set tinta = RANDOM(1, 5)
+/echo "SECRET:" + $tinta
+/set gata = 0
+/echo "M-am gândit la un număr între 1 și 5. Ghicește-l!"
+
+/while $gata == 0 /do \
+    /set incercare = INPUT("Introdu numărul: ") \
+    /if $incercare == $tinta /then \
+        /echo "Felicitări! Ai ghicit!" \
+        /set gata = 1 \
+    /else \
+        /echo "Mai încearcă!" \
+    /endif \
+/endwhile 

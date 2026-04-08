@@ -39,3 +39,4 @@ test()
 ! test()
 /return false
 /sys dir
+/quit

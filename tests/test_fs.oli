@@ -1,0 +1,38 @@
+/plugin oli_plugin.dll
+/echo "-----------------------------------------\n"
+/echo "-----------------------------------------\n"
+/unset all
+
+/proc list_dir_rec dir_path \
+    /echo "Incep pt:" + $dir_path
+	/if $files != null /then /unset files /endif
+    /set files = FS_LIST_DIR($dir_path)
+
+    /cycle $files /as file /do \
+        /set file_path = $dir_path + "/" + $file \
+        /if FS_FILE_EXISTS($file_path) \
+            /then \
+                /if FS_IS_DIR($file_path) \
+                    /then \
+                        /echo "Intram in: " + $file_path \
+                        /list_dir_rec $file_path \
+                    /else \
+                        /echo "Fisierul:" + $file_path + \
+                              " exista si are dimensiunea :" + \
+                              FS_FILE_SIZE($file_path)/1024 + \
+                              "KB( " + FS_FILE_SIZE($file_path) + " bytes)" \
+                /endif \
+            /else \
+                /if FS_IS_DIR($file_path) \
+                    /then \
+                        /list_dir_rec $file_path \
+                    /else \
+                        /echo "Fisierul:" + $file_path + \
+                              " NU EXISTA!" \
+                /endif \
+        /endif \
+    /endcycle
+/endproc
+
+#/list_dir_rec "D:/SistemANC"
+/list_dir_rec "."

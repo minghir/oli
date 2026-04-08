@@ -1,0 +1,49 @@
+/unset all
+
+# --- Varianta Iterativă (Eficientă) ---
+/func FIBO_ITER n
+    /if $n <= 0 /then /return 0 /endif
+    /if $n == 1 /then /return 1 /endif
+    
+    /set a = 0
+    /set b = 1
+    /set i = 2
+    
+    /while $i <= $n /do \
+        /set next = $a + $b \
+        /set a = $b \
+        /set b = $next \
+        /set i = $i + 1 \
+    /endwhile
+    
+    /return $b
+/endfunc
+
+# --- Varianta Recursivă (Testul de Foc pentru Sandbox) ---
+/func FIBO_REC n
+    /if $n <= 0 /then /return 0 /endif
+    /if $n == 1 /then /return 1 /endif
+    
+    # Aici testăm dacă apelurile imbricate își păstrează variabilele locale
+    /set res = FIBO_REC($n - 1) + FIBO_REC($n - 2)
+    /return $res
+/endfunc
+
+# --- Teste ---
+/set target = 10
+
+/echo "Calculăm Fibonacci pentru n=" + $target
+
+/set r1 = FIBO_ITER($target)
+/echo "Rezultat Iterativ: " + $r1
+
+/set r2 = FIBO_REC($target)
+/echo "Rezultat Recursiv: " + $r2
+
+# Generăm un șir întreg
+/echo "Primele 10 numere din șir:"
+/set j = 0
+/while $j <= 10 /do \
+    /echo "F(" + INT($j) + ") = " + INT(FIBO_ITER($j)) \
+    /set j = $j + 1 \
+/endwhile

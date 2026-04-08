@@ -5,6 +5,9 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="tests">
+      <UniqueIdentifier>{f69b4caa-077a-44fa-bd79-2919a142e9b7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\ASTNode.cpp">
@@ -69,5 +72,40 @@
     <ClInclude Include="src\vmath.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="tests\factorial.oli">
+      <Filter>tests</Filter>
+    </None>
+    <None Include="tests\fibonaci.oli">
+      <Filter>tests</Filter>
+    </None>
+    <None Include="tests\ghici.oli">
+      <Filter>tests</Filter>
+    </None>
+    <None Include="tests\ghicitoare.oli">
+      <Filter>tests</Filter>
+    </None>
+    <None Include="tests\sort_string.oli">
+      <Filter>tests</Filter>
+    </None>
+    <None Include="tests\sortare.oli">
+      <Filter>tests</Filter>
+    </None>
+    <None Include="tests\test_bit_op.oli">
+      <Filter>tests</Filter>
+    </None>
+    <None Include="tests\test_db.oli">
+      <Filter>tests</Filter>
+    </None>
+    <None Include="tests\test_fact.oli">
+      <Filter>tests</Filter>
+    </None>
+    <None Include="tests\test_fs.oli">
+      <Filter>tests</Filter>
+    </None>
+    <None Include="tests\test_math.oli">
+      <Filter>tests</Filter>
+    </None>
   </ItemGroup>
 </Project>

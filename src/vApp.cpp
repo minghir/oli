@@ -28,7 +28,7 @@ vApp::vApp( RunMode mode)
 }
 
 // --- Metoda Run ---
-int vApp::run(int nCmdShow) {
+int vApp::run() {
     if (!init()) {
         ConsoleManager::getInstance().log(L"[ERROR] Inițializarea aplicației a eșuat.");
         return -1;

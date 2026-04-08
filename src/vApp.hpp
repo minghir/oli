@@ -8,6 +8,8 @@
 
 #include <string>    // Pentru std::string
 
+
+
 //#include <commctrl.h>
 //#pragma comment(lib, "comctl32.lib")
 // Declarații forward (utile, dar nu strică să fie listate explicit include-urile).
@@ -27,7 +29,7 @@ public:
 
     // Bucla principală a aplicației.
     // Returnează codul de ieșire al aplicației.
-    int run(int nCmdShow = SW_SHOW);
+    int run();
 
     // Inițializează componentele aplicației (ferestre, panouri, butoane, handleri).
     // Returnează true la inițializare reușită, false altfel.

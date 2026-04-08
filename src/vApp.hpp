@@ -5,11 +5,11 @@
 //#include "WindowManager.hpp"  // Pentru gestionarea ferestrelor
 #include "ConsoleManager.hpp" // Pentru funcționalitățile de logare
 
-#include <windows.h> // Declarații WinAPI
+
 #include <string>    // Pentru std::string
 
-#include <commctrl.h>
-#pragma comment(lib, "comctl32.lib")
+//#include <commctrl.h>
+//#pragma comment(lib, "comctl32.lib")
 // Declarații forward (utile, dar nu strică să fie listate explicit include-urile).
 
 enum class RunMode { GUI, CONSOLE, SERVICE };

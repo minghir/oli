@@ -3187,6 +3187,7 @@ size_t vOliEngine::findTopLevelKeyword(const std::wstring& line, const std::wstr
         LOG_DEBUG(L"Procedure " + proc.name + L" finished.");
     }
 
+/*
   void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
       // 1. Verificăm dacă avem calea către DLL
       if (sc.args.empty()) {
@@ -3223,6 +3224,73 @@ size_t vOliEngine::findTopLevelKeyword(const std::wstring& line, const std::wstr
           FreeLibrary(hLib); // Eliberăm memoria dacă plugin-ul nu este valid
       }
   }
+  */
+    void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
+        if (sc.args.empty()) {
+            LOG_ERROR(L"Usage: /plugin \"path/to/plugin\"");
+            return;
+        }
+
+        std::wstring pluginPath = sc.args[0];
+        LOG_DEBUG(pluginPath);
+
+#ifdef _WIN32
+        // ---------------- WINDOWS ----------------
+        HMODULE hLib = LoadLibraryW(pluginPath.c_str());
+        if (!hLib) {
+            DWORD lastError = GetLastError();
+            LOG_ERROR(L"Could not load DLL: " + pluginPath +
+                L" (Code: " + std::to_wstring(lastError) + L")");
+            return;
+        }
+
+        typedef void (*RegisterFunc)(std::map<std::wstring, OliFunctionHandler>&);
+        RegisterFunc regFunc = (RegisterFunc)GetProcAddress(hLib, "LoadOliPlugin");
+
+        if (!regFunc) {
+            LOG_ERROR(L"Invalid Plugin: Export 'LoadOliPlugin' not found in " + pluginPath);
+            FreeLibrary(hLib);
+            return;
+        }
+
+        regFunc(this->m_functionsHandlers);
+        LOG_SUCCESS(L"Plugin loaded: " + pluginPath);
+
+#else
+        // ---------------- LINUX ----------------
+        // Convertim calea la UTF-8
+        std::string utf8Path = wstring_to_utf8(pluginPath);
+
+        // Încărcăm .so
+        void* handle = dlopen(utf8Path.c_str(), RTLD_NOW);
+        if (!handle) {
+            std::string err = dlerror();
+            LOG_ERROR(L"Could not load plugin: " + pluginPath +
+                L" (" + utf8_to_wstring(err) + L")");
+            return;
+        }
+
+        // Semnătura funcției exportate
+        typedef void (*RegisterFunc)(std::map<std::wstring, OliFunctionHandler>&);
+
+        // Căutăm simbolul
+        dlerror(); // resetăm starea
+        RegisterFunc regFunc = (RegisterFunc)dlsym(handle, "LoadOliPlugin");
+
+        const char* dlsymError = dlerror();
+        if (dlsymError) {
+            LOG_ERROR(L"Invalid Plugin: Export 'LoadOliPlugin' not found in " + pluginPath);
+            dlclose(handle);
+            return;
+        }
+
+        // Executăm funcția
+        regFunc(this->m_functionsHandlers);
+        LOG_SUCCESS(L"Plugin loaded: " + pluginPath);
+
+#endif
+    }
+
 
   vData vOliEngine::handleEvalFunc(const std::vector<vData>& args) {
       if (args.empty()) return vData{ 0.0 };

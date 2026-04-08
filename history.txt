@@ -38,3 +38,4 @@ test()
 /return false
 ! test()
 /return false
+/sys dir

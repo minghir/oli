@@ -17,6 +17,8 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <iconv.h>
 #endif 
 
 using std::pow;
@@ -830,12 +832,35 @@ std::wstring utf8_to_wstring(const std::string& str) {
     return result;
 
 #else
-    // ---------------- LINUX ----------------
-    // Conversie portabilă UTF-8 → UTF-16
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
-    return conv.from_bytes(str);
+    // ---------------- LINUX (iconv) ----------------
+    iconv_t cd = iconv_open("WCHAR_T", "UTF-8");
+    if (cd == (iconv_t)-1) {
+        return L""; // fallback
+    }
+
+    size_t inBytes = str.size();
+    size_t outBytes = (str.size() + 1) * sizeof(wchar_t);
+
+    std::wstring result;
+    result.resize(str.size() + 1);
+
+    char* inBuf = const_cast<char*>(str.data());
+    char* outBuf = reinterpret_cast<char*>(&result[0]);
+
+    if (iconv(cd, &inBuf, &inBytes, &outBuf, &outBytes) == (size_t)-1) {
+        iconv_close(cd);
+        return L"";
+    }
+
+    iconv_close(cd);
+
+    // Ajustăm dimensiunea reală
+    result.resize((reinterpret_cast<wchar_t*>(outBuf) - result.data()));
+
+    return result;
 #endif
 }
+
 
 
 std::wstring to_upper(const std::wstring& input) {

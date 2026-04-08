@@ -2822,7 +2822,7 @@ size_t vOliEngine::findTopLevelKeyword(const std::wstring& line, const std::wstr
         // --- CRITIC: Golim bufferele înainte de a preda controlul pipe-ului ---
         std::wcout.flush();
         fflush(stdout);
-
+#ifdef _WIN32
         // 2. Executăm. Folosim "r" și setăm modul pipe-ului manual dacă e nevoie.
         // Pe unele versiuni de Windows, "rt" (read text) poate fi problematic cu _O_U16TEXT
         FILE* pipe = _wpopen(fullCommand.c_str(), L"r");
@@ -2840,7 +2840,32 @@ size_t vOliEngine::findTopLevelKeyword(const std::wstring& line, const std::wstr
         }
 
         int returnCode = _pclose(pipe);
+#else
+        // ---------------- LINUX ----------------
+    // Convertim comanda wide → UTF-8
+        std::string utf8cmd = wstring_to_utf8(fullCommand);
 
+        FILE* pipe = popen(utf8cmd.c_str(), "r");
+        if (!pipe) {
+            LOG_ERROR(L"Could not execute system command.");
+            return;
+        }
+
+        char buffer[256];
+        std::string utf8out;
+
+        while (fgets(buffer, sizeof(buffer), pipe)) {
+            utf8out = buffer;
+
+            // Convertim linia la wide
+            std::wstring wline = utf8_to_wstring(utf8out);
+
+            std::wcout << wline;
+            std::wcout.flush();
+        }
+
+        int returnCode = pclose(pipe);
+#endif
         if (returnCode == 0) {
             LOG_SUCCESS(L"Command finished.");
             return;

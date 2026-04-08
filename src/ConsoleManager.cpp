@@ -4,7 +4,10 @@
 #ifdef _WIN32
 #include <fcntl.h> // Pentru _O_U8TEXT
 #include <io.h>    // Pentru _fileno
+#else
+using WORD = unsigned short;
 #endif
+
 #include <codecvt>
 #include <locale>
 #include <filesystem>

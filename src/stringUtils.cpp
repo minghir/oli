@@ -811,7 +811,8 @@ std::string utf8_encode(const std::wstring& wstr) {
     int size_needed = WideCharToMultiByte(
         CP_UTF8, 0,
         wstr.c_str(), (int)wstr.size(),
-        NULL, 0, NULL, NULL);
+        NULL, 0, NULL, NULL
+    );
 
     std::string result(size_needed, 0);
 
@@ -819,17 +820,41 @@ std::string utf8_encode(const std::wstring& wstr) {
         CP_UTF8, 0,
         wstr.c_str(), (int)wstr.size(),
         &result[0], size_needed,
-        NULL, NULL);
+        NULL, NULL
+    );
 
     return result;
 
 #else
-    // ---------------- LINUX ----------------
-    // Conversie portabilă UTF-16 → UTF-8
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
-    return conv.to_bytes(wstr);
+    // ---------------- LINUX (iconv) ----------------
+    iconv_t cd = iconv_open("UTF-8", "WCHAR_T");
+    if (cd == (iconv_t)-1) {
+        return ""; // fallback
+    }
+
+    size_t inBytes = wstr.size() * sizeof(wchar_t);
+    size_t outBytes = (wstr.size() * 4) + 4; // UTF-8 poate fi până la 4 bytes per char
+
+    std::string result;
+    result.resize(outBytes);
+
+    char* inBuf = (char*)wstr.data();
+    char* outBuf = result.data();
+
+    if (iconv(cd, &inBuf, &inBytes, &outBuf, &outBytes) == (size_t)-1) {
+        iconv_close(cd);
+        return "";
+    }
+
+    iconv_close(cd);
+
+    // Ajustăm dimensiunea reală
+    result.resize(result.size() - outBytes);
+
+    return result;
 #endif
 }
+
 
 
 std::string wstring_to_utf8(const std::wstring& wstr) {

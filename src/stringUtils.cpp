@@ -215,17 +215,28 @@ std::string wstr_to_str(const std::wstring& wstr) {
 std::wstring str_to_wstr(const std::string& str) {
     if (str.empty()) return L"";
 
-    // 1. Aflăm de cât spațiu avem nevoie în noul string (wide)
-    int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+#ifdef _WIN32
+    // ---------------- WINDOWS ----------------
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0,
+        str.data(), (int)str.size(),
+        NULL, 0);
 
-    // 2. Alocăm buffer-ul necesar
-    std::wstring wstrTo(size_needed, 0);
+    std::wstring wstr(size_needed, 0);
 
-    // 3. Facem conversia propriu-zisă
-    MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+    MultiByteToWideChar(CP_UTF8, 0,
+        str.data(), (int)str.size(),
+        &wstr[0], size_needed);
 
-    return wstrTo;
+    return wstr;
+
+#else
+    // ---------------- LINUX ----------------
+    // Conversie portabilă UTF-8 → UTF-16
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
+    return conv.from_bytes(str);
+#endif
 }
+
 
 
 std::string wstr_to_str(const std::wstring& wstr) {
@@ -766,17 +777,31 @@ size_t count_char_in_wstring(const std::wstring& str, wchar_t ch) {
 std::string utf8_encode(const std::wstring& wstr) {
     if (wstr.empty()) return std::string();
 
+#ifdef _WIN32
+    // ---------------- WINDOWS ----------------
     int size_needed = WideCharToMultiByte(
-        CP_UTF8, 0, wstr.c_str(), (int)wstr.size(),
+        CP_UTF8, 0,
+        wstr.c_str(), (int)wstr.size(),
         NULL, 0, NULL, NULL);
 
     std::string result(size_needed, 0);
+
     WideCharToMultiByte(
-        CP_UTF8, 0, wstr.c_str(), (int)wstr.size(),
-        &result[0], size_needed, NULL, NULL);
+        CP_UTF8, 0,
+        wstr.c_str(), (int)wstr.size(),
+        &result[0], size_needed,
+        NULL, NULL);
 
     return result;
+
+#else
+    // ---------------- LINUX ----------------
+    // Conversie portabilă UTF-16 → UTF-8
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
+    return conv.to_bytes(wstr);
+#endif
 }
+
 
 std::string wstring_to_utf8(const std::wstring& wstr) {
     return utf8_encode(wstr);
@@ -786,23 +811,32 @@ std::string wstring_to_utf8(const std::wstring& wstr) {
 std::wstring utf8_to_wstring(const std::string& str) {
     if (str.empty()) return std::wstring();
 
-    // Calculează dimensiunea buffer-ului necesar pentru wstring
+#ifdef _WIN32
+    // ---------------- WINDOWS ----------------
     int size_needed = MultiByteToWideChar(
-        CP_UTF8, 0, str.c_str(), (int)str.size(),
+        CP_UTF8, 0,
+        str.c_str(), (int)str.size(),
         NULL, 0
     );
 
-    // Creează un wstring cu dimensiunea necesară
     std::wstring result(size_needed, 0);
 
-    // Efectuează conversia
     MultiByteToWideChar(
-        CP_UTF8, 0, str.c_str(), (int)str.size(),
+        CP_UTF8, 0,
+        str.c_str(), (int)str.size(),
         &result[0], size_needed
     );
 
     return result;
+
+#else
+    // ---------------- LINUX ----------------
+    // Conversie portabilă UTF-8 → UTF-16
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
+    return conv.from_bytes(str);
+#endif
 }
+
 
 std::wstring to_upper(const std::wstring& input) {
     std::wstring result = input;

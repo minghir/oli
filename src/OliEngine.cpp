@@ -10,6 +10,10 @@
 #include <string>
 #include <thread>
 
+#ifndef _WIN32
+#include <dlfcn.h>
+#endif
+
 
 void vOliEngine::execute(const std::wstring& line) {
     // 0. Curățare comentarii (necesară și în timpul înregistrării)

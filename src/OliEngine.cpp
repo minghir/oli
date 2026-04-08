@@ -2684,11 +2684,13 @@ size_t vOliEngine::findTopLevelKeyword(const std::wstring& line, const std::wstr
         while (std::getline(file, lineA)) {
             // 1. Convertim din UTF-8 (string) în UTF-16 (wstring) folosind Windows API
             if (lineA.empty()) continue;
-
+#ifdef _WIN32
             int size_needed = MultiByteToWideChar(CP_UTF8, 0, &lineA[0], (int)lineA.size(), NULL, 0);
             std::wstring lineW(size_needed, 0);
             MultiByteToWideChar(CP_UTF8, 0, &lineA[0], (int)lineA.size(), &lineW[0], size_needed);
-
+#else
+            lineW = utf8_to_wstring(lineA);
+#endif
             // 2. Curățăm BOM-ul dacă e prima linie
             if (firstLine && !lineW.empty() && lineW[0] == 0xFEFF) {
                 lineW.erase(0, 1);
@@ -2759,6 +2761,7 @@ size_t vOliEngine::findTopLevelKeyword(const std::wstring& line, const std::wstr
 
         // 2. Executăm și capturăm
         std::wstring output;
+#ifdef _WIN32
         FILE* pipe = _wpopen(command.c_str(), L"r");
         if (!pipe) return { L"ERROR" };
 
@@ -2768,7 +2771,26 @@ size_t vOliEngine::findTopLevelKeyword(const std::wstring& line, const std::wstr
         }
 
         _pclose(pipe);
+#else
+        // ---------------- LINUX ----------------
+    // Convertim comanda la UTF-8
+        std::string utf8cmd = wstring_to_utf8(command);
 
+        FILE* pipe = popen(utf8cmd.c_str(), "r");
+        if (!pipe) return { L"ERROR" };
+
+        char buffer[256];
+        std::string utf8out;
+
+        while (fgets(buffer, sizeof(buffer), pipe)) {
+            utf8out += buffer;
+        }
+
+        pclose(pipe);
+
+        // Convertim output-ul UTF-8 → UTF-16
+        output = utf8_to_wstring(utf8out);
+#endif
         // 3. Returnăm rezultatul ca STRING în Oli
         //return vData(L"\"" + output + L"\"");
         return vData( output );

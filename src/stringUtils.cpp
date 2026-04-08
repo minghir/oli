@@ -219,25 +219,52 @@ std::wstring str_to_wstr(const std::string& str) {
 
 #ifdef _WIN32
     // ---------------- WINDOWS ----------------
-    int size_needed = MultiByteToWideChar(CP_UTF8, 0,
+    int size_needed = MultiByteToWideChar(
+        CP_UTF8, 0,
         str.data(), (int)str.size(),
-        NULL, 0);
+        NULL, 0
+    );
 
     std::wstring wstr(size_needed, 0);
 
-    MultiByteToWideChar(CP_UTF8, 0,
+    MultiByteToWideChar(
+        CP_UTF8, 0,
         str.data(), (int)str.size(),
-        &wstr[0], size_needed);
+        &wstr[0], size_needed
+    );
 
     return wstr;
 
 #else
-    // ---------------- LINUX ----------------
-    // Conversie portabilă UTF-8 → UTF-16
-    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
-    return conv.from_bytes(str);
+    // ---------------- LINUX (iconv) ----------------
+    iconv_t cd = iconv_open("WCHAR_T", "UTF-8");
+    if (cd == (iconv_t)-1) {
+        return L""; // fallback
+    }
+
+    size_t inBytes = str.size();
+    size_t outBytes = (str.size() + 1) * sizeof(wchar_t);
+
+    std::wstring result;
+    result.resize(str.size() + 1);
+
+    char* inBuf = const_cast<char*>(str.data());
+    char* outBuf = reinterpret_cast<char*>(&result[0]);
+
+    if (iconv(cd, &inBuf, &inBytes, &outBuf, &outBytes) == (size_t)-1) {
+        iconv_close(cd);
+        return L"";
+    }
+
+    iconv_close(cd);
+
+    // Ajustăm dimensiunea reală
+    result.resize((reinterpret_cast<wchar_t*>(outBuf) - result.data()));
+
+    return result;
 #endif
 }
+
 
 
 

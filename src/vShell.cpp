@@ -4,9 +4,11 @@
 
 #include <cwctype>
 
-#include <conio.h> // Pentru _kbhit() și _getwch()
+#ifdef _WIN32
+#include <conio.h>  // _kbhit(), _getwch()
 #include <fcntl.h>
 #include <io.h>
+#endif
 
     vShell::vShell(IShellEngine& engine) : m_engine(engine), m_running(true) {}
     

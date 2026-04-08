@@ -3,7 +3,21 @@
 
 #pragma once
 
+#ifdef _WIN32
 #include <windows.h> // Pentru HWND, WORD, GetStdHandle, SetConsoleTextAttribute, AllocConsole etc.
+#include <fcntl.h> // Pentru _O_U8TEXT
+#include <io.h>    // Pentru _fileno
+#else 
+using WORD = unsigned short;
+// Echivalente ANSI pentru Linux
+#define FOREGROUND_BLUE   0x01
+#define FOREGROUND_GREEN  0x02
+#define FOREGROUND_RED    0x04
+#define FOREGROUND_INTENSITY 0x08
+#define BACKGROUND_RED    0x10
+#endif
+
+
 #include <iostream>  // Pentru std::wcout, std::endl
 #include <fstream>   // Nu este direct folosit aici, dar poate fi necesar pentru alte tipuri de logare
 #include <string>    // Pentru std::wstring

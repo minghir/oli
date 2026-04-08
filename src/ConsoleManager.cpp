@@ -1,8 +1,10 @@
 ﻿#include "ConsoleManager.hpp"
 #include "stringUtils.hpp"
-#include <fcntl.h> // Pentru _O_U8TEXT
 
+#ifdef _WIN32
+#include <fcntl.h> // Pentru _O_U8TEXT
 #include <io.h>    // Pentru _fileno
+#endif
 #include <codecvt>
 #include <locale>
 #include <filesystem>

@@ -86,7 +86,7 @@ private:
     // Deleagă mesajele către metoda non-statică handleMessage a s_instance.
     // Aceasta ar trebui să fie procedura de fereastră (WndProc) principală,
     // înregistrată la WinAPI pentru *clasa de fereastră a ferestrei principale*.
-    static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
+   // static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     // Pointer static către instanța vApp.
     // Folosit de WndProc-ul static pentru a direcționa mesajele către obiectul vApp corect.

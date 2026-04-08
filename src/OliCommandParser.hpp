@@ -70,7 +70,7 @@ public:
                 }
 
                 // 2. Separatori (fără '/')
-                if (wcschr(L"=+-*<>|;()[]{},:%", c)) {
+                if (wcschr(L"=+-*<>|;()[]{},:%!", c)) {
                     flush();
                     tokens.push_back(std::wstring(1, c));
                     continue;

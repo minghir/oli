@@ -1,6 +1,7 @@
 ﻿#include "ConsoleManager.hpp"
 #include "stringUtils.hpp"
 #include <fcntl.h> // Pentru _O_U8TEXT
+
 #include <io.h>    // Pentru _fileno
 #include <codecvt>
 #include <locale>

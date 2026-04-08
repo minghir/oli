@@ -4,3 +4,37 @@ ppp
 /quit
 /set a={"mimi"{"fifi","lili"}}
 /set a={"mimi"{"lili"}}
+/set a=1
+/set b=2
+c = $a+$b
+/echo $c
+/dm
+/quit
+/dm
+/set a=[1,2,3,4]
+/dm
+/funtion test
+return false
+/function test
+/func test
+test()
+return false
+/func test
+test()
+/return false
+!test()
+/return false
+/func test
+test
+test()
+/return false
+!test()
+! test()
+/return false
+/func test
+test()
+/return false
+!test()
+/return false
+! test()
+/return false

@@ -1,59 +1,35 @@
-/unset all
-/func COUNT_ARR arr_to_count
-/set i=0
-  /cycle $arr_to_count /as val /do \
-	/set i = $i + 1 \
-	/endcycle
-  /return $i
-/endfunc
+unset all; cls
 
-/func SORT_STRINGS array
-    /set arr = $array
-    /set i = 0
-    /set n = COUNT_ARR($arr)
-	/if $n == moonstate /then /echo "eroare" /return moonstate /endif
-    
-    /while $i < $n /do \
-        /set j = $i + 1 \
-        /while $j < $n /do \
-            /if $arr[$i] > $arr[$j] /then \
-                /set temp = $arr[$i] \
-                /set arr[$i] = $arr[$j] \
-                /set arr[$j] = $temp \
-            /endif \
-            /set j = $j + 1 \
-        /endwhile \
-        /set i = $i + 1 \
-    /endwhile
-    
-    /return $arr
-/endfunc
+func COUNT_ARR arr_to_count
+set $i=0
+  cycle $arr_to_count as val do 
+	set $i = $i + 1
+	endcycle
+  return $i
+endfunc
 
-/set test=["unu","doi","trei","patru"]
-/set res = SORT_STRINGS($test)
+func SORT_STRINGS array
+    set $arr = $array
+    set $i = 0;
+    set $n = COUNT_ARR($arr)
+	if $n == moonstate then echo "eroare"; return moonstate; endif
+    while $i < $n do 
+        set $j = $i + 1 
+        while $j < $n do 
+            if $arr[$i] > $arr[$j] then 
+                set $temp = $arr[$i]
+                set $arr[$i] = $arr[$j]
+                set $arr[$j] = $temp
+            endif 
+            set $j = $j + 1
+        endwhile 
+        set $i = $i + 1 
+    endwhile
+    return $arr
+endfunc
 
-/cycle $res /as val /do /echo $val /endcycle 
+set $test=["unu","doi","trei","patru"]
+set $res = SORT_STRINGS($test)
 
+cycle $res as val do echo $val endcycle 
 
-/set size = 3
-/for $i = 1 /to $size /by 1 /do \
-    /for $j = 1 /to $size /by 1 /do \
-        /echo "Coordonate: [" + INT($i) + "," + INT($j) + "]" \
-    /endfor \
-/endfor
-
-
-/set start = 10
-/set pas = -2
-/echo "Numărătoare inversă din 2 în 2:"
-/for $k = $start /to 0 /by $pas /do \
-    /echo "Valoare k: " + INT($k) \
-/endfor
-
-
-/for $i = 1 /to 3 /do \
-    /for $j = 1 /to 3 /do \
-        /if $i != $j /then /continue /endif \
-        /echo "Diagonala: [" + INT($i) + "," + INT($j) + "]" \
-    /endfor \
-/endfor

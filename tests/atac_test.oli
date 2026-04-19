@@ -1,0 +1,57 @@
+unset all; cls
+# 1. Definim Blueprints (Modelele de date)
+def struct Pozitie {x, y}
+def struct Statistici {hp, mp, aparare}
+def struct Entitate {nume, stats, poz}
+
+# 2. Funcție utilitară: Calcul Damage
+# Logica: Scade apărarea din atac, dar nu sub 0
+func CALCUL_DAMAGE atk def_val
+    set $daune = $atk - $def_val
+    if $daune < 0 then
+        return 0
+    endif
+    return $daune
+endfunc
+
+# 3. Funcția Principală de Luptă
+# Demonstrează: Deep Reading, Deep Writing și Dynamic Scope
+func ATACA atacator tinta daune_baza
+    echo "--- LUPTA INCEPE ---"
+    echo $atacator.nume + " loveste pe " + $tinta.nume
+    
+    # Citire în adâncime (Deep Read)
+    set $def_final = $tinta.stats.aparare
+    
+    # Logica de poziționare (Verificăm dacă e în zona de scut)
+    if $tinta.poz.x > 100 then
+        echo "Sistem: Bonus de scut activat pentru tinta!"
+        set $def_final = $def_final + 20
+    endif
+
+    # Apel de funcție internă
+    set $final_dmg = CALCUL_DAMAGE($daune_baza, $def_final)
+    
+    # MODIFICARE ÎN ADÂNCIME (Deep Write/Update)
+    # Aici intervine mecanismul tău de updateRootSource
+    set $tinta.stats.hp = $tinta.stats.hp - $final_dmg
+    
+    echo "Sistem: Daune calculate: " + $final_dmg
+    echo "Sistem: HP curent " + $tinta.nume + ": " + $tinta.stats.hp
+    
+    return $tinta
+endfunc
+
+# --- SECTIUNEA DE TEST ---
+
+# Creăm instanțele (Observă structurile imbricate)
+set $erou = Entitate("Galahad", Statistici(100, 50, 10), Pozitie(10, 10))
+set $boss = Entitate("Dragon", Statistici(500, 200, 30), Pozitie(150, 50))
+
+# Rulăm atacul
+# Dragonul este la X=150, deci scutul se activează (Def: 30 + 20 = 50)
+# Atac de 80 - Def 50 = 30 Daune. HP Final: 500 - 30 = 470.
+set $boss = ATACA($erou, $boss, 80)
+
+echo "--- REZULTAT FINAL ---"
+echo "HP Dragon in variabila globala: " + $boss.stats.hp

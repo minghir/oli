@@ -1,55 +1,55 @@
-/plugin ..\..\Release\oli_plugin.dll
+plugin oli_plugin.dll
 # --- SCRIPT TESTARE FUNCTII BITWISE ---
-/echo "--- Start Testare Logica Bitwise ---"
+echo "--- Start Testare Logica Bitwise ---"
 
 # 1. Definim flag-urile (Masti de biti)
-/set F_PLAN_DEPUS = 1       # Bit 0 (1)
-/set F_TAXE_PLATITE = 2     # Bit 1 (2)
-/set F_CATERING_OK = 4      # Bit 2 (4)
-/set F_TEHNIC_STOP = 8      # Bit 3 (8)
-/set F_METEO_STOP = 16      # Bit 4 (16)
+set F_PLAN_DEPUS = 1       # Bit 0 (1)
+set F_TAXE_PLATITE = 2     # Bit 1 (2)
+set F_CATERING_OK = 4      # Bit 2 (4)
+set F_TEHNIC_STOP = 8      # Bit 3 (8)
+set F_METEO_STOP = 16      # Bit 4 (16)
 
 # 2. Simulam un zbor care are Plan Depus si Taxe Platite (1 + 2 = 3)
-/set status = 3
-/echo "Status initial (binar): " + BIT_TO_BIN($status)
-/echo "Numar flag-uri active: " + BIT_COUNT($status)
+set status = 3
+echo "Status initial (binar): " + BIT_TO_BIN($status)
+echo "Numar flag-uri active: " + BIT_COUNT($status)
 
 # 3. Testam CHECK_MASK (Trebuie sa aiba si Plan si Taxe pentru a fi 'Gata')
-/set masca_gata = 3
-/if CHECK_MASK($status, $masca_gata) /then \
-    /echo "[OK] Zborul are documentatia completa." \
-/else \
-    /echo "[ERR] Lipsesc documente (Plan sau Taxe)!" \
-/endif
+set masca_gata = 3
+if CHECK_MASK($status, $masca_gata) then 
+    echo "[OK] Zborul are documentatia completa." 
+else 
+    echo "[ERR] Lipsesc documente (Plan sau Taxe)!" 
+endif
 
 # 4. Adaugam Catering (folosind BIT_OR sau BIT_SET)
-/set status = BIT_OR($status, $F_CATERING_OK)
-/echo "Dupa adaugare catering: " + BIT_TO_BIN($status) + " (Count: " + BIT_COUNT($status) + ")"
+set status = BIT_OR($status, $F_CATERING_OK)
+echo "Dupa adaugare catering: " + BIT_TO_BIN($status) + " (Count: " + BIT_COUNT($status) + ")"
 
 # 5. Testam ANY_MASK pentru Alerte (Tehnic sau Meteo)
 # Simulam aparitia unei probleme Meteo
-/set status = BIT_OR($status, $F_METEO_STOP)
-/set masca_pericol = 24  # 8 (Tehnic) + 16 (Meteo)
+set status = BIT_OR($status, $F_METEO_STOP)
+set masca_pericol = 24  # 8 (Tehnic) + 16 (Meteo)
 
-/if ANY_MASK($status, $masca_pericol) /then \
-    /echo "[ALERTA] Zborul este BLOCAT de factori externi (Meteo/Tehnic)!" \
-    /echo "Detalii masca binar: " + BIT_TO_BIN($status) \
-/endif
+if ANY_MASK($status, $masca_pericol) then 
+    echo "[ALERTA] Zborul este BLOCAT de factori externi (MeteoTehnic)!" 
+    echo "Detalii masca binar: " + BIT_TO_BIN($status) 
+endif
 
 # 6. Testam BIT_CHECK individual
-/if BIT_CHECK($status, 4) /then \
-    /echo "Confirmare: Problema este de natura METEO (Bit 4)." \
-/endif
+if BIT_CHECK($status, 4) then 
+    echo "Confirmare: Problema este de natura METEO (Bit 4)." 
+endif
 
-# 7. Testam BIT_XOR (Toggle / Inversare flag)
+# 7. Testam BIT_XOR (Toggle  Inversare flag)
 # Rezolvam problema meteo (scoatem flag-ul 16)
-/set status = BIT_XOR($status, $F_METEO_STOP)
-/echo "Dupa rezolvare meteo: " + BIT_TO_BIN($status)
+set status = BIT_XOR($status, $F_METEO_STOP)
+echo "Dupa rezolvare meteo: " + BIT_TO_BIN($status)
 
-/echo "--- Testare Finalizata cu Succes ---"
+echo "--- Testare Finalizata cu Succes ---"
 
 # Definim dicționarul de semnificații pentru biți
-/set bit_labels = { \
+set bit_labels = { \
     0: "Plan de zbor lipsa", \
     1: "Taxe neplatite", \
     2: "Catering neconfirmat", \
@@ -58,26 +58,26 @@
 }
 
 # Presupunem că zborul are doar Planul (bit 0), deci status = 1
-/set status = 1
-/set masca_obligatorie = 7  # Vrem biții 0, 1 și 2 (Plan, Taxe, Catering)
+set status = 1
+set masca_obligatorie = 7  # Vrem biții 0, 1 și 2 (Plan, Taxe, Catering)
 
-/echo "--- Verificare Finala ---"
+echo "--- Verificare Finala ---"
 
-/cycle $bit_labels /as bit_index /do \
+cycle $bit_labels as bit_index do 
     # Verificăm dacă bitul e cerut în mască dar lipsește din status
-    /if BIT_CHECK($masca_obligatorie, $bit_index) && ! BIT_CHECK($status, $bit_index) /then \
-        /echo "[CRITIC] " + $bit_labels[$bit_index] \
-    /endif \
-/endcycle
+    if BIT_CHECK($masca_obligatorie, $bit_index) && ! BIT_CHECK($status, $bit_index) then 
+        echo "[CRITIC] " + $bit_labels[$bit_index] 
+    endif 
+endcycle
 
 # Folosim un ARRAY pentru indexare sigura (indexul va fi mereu INT)
-/set labels = ["Plan lipsa", "Taxe neplatite", "Catering OK", "STOP TEHNIC", "METEO"]
-/set status = 1 # Doar planul e depus
-/set masca_obligatorie = 7 # Vrem bitii 0, 1, 2
+set labels = ["Plan lipsa", "Taxe neplatite", "Catering OK", "STOP TEHNIC", "METEO"]
+set status = 1 # Doar planul e depus
+set masca_obligatorie = 7 # Vrem bitii 0, 1, 2
 
-/echo "--- Verificare Corectata ---"
-/plugin ..\..\Release\oli_plugin.dll
-/set bit_labels = { \
+echo "--- Verificare Corectata ---"
+
+set bit_labels = { \
     0: "Plan de zbor lipsa", \
     1: "Taxe neplatite", \
     2: "Catering neconfirmat", \
@@ -86,53 +86,53 @@
 }
 
 # Iteram de la 0 la 4
-/set i = 0
-/while $i < 5 /do \
-    /if BIT_CHECK($masca_obligatorie, $i) && ! BIT_CHECK($status, $i) /then \
-        /echo $i + ": [CRITIC] " + $labels[$i] \
-    /endif \
-	/echo "Aici i:" + $i \
-    /set i = $i + 1 \
-/endwhile
+set i = 0
+while $i < 5 do 
+    if BIT_CHECK($masca_obligatorie, $i) && ! BIT_CHECK($status, $i) then 
+        echo $i + ": [CRITIC] " + $labels[$i] 
+    endif 
+	echo "Aici i:" + $i ;
+    set i = $i + 1 ;
+endwhile
 
-/set i = 0
-/while $i < 5 /do \
-	/if $i == 2 /then /echo "SUCCCESS" \
-	/endif \
-	/echo "i=" + $i \
-	/set i = $i + 1 \
-	/set j = 0 \
-	/while $j < 2 /do /echo "		j=" + $j \
-		/set j = $j + 1 \
-	/endwhile \
-/endwhile
+set i = 0
+while $i < 5 do 
+	if $i == 2 then echo "SUCCCESS" 
+	endif 
+	echo "i=" + INT($i);
+	set i = $i + 1;
+	set j = 0 ;
+	while $j < 2 do echo "		j=" + INT($j);
+		set j = $j + 1 ;
+	endwhile 
+endwhile
 
-/set i = 1
-/echo "Începem numărătoarea până la 10, dar ne oprim la 5..."
+set i = 1
+echo "Începem numărătoarea până la 10, dar ne oprim la 5..."
 
-/while $i <= 10 /do \
-    /if $i == 6 /then \
-        /echo "--- Am atins valoarea 6, executăm /BREAK acum! ---" \
-        /break \
-    /endif \
-    /echo "Număr curent: " + $i \
-   /set i = $i + 1 \
-/endwhile
+while $i <= 10 do 
+    if $i == 6 then 
+        echo "--- Am atins valoarea 6, executăm BREAK acum! ---" ;
+        break 
+    endif 
+    echo "Număr curent: " + INT($i) ;
+   set i = $i + 1 ;
+endwhile
 
-/echo "Bucla s-a terminat. Valoarea finală a lui i este: " + $i
-
-
+echo "Bucla s-a terminat. Valoarea finală a lui i este: " + $i
 
 
 
-/set i = 1
-/while $i <= 5 /do \
-    /if $i == 3 /then \
-        /set i = $i + 1 \
-        /continue \
-        /echo "Asta nu ar trebui sa se vada NICIODATA" \
-		/echo "DAN NICI Asta nu ar trebui sa se vada NICIODATA" \
-    /endif \
-    /echo "Numar: " + $i \
-    /set i = $i + 1 \
-/endwhile 
+
+
+set i = 1
+while $i <= 5 do 
+    if $i == 3 then 
+        set i = $i + 1;
+        continue;
+        echo "Asta nu ar trebui sa se vada NICIODATA" ;
+		echo "DAN NICI Asta nu ar trebui sa se vada NICIODATA" ;
+    endif 
+    echo "Numar: " + INT($i);
+    set i = $i + 1;
+endwhile 

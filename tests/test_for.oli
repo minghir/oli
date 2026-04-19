@@ -1,0 +1,23 @@
+unset all; cls
+set $size = 3
+for $i = 1 to $size by 1 do 
+    for $j = 1 to $size by 1 do 
+        echo "Coordonate: [" + INT($i) + "," + INT($j) + "]" 
+    endfor 
+endfor
+
+
+set $start = 10
+set $pas = -2
+echo "Numărătoare inversă din 2 în 2:"
+for $k = $start to 0 by $pas do 
+    echo "Valoare k: " + INT($k) 
+endfor
+
+
+for $i = 1 to 3 do 
+    for $j = 1 to 3 do 
+        if $i != $j then continue endif 
+        echo "Diagonala: [" + INT($i) + "," + INT($j) + "]" 
+    endfor 
+endfor

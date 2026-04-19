@@ -1,36 +1,44 @@
-/proc count n
- /echo $n
- /set next = $n - 1
- #/echo $next
- /if $next > 0 /then \
-   /count $next \
- /endif
-/endproc
+proc count n
+ #echo $n
+ set $next = $n - 1
+ echo $next
+ if $next > 0 then 
+   count $next 
+ endif 
+endproc
 
 
 
-/set res = 1
+set $res = 1
 
-/proc fact n
-   /set res = $res * $n
-  /set next = $n - 1
-  /if $next > 1 /then \
-    /fact $next \
-  /endif
-  /endproc
+proc fact n
+   set $res = $res * $n
+  set $next = $n - 1
+  if $next > 1 then 
+    fact $next 
+  endif
+  endproc
 
-/fact 5
-/echo "Factorialul lui 5 este: " + $res
+fact 5
+echo "Factorialul lui 5 este: " + INT($res)
 
 
 
 # Script Oli pentru Factorial
-/set n = 1
-/set fact = 1
-/while $n <= 10 /do \
-    /set fact = $fact * $n \
-    /set n = $n + 1 \
-/endwhile
-/echo "Gata! Rezultatul este: " + $fact
+set $n = 1
+set $fact = 1
+while $n <= 10 do 
+    set $fact = $fact * $n 
+    set $n = $n + 1 
+endwhile
+echo "Gata! Rezultatul pentru 10 este: " + INT($fact)
 
-/echo FACT(5)
+echo INT(FACT(5))
+
+
+func factorial n
+  if $n <= 1 then return 1 endif
+  return $n * factorial($n - 1)
+endfunc
+
+echo INT(factorial(5))

@@ -108,5 +108,20 @@
       <Filter>tests</Filter>
     </None>
     <None Include="Makefile" />
+    <None Include="tests\atac_test.oli">
+      <Filter>tests</Filter>
+    </None>
+    <None Include="tests\pascal.oli">
+      <Filter>tests</Filter>
+    </None>
+    <None Include="tests\test_for.oli">
+      <Filter>tests</Filter>
+    </None>
+    <None Include="tests\test_func.oli">
+      <Filter>tests</Filter>
+    </None>
+    <None Include="tests\test_while.oli">
+      <Filter>tests</Filter>
+    </None>
   </ItemGroup>
 </Project>

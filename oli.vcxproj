@@ -152,17 +152,22 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
+    <None Include="tests\atac_test.oli" />
     <None Include="tests\factorial.oli" />
     <None Include="tests\fibonaci.oli" />
     <None Include="tests\ghici.oli" />
     <None Include="tests\ghicitoare.oli" />
+    <None Include="tests\pascal.oli" />
     <None Include="tests\sortare.oli" />
     <None Include="tests\sort_string.oli" />
     <None Include="tests\test_bit_op.oli" />
     <None Include="tests\test_db.oli" />
     <None Include="tests\test_fact.oli" />
+    <None Include="tests\test_for.oli" />
     <None Include="tests\test_fs.oli" />
+    <None Include="tests\test_func.oli" />
     <None Include="tests\test_math.oli" />
+    <None Include="tests\test_while.oli" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

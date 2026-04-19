@@ -1,49 +1,105 @@
-/unset all
+unset all
 
 # --- Varianta Iterativă (Eficientă) ---
-/func FIBO_ITER n
-    /if $n <= 0 /then /return 0 /endif
-    /if $n == 1 /then /return 1 /endif
+func FIBO_ITER n
+    if $n <= 0 then return 0 endif
+    if $n == 1 then return 1 endif
     
-    /set a = 0
-    /set b = 1
-    /set i = 2
+    set $a = 0
+    set $b = 1
+    set $i = 2
     
-    /while $i <= $n /do \
-        /set next = $a + $b \
-        /set a = $b \
-        /set b = $next \
-        /set i = $i + 1 \
-    /endwhile
+    while $i <= $n do 
+        set $next = $a + $b 
+        set $a = $b 
+        set $b = $next 
+        set $i = $i + 1 
+    endwhile
     
-    /return $b
-/endfunc
+    return $b
+endfunc
 
 # --- Varianta Recursivă (Testul de Foc pentru Sandbox) ---
-/func FIBO_REC n
-    /if $n <= 0 /then /return 0 /endif
-    /if $n == 1 /then /return 1 /endif
+func FIBO_REC n
+    if $n <= 0 then return 0 endif
+    if $n == 1 then return 1 endif
     
     # Aici testăm dacă apelurile imbricate își păstrează variabilele locale
-    /set res = FIBO_REC($n - 1) + FIBO_REC($n - 2)
-    /return $res
-/endfunc
+    set $res = FIBO_REC($n - 1) + FIBO_REC($n - 2)
+    return $res
+endfunc
 
 # --- Teste ---
-/set target = 10
+set $target = 10
 
-/echo "Calculăm Fibonacci pentru n=" + $target
+echo "Calculăm Fibonacci pentru n=" + $target
 
-/set r1 = FIBO_ITER($target)
-/echo "Rezultat Iterativ: " + $r1
+set $r1 = FIBO_ITER($target)
+echo "Rezultat Iterativ: " + $r1
 
-/set r2 = FIBO_REC($target)
-/echo "Rezultat Recursiv: " + $r2
+set $r2 = FIBO_REC($target)
+echo "Rezultat Recursiv: " + $r2
 
 # Generăm un șir întreg
-/echo "Primele 10 numere din șir:"
-/set j = 0
-/while $j <= 10 /do \
-    /echo "F(" + INT($j) + ") = " + INT(FIBO_ITER($j)) \
-    /set j = $j + 1 \
-/endwhile
+echo "Primele 10 numere din șir:"
+set $j = 0
+while $j <= 10 do 
+    echo "F(" + INT($j) + ") = " + INT(FIBO_ITER($j)) 
+    set $j = $j + 1 
+endwhile
+
+
+plugin oli_plugin.dll
+# 1. Resetăm mediul
+unset all
+set $memo = []
+
+# 2. Definim funcția cu Memoization
+func FIBO_MEMO n
+    if $n <= 1 then 
+        # Când ajungem la finalul recursivității, vedem drumul parcurs
+        if $n == 0 then
+            #echo "--- Debug: Am ajuns la baza n=0. Trace stivă: ---"
+            #trace
+        endif
+        return $n 
+    endif
+
+    if @memo[$n] != NULL then 
+        return @memo[$n] 
+    endif
+
+    set $res = FIBO_MEMO($n - 1) + FIBO_MEMO($n - 2)
+    set global @memo[$n] = $res
+    
+    return $res
+endfunc
+
+
+
+# 3. Test de Scoping (Verificăm dacă funcțiile pot scrie în Global)
+set $test_global = "Original"
+func TEST_SCOPE
+    set $test_global = "Modificat"
+endfunc
+
+# --- EXECUȚIE ---
+
+echo "--- Test 1: Scoping ---"
+TEST_SCOPE()
+echo "Valoare globala dupa apel: " + $test_global
+# Daca afiseaza "Original", inseamna ca setVariable NU urca in Call Stack.
+
+echo ""
+echo "--- Test 2: Fibonacci cu Memoization ---"
+set $start = TICKS()
+set $r = FIBO_MEMO(20)
+set $end = TICKS()
+
+set $durata = $end - $start
+echo "F(20) = " + $r
+echo "Timp: " + $durata + " ms"
+
+echo ""
+echo "--- Test 3: Starea Cache-ului ---"
+dm

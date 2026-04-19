@@ -23,7 +23,7 @@ void ConsoleManager::initialize() {
     _setmode(_fileno(stdout), _O_U8TEXT);
 
 #else
-    // Linux: nu ai nevoie de nimic special.
+    // Linux: nu ai nevoie de nimic special.mc
     // Terminalul suportă UTF-8 nativ.
     std::ios::sync_with_stdio(true);
 #endif

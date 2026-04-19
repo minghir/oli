@@ -66,3 +66,7 @@ plugin D:\Programming\vreport\tests\oli\oli_plugin.dll
 ---
 plugin "D:\Programming\vreport\tests\oli\oli_plugin.dll"
 ---
+sys dir
+---
+sys dir
+---

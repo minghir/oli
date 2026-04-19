@@ -22,7 +22,7 @@
 
 ### Building on Linux
 ```bash
-git clone [https://github.com/minghir/oli.git](https://github.com/minghir/oli.git)
+git clone https://github.com/minghir/oli.git
 cd oli
 make all
 ./oli

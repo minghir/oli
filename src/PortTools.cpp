@@ -69,7 +69,7 @@ namespace PortTools {
 #endif
     }
 
-    void PortTools::openIfstream(std::ifstream& file, const std::wstring& path) {
+    void openIfstream(std::ifstream& file, const std::wstring& path) {
 #ifdef _WIN32
         // Pe Windows, chiar și în GCC, varianta cu filesystem::path de mai sus e cea mai sigură
         file.open(std::filesystem::path(path));

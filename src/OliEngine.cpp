@@ -9,6 +9,10 @@
 #include <vector>
 #include <string>
 
+#ifndef _WIN32
+#include <dlfcn.h>
+#endif
+
 void vOliEngine::execute(const std::wstring& line) {
     // 1. Curățare
     std::wstring cleanLine = trim(line);

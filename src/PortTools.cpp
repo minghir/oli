@@ -1,14 +1,20 @@
 #include "PortTools.hpp"
 #include <fstream>
 #include <iostream>
+#include <codecvt>
+#include <locale>
+#include <filesystem>
+
 #ifdef _WIN32
 #include <windows.h>
+
 #else
 #include <iconv.h>
 #include <errno.h>
 #include <dlfcn.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+
 #endif
 
 namespace PortTools {
@@ -63,11 +69,15 @@ namespace PortTools {
 #endif
     }
 
-    void openIfstream(std::ifstream& file, const std::wstring& path) {
+    void PortTools::openIfstream(std::ifstream& file, const std::wstring& path) {
 #ifdef _WIN32
-        file.open(path); // Windows suportă wchar_t direct
+        // Pe Windows, chiar și în GCC, varianta cu filesystem::path de mai sus e cea mai sigură
+        file.open(std::filesystem::path(path));
 #else
-        file.open(wstring_to_utf8(path)); // Linux are nevoie de char* (UTF-8)
+        // Pe Linux, convertim la string normal
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        std::string utf8_path = converter.to_bytes(path);
+        file.open(utf8_path);
 #endif
     }
 

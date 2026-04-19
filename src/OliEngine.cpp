@@ -8,6 +8,9 @@
 #include <vector>
 #include <string>
 #include <cstring>
+#include <thread>
+#include <chrono>
+
 
 void vOliEngine::execute(const std::wstring& line) {
     // 1. Curățare

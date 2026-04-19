@@ -492,7 +492,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         }
     }
     
-
+    /*
     void vOliEngine::handleSetCommand(const ShellCommand& sc) {
         if (sc.args.empty()) return;
 
@@ -542,6 +542,38 @@ void vOliEngine::addToHistory(const std::wstring& command) {
 
         // 5. Resetăm flag-ul după ce TOATĂ operațiunea s-a terminat
         m_nextSetIsGlobal = false;
+    }
+    */
+    void vOliEngine::handleSetCommand(const ShellCommand& sc) {
+        if (sc.args.empty()) return;
+
+        // 1. Reconstituim linia (fără a forța "global ")
+        std::wstring fullLine;
+        for (const auto& a : sc.args) fullLine += a + L" ";
+        fullLine = trim(fullLine);
+
+        // 2. Tokenizăm și Parsăm direct
+        auto tokens = vOliCommandParser::tokenize(fullLine);
+        if (tokens.empty()) return;
+
+        OliExpressionParser exprParser(tokens);
+        ASTPtr root = exprParser.parseAssignment();
+
+        if (!root) {
+            LOG_ERROR(L"[RUNTIME ERROR] Invalid assignment expression.");
+            return;
+        }
+
+        // 3. EXECUȚIA
+        // În interiorul executeAST, când ajungi la nodul de Assignment, 
+        // acesta va chema assignToVariable(leftNode->name, evaluatedRight).
+        // Acolo, prefixul '@' din "@$tinta_nume" va fi procesat corect.
+        try {
+            executeAST(root);
+        }
+        catch (...) {
+            LOG_ERROR(L"Eroare la execuția AST-ului de asignare.");
+        }
     }
 
 
@@ -643,6 +675,7 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
         if (rawVar.empty()) return { std::monostate{} };
 
         // 1. GESTIONARE GLOBALĂ EXPLICITĂ (@nume)
+        /*
         if (rawVar[0] == L'@') {
             std::wstring globalName = rawVar.substr(1);
 
@@ -653,6 +686,34 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
             globalName = trim(globalName);
 
             auto it = m_globalVariables.find(globalName);
+            if (it != m_globalVariables.end()) return it->second;
+
+            return { std::monostate{} };
+        }
+        */
+
+        if (rawVar[0] == L'@') {
+            std::wstring contentAfterAt = rawVar.substr(1);
+
+            // Verificăm dacă avem un "pointer" (reflexie): @$tinta
+            if (!contentAfterAt.empty() && contentAfterAt[0] == L'$') {
+                // Evaluăm ce se află în variabila locală (ex: $tinta_nume -> "erou")
+                vData evaluatedName = resolveVariable(contentAfterAt);
+
+                if (const std::wstring* nameStr = std::get_if<std::wstring>(&evaluatedName.value)) {
+                    // Acum că avem "erou", căutăm "erou" în m_globalVariables
+                    auto it = m_globalVariables.find(*nameStr);
+                    if (it != m_globalVariables.end()) return it->second;
+                }
+                return { std::monostate{} };
+            }
+
+            // --- Logica ta existentă pentru @nume fix ---
+            size_t firstSep = contentAfterAt.find_first_of(L".[");
+            std::wstring rootName = (firstSep != std::wstring::npos) ? contentAfterAt.substr(0, firstSep) : contentAfterAt;
+            rootName = trim(rootName);
+
+            auto it = m_globalVariables.find(rootName);
             if (it != m_globalVariables.end()) return it->second;
 
             return { std::monostate{} };
@@ -1025,7 +1086,7 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
         
     }
     */
-
+    /*
     void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newValue) {
         std::wstring trimmedExpr = trim(varExpr);
 
@@ -1090,11 +1151,167 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
             std::wstring idxExpr = trim(trimmedExpr.substr(lastSep + 1, lastClose - lastSep - 1));
 
             // Refolosim logica ta existentă pentru Array/Map
-            if (idxExpr.empty()) { /* push_back */ }
+            if (idxExpr.empty()) { }
             else if (targetContainer->isArray()) { assignToArrayVar(targetContainer, idxExpr, newValue); }
             else { assignToMapVar(targetContainer, idxExpr, newValue); }
         }
     }
+    */
+/*
+void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newValue) {
+    std::wstring trimmedExpr = trim(varExpr);
+
+    // Detectăm primul separator pentru a identifica rădăcina (root)
+    size_t firstSep = trimmedExpr.find_first_of(L"[.");
+
+    // --- CAZUL 0: Variabilă simplă ($a = 10 sau @a = 10) ---
+    if (firstSep == std::wstring::npos) {
+        setVariable(trimmedExpr, newValue);
+        return;
+    }
+
+    // --- 1. DETECȚIE PREFIX ȘI NUME RĂDĂCINĂ ---
+    std::wstring fullVarName = normalizeSpaces(trimmedExpr.substr(0, firstSep));
+    bool forceGlobal = (!fullVarName.empty() && fullVarName[0] == L'@');
+    std::wstring varName = fullVarName;
+
+    // --- 2. LOGICĂ DE DEREFERENȚIERE (Pointer Resolution) ---
+    // Verificăm cazul special @$pointer.prop sau $pointer.prop
+    if (varName.size() > 1 && varName[forceGlobal ? 1 : 0] == L'$') {
+        // Extragem expresia pointer (ex: dacă avem @$tinta, extragem $tinta)
+        std::wstring pointerExpr = forceGlobal ? varName.substr(1) : varName;
+
+        // Întrebăm motorul: "Cine se ascunde în variabila asta?"
+        vData resolvedPointer = resolveVariable(pointerExpr);
+
+        if (const std::wstring* actualName = std::get_if<std::wstring>(&resolvedPointer.value)) {
+            varName = *actualName; // Transformăm "$tinta_nume" în "erou" sau "boss"
+        }
+        else {
+            // Dacă nu e string, nu putem face "deep write" pe un nume dinamic
+            return;
+        }
+    }
+    else {
+        // Logica standard: scoatem prefixul (@ sau $) pentru a obține numele brut
+        if (!varName.empty() && (varName[0] == L'$' || varName[0] == L'@')) {
+            varName.erase(0, 1);
+        }
+    }
+    varName = trim(varName);
+
+    // --- 3. IDENTIFICAREA RĂDĂCINII ÎN MEMORIE (Pointer la vData) ---
+    vData* rootPtr = nullptr;
+    if (forceGlobal) {
+        rootPtr = &m_globalVariables[varName];
+    }
+    else if (!m_callStack.empty()) {
+        // Dacă suntem în interiorul unei funcții, căutăm în localVariables
+        rootPtr = &m_callStack.back().localVariables[varName];
+    }
+    else {
+        rootPtr = &m_globalVariables[varName];
+    }
+
+    // Dacă rădăcina este nulă (variabilă nouă), o inițializăm în funcție de acces
+    if (rootPtr->isNull()) {
+        if (trimmedExpr[firstSep] == L'.') rootPtr->value = vDataMap{};
+        else rootPtr->value = vDataArray{};
+    }
+
+    // --- 4. NAVIGARE CĂTRE PENULTIMUL NOD ---
+    // Trimitem doar restul căii către navigator (ex: ".poz.x")
+    std::wstring pathSegment = trimmedExpr.substr(firstSep);
+    vData* targetContainer = navigateOrCreatePath(rootPtr, pathSegment);
+
+    if (!targetContainer) return;
+
+    // --- 5. ASIGNAREA VALORII FINALE ---
+    size_t lastSep = trimmedExpr.find_last_of(L"[.");
+    if (lastSep == std::wstring::npos || lastSep < firstSep) return;
+
+    if (trimmedExpr[lastSep] == L'.') {
+        // Asignare proprietate: obiect.camp = valoare
+        std::wstring field = trim(trimmedExpr.substr(lastSep + 1));
+        if (!targetContainer->isMap()) targetContainer->value = vDataMap{};
+        std::get<vDataMap>(targetContainer->value)[field] = newValue;
+    }
+    else {
+        // Asignare index: array[idx] = valoare
+        size_t lastClose = findClosingBracket(trimmedExpr, lastSep);
+        if (lastClose == std::wstring::npos) return;
+        std::wstring idxExpr = trim(trimmedExpr.substr(lastSep + 1, lastClose - lastSep - 1));
+
+        if (idxExpr.empty()) {
+            // Cazul $arr[] = valoare (push_back)
+            if (!targetContainer->isArray()) targetContainer->value = vDataArray{};
+            std::get<vDataArray>(targetContainer->value).push_back(newValue);
+        }
+        else if (targetContainer->isArray()) {
+            assignToArrayVar(targetContainer, idxExpr, newValue);
+        }
+        else {
+            assignToMapVar(targetContainer, idxExpr, newValue);
+        }
+    }
+}
+*/
+
+void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newValue) {
+    std::wstring trimmedExpr = trim(varExpr);
+
+    // 1. Detectăm contextul GLOBAL (@)
+    bool forceGlobal = (!trimmedExpr.empty() && trimmedExpr[0] == L'@');
+    if (forceGlobal) trimmedExpr.erase(0, 1);
+
+    size_t firstSep = trimmedExpr.find_first_of(L"[.");
+    std::wstring rootPart = (firstSep == std::wstring::npos) ? trimmedExpr : trimmedExpr.substr(0, firstSep);
+    std::wstring pathRemainder = (firstSep == std::wstring::npos) ? L"" : trimmedExpr.substr(firstSep);
+
+    // 2. REFLEXIE AGRESIVĂ (Curățăm toți de $ și rezolvăm)
+    // Dacă rootPart conține $, înseamnă că e o referință dinamică
+    if (rootPart.find(L'$') != std::wstring::npos) {
+        vData resolved = resolveVariable(rootPart);
+        if (auto* pStr = std::get_if<std::wstring>(&resolved.value)) {
+            rootPart = *pStr;
+            if (rootPart.empty() || rootPart[0] != L'$') rootPart = L"$" + rootPart;
+            LOG_DEBUG(L"[FIX] Reflexie fortata: " + rootPart);
+        }
+    }
+
+    // 3. OBTINERE POINTER (Folosim referință directă la map-ul global)
+    vData* rootPtr = nullptr;
+    if (forceGlobal || m_callStack.empty()) {
+        rootPtr = &m_globalVariables[rootPart];
+    }
+    else {
+        auto& locals = m_callStack.back().localVariables;
+        rootPtr = (locals.count(rootPart)) ? &locals[rootPart] : &m_globalVariables[rootPart];
+    }
+
+    // 4. NAVIGARE (Fără copii!)
+    vData* target = navigateOrCreatePath(rootPtr, pathRemainder);
+
+    if (target) {
+        size_t lastSep = trimmedExpr.find_last_of(L".[");
+        std::wstring field = trimmedExpr.substr(lastSep + 1);
+        if (field.back() == L']') field.pop_back(); // Curățăm indexul
+
+        if (auto* pMap = std::get_if<vDataMap>(&target->value)) {
+            (*pMap)[field] = newValue;
+            LOG_DEBUG(L"[SUCCESS] Scris " + field + L" in obiectul " + rootPart);
+        }
+        else {
+            // Dacă nu e Map, îl transformăm, dar păstrăm referința
+            target->value = vDataMap{};
+            std::get<vDataMap>(target->value)[field] = newValue;
+        }
+
+        // --- FILTRUL DE SIGURANȚĂ ---
+        // Dacă am lucrat pe Global, ne asigurăm că map-ul global a reținut modificarea
+        if (forceGlobal) m_globalVariables[rootPart] = *rootPtr;
+    }
+}
 
     void vOliEngine::assignToArrayVar(vData* container, const std::wstring& indexExpr, const vData& newValue) {
         vDataArray& arr = std::get<vDataArray>(container->value);
@@ -1146,7 +1363,7 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
     }
 
 
-
+    /*
     vData* vOliEngine::navigateOrCreatePath(vData* root, const std::wstring& varExpr) {
         if (!root) return nullptr;
 
@@ -1205,7 +1422,58 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
 
         return current;
     }
-    
+    */
+
+    vData* vOliEngine::navigateOrCreatePath(vData* root, const std::wstring& varExpr) {
+        if (!root) return nullptr;
+
+        // 1. Spargem calea. IMPORTANT: ".poz.x" trebuie să devină ["poz", "x"]
+        std::vector<std::wstring> tokens = splitPath(varExpr);
+
+        // Dacă nu avem unde naviga, returnăm rădăcina
+        if (tokens.empty()) return root;
+
+        vData* current = root;
+
+        // 2. Navigăm prin TOATE componentele, mai puțin ULTIMA
+        // Folosim un loop care procesează tot drumul până la obiectul "părinte" al proprietății finale
+        for (size_t i = 0; i < tokens.size() - 1; ++i) {
+            std::wstring key = tokens[i];
+            if (key.empty()) continue; // Ignorăm segmente goale (ex: de la punctul inițial)
+
+            // Curățare ghilimele
+            if (key.size() >= 2 && key.front() == L'\"' && key.back() == L'\"') {
+                key = key.substr(1, key.size() - 2);
+            }
+
+            // AUTO-INITIALIZARE dacă dăm de un segment care nu există
+            if (current->isNull()) {
+                // Dacă cheia e numerică, presupunem că vrem Array, altfel Map
+                if (!key.empty() && std::iswdigit(key[0])) current->value = vDataArray{};
+                else current->value = vDataMap{};
+            }
+
+            if (current->isMap()) {
+                current = &std::get<vDataMap>(current->value)[key];
+            }
+            else if (current->isArray()) {
+                try {
+                    size_t idx = std::stoll(key);
+                    auto& vec = std::get<vDataArray>(current->value);
+                    if (idx >= vec.size()) vec.resize(idx + 1);
+                    current = &vec[idx];
+                }
+                catch (...) { return nullptr; }
+            }
+            else {
+                // Am încercat să navigăm într-un tip scalar (int/string/bool)
+                return nullptr;
+            }
+        }
+
+        return current;
+    }
+
     vData* vOliEngine::getOrCreateContainer(vData* root, const std::wstring& indexExpr, bool isNextBracketArray) {
         std::wstring cleanIdx = normalizeSpaces(indexExpr);
 
@@ -1452,6 +1720,7 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
 
             case ASTNodeType::Operator: {
                 // --- ATRIBUIRE (=) ---
+                
                 if (node->value == L"=") {
                     if (node->children.size() < 2) return { std::monostate{} };
 
@@ -1471,6 +1740,7 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
                         std::wstring fullPath = reconstructPath(left);
 
                         if (!fullPath.empty()) {
+                            LOG_DEBUG(L"DEBUG: Assigning to path: " + fullPath);
                             assignToVariable(fullPath, rightVal);
                             return rightVal;
                         }

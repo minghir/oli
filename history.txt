@@ -8985,3 +8985,565 @@ echo "--- Test 3: Starea Cache-ului ---"
 ---
 dm
 ---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+run "tests\test_func.oli"
+---
+unset all;cls
+---
+set $var = "test2"
+---
+$var()("MERGE")
+---
+set $f = "double"
+---
+set $val = 10
+---
+echo $f($f($val))
+---
+set $x = FACT(5) + FACT(3)
+---
+return 1
+---
+return 1
+---
+echo $x
+---
+set $a = "mimi"
+---
+test()
+---
+dm
+---
+test3()
+---
+dm
+---
+unset all;cls
+---
+set $var = "test2"
+---
+$var()("MERGE")
+---
+$a = 1
+---
+$b = a
+---
+$c = b
+---
+echo $$$c
+---
+$a = 1
+---
+$b = a
+---
+$c = b
+---
+echo $$$c
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newValue) {
+---
+std::wstring trimmedExpr = trim(varExpr);
+---
+size_t firstSep = trimmedExpr.find_first_of(L"[.");
+---
+// 1. Identificam radacina ?i daca se for?eaza contextul global (@)
+---
+std::wstring fullRoot = (firstSep == std::wstring::npos) ? trimmedExpr : trimmedExpr.substr(0, firstSep);
+---
+bool forceGlobal = (!fullRoot.empty() && fullRoot[0] == L'@');
+---
+std::wstring varName = fullRoot;
+---
+// 2. LOGICA DE REFLEXIE (Dereferen?iere pointeri)
+---
+size_t dollarPos = varName.find(L'$');
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+unset all
+---
+def struct Pozitie {x, y}
+---
+def struct Entitate {nume, poz}
+---
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+---
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+---
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+---
+echo ""
+---
+TELEPORT_DINAMIC("erou", 25, 25)
+---
+TELEPORT_DINAMIC("boss", 999, 999)
+---
+echo ""
+---
+echo "--- VERIFICARE FINALA ---"
+---
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+---
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+---
+$a = 1
+---
+$b = a
+---
+$c = b
+---
+echo $$$c
+---
+unset all;cls
+---
+set $var = "test2"
+---
+$var()("MERGE")
+---

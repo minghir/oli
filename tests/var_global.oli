@@ -1,0 +1,40 @@
+# 1. Pregătirea datelor
+unset all
+def struct Pozitie {x, y}
+def struct Entitate {nume, poz}
+
+# Creăm două entități globale distincte
+set $erou = Entitate("Galahad", Pozitie(10, 10))
+set $boss = Entitate("Dragon", Pozitie(500, 500))
+
+# 2. Definim funcția de manipulare DINAMICĂ
+# Această funcție nu știe PE CINE va muta până la runtime
+func TELEPORT_DINAMIC tinta_nume nou_x nou_y
+    echo "--- Initiere Salt Cuantic ---"
+    echo "Identificator tinta: " + $tinta_nume
+    
+    # Aici intervine magia: @$tinta_nume
+    # Daca $tinta_nume == "erou", atunci se evalueaza ca @erou
+	echo "AAAAIIIICII:" + $tinta_nume
+	echo "AAAAIIIICII2:" + $$tinta_nume
+    set @$tinta_nume.poz.x = $nou_x
+    set @$tinta_nume.poz.y = $nou_y
+    
+    echo "Sistem: Locatia obiectului '" + $tinta_nume + "' a fost actualizata."
+endfunc
+
+# 3. Execuție Test
+echo "Pozitie initiala Erou: " + $erou.poz.x + "," + $erou.poz.y
+echo "Pozitie initiala Boss: " + $boss.poz.x + "," + $boss.poz.y
+echo ""
+
+# Mutăm Eroul folosind numele lui ca string
+TELEPORT_DINAMIC("erou", 25, 25)
+
+# Mutăm Boss-ul folosind numele lui ca string
+TELEPORT_DINAMIC("boss", 999, 999)
+
+echo ""
+echo "--- VERIFICARE FINALA ---"
+echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
+echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y

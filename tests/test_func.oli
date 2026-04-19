@@ -45,3 +45,9 @@ endfunc
 test3()
 
 dm
+
+
+$a = 1
+$b = a
+$c = b
+echo $$$c

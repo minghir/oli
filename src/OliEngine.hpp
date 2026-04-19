@@ -16,7 +16,7 @@
 #pragma once
 
 #include "IShellEngine.hpp"
-#include "stringUtils.hpp"
+#include "StringUtils.hpp"
 #include "ConsoleManager.hpp"
 #include "OliCommandParser.hpp"
 #include "OliExpressionParser.hpp"

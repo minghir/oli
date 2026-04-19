@@ -1,16 +1,16 @@
-﻿#ifndef VSHELL_HPP
-#define VSHELL_HPP
+﻿#ifndef SHELL_HPP
+#define SHELL_HPP
 
 #include "IShellEngine.hpp"
 
 
-class vShell {
+class Shell {
 protected:
     IShellEngine& m_engine; // Shell-ul folosește engine-ul
     bool m_running;
 
 public:
-    vShell(IShellEngine& engine);
+    Shell(IShellEngine& engine);
     virtual void run();
 
 };

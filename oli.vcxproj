@@ -133,9 +133,9 @@
     <ClCompile Include="src\OliEngine.cpp" />
     <ClCompile Include="src\OliExpressionParser.cpp" />
     <ClCompile Include="src\PortTools.cpp" />
-    <ClCompile Include="src\stringUtils.cpp" />
-    <ClCompile Include="src\vApp.cpp" />
-    <ClCompile Include="src\vShell.cpp" />
+    <ClCompile Include="src\StringUtils.cpp" />
+    <ClCompile Include="src\App.cpp" />
+    <ClCompile Include="src\Shell.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ASTNode.hpp" />
@@ -146,9 +146,9 @@
     <ClInclude Include="src\OliExpressionParser.hpp" />
     <ClInclude Include="src\OliKeyWords.hpp" />
     <ClInclude Include="src\PortTools.hpp" />
-    <ClInclude Include="src\stringUtils.hpp" />
-    <ClInclude Include="src\vApp.hpp" />
-    <ClInclude Include="src\vShell.hpp" />
+    <ClInclude Include="src\StringUtils.hpp" />
+    <ClInclude Include="src\App.hpp" />
+    <ClInclude Include="src\Shell.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="tests\factorial.oli" />

@@ -25,13 +25,13 @@
     <ClCompile Include="src\ConsoleManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\stringUtils.cpp">
+    <ClCompile Include="src\StringUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\vApp.cpp">
+    <ClCompile Include="src\App.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\vShell.cpp">
+    <ClCompile Include="src\Shell.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\PortTools.cpp">
@@ -60,13 +60,13 @@
     <ClInclude Include="src\IShellEngine.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\vApp.hpp">
+    <ClInclude Include="src\App.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\vShell.hpp">
+    <ClInclude Include="src\Shell.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\stringUtils.hpp">
+    <ClInclude Include="src\StringUtils.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\PortTools.hpp">

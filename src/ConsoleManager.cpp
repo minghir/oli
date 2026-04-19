@@ -1,5 +1,5 @@
 ﻿#include "ConsoleManager.hpp"
-#include "stringUtils.hpp"
+#include "StringUtils.hpp"
 
 #include <codecvt>
 #include <locale>

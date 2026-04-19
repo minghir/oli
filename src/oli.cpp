@@ -1,6 +1,6 @@
-#include "vShell.hpp"
+#include "Shell.hpp"
 #include "OliEngine.hpp"
-#include "vApp.hpp"
+#include "App.hpp"
 
 
 #include<iostream>
@@ -10,14 +10,14 @@
 #include <chrono>
 #include <iomanip>
 
-class oli : public vApp {
+class oli : public App {
 public:
-    oli( RunMode rm) :vApp() { setRunMode(rm); };
+    oli( RunMode rm) :App() { setRunMode(rm); };
     ~oli() {};
 
     bool initConsole() override {
         vOliEngine shClient;
-        vShell shell(shClient);
+        Shell shell(shClient);
         shell.run();
         return true;
     }

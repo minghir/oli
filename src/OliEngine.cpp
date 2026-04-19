@@ -8,6 +8,8 @@
 #include <random>
 #include <vector>
 #include <string>
+#include <thread>
+#include <chrono>
 
 #ifndef _WIN32
 #include <dlfcn.h>

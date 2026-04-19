@@ -10,12 +10,12 @@ TARGET = oli_plugin.so
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
-    $(CXX) $(LDFLAGS) -o $@ $^
+	$(CXX) $(LDFLAGS) -o $@ $^
 
 %.o: %.cpp
-    $(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-    rm -f *.o $(TARGET)
+	rm -f *.o $(TARGET)
 
 .PHONY: all clean

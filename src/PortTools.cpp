@@ -1,6 +1,6 @@
 #include "PortTools.hpp"
 #include <fstream>
-
+#include <iostream>
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -144,6 +144,28 @@ namespace PortTools {
 #else
         char* err = dlerror();
         return err ? utf8_to_wstring(err) : L"Unknown error";
+#endif
+    }
+
+    bool getConsoleInput(const std::wstring& prompt, std::wstring& outLine) {
+        outLine.clear();
+#ifdef _WIN32
+        std::wcout << prompt;
+        if (!std::getline(std::wcin, outLine)) return false;
+        return true;
+#else
+        std::string promptA = wstring_to_utf8(prompt);
+        char* input = readline(promptA.c_str());
+
+        if (!input) return false; // Ctrl+D
+
+        if (*input && *input != '\0') {
+            add_history(input);
+            outLine = utf8_to_wstring(input);
+        }
+
+        free(input);
+        return true;
 #endif
     }
 } // namespace PortTools

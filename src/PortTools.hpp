@@ -39,6 +39,8 @@ namespace PortTools {
     FILE* openPipe(const std::wstring& command, const wchar_t* mode);
     int closePipe(FILE* pipe);
     bool readLineFromPipe(FILE* pipe, std::wstring& outLine);
+
+    bool getConsoleInput(const std::wstring& prompt, std::wstring& outLine);
 }
 
 #endif

@@ -7,6 +7,8 @@
 #include <iconv.h>
 #include <errno.h>
 #include <dlfcn.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 #endif
 
 namespace PortTools {

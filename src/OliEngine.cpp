@@ -2809,6 +2809,13 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         std::wstring pathStr = sc.args[0];
         // Curățare ghilimele...
 
+        // --- LOGICĂ DE CURĂȚARE CRITICĂ ---
+        if (pathStr.size() >= 2 && pathStr.front() == L'"' && pathStr.back() == L'"') {
+            pathStr = pathStr.substr(1, pathStr.size() - 2);
+        }
+        // Uneori pot rămâne spații accidentale
+        pathStr = trim(pathStr);
+
         std::ifstream file;
         PortTools::openIfstream(file, pathStr); // Abstractizare portabilă
 

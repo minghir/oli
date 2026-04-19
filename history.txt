@@ -70,3 +70,83 @@ sys dir
 ---
 sys dir
 ---
+run "./tests/test_while.oli"
+---
+run ./tests/test_while.oli
+---
+run "./tests/test_while.oli"
+---
+unset all ; cls
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort numbers
+---
+set $arr = $$array
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+cycle $arr as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+@numbers = $arr
+---
+dm
+---
+unset all
+---
+set $y = 0
+---
+while $y < 2 do
+set $x = 0
+echo "Loop Exterior Y: " + $y
+while $x < 3 do
+echo "  Loop Interior X: " + $x
+set $x = $x + 1
+endwhile
+set $y = $y + 1
+endwhile
+---
+echo "Gata!"
+---

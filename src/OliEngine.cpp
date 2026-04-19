@@ -1,5 +1,4 @@
-﻿#include "math/vmath.hpp"
-#include "OliEngine.hpp"
+﻿#include "OliEngine.hpp"
 #include "OliExpressionParser.hpp"
 
 
@@ -1326,12 +1325,7 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
             return { 0LL };
         };
 
-        // Bonus: Funcția FACTORIAL (folosind vmath-ul tău)
-        m_functionsHandlers[L"FACT"] = [this](const std::vector<vData>& args) -> vData {
-            if (args.empty()) return { 0.0 };
-            double num = vDataToDouble(args[0]);
-            return { factorial(num) };
-        };
+       
 
         m_functionsHandlers[L"INPUT"] = [this](const std::vector<vData>& args) -> vData {
             return this->handleInputFunc(args);

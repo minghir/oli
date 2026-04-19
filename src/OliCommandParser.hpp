@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "OliKeyWords.hpp"
-#include "ui/ConsoleManager.hpp"
+#include "ConsoleManager.hpp"
 
 struct ShellCommand {
     std::wstring name;

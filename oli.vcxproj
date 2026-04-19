@@ -134,7 +134,6 @@
     <ClCompile Include="src\OliExpressionParser.cpp" />
     <ClCompile Include="src\stringUtils.cpp" />
     <ClCompile Include="src\vApp.cpp" />
-    <ClCompile Include="src\vmath.cpp" />
     <ClCompile Include="src\vShell.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -147,7 +146,6 @@
     <ClInclude Include="src\OliKeyWords.hpp" />
     <ClInclude Include="src\stringUtils.hpp" />
     <ClInclude Include="src\vApp.hpp" />
-    <ClInclude Include="src\vmath.hpp" />
     <ClInclude Include="src\vShell.hpp" />
   </ItemGroup>
   <ItemGroup>

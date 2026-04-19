@@ -1,12 +1,6 @@
 
       
-      _ _ 
-     | (_)
-  ___| |_ 
- / _ \ | |
-| (_) | | |
- \___/|_|_|
- One Line Interpreter
+
 
 # oli (One Line Interpreter) 🚀
 

@@ -1,6 +1,6 @@
 ﻿#include "OliEngine.hpp"
 #include "OliExpressionParser.hpp"
-
+#include "PortTools.hpp"
 
 #include <fstream>
 #include <filesystem>
@@ -2740,7 +2740,7 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         return std::wstring::npos;
     }
 
-
+    /*
     void vOliEngine::handleRunCommand(const ShellCommand& sc) {
         if (sc.args.empty()) {
             LOG_ERROR(L"Usage: run \"path/to/script.oli\"");
@@ -2794,7 +2794,49 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         }
         file.close();
     }
+    */
 
+    void vOliEngine::handleRunCommand(const ShellCommand& sc) {
+        if (sc.args.empty()) {
+            LOG_ERROR(L"Usage: run \"path/to/script.oli\"");
+            return;
+        }
+
+        std::wstring pathStr = sc.args[0];
+        // Curățare ghilimele...
+
+        std::ifstream file;
+        PortTools::openIfstream(file, pathStr); // Abstractizare portabilă
+
+        if (!file.is_open()) {
+            LOG_ERROR(L"Could not open script: " + pathStr);
+            return;
+        }
+
+        std::string lineA;
+        bool firstLine = true;
+
+        while (std::getline(file, lineA)) {
+            if (!lineA.empty() && lineA.back() == '\r') lineA.pop_back();
+            if (lineA.empty()) continue;
+
+            // Folosim utilitarul portabil
+            std::wstring lineW = PortTools::utf8_to_wstring(lineA);
+
+            if (firstLine) {
+                if (!lineW.empty() && (unsigned short)lineW[0] == 0xFEFF) {
+                    lineW.erase(0, 1);
+                }
+                firstLine = false;
+            }
+
+            std::wstring finalLine = trim(lineW);
+            if (finalLine.empty() || finalLine[0] == L'#') continue;
+
+            this->execute(finalLine);
+        }
+        file.close();
+    }
 
     vData vOliEngine::handleInputFunc(const std::vector<vData>& args) {
         // 1. Afișăm prompt-ul (dacă există)

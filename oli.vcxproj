@@ -132,6 +132,7 @@
     <ClCompile Include="src\oli.cpp" />
     <ClCompile Include="src\OliEngine.cpp" />
     <ClCompile Include="src\OliExpressionParser.cpp" />
+    <ClCompile Include="src\PortTools.cpp" />
     <ClCompile Include="src\stringUtils.cpp" />
     <ClCompile Include="src\vApp.cpp" />
     <ClCompile Include="src\vShell.cpp" />
@@ -144,6 +145,7 @@
     <ClInclude Include="src\OliEngine.hpp" />
     <ClInclude Include="src\OliExpressionParser.hpp" />
     <ClInclude Include="src\OliKeyWords.hpp" />
+    <ClInclude Include="src\PortTools.hpp" />
     <ClInclude Include="src\stringUtils.hpp" />
     <ClInclude Include="src\vApp.hpp" />
     <ClInclude Include="src\vShell.hpp" />

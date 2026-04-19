@@ -2783,9 +2783,13 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
             if (lineA.empty()) continue;
 
             // 1. Conversie UTF-8 -> UTF-16
-            int size_needed = MultiByteToWideChar(CP_UTF8, 0, lineA.c_str(), (int)lineA.size(), NULL, 0);
+#ifdef _WIN32
+            int size_needed = MultiByteToWideChar(CP_UTF8, 0, &lineA[0], (int)lineA.size(), NULL, 0);
             std::wstring lineW(size_needed, 0);
-            MultiByteToWideChar(CP_UTF8, 0, lineA.c_str(), (int)lineA.size(), &lineW[0], size_needed);
+            MultiByteToWideChar(CP_UTF8, 0, &lineA[0], (int)lineA.size(), &lineW[0], size_needed);
+#else
+            std::wstring lineW = utf8_to_wstring(lineA);
+#endif
 
             // 2. Gestionare BOM (Byte Order Mark)
             if (firstLine) {

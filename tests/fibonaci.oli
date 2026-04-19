@@ -48,8 +48,8 @@ while $j <= 10 do
     set $j = $j + 1 
 endwhile
 
-
-plugin oli_plugin.dll
+plugin "oli_plugin/oli_plugin.so"
+#plugin oli_plugin.dll
 # 1. Resetăm mediul
 unset all
 set $memo = []
@@ -93,11 +93,11 @@ echo "Valoare globala dupa apel: " + $test_global
 echo ""
 echo "--- Test 2: Fibonacci cu Memoization ---"
 set $start = TICKS()
-set $r = FIBO_MEMO(50)
+set $r = FIBO_MEMO(100)
 set $end = TICKS()
 
 set $durata = $end - $start
-echo "F(50) = " + $r
+echo "F(100) = " + $r
 echo "Timp: " + $durata + " ms"
 
 echo ""

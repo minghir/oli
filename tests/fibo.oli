@@ -1,5 +1,6 @@
 
-plugin oli_plugin.dll
+plugin "oli_plugin/oli_plugin.so"
+#plugin oli_plugin.dll
 # 1. Resetăm mediul
 unset all
 set $memo = []
@@ -39,3 +40,17 @@ echo "--- Test 1: Scoping ---"
 TEST_SCOPE()
 echo "Valoare globala dupa apel: " + $test_global
 # Daca afiseaza "Original", inseamna ca setVariable NU urca in Call Stack.
+
+echo ""
+echo "--- Test 2: Fibonacci cu Memoization ---"
+set $start = TICKS()
+set $r = FIBO_MEMO(100)
+set $end = TICKS()
+
+set $durata = $end - $start
+echo "F(100) = " + $r
+echo "Timp: " + $durata + " ms"
+
+echo ""
+echo "--- Test 3: Starea Cache-ului ---"
+dm

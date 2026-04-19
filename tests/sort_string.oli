@@ -25,6 +25,8 @@ func SORT_STRINGS array
         endwhile 
         set $i = $i + 1 
     endwhile
+	 cycle $arr as val do echo "in func:" + $val endcycle
+	 dm
     return $arr
 endfunc
 

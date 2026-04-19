@@ -183,6 +183,7 @@ void ConsoleManager::writeRaw(const std::wstring& message, WORD color) {
     }
 }
 
+
 /*
 void ConsoleManager::clear() {
 #ifdef _WIN32

@@ -1145,6 +1145,7 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
     }
 
 
+
     vData* vOliEngine::navigateOrCreatePath(vData* root, const std::wstring& varExpr) {
         if (!root) return nullptr;
 

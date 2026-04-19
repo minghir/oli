@@ -151,6 +151,7 @@
     <ClInclude Include="src\Shell.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Makefile" />
     <None Include="tests\factorial.oli" />
     <None Include="tests\fibonaci.oli" />
     <None Include="tests\ghici.oli" />

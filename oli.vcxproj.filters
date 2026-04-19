@@ -107,5 +107,6 @@
     <None Include="tests\test_math.oli">
       <Filter>tests</Filter>
     </None>
+    <None Include="Makefile" />
   </ItemGroup>
 </Project>

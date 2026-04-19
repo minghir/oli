@@ -1335,3 +1335,9 @@ bool startsWith(const std::wstring& text, const std::wstring& prefix, bool ignor
 
     return text.compare(0, prefix.size(), prefix) == 0;
 }
+
+
+bool iequals(std::wstring_view a, std::wstring_view b) {
+    return std::equal(a.begin(), a.end(), b.begin(), b.end(),
+        [](wchar_t a, wchar_t b) { return std::towlower(a) == std::towlower(b); });
+}

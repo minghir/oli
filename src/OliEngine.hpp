@@ -60,6 +60,8 @@ using vDataValue = std::variant<
 struct vData {
     vDataValue value;
 
+    //vData() = default;
+
     // Utilitar pentru a verifica dacă este array sau string
     bool isArray() const { return std::holds_alternative<vDataArray>(value); }
     bool isMap() const { return std::holds_alternative<vDataMap>(value); }
@@ -184,7 +186,8 @@ private:
     bool vDataToBool(const vData& data);
     std::wstring vDataToWString(const vData& data);
 
-    vData parseRawLiteral(const std::wstring& val);
+    //vData parseRawLiteral(const std::wstring& val);
+    vData parseRawLiteral(std::wstring_view val);
     vData accessContainer(const vData& container, const vData& index);
 
     vData* getContainerPointer(vData& container, const std::wstring& keyOrIdx);

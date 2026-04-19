@@ -10,7 +10,7 @@
 #include <cstring>
 #include <thread>
 #include <chrono>
-
+#include <string_view>
 
 void vOliEngine::execute(const std::wstring& line) {
     // 1. Curățare
@@ -1113,6 +1113,7 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
             size_t idx = static_cast<size_t>(rawIdx);
             if (idx >= arr.size()) {
                 arr.resize(idx + 1, { std::monostate{} });
+                //arr.resize(idx + 1);
             }
             arr[idx] = newValue;
         }
@@ -1231,6 +1232,7 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
             size_t idx = (size_t)vDataToLong(indexValue);
             if (idx >= arr.size()) {
                 arr.resize(idx + 1, { std::monostate{} });
+                //arr.resize(idx + 1);
             }
 
             vData& target = arr[idx];
@@ -1392,6 +1394,8 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
                 if (val.size() >= 2 && val.front() == L'"' && val.back() == L'"') {
                     return { val.substr(1, val.size() - 2) };
                 }
+
+             
                 return parseRawLiteral(val);
             }
 
@@ -1970,7 +1974,9 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         }
     }
     */
+    /*
     vData vOliEngine::parseRawLiteral(const std::wstring& val) {
+        LOG_DEBUG(std::wstring(L"AICIII:") + val);
         if (val.empty()) return { std::monostate{} };
 
         std::wstring lowVal = val;
@@ -1994,8 +2000,54 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         }
 
         // Dacă endPtr nu a avansat sau e string pur
+
+        std::wcout << L"[DEBUG] RAW LITERAL='" << val << L"'" << std::endl;
+        std::wcout << L"[DEBUG] LENGTH=" << val.size() << std::endl;
+        for (size_t i = 0; i < val.size(); i++) {
+            std::wcout << L"  [" << i << L"] = " << (int)val[i] << std::endl;
+        }
+
+
         return { val };
     }
+    */
+
+
+
+    vData vOliEngine::parseRawLiteral(std::wstring_view val) {
+        if (val.empty()) return { std::monostate{} };
+
+        // 1. Verificare rapidă pentru null/bool fără a crea un string nou (lowVal)
+        if (val.size() == 4) {
+            // Verificăm "null" sau "true" case-insensitive manual sau cu o funcție helper
+            if (iequals(val, L"null") || iequals(val, L"none")) return { std::monostate{} };
+            if (iequals(val, L"true")) return { true };
+        }
+        if (val.size() == 5 && iequals(val, L"false")) {
+            return { false };
+        }
+
+        // 2. Pentru conversia numerică (wcstod/wcstoll au nevoie de null-terminated string)
+        // Aici avem două variante:
+
+        // Varianta A: Creăm un string local DOAR dacă e nevoie de conversie
+        std::wstring tempStr(val);
+        wchar_t* endPtr = nullptr;
+        const wchar_t* startPtr = tempStr.c_str();
+
+        if (val.find(L'.') != std::wstring_view::npos) {
+            double d = std::wcstod(startPtr, &endPtr);
+            if (endPtr != startPtr) return { d };
+        }
+        else {
+            long long ll = std::wcstoll(startPtr, &endPtr, 10);
+            if (endPtr != startPtr) return { ll };
+        }
+
+        // 3. Dacă nu e număr, returnăm ca string
+        return { std::wstring(val) };
+    }
+
 
     vData vOliEngine::accessContainer(const vData& container, const vData& index) {
         // CAZUL 1: Containerul este un MAP

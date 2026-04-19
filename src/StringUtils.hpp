@@ -6,7 +6,8 @@
 #include <vector>
 #include <map>
 #include <exception>
-
+#include <string_view>
+#include <cwctype>
 
 typedef unsigned int uint;
 
@@ -156,6 +157,8 @@ std::wstring shellNormalizeSpaces(const std::wstring& input);
 bool isNumber(const std::wstring& s);
 
 bool startsWith(const std::wstring& text, const std::wstring& prefix, bool ignoreCase = true);
+
+bool iequals(std::wstring_view a, std::wstring_view b);
 
 #endif // STRINGUTILS_HPP
 

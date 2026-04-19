@@ -21,6 +21,13 @@
 #include "OliCommandParser.hpp"
 #include "OliExpressionParser.hpp"
 
+struct vTypeBlueprint {
+    std::wstring name;
+    std::vector<std::wstring> fields;             // x, y, hp, mana
+    std::map<std::wstring, std::wstring> methods; // attack -> "PLAYER_ATTACK_FUNC"
+    bool isClass = false;                         // Doar pentru validare semantică
+};
+
 struct Procedure {
     std::wstring name;
     std::vector<std::wstring> params;
@@ -60,14 +67,26 @@ struct vData {
     bool isInt() const { return std::holds_alternative<long long>(value); }
     bool isFloat() const { return std::holds_alternative<double>(value); }
     bool isBool() const { return std::holds_alternative<bool>(value); }
-    bool IsNull() const { return std::holds_alternative<std::monostate>(value); }
+    bool isNull() const { return std::holds_alternative<std::monostate>(value); }
+
+    bool operator==(const vData& other) const {
+        if (this->value.index() != other.value.index()) return false;
+        return this->value == other.value;
+    }
 };
 
 enum class OliStatus {
     RUNNING,
     BREAK_REQUESTED,
     CONTINUE_REQUESTED,
+    RETURN_REQUESTED,
     ERR
+};
+
+struct StackFrame {
+    std::wstring functionName;
+    std::map<std::wstring, vData> localVariables;
+    int lineCalled; // Opțional, dacă ai un Line Counter
 };
 
 class vOliEngine : public IShellEngine {
@@ -81,7 +100,7 @@ private:
     std::unordered_map<std::wstring, std::function<void(const std::wstring&)>> m_commandHandlers;
     std::map<std::wstring, OliFunctionHandler> m_functionsHandlers;
 
-    std::map<std::wstring, vData> m_variables;
+    std::map<std::wstring, vData> m_globalVariables;
 
 
     std::map<std::wstring, Procedure> m_procedures;
@@ -94,7 +113,17 @@ private:
     std::wstring m_activeFuncName;
 
     bool m_shouldReturn = false;
+
+    int m_blockDepth = 0; // Contor pentru IF/FOR/WHILE/CYCLE deschise
+    bool m_isMultiLine = false; // Dacă suntem în mod de acumulare automată
     
+
+    // Stiva de contexte (fiecare context este un map de variabile)
+    std::vector<StackFrame> m_callStack;
+
+    std::map<std::wstring, vTypeBlueprint> m_blueprints;
+
+    bool m_nextSetIsGlobal = false;
 public:
 
     vOliEngine(){
@@ -122,6 +151,7 @@ public:
 
 protected:
     void executeCommand(const std::wstring& command);
+    void executeInternal(const std::wstring& fullInput);
 private:
     vData evaluateExpression(const std::wstring& expr);
     vData resolveVariable(const std::wstring& rawVar);
@@ -133,17 +163,23 @@ private:
     vData* navigateOrCreatePath(vData* root, const std::wstring& varExpr);
 
     vData* getOrCreateContainer(vData* root, const std::wstring& indexExpr, bool isNextBracketArray);
+    std::vector<std::wstring> splitPath(const std::wstring& expr);
+
 
     std::vector<std::wstring> splitByCommaIgnoringBrackets(const std::wstring& content);
     size_t findClosingBracket(const std::wstring& str, size_t start);
 
     std::wstring getVariantTypeName(const vData& data);
     void printVData(const vData& data, bool quoteStrings);
+    //void setVariable(const std::wstring& name, const vData& value);
+    void setVariable(const std::wstring& name, const vData& value, bool isGlobal=false);
+    void updateContainerValue(ASTPtr containerNode, vData key, vData newValue);
 
     vData executeAST(ASTPtr node);
     vData executeBinaryOperator(const std::wstring& op, const vData& left, const vData& right);
+    std::wstring reconstructPath(ASTPtr node);
     
-    double vDataToDouble(const vData& data);
+    double vDataToDouble(const vData& data) const;
     long long vDataToLong(const vData& data);
     bool vDataToBool(const vData& data);
     std::wstring vDataToWString(const vData& data);
@@ -152,19 +188,24 @@ private:
     vData accessContainer(const vData& container, const vData& index);
 
     vData* getContainerPointer(vData& container, const std::wstring& keyOrIdx);
-    vData* resolveToParent(const std::wstring& rootName, const std::vector<std::wstring>& indexes);
+    //vData* resolveToParent(const std::wstring& rootName, const std::vector<std::wstring>& indexes);
+    vData* resolveToParent(const std::wstring& rootName, const std::vector<std::wstring>& indexes, bool forceGlobal = false);
     VarPath parsePath(const std::wstring& raw);
 
     std::vector<std::wstring> preParse(const std::wstring& line);
     size_t findKeywordPos(const std::wstring& line, const std::wstring& keyword);
     
     size_t findTopLevelKeyword(const std::wstring& line, const std::wstring& keyword, const std::wstring& startCommand);
-    std::wstring substituteVariables(const std::wstring& input, const std::map<std::wstring, vData>& vars);
-    
+    std::wstring substituteVariables(const std::wstring& input);
+    std::wstring cleanVariableName(const std::wstring& name);
+
     void callProcedure(const Procedure& proc, const std::vector<std::wstring>& passedArgs);
     vData callUserFunction(const std::wstring& funcName, const std::vector<vData>& args);
+    void printTraceback();
+    void dumpStackTrace();
 
-
+    bool canBeNumeric(const vData& data) const;
+    bool compareVData(const vData& lhs, const vData& rhs);
 
 
     void initializeCommandsHandlers();
@@ -175,6 +216,7 @@ private:
     void handleWhileCommand(const std::wstring& fullLine);
     size_t findTopLevelWhileKeyword(const std::wstring& line, const std::wstring& keyword);
     
+    void handleRepeatCommand(const std::wstring& fullLine);
     
 
     void handleCycleCommand(const std::wstring& fullLine);
@@ -182,6 +224,11 @@ private:
 
     void handleForCommand(const std::wstring& fullLine);
 
+    void handleSwitchCommand(const std::wstring& fullLine);
+    size_t findTopLevelSwitchKeyword(const std::wstring& line, const std::wstring& keyword);
+
+    void updateDataMember(vData& container, const vData& key, const vData& newValue);
+    void updateRootSource(ASTPtr node, const vData& updatedValue);
 
     // Metodele de suport pentru handlere
     void handleQuitCommand(const ShellCommand& sc);
@@ -189,17 +236,22 @@ private:
     void handleEchoCommand(const ShellCommand& sc);// , bool debugMode = false);
     void handleDumpMemCommand(const ShellCommand& sc);
     void handleUnsetCommand(const ShellCommand& sc);
-    void handleUnsetAllCommand(const ShellCommand& sc);;
     void handleRunCommand(const ShellCommand& sc);
     void handleSysCommand(const ShellCommand& sc);
     void handleProcCommand(const ShellCommand& sc);
     void handleFuncCommand(const ShellCommand& sc);
     void handlePluginCommand(const ShellCommand& sc);
     void handleListProcsCommand(const ShellCommand& sc);
+    void handleListFuncsCommand(const ShellCommand& sc);
+    void handleTraceCommand(const ShellCommand& sc);
 
     void handleBreakCommand(const ShellCommand& sc);
     void handleContinueCommand(const ShellCommand& sc);
     void handleReturnCommand(const ShellCommand& sc);
+
+    void handleClearCommand(const ShellCommand& sc);
+    void handleDefCommand(const ShellCommand& sc);
+    
 
     void initializeFunctionsHandlers();
     vData handleInputFunc(const std::vector<vData>& args);

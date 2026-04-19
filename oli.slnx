@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="oli.vcxproj" />
+  <Project Path="oli.vcxproj" Id="2e51f6fe-b330-409c-9b8e-381b68ec44de" />
 </Solution>

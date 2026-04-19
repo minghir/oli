@@ -183,6 +183,7 @@ void ConsoleManager::writeRaw(const std::wstring& message, WORD color) {
     }
 }
 
+/*
 void ConsoleManager::clear() {
 #ifdef _WIN32
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -202,6 +203,13 @@ void ConsoleManager::clear() {
     // Linux: clear screen
     std::cout << "\033[2J\033[H";
 #endif
+}
+*/
+void ConsoleManager::clear() {
+    std::lock_guard<std::recursive_mutex> lock(mtxLog);
+    // Codul ANSI pentru "Clear Screen" (\033[2J) și "Move to 0,0" (\033[H)
+    std::wcout << L"\033[2J\033[H";
+    std::wcout.flush();
 }
 
 

@@ -40,3 +40,9 @@ test()
 /return false
 /sys dir
 /quit
+cls
+---
+clear
+---
+clear
+---

@@ -14,6 +14,7 @@
 #include <readline/history.h>
 #endif
 
+
 Shell::Shell(IShellEngine& engine) : m_engine(engine), m_running(true) {}
 
 void Shell::run() {

@@ -1,0 +1,46 @@
+# 1. Ne asigurăm că avem structura definită
+def struct Pozitie {x, y}
+
+# 2. Definim funcția de calcul distanță
+# Formula: distanta = sqrt(x^2 + y^2)
+func CALCULEAZA_DISTANTA punct
+    # Extragem valorile din structură
+    set $x = $punct.x
+    set $y = $punct.y
+    
+    # Calculăm pătratele
+    set $x2 = $x * $x
+    set $y2 = $y * $y
+    
+    # Aplicăm Pitagora
+    # Presupunem că SQRT este o funcție built-in a motorului tău
+    set $dist = SQRT($x2 + $y2)
+    
+    return $dist
+endfunc
+
+
+unset all; cls
+# 1. Definim entitatea
+def struct Entitate {nume, poz}
+set $boss = Entitate("Dragon", Pozitie(100, 100))
+
+# 2. Funcția de mișcare (Side Effect)
+# Folosim @ pentru a scrie direct în memoria globală
+func MOVE_GLOBAL nume_var dx dy
+[INFO] Started recording function: MOVE_GLOBAL
+    echo "Sistem: Miscare entitate '" + $nume_var + "'..."
+    
+    # Rezolvarea @$nume_var trebuie să identifice corect variabila globală
+    set @$nume_var.poz.x = @$nume_var.poz.x + $dx
+    set @$nume_var.poz.y = @$nume_var.poz.y + $dy
+endfunc
+
+# 3. Execuție
+echo "Pozitie initiala: [" + $boss.poz.x + "," + $boss.poz.y + "]"
+
+# Trimitem numele variabilei ca string
+MOVE_GLOBAL("boss", 50, -20)
+
+echo "Pozitie finala: [" + $boss.poz.x + "," + $boss.poz.y + "]"
+# Rezultat așteptat: [150, 80]

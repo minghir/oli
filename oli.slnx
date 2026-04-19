@@ -4,4 +4,5 @@
     <Platform Name="x86" />
   </Configurations>
   <Project Path="oli.vcxproj" Id="2e51f6fe-b330-409c-9b8e-381b68ec44de" />
+  <Project Path="oli_plugin/oli_plugin.vcxproj" Id="8dfb8d97-48be-4b42-9311-053336ef4f09" />
 </Solution>

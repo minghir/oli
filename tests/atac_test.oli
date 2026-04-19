@@ -55,3 +55,48 @@ set $boss = ATACA($erou, $boss, 80)
 
 echo "--- REZULTAT FINAL ---"
 echo "HP Dragon in variabila globala: " + $boss.stats.hp
+
+set $boss = Entitate("Dragon", Statistici(500, 200, 30), Pozitie(150, 50))
+set $boss = ATACA($erou, $boss, 80)
+echo $boss.stats.hp
+
+# 1. Pregătire mediu
+unset all
+set $boss = Entitate("Dragon", Statistici(500, 200, 30), Pozitie(150, 50))
+
+# 2. Definim funcția de Teleportare
+# Observă: Nu returnăm nimic, lucrăm direct pe @
+func TELEPORT_GLOBAL nume_entitate nou_x
+[INFO] Started recording function: TELEPORT_GLOBAL
+    echo "--- Initiere Teleportare ---"
+    echo "Tinta: " + $nume_entitate
+    
+    # Folosim variabila variabilă pentru a accesa rădăcina globală
+    # @$nume_entitate se traduce în @boss dacă $nume_entitate este "boss"
+    #set @$nume_entitate.poz.x = $nou_x
+    set @boss.poz.x = $nou_x
+    echo "Sistem: Coordonata X a fost modificata global la " + $nou_x
+endfunc
+
+# 3. Execuție Test
+echo "Pozitie initiala Dragon X: " + $boss.poz.x
+
+# Apelăm funcția trimițând numele variabilei globale ca string
+TELEPORT_GLOBAL("boss", 999)
+
+echo ""
+echo "--- VERIFICARE DUPĂ TELEPORTARE ---"
+echo "Pozitie finala Dragon X (Global): " + $boss.poz.x
+
+# 4. Test de Shadowing vs Global
+# Verificăm dacă putem avea o variabilă locală cu același nume 
+# fără să o afectăm pe cea globală
+func TEST_SHADOW
+    set $boss = "Sunt un simplu cavaler local"
+    set @boss.nume = "Dragon Suprem"
+    echo "Local $boss: " + $boss
+    echo "Global @boss.nume: " + @boss.nume
+endfunc
+
+TEST_SHADOW()
+echo "Dupa Shadowing, numele global este: " + $boss.nume

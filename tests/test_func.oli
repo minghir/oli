@@ -22,3 +22,21 @@ echo $f($f($val))
 
 set $x = FACT(5) + FACT(3)
 echo $x
+
+
+set $a = "mimi"
+func test
+	set $a="fifi"
+endfunc
+
+test()
+dm
+
+func test3
+	set @a = "fifi dar global"
+	set $a = "fifi dar local"
+endfunc
+
+test3()
+
+dm

@@ -8,7 +8,7 @@ set $apeluri = 0
 func PASCAL n k
 	echo  "Param n:" + $n + " tip: " + TYPE($n)
 	echo  "Param k:" + $k + " tip: " + TYPE($k)
-    set $apeluri = $apeluri + 1
+    set @apeluri = @apeluri + 1
     
     # Condiții de bază
     if $k == 0 then
@@ -25,9 +25,9 @@ func PASCAL n k
 	#set $key = "" + $n_num + "," + $k_num
 	set $key = "k" + $n_num + "_" + $k_num
 	
-    if $memo_pascal[$key] != NULL then
+    if @memo_pascal[$key] != NULL then
 			echo  "am gasitt key:" + $key
-			return $memo_pascal[$key]
+			return @memo_pascal[$key]
 		else
 			echo  "nu exista key:" + $key
     endif
@@ -49,7 +49,7 @@ func PASCAL n k
 
     # Salvăm în cache-ul global
 	echo "setez:" + $key + " tipul: " + TYPE($key)
-    set $memo_pascal[$key] = $res
+    set @memo_pascal[$key] = $res
     return $res
 endfunc
 

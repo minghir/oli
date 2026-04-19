@@ -3440,6 +3440,7 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         }
     }
     */
+    /*
     void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wstring>& passedArgs) {
         // --- 1. PUSH FRAME ---
         // Creăm un context local nou pentru această procedură
@@ -3489,6 +3490,49 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         // Restaurăm flag-ul de return al apelantului
         m_shouldReturn = previousShouldReturn;
     }
+    */
+
+void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wstring>& passedArgs) {
+    // 1. EVALUĂM ARGUMENTELE ÎN CONTEXTUL APELANTULUI
+    // Facem asta PRIMA DATĂ, cât timp m_callStack.back() este încă vechiul context.
+    std::map<std::wstring, vData> evaluatedParams;
+
+    for (size_t i = 0; i < proc.params.size(); ++i) {
+        std::wstring pName = cleanVariableName(proc.params[i]);
+        if (i < passedArgs.size()) {
+            // Evaluarea se face în contextul de dinainte de apel
+            evaluatedParams[pName] = evaluateExpression(passedArgs[i]);
+        }
+        else {
+            evaluatedParams[pName] = vData{ std::monostate{} };
+        }
+    }
+
+    // 2. CONSTRUIM FRAME-UL NOU
+    StackFrame frame;
+    frame.functionName = proc.name.empty() ? L"anonymous_proc" : proc.name;
+    frame.localVariables = std::move(evaluatedParams); // Mutăm argumentele evaluate aici
+
+    // 3. PUSH FRAME
+    m_callStack.push_back(std::move(frame));
+
+    // Salvare stare return
+    bool previousShouldReturn = m_shouldReturn;
+    m_shouldReturn = false;
+
+    // 4. EXECUȚIE CORP PROCEDURĂ
+    for (const auto& line : proc.body) {
+        if (m_shouldReturn ) break;
+        execute(line);
+    }
+
+    // 5. POP FRAME
+    if (!m_callStack.empty()) {
+        m_callStack.pop_back();
+    }
+
+    m_shouldReturn = previousShouldReturn;
+}
 
     /*
   void vOliEngine::handlePluginCommand(const ShellCommand& sc) {

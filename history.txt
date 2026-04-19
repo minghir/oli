@@ -150,3 +150,2657 @@ endwhile
 ---
 echo "Gata!"
 ---
+run "tests/test_while.oli"
+---
+unset all ; cls
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort $numbers
+---
+set $arr = $$array
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+@numbers = $arr
+---
+dm
+---
+unset all
+---
+set $y = 0
+---
+while $y < 2 do
+set $x = 0
+echo "Loop Exterior Y: " + $y
+while $x < 3 do
+echo "  Loop Interior X: " + $x
+set $x = $x + 1
+endwhile
+set $y = $y + 1
+endwhile
+---
+echo "Gata!"
+---
+dm
+---
+unset all ; cls
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort $numbers
+---
+set $arr = $$array
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+@numbers = $arr
+---
+dm
+---
+sort numbers
+---
+set $arr = $$array
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+@numbers = $arr
+---
+sort $numbers
+---
+set $arr = $$array
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+@numbers = $arr
+---
+set $numbers = [4, 2, 77, 3, 1]
+---
+sort_fixed numbers
+---
+set $n = COUNT_ARR($$array_name)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = 0
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+
+if $numbers[$i] > $numbers[$j] then
+set $temp = $numbers[$i]
+set $numbers[$i] = $numbers[$j]
+set $numbers[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+set $temp = $numbers[$i] set $numbers[$i] = $numbers[$j] set $numbers[$j] = $temp
+---
+set $temp = $numbers[$i] set $numbers[$i] = $numbers[$j] set $numbers[$j] = $temp
+---
+set $temp = $numbers[$i] set $numbers[$i] = $numbers[$j] set $numbers[$j] = $temp
+---
+set $temp = $numbers[$i] set $numbers[$i] = $numbers[$j] set $numbers[$j] = $temp
+---
+set $temp = $numbers[$i] set $numbers[$i] = $numbers[$j] set $numbers[$j] = $temp
+---
+set $temp = $numbers[$i] set $numbers[$i] = $numbers[$j] set $numbers[$j] = $temp
+---
+set $temp = $numbers[$i] set $numbers[$i] = $numbers[$j] set $numbers[$j] = $temp
+---
+dm
+---
+sort_fixed $numbers
+---
+set $n = COUNT_ARR($$array_name)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = 0
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+
+if $numbers[$i] > $numbers[$j] then
+set $temp = $numbers[$i]
+set $numbers[$i] = $numbers[$j]
+set $numbers[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+set $temp = $numbers[$i] set $numbers[$i] = $numbers[$j] set $numbers[$j] = $temp
+---
+set $temp = $numbers[$i] set $numbers[$i] = $numbers[$j] set $numbers[$j] = $temp
+---
+set $temp = $numbers[$i] set $numbers[$i] = $numbers[$j] set $numbers[$j] = $temp
+---
+set $temp = $numbers[$i] set $numbers[$i] = $numbers[$j] set $numbers[$j] = $temp
+---
+set $temp = $numbers[$i] set $numbers[$i] = $numbers[$j] set $numbers[$j] = $temp
+---
+set $temp = $numbers[$i] set $numbers[$i] = $numbers[$j] set $numbers[$j] = $temp
+---
+set $temp = $numbers[$i] set $numbers[$i] = $numbers[$j] set $numbers[$j] = $temp
+---
+dm
+---
+unset all
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort numbers
+---
+set $arr = $$array
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+dm
+---
+unset all
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort $numbers
+---
+set $arr = $$array
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+dm
+---
+unset all
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort $numbers
+---
+set $arr = $$array
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+dm
+---
+unset all
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort $numbers
+---
+set $arr = $$array
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo "Dupa sort:" $val endcycle
+---
+echo "Dupa sort:" $val
+---
+echo "Dupa sort:" $val
+---
+echo "Dupa sort:" $val
+---
+echo "Dupa sort:" $val
+---
+echo "Dupa sort:" $val
+---
+echo "Dupa sort:" $val
+---
+echo "Dupa sort:" $val
+---
+echo "Dupa sort:" $val
+---
+echo "Dupa sort:" $val
+---
+echo "Dupa sort:" $val
+---
+echo "Dupa sort:" $val
+---
+echo "Dupa sort:" $val
+---
+dm
+---
+unset all
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort $numbers
+---
+set $arr = $$array
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo "Dupa sort:" + $val endcycle
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+dm
+---
+set $test = [10, 20, 30]
+---
+echo $test
+---
+set $test[1] = 99
+---
+echo $test
+---
+unset all
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort $numbers
+---
+set $arr = $$array
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+echo "Voi sorta un vector cu:" + $n + "elemente."
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo "Dupa sort:" + $val endcycle
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+dm
+---
+unset all
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort numbers
+---
+set $arr = $$array
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+echo "Voi sorta un vector cu:" + $n + "elemente."
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo "Dupa sort:" + $val endcycle
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+unset all
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort numbers
+---
+set $arr = @$array
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+echo "Voi sorta un vector cu:" + $n + "elemente."
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo "Dupa sort:" + $val endcycle
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+dm
+---
+unset all
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort numbers
+---
+//set $arr = $$array
+---
+set $arr = @numbers
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+echo "Voi sorta un vector cu:" + $n + "elemente."
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo "Dupa sort:" + $val endcycle
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+dm
+---
+unset all
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort numbers
+---
+set $arr = @numbers
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+echo "Voi sorta un vector cu:" + $n + "elemente."
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo "Dupa sort:" + $val endcycle
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+dm
+---
+unset all
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort numbers
+---
+set $arr = @$numbers
+---
+set $i=0
+---
+set $j=0
+---
+set $n = COUNT_ARR($arr)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+echo "Voi sorta un vector cu:" + $n + "elemente."
+---
+while $i < $n do
+set $j = $i + 1
+while $j < $n do
+if $arr[$i] > $arr[$j] then
+echo  "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j]
+set $temp = $arr[$i]
+set $arr[$i] = $arr[$j]
+set $arr[$j] = $temp
+endif
+set $j = $j + 1
+endwhile
+set $i = $i + 1
+endwhile
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+echo "Am comparat :" + $arr[$i] +" cu: "+ $arr[$j] set $temp = $arr[$i] set $arr[$i] = $arr[$j] set $arr[$j] = $temp
+---
+cycle $arr as val do echo "Dupa sort:" + $val endcycle
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+dm
+---
+unset all
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+sort numbers
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+echo "Dupa sort:" + $val
+---
+dm
+---
+run "tests\sort_string.oli"
+---
+unset all; cls
+---
+set $test=["unu","doi","trei","patru"]
+---
+set $res = SORT_STRINGS($test)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+cycle $res as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+unset all; cls
+---
+set $test=["unu","doi","trei","patru"]
+---
+set $res = SORT_STRINGS($test)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+cycle $res as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+unset all;cls
+---
+set $var = "test2"
+---
+$var()("MERGE")
+---
+set $f = "double"
+---
+set $val = 10
+---
+echo $f($f($val))
+---
+set $x = FACT(5) + FACT(3)
+---
+echo $x
+---
+set $a = "mimi"
+---
+test()
+---
+dm
+---
+test3()
+---
+dm
+---
+unset all; cls
+---
+set $test=["unu","doi","trei","patru"]
+---
+set $res = SORT_STRINGS($test)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+cycle $res as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+unset all; cls
+---
+set $test=["unu","doi","trei","patru"]
+---
+set $res = SORT_STRINGS($test)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+echo "in func:" + $val
+---
+echo "in func:" + $val
+---
+echo "in func:" + $val
+---
+echo "in func:" + $val
+---
+cycle $res as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+unset all; cls
+---
+set $test=["unu","doi","trei","patru"]
+---
+set $res = SORT_STRINGS($test)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+echo "in func:" + $val
+---
+echo "in func:" + $val
+---
+echo "in func:" + $val
+---
+echo "in func:" + $val
+---
+cycle $res as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+unset all; cls
+---
+set $test=["unu","doi","trei","patru"]
+---
+set $res = SORT_STRINGS($test)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+echo "in func:" + $val
+---
+echo "in func:" + $val
+---
+echo "in func:" + $val
+---
+echo "in func:" + $val
+---
+cycle $res as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+unset all
+---
+set $target = 10
+---
+echo "Calculam Fibonacci pentru n=" + $target
+---
+set $r1 = FIBO_ITER($target)
+---
+echo "Rezultat Iterativ: " + $r1
+---
+set $r2 = FIBO_REC($target)
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+echo "Rezultat Recursiv: " + $r2
+---
+echo "Primele 10 numere din ?ir:"
+---
+set $j = 0
+---
+while $j <= 10 do
+echo "F(" + INT($j) + ") = " + INT(FIBO_ITER($j))
+set $j = $j + 1
+endwhile
+---
+return 0
+---
+return 1
+---
+plugin oli_plugin.dll
+---
+unset all
+---
+set $memo = []
+---
+set $test_global = "Original"
+---
+echo "--- Test 1: Scoping ---"
+---
+TEST_SCOPE()
+---
+echo "Valoare globala dupa apel: " + $test_global
+---
+echo ""
+---
+echo "--- Test 2: Fibonacci cu Memoization ---"
+---
+set $start = TICKS()
+---
+set $r = FIBO_MEMO(50)
+---
+unset all
+---
+set $target = 10
+---
+echo "Calculam Fibonacci pentru n=" + $target
+---
+set $r1 = FIBO_ITER($target)
+---
+echo "Rezultat Iterativ: " + $r1
+---
+set $r2 = FIBO_REC($target)
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+echo "Rezultat Recursiv: " + $r2
+---
+echo "Primele 10 numere din ?ir:"
+---
+set $j = 0
+---
+while $j <= 10 do
+echo "F(" + INT($j) + ") = " + INT(FIBO_ITER($j))
+set $j = $j + 1
+endwhile
+---
+return 0
+---
+return 1
+---
+plugin oli_plugin.dll
+---
+unset all
+---
+set $memo = []
+---
+set $test_global = "Original"
+---
+echo "--- Test 1: Scoping ---"
+---
+TEST_SCOPE()
+---
+echo "Valoare globala dupa apel: " + $test_global
+---
+echo ""
+---
+echo "--- Test 2: Fibonacci cu Memoization ---"
+---
+set $start = TICKS()
+---
+set $r = FIBO_MEMO(50)
+---
+plugin "oli_plugin.dll"
+---
+plugin "x64\Debug\oli_plugin.dll"
+---
+plugin "oli_plugin.dll"
+---

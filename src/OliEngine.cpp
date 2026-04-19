@@ -638,7 +638,7 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
     return { std::monostate{} };
 }
 */
-    /*
+    
     vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
         if (rawVar.empty()) return { std::monostate{} };
 
@@ -704,8 +704,8 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
 
         return { std::monostate{} };
     }
-    */
-
+    
+/*
 vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
     if (rawVar.empty()) return { std::monostate{} };
 
@@ -768,7 +768,7 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
 
     return { std::monostate{} };
 }
-
+*/
     void vOliEngine::printVData(const vData& data, bool debugMode) {
         if (data.isNull()) {
             std::wcout << L"~"; // Simbol pentru null/moonstate
@@ -3581,6 +3581,10 @@ void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wst
         }
 
         std::wstring dllPath = sc.args[0];
+
+        if (dllPath.size() >= 2 && dllPath.front() == L'"' && dllPath.back() == L'"') {
+            dllPath = dllPath.substr(1, dllPath.size() - 2);
+        }
 
         // 2. Încărcăm biblioteca folosind utilitarul portabil
         PortTools::LibHandle hLib = PortTools::loadDynamicLibrary(dllPath);

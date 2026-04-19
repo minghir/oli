@@ -2804,3 +2804,2295 @@ plugin "x64\Debug\oli_plugin.dll"
 ---
 plugin "oli_plugin.dll"
 ---
+plugin "d:
+---
+plugin "d:\oli_plugin.dll"
+---
+plugin "d:\oli_plugin.dll"
+---
+plugin "d:\oli_plugin.dll"
+---
+run "tests\fibonaci.oli"
+---
+unset all
+---
+set $target = 10
+---
+echo "Calculset $r1 = FIBO_ITER($target)
+---
+echo "Rezultat Iterativ: " + $r1
+---
+set $r2 = FIBO_REC($target)
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+echo "Rezultat Recursiv: " + $r2
+---
+echo "Primele 10 numere din set $j = 0
+---
+while $j <= 10 do
+echo "F(" + INT($j) + ") = " + INT(FIBO_ITER($j))
+set $j = $j + 1
+endwhile
+---
+return 0
+---
+return 1
+---
+plugin oli_plugin.dll
+---
+unset all
+---
+set $memo = []
+---
+set $test_global = "Original"
+---
+echo "--- Test 1: Scoping ---"
+---
+TEST_SCOPE()
+---
+echo "Valoare globala dupa apel: " + $test_global
+---
+echo ""
+---
+echo "--- Test 2: Fibonacci cu Memoization ---"
+---
+set $start = TICKS()
+---
+set $r = FIBO_MEMO(50)
+---
+unset all
+---
+set $target = 10
+---
+echo "Calculam Fibonacci pentru n=" + $target
+---
+set $r1 = FIBO_ITER($target)
+---
+echo "Rezultat Iterativ: " + $r1
+---
+set $r2 = FIBO_REC($target)
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+echo "Rezultat Recursiv: " + $r2
+---
+echo "Primele 10 numere din ?ir:"
+---
+set $j = 0
+---
+while $j <= 10 do
+echo "F(" + INT($j) + ") = " + INT(FIBO_ITER($j))
+set $j = $j + 1
+endwhile
+---
+return 0
+---
+return 1
+---
+plugin oli_plugin.dll
+---
+unset all
+---
+set $memo = []
+---
+set $test_global = "Original"
+---
+echo "--- Test 1: Scoping ---"
+---
+TEST_SCOPE()
+---
+echo "Valoare globala dupa apel: " + $test_global
+---
+echo ""
+---
+echo "--- Test 2: Fibonacci cu Memoization ---"
+---
+set $start = TICKS()
+---
+set $r = FIBO_MEMO(50)
+---
+run tests\pascal.oli
+---
+run "tests\pascal.oli"
+---
+plugin oli_plugin.dll
+---
+unset all
+---
+set $memo_pascal = {}
+---
+set $apeluri = 0
+---
+echo "--- Test Complex: Triunghiul lui Pascal ---"
+---
+set $start = TICKS()
+---
+set $valoare = PASCAL(10, 5)
+---
+echo "nu exista key:" + $key
+---
+echo "nu exista key:" + $key
+---
+echo "nu exista key:" + $key
+---
+echo "nu exista key:" + $key
+---
+echo "nu exista key:" + $key
+---
+return 1
+---
+echo "nu exista key:" + $key
+---
+return 1
+---
+echo "nu exista key:" + $key
+---
+if $k == 2 then; echo "--- Trace la n=4, k=2 ---"; trace; endif
+---
+return 1
+---
+echo "nu exista key:" + $key
+---
+return 1
+---
+echo "nu exista key:" + $key
+---
+return 1
+---
+return 1
+---
+echo "am gasitt key:" + $key
+---
+return @memo_pascal[$key]
+---
+echo "am gasitt key:" + $key
+---
+return @memo_pascal[$key]
+---
+echo "am gasitt key:" + $key
+---
+return @memo_pascal[$key]
+---
+echo "am gasitt key:" + $key
+---
+return @memo_pascal[$key]
+---
+set $end = TICKS()
+---
+set $durata = $end - $start
+---
+echo ""
+---
+echo "Rezultat C(10, 5) = " + $valoare
+---
+echo "Total apeluri recursive: " + $apeluri
+---
+echo "Timp execuecho ""
+---
+echo "--- Verificare Memorie ---"
+---
+dm
+---
+run "tests\fibonaci.oli"
+---
+unset all
+---
+set $target = 10
+---
+echo "Calculset $r1 = FIBO_ITER($target)
+---
+echo "Rezultat Iterativ: " + $r1
+---
+set $r2 = FIBO_REC($target)
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+echo "Rezultat Recursiv: " + $r2
+---
+echo "Primele 10 numere din set $j = 0
+---
+while $j <= 10 do
+echo "F(" + INT($j) + ") = " + INT(FIBO_ITER($j))
+set $j = $j + 1
+endwhile
+---
+return 0
+---
+return 1
+---
+plugin oli_plugin.dll
+---
+unset all
+---
+set $memo = []
+---
+set $test_global = "Original"
+---
+echo "--- Test 1: Scoping ---"
+---
+TEST_SCOPE()
+---
+echo "Valoare globala dupa apel: " + $test_global
+---
+echo ""
+---
+echo "--- Test 2: Fibonacci cu Memoization ---"
+---
+set $start = TICKS()
+---
+set $r = FIBO_MEMO(50)
+---
+set $test_global = "Original"
+---
+echo "--- Test 1: Scoping ---"
+---
+TEST_SCOPE()
+---
+echo "Valoare globala dupa apel: " + $test_global
+---
+plugin "x64/Debug/oli_plugin.dll"
+---
+unset all
+---
+set $target = 10
+---
+echo "Calculam Fibonacci pentru n=" + $target
+---
+set $r1 = FIBO_ITER($target)
+---
+echo "Rezultat Iterativ: " + $r1
+---
+set $r2 = FIBO_REC($target)
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+echo "Rezultat Recursiv: " + $r2
+---
+echo "Primele 10 numere din ?ir:"
+---
+set $j = 0
+---
+while $j <= 10 do
+echo "F(" + INT($j) + ") = " + INT(FIBO_ITER($j))
+set $j = $j + 1
+endwhile
+---
+return 0
+---
+return 1
+---
+plugin oli_plugin.dll
+---
+unset all
+---
+set $memo = []
+---
+set $test_global = "Original"
+---
+echo "--- Test 1: Scoping ---"
+---
+TEST_SCOPE()
+---
+echo "Valoare globala dupa apel: " + $test_global
+---
+echo ""
+---
+echo "--- Test 2: Fibonacci cu Memoization ---"
+---
+set $start = TICKS()
+---
+set $r = FIBO_MEMO(50)
+---
+unset all
+---
+set $target = 10
+---
+echo "Calculam Fibonacci pentru n=" + $target
+---
+set $r1 = FIBO_ITER($target)
+---
+echo "Rezultat Iterativ: " + $r1
+---
+set $r2 = FIBO_REC($target)
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+echo "Rezultat Recursiv: " + $r2
+---
+echo "Primele 10 numere din ?ir:"
+---
+set $j = 0
+---
+while $j <= 10 do
+echo "F(" + INT($j) + ") = " + INT(FIBO_ITER($j))
+set $j = $j + 1
+endwhile
+---
+return 0
+---
+return 1
+---
+plugin oli_plugin.dll
+---
+unset all
+---
+set $memo = []
+---
+set $test_global = "Original"
+---
+echo "--- Test 1: Scoping ---"
+---
+TEST_SCOPE()
+---
+echo "Valoare globala dupa apel: " + $test_global
+---
+echo ""
+---
+echo "--- Test 2: Fibonacci cu Memoization ---"
+---
+set $start = TICKS()
+---
+set $r = FIBO_MEMO(50)
+---
+if $n == 0 then; endif
+---
+return $n
+---
+if $n == 0 then; endif
+---
+return $n
+---
+if $n == 0 then; endif
+---
+return $n
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+set $end = TICKS()
+---
+set $durata = $end - $start
+---
+echo "F(50) = " + $r
+---
+echo "Timp: " + $durata + " ms"
+---
+echo ""
+---
+echo "--- Test 3: Starea Cache-ului ---"
+---
+dm
+---
+unset all
+---
+set $target = 10
+---
+echo "Calculam Fibonacci pentru n=" + $target
+---
+set $r1 = FIBO_ITER($target)
+---
+echo "Rezultat Iterativ: " + $r1
+---
+set $r2 = FIBO_REC($target)
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+echo "Rezultat Recursiv: " + $r2
+---
+echo "Primele 10 numere din ?ir:"
+---
+set $j = 0
+---
+while $j <= 10 do
+echo "F(" + INT($j) + ") = " + INT(FIBO_ITER($j))
+set $j = $j + 1
+endwhile
+---
+return 0
+---
+return 1
+---
+plugin oli_plugin.dll
+---
+unset all
+---
+set $memo = []
+---
+set $test_global = "Original"
+---
+echo "--- Test 1: Scoping ---"
+---
+TEST_SCOPE()
+---
+echo "Valoare globala dupa apel: " + $test_global
+---
+echo ""
+---
+echo "--- Test 2: Fibonacci cu Memoization ---"
+---
+set $start = TICKS()
+---
+set $r = FIBO_MEMO(50)
+---
+run "tests/sort_string.oli"
+---
+unset all; cls
+---
+set $test=["unu","doi","trei","patru"]
+---
+set $res = SORT_STRINGS($test)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+cycle $res as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+run "tests/test_sort.oli"
+---
+run "tests/factorial.oli"
+---
+/set n = 1
+---
+/set fact = 1
+---
+/while $n <= 10 /do 
+/set fact = $fact * $n 
+/set n = $n + 1 
+/endwhile
+---
+/echo "Gata! Rezultatul este: " + $fact
+---
+unset all;cls
+---
+set $var = "test2"
+---
+$var()("MERGE")
+---
+set $f = "double"
+---
+set $val = 10
+---
+echo $f($f($val))
+---
+set $x = FACT(5) + FACT(3)
+---
+echo $x
+---
+set $a = "mimi"
+---
+test()
+---
+dm
+---
+test3()
+---
+dm
+---
+unset all;cls
+---
+set $var = "test2"
+---
+$var()("MERGE")
+---
+set $f = "double"
+---
+set $val = 10
+---
+echo $f($f($val))
+---
+set $x = FACT(5) + FACT(3)
+---
+echo $x
+---
+set $a = "mimi"
+---
+test()
+---
+dm
+---
+test3()
+---
+dm
+---
+unset all;cls
+---
+set $var = "test2"
+---
+$var()("MERGE")
+---
+set $f = "double"
+---
+set $val = 10
+---
+echo $f($f($val))
+---
+set $x = FACT(5) + FACT(3)
+---
+return 1
+---
+return 1
+---
+echo $x
+---
+set $a = "mimi"
+---
+test()
+---
+dm
+---
+test3()
+---
+unset all;cls
+---
+set $var = "test2"
+---
+$var()("MERGE")
+---
+test("mimi")
+---
+unset all;cls
+---
+set $var = "test2"
+---
+$var()("MERGE")
+---
+run "tests\fibonaci.oli"
+---
+unset all
+---
+set $target = 10
+---
+echo "Calculset $r1 = FIBO_ITER($target)
+---
+echo "Rezultat Iterativ: " + $r1
+---
+set $r2 = FIBO_REC($target)
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+return 1
+---
+return 1
+---
+return 0
+---
+echo "Rezultat Recursiv: " + $r2
+---
+echo "Primele 10 numere din set $j = 0
+---
+while $j <= 10 do
+echo "F(" + INT($j) + ") = " + INT(FIBO_ITER($j))
+set $j = $j + 1
+endwhile
+---
+return 0
+---
+return 1
+---
+plugin oli_plugin.dll
+---
+unset all
+---
+set $memo = []
+---
+set $test_global = "Original"
+---
+echo "--- Test 1: Scoping ---"
+---
+TEST_SCOPE()
+---
+echo "Valoare globala dupa apel: " + $test_global
+---
+echo ""
+---
+echo "--- Test 2: Fibonacci cu Memoization ---"
+---
+set $start = TICKS()
+---
+set $r = FIBO_MEMO(50)
+---
+if $n == 0 then; endif
+---
+return $n
+---
+if $n == 0 then; endif
+---
+return $n
+---
+if $n == 0 then; endif
+---
+return $n
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+set $end = TICKS()
+---
+set $durata = $end - $start
+---
+echo "F(50) = " + $r
+---
+echo "Timp: " + $durata + " ms"
+---
+echo ""
+---
+echo "--- Test 3: Starea Cache-ului ---"
+---
+dm
+---
+run "tests\test_sort.oli"
+---
+run "tests\sortare.oli"
+---
+unset all
+---
+set $numbers=[4,2,77,3,1,65,44,100,31,99,72,2378]
+---
+set $numbers2=[14,22,717,3,1,65,4,10,3,99,72,2378]
+---
+set $arr_test = SORT_FN($numbers)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+echo "Print sortare cu functie"
+---
+cycle $arr_test as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+run "tests\sort_string.oli"
+---
+unset all; cls
+---
+set $test=["unu","doi","trei","patru"]
+---
+set $res = SORT_STRINGS($test)
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $i = $i + 1
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+set $temp = $arr[$i]
+---
+set $arr[$i] = $arr[$j]
+---
+set $arr[$j] = $temp
+---
+cycle $res as val do echo $val endcycle
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---
+echo $val
+---

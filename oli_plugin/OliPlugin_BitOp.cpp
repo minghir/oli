@@ -3,6 +3,7 @@
 #include <map>
 #include <functional>
 #include <bitset>
+#include <variant>
 #include <bit> // Pentru std::popcount în C++20
 
 // Helper: Conversie sigură vData -> long long pentru operații pe biți

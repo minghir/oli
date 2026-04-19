@@ -15,10 +15,15 @@ func double it
   return $it * 2
 endfunc
 
+func fact n
+  if $n <= 1 then return 1 endif
+  return $n * fact($n - 1)
+endfunc
+
+
 set $f = "double"
 set $val = 10
 echo $f($f($val))
-
 
 set $x = FACT(5) + FACT(3)
 echo $x

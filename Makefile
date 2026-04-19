@@ -11,19 +11,22 @@ TARGET = oli
 SRCS = $(wildcard $(SRC_DIR)/*.cpp)
 OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
-all: $(TARGET)
+# Compilează plugin-ul
+plugin:
+    $(MAKE) -C oli_plugin
 
-# --- CORECTAT AICI ---
-# Am adăugat $(LDFLAGS) la finalul comenzii. 
-# Ordinea $^ (obiectele) înainte de $(LDFLAGS) este critică.
+# Compilează executabilul + plugin-ul
+all: $(TARGET) plugin
+
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+    $(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
-	@mkdir -p $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+    @mkdir -p $(BUILD_DIR)
+    $(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET)
+    rm -rf $(BUILD_DIR) $(TARGET)
+    $(MAKE) -C oli_plugin clean
 
-.PHONY: all clean
+.PHONY: all clean plugin

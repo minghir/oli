@@ -2852,7 +2852,7 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         }
         return { std::monostate{} };
     }
-
+    /*
     vData vOliEngine::handleSysFunc(const std::vector<vData>& args) {
         if (args.empty()) return { L"" };
         
@@ -2925,6 +2925,134 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         }
         else {
             LOG_SUCCESS(L"Command finished.");
+        }
+    }
+    */
+    vData vOliEngine::handleSysFunc(const std::vector<vData>& args) {
+        if (args.empty()) return { L"" };
+
+        // 1. Pregătim comanda (args[0] este string-ul cu comanda)
+        std::wstring command = vDataToWString(args[0]);
+
+        // Curățăm ghilimelele dacă e un string literal
+        if (command.size() >= 2 && command.front() == L'"' && command.back() == L'"') {
+            command = command.substr(1, command.size() - 2);
+        }
+
+        // 2. Executăm și capturăm
+        std::wstring output;
+#ifdef _WIN32
+        FILE* pipe = _wpopen(command.c_str(), L"r");
+        if (!pipe) return { L"ERROR" };
+
+        wchar_t buffer[128];
+        while (fgetws(buffer, 128, pipe)) {
+            output += buffer;
+        }
+
+        _pclose(pipe);
+#else
+        // ---------------- LINUX ----------------
+    // Convertim comanda la UTF-8
+        std::string utf8cmd = wstring_to_utf8(command);
+
+        FILE* pipe = popen(utf8cmd.c_str(), "r");
+        if (!pipe) return { L"ERROR" };
+
+        char buffer[256];
+        std::string utf8out;
+
+        while (fgets(buffer, sizeof(buffer), pipe)) {
+            utf8out += buffer;
+        }
+
+        pclose(pipe);
+
+        // Convertim output-ul UTF-8 → UTF-16
+        output = utf8_to_wstring(utf8out);
+#endif
+        // 3. Returnăm rezultatul ca STRING în Oli
+        //return vData(L"\"" + output + L"\"");
+        return vData(output);
+    }
+
+
+    void vOliEngine::handleSysCommand(const ShellCommand& sc) {
+        if (sc.args.empty()) {
+            LOG_ERROR(L"Usage: /sys <system_command>");
+            return;
+        }
+
+        // 1. Construim comanda
+        std::wstring fullCommand;
+        for (const auto& arg : sc.args) fullCommand += arg + L" ";
+
+        // Eliminăm spațiul de la final adăugat de loop
+        if (!fullCommand.empty()) fullCommand.pop_back();
+
+        //fullCommand = substituteVariables(fullCommand, m_variables);
+
+        // Curățare ghilimele
+        if (fullCommand.size() >= 2 && fullCommand.front() == L'"' && fullCommand.back() == L'"') {
+            fullCommand = fullCommand.substr(1, fullCommand.size() - 2);
+        }
+
+        LOG_INFO(L"Executing: " + fullCommand);
+
+        // --- CRITIC: Golim bufferele înainte de a preda controlul pipe-ului ---
+        std::wcout.flush();
+        fflush(stdout);
+#ifdef _WIN32
+        // 2. Executăm. Folosim "r" și setăm modul pipe-ului manual dacă e nevoie.
+        // Pe unele versiuni de Windows, "rt" (read text) poate fi problematic cu _O_U16TEXT
+        FILE* pipe = _wpopen(fullCommand.c_str(), L"r");
+
+        if (!pipe) {
+            LOG_ERROR(L"Could not execute system command.");
+            return;
+        }
+
+        wchar_t buffer[128];
+        // Folosim fgetws pentru a citi Unicode
+        while (fgetws(buffer, 128, pipe)) {
+            std::wcout << buffer;
+            std::wcout.flush(); // Afișăm în timp real, să nu pară blocat
+        }
+
+        int returnCode = _pclose(pipe);
+#else
+        // ---------------- LINUX ----------------
+    // Convertim comanda wide → UTF-8
+        std::string utf8cmd = wstring_to_utf8(fullCommand);
+
+        FILE* pipe = popen(utf8cmd.c_str(), "r");
+        if (!pipe) {
+            LOG_ERROR(L"Could not execute system command.");
+            return;
+        }
+
+        char buffer[256];
+        std::string utf8out;
+
+        while (fgets(buffer, sizeof(buffer), pipe)) {
+            utf8out = buffer;
+
+            // Convertim linia la wide
+            std::wstring wline = utf8_to_wstring(utf8out);
+
+            std::wcout << wline;
+            std::wcout.flush();
+        }
+
+        int returnCode = pclose(pipe);
+#endif
+        if (returnCode == 0) {
+            LOG_SUCCESS(L"Command finished.");
+            return;
+        }
+        else {
+            LOG_ERROR(L"Command failed with code: " + std::to_wstring(returnCode));
+            return;
         }
     }
 

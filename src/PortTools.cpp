@@ -68,4 +68,45 @@ namespace PortTools {
 #endif
     }
 
+    FILE* openPipe(const std::wstring& command, const wchar_t* mode) {
+#ifdef _WIN32
+        // Windows suportă nativ varianta wide
+        return _wpopen(command.c_str(), mode);
+#else
+        // Linux are nevoie de comanda în UTF-8 și modul în char*
+        std::string cmdA = wstring_to_utf8(command);
+        std::string modeA = (mode[0] == L'r') ? "r" : "w";
+        return popen(cmdA.c_str(), modeA.c_str());
+#endif
+    }
+
+    int closePipe(FILE* pipe) {
+#ifdef _WIN32
+        return _pclose(pipe);
+#else
+        return pclose(pipe);
+#endif
+    }
+
+
+    bool readLineFromPipe(FILE* pipe, std::wstring& outLine) {
+        if (!pipe) return false;
+        outLine.clear();
+
+#ifdef _WIN32
+        wchar_t buffer[256];
+        if (fgetws(buffer, static_cast<int>(std::size(buffer)), pipe)) {
+            outLine = buffer;
+            return true;
+        }
+#else
+        char buffer[512];
+        if (fgets(buffer, sizeof(buffer), pipe)) {
+            // Convertim buffer-ul de bytes UTF-8 primit de la Linux în wstring
+            outLine = utf8_to_wstring(buffer);
+            return true;
+        }
+#endif
+        return false;
+    }
 } // namespace PortTools

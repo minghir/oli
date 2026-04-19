@@ -50,3 +50,11 @@ cls
 ---
 sys dir
 ---
+dir
+---
+sys dir
+---
+sys ../
+---
+sys "../"
+---

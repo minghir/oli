@@ -2883,6 +2883,7 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         return { std::monostate{} };
     }
 
+    /*
     vData vOliEngine::handleSysFunc(const std::vector<vData>& args) {
         if (args.empty()) return { L"" };
         
@@ -2910,8 +2911,33 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         //return vData(L"\"" + output + L"\"");
         return vData( output );
     }
+    */
 
+    vData vOliEngine::handleSysFunc(const std::vector<vData>& args) {
+        if (args.empty()) return { L"" };
+        std::wstring command = vDataToWString(args[0]);
 
+        // Curățare ghilimele...
+        if (command.size() >= 2 && command.front() == L'"' && command.back() == L'"') {
+            command = command.substr(1, command.size() - 2);
+        }
+
+        std::wstring output;
+        std::wstring line;
+        FILE* pipe = PortTools::openPipe(command, L"r");
+
+        if (!pipe) return { L"ERROR" };
+
+        // Citire abstractizată - zero platform-specific code aici
+        while (PortTools::readLineFromPipe(pipe, line)) {
+            output += line;
+        }
+
+        PortTools::closePipe(pipe);
+        return vData(output);
+    }
+
+    /*
     void vOliEngine::handleSysCommand(const ShellCommand& sc) {
         if (sc.args.empty()) {
             LOG_ERROR(L"Usage: /sys <system_command>");
@@ -2949,6 +2975,59 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         }
 
         int returnCode = _pclose(pipe);
+
+        if (returnCode != 0) {
+            LOG_ERROR(L"Command failed with code: " + std::to_wstring(returnCode));
+        }
+        else {
+            LOG_SUCCESS(L"Command finished.");
+        }
+    }
+    */
+
+    void vOliEngine::handleSysCommand(const ShellCommand& sc) {
+        // 1. Validare argumente
+        if (sc.args.empty()) {
+            LOG_ERROR(L"Usage: sys <system_command>");
+            return;
+        }
+
+        // 2. Reconstruim comanda completă din argumente
+        std::wstring fullCommand;
+        for (size_t i = 0; i < sc.args.size(); ++i) {
+            fullCommand += sc.args[i] + (i < sc.args.size() - 1 ? L" " : L"");
+        }
+
+        // 3. Substituim variabilele (folosind noua logică internă de resolve)
+        fullCommand = substituteVariables(fullCommand);
+
+        // 4. Curățăm ghilimelele exterioare dacă utilizatorul a trimis comanda ca string literal
+        if (fullCommand.size() >= 2 && fullCommand.front() == L'"' && fullCommand.back() == L'"') {
+            fullCommand = fullCommand.substr(1, fullCommand.size() - 2);
+        }
+
+        LOG_INFO(L"Executing: " + fullCommand);
+
+        // 5. Pregătim stream-urile de output pentru a evita intercalarea mesajelor
+        std::wcout.flush();
+        fflush(stdout);
+
+        // 6. Deschidem pipe-ul folosind utilitarul portabil
+        FILE* pipe = PortTools::openPipe(fullCommand, L"r");
+        if (!pipe) {
+            LOG_ERROR(L"Could not execute system command.");
+            return;
+        }
+
+        // 7. Citim și afișăm output-ul în timp real
+        std::wstring line;
+        while (PortTools::readLineFromPipe(pipe, line)) {
+            std::wcout << line;
+            std::wcout.flush(); // Asigură afișarea imediată (real-time feel)
+        }
+
+        // 8. Închidem pipe-ul și verificăm codul de retur
+        int returnCode = PortTools::closePipe(pipe);
 
         if (returnCode != 0) {
             LOG_ERROR(L"Command failed with code: " + std::to_wstring(returnCode));

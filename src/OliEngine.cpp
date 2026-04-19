@@ -3483,11 +3483,11 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         m_shouldReturn = previousShouldReturn;
     }
 
-
+    /*
   void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
       // 1. Verificăm dacă avem calea către DLL
       if (sc.args.empty()) {
-          LOG_ERROR(L"Usage: /plugin \"path/to/plugin.dll\"");
+          LOG_ERROR(L"Usage: plugin \"path/to/plugin.dll\"");
           return;
       }
 
@@ -3520,6 +3520,42 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
           FreeLibrary(hLib); // Eliberăm memoria dacă plugin-ul nu este valid
       }
   }
+  */
+
+    void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
+        // 1. Verificăm argumentele
+        if (sc.args.empty()) {
+            LOG_ERROR(L"Usage: plugin \"path/to/plugin\"");
+            return;
+        }
+
+        std::wstring dllPath = sc.args[0];
+
+        // 2. Încărcăm biblioteca folosind utilitarul portabil
+        PortTools::LibHandle hLib = PortTools::loadDynamicLibrary(dllPath);
+
+        if (!hLib) {
+            LOG_ERROR(L"Could not load plugin: " + dllPath + L" (Error: " + PortTools::getLastErrorString() + L")");
+            return;
+        }
+
+        // 3. Definim tipul funcției pe care o căutăm
+        typedef void (*RegisterFunc)(std::map<std::wstring, OliFunctionHandler>&);
+
+        // 4. Căutăm simbolul exportat
+        RegisterFunc regFunc = (RegisterFunc)PortTools::getFunctionSymbol(hLib, "LoadOliPlugin");
+
+        if (regFunc) {
+            // 5. Executăm înregistrarea
+            regFunc(this->m_functionsHandlers);
+            LOG_SUCCESS(L"Plugin loaded: " + dllPath);
+            LOG_SUCCESS(L"          Native functions injected into Oli memory.");
+        }
+        else {
+            LOG_ERROR(L"Invalid Plugin: Export 'LoadOliPlugin' not found in " + dllPath);
+            PortTools::freeDynamicLibrary(hLib);
+        }
+    }
 
   vData vOliEngine::handleEvalFunc(const std::vector<vData>& args) {
       if (args.empty()) return vData{ 0.0 };

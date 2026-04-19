@@ -58,3 +58,11 @@ sys ../
 ---
 sys "../"
 ---
+plugin oli_plugin.dll
+---
+plugin "oli_plugin.dll"
+---
+plugin D:\Programming\vreport\tests\oli\oli_plugin.dll
+---
+plugin "D:\Programming\vreport\tests\oli\oli_plugin.dll"
+---

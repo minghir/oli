@@ -6,6 +6,7 @@
 #else
 #include <iconv.h>
 #include <errno.h>
+#include <dlfcn.h>
 #endif
 
 namespace PortTools {
@@ -108,5 +109,41 @@ namespace PortTools {
         }
 #endif
         return false;
+    }
+
+    LibHandle loadDynamicLibrary(const std::wstring& path) {
+#ifdef _WIN32
+        return (LibHandle)LoadLibraryW(path.c_str());
+#else
+        // Pe Linux, dlopen are nevoie de calea UTF-8
+        return dlopen(wstring_to_utf8(path).c_str(), RTLD_LAZY);
+#endif
+    }
+
+    void* getFunctionSymbol(LibHandle handle, const std::string& symbolName) {
+#ifdef _WIN32
+        return (void*)GetProcAddress((HMODULE)handle, symbolName.c_str());
+#else
+        return dlsym(handle, symbolName.c_str());
+#endif
+    }
+
+    void freeDynamicLibrary(LibHandle handle) {
+        if (!handle) return;
+#ifdef _WIN32
+        FreeLibrary((HMODULE)handle);
+#else
+        dlclose(handle);
+#endif
+    }
+
+    std::wstring getLastErrorString() {
+#ifdef _WIN32
+        DWORD err = GetLastError();
+        return std::to_wstring(err);
+#else
+        char* err = dlerror();
+        return err ? utf8_to_wstring(err) : L"Unknown error";
+#endif
     }
 } // namespace PortTools

@@ -5,6 +5,27 @@
 #include <vector>
 
 namespace PortTools {
+
+    // Definim un tip generic pentru handle-ul librăriei
+#ifdef _WIN32
+    using LibHandle = void*; // HMODULE este în esență void*
+#else
+    using LibHandle = void*;
+#endif
+
+    // Încarcă o bibliotecă dinamică (.dll sau .so)
+    LibHandle loadDynamicLibrary(const std::wstring& path);
+
+    // Caută o funcție în bibliotecă
+    void* getFunctionSymbol(LibHandle handle, const std::string& symbolName);
+
+    // Eliberează biblioteca din memorie
+    void freeDynamicLibrary(LibHandle handle);
+
+    // Returnează ultima eroare de sistem sub formă de text
+    std::wstring getLastErrorString();
+
+
     // Conversii fundamentale
     std::string wstring_to_utf8(const std::wstring& wstr);
     std::wstring utf8_to_wstring(const std::string& str);

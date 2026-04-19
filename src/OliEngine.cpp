@@ -7,6 +7,7 @@
 #include <random>
 #include <vector>
 #include <string>
+#include <cstring>
 
 void vOliEngine::execute(const std::wstring& line) {
     // 1. Curățare

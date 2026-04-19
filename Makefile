@@ -11,7 +11,6 @@ TARGET = oli
 SRCS = $(wildcard $(SRC_DIR)/*.cpp)
 OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
-
 # Compilează plugin-ul
 plugin:
     $(MAKE) -C oli_plugin

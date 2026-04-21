@@ -64,11 +64,7 @@ echo "Fibonacci(50) Result: " + FIBO_MEMO(50)
 🏗️ Project Structure
 src/ - Core engine logic (vOliEngine, Parser, AST).
 
-include/ - Header files and interface definitions.
-
 oli_plugin/ - External plugin examples for command extensions.
-
-build/ - Compiled object files.
 
 🚀 Roadmap
 [ ] BigInt Support: Prevent integer overflow for numbers exceeding 64-bit limits.

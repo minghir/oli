@@ -123,5 +123,6 @@
     <None Include="tests\test_while.oli">
       <Filter>tests</Filter>
     </None>
+    <None Include="README.md" />
   </ItemGroup>
 </Project>

@@ -54,7 +54,7 @@ func FIBO_MEMO n
     set $res = FIBO_MEMO($n - 1) + FIBO_MEMO($n - 2)
     
     # Store in global cache
-    set @memo[$n] = $res
+    set global @memo[$n] = $res
     
     return $res
 endfunc

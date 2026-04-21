@@ -9547,3 +9547,4109 @@ set $var = "test2"
 ---
 $var()("MERGE")
 ---
+set $memo = []
+---
+echo "Fibonacci(50) Result: " + FIBO_MEMO(50)
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return $n
+---
+set $memo = []
+---
+echo "Fibonacci(50) Result: " + FIBO_MEMO(50)
+---
+return $n
+---
+return $n
+---
+return $n
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+return @memo[$n]
+---
+dm
+---

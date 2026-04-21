@@ -153,6 +153,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Makefile" />
+    <None Include="README.md" />
     <None Include="tests\atac_test.oli" />
     <None Include="tests\factorial.oli" />
     <None Include="tests\fibonaci.oli" />

@@ -223,6 +223,8 @@ private:
     
 
     void handleCycleCommand(const std::wstring& fullLine);
+    size_t findTopLevelCycleKeyword(const std::wstring& line, const std::wstring& keyword);
+
     bool executeCycleStep(const std::wstring& iterName, const vData& value, const std::vector<std::wstring>& instrs);
 
     void handleForCommand(const std::wstring& fullLine);
@@ -264,6 +266,13 @@ private:
     vData handleContainsFunc(const std::vector<vData>& args);
     vData handleEvalFunc(const std::vector<vData>& args);
     vData handleIntFunc(const std::vector<vData>& args);
+    vData handleFloatFunc(const std::vector<vData>& args);
+    vData handleStrFunc(const std::vector<vData>& args);
+    vData handleArrayFunc(const std::vector<vData>& args);
+    vData handleMapFunc(const std::vector<vData>& args);
+    vData handleSplitFunc(const std::vector<vData>& args);
+    vData handleJoinFunc(const std::vector<vData>& args);
+    vData handleTrimFunc(const std::vector<vData>& args);
     //vData handleKeysFunc(const std::vector<vData>& args);
     
 

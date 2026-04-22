@@ -1629,7 +1629,24 @@ void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newV
         m_functionsHandlers[L"INT"] = [this](const std::vector<vData>& args) -> vData {
             return this->handleIntFunc(args);
         };
+
+        m_functionsHandlers[L"FLOAT"] = [this](const std::vector<vData>& args) -> vData {
+            return this->handleFloatFunc(args);
+            };
         
+        m_functionsHandlers[L"STR"] = [this](const std::vector<vData>& args) -> vData {
+            return this->handleStrFunc(args);
+        };
+        m_functionsHandlers[L"STRING"] = m_functionsHandlers[L"STR"];
+
+        m_functionsHandlers[L"ARRAY"] = [this](const auto& args) { return handleArrayFunc(args); };
+
+        m_functionsHandlers[L"MAP"] = [this](const auto& args) { return handleMapFunc(args); };
+
+        m_functionsHandlers[L"TRIM"] = [this](const auto& args) { return handleTrimFunc(args); };
+
+        m_functionsHandlers[L"SPLIT"] = [this](const auto& args) {return this->handleSplitFunc(args); };
+        m_functionsHandlers[L"JOIN"] = [this](const auto& args) {return this->handleJoinFunc(args); };
 
     }
 
@@ -2160,7 +2177,12 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
 
             if (op == L"-") return { iL - iR };
             if (op == L"*") return { iL * iR };
-            if (op == L"%") return iR != 0 ? vData(iL % iR) : vData();
+            //if (op == L"%") return iR != 0 ? vData(iL % iR) : vData();
+            if (op == L"%") {
+                long long iL = static_cast<long long>(vDataToDouble(left));
+                long long iR = static_cast<long long>(vDataToDouble(right));
+                return iR != 0 ? vData(iL % iR) : vData();
+            }
             if (op == L"/") {
                 if (iR == 0) return vData();
                 return (iL % iR == 0) ? vData(iL / iR) : vData((double)iL / (double)iR);
@@ -3571,7 +3593,8 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
             if (instr.empty()) continue;
 
             // Executăm instrucțiunea
-            this->execute(instr);
+            //this->execute(instr);
+            this->executeInternal(instr);
 
             // 2. Verificăm semnalele de control (BREAK / CONTINUE / RETURN)
 
@@ -3613,13 +3636,13 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         std::wstring upperLine = fullLine;
         std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
 
-        // 1. Găsire Keyword-uri
+        // 1. Găsire Keyword-uri folosind noua funcție specializată
         size_t cyclePos = upperLine.find(L"CYCLE");
-        size_t posDo = findTopLevelKeyword(fullLine, L"DO", L"CYCLE");
-        size_t posEnd = findTopLevelKeyword(fullLine, L"ENDCYCLE", L"CYCLE");
+        size_t posDo = findTopLevelCycleKeyword(fullLine, L"DO");
+        size_t posEnd = findTopLevelCycleKeyword(fullLine, L"ENDCYCLE");
 
         if (posDo == std::wstring::npos || posEnd == std::wstring::npos) {
-            LOG_ERROR(L"Malformed CYCLE: Missing DO or ENDCYCLE");
+            LOG_ERROR(L"Malformed CYCLE: Missing DO or ENDCYCLE at current level");
             return;
         }
 
@@ -3642,6 +3665,10 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         // 3. Evaluare Sursă
         // evaluateExpression va folosi noul resolveVariable (Local -> Global)
         vData sourceData = evaluateExpression(sourceExpr);
+        if (sourceData.isNull()) {
+            LOG_ERROR(L"Cycle error: Source '" + sourceExpr + L"' is NULL.");
+            return;
+        }
 
         // 4. Pregătire Instrucțiuni
         size_t bodyStart = posDo + 2;
@@ -3657,7 +3684,6 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         if (sourceData.isArray()) {
             const auto& items = std::get<vDataArray>(sourceData.value);
             for (const auto& item : items) {
-                // executeCycleStep folosește setVariable (care pune iteratorul în Frame-ul local)
                 if (executeCycleStep(iteratorName, item, instructions)) break;
                 if (m_executionStatus == OliStatus::RETURN_REQUESTED) break;
             }
@@ -3665,12 +3691,21 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         else if (sourceData.isMap()) {
             const auto& mapItems = std::get<vDataMap>(sourceData.value);
             for (const auto& pair : mapItems) {
+                // Pentru MAP, returnăm cheia (pair.first) ca fiind valoarea iteratorului
                 if (executeCycleStep(iteratorName, vData{ pair.first }, instructions)) break;
                 if (m_executionStatus == OliStatus::RETURN_REQUESTED) break;
             }
         }
+        else if (sourceData.isString()) { // <--- ADAUGĂ ACEST CAZ
+            const std::wstring& str = std::get<std::wstring>(sourceData.value);
+            for (wchar_t c : str) {
+                // Trimitem fiecare caracter ca un nou vData de tip String
+                if (executeCycleStep(iteratorName, vData{ std::wstring(1, c) }, instructions)) break;
+                if (m_executionStatus == OliStatus::RETURN_REQUESTED) break;
+            }
+        }
         else {
-            LOG_ERROR(L"Cycle error: Source is not an Array or Map.");
+            LOG_ERROR(L"Cycle error: Source is not an Array, Map or String.");
         }
 
         // 7. Restaurare (Clean-up)
@@ -3688,6 +3723,62 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
             }
         }
     }
+
+
+
+    size_t vOliEngine::findTopLevelCycleKeyword(const std::wstring& line, const std::wstring& keyword) {
+        int depth = 0;
+        bool inQuotes = false;
+
+        std::wstring upperLine = line;
+        std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
+        std::wstring upperKey = keyword;
+        std::transform(upperKey.begin(), upperKey.end(), upperKey.begin(), ::towupper);
+
+        // 1. Găsim unde începe CYCLE-ul principal în acest segment de cod
+        size_t mainCyclePos = upperLine.find(L"CYCLE");
+        if (mainCyclePos == std::wstring::npos) return std::wstring::npos;
+
+        // 2. Scanăm începând de după cuvântul "CYCLE"
+        for (size_t i = mainCyclePos + 5; i < upperLine.size(); ++i) {
+            // Ignorăm conținutul dintre ghilimele
+            if (upperLine[i] == L'"' && (i == 0 || upperLine[i - 1] != L'\\')) {
+                inQuotes = !inQuotes;
+                continue;
+            }
+            if (inQuotes) continue;
+
+            // Verificăm dacă suntem la începutul unui cuvânt (delimitatori standard)
+            bool isStart = (i == 0 || iswspace(upperLine[i - 1]) || wcschr(L";()[]{},", upperLine[i - 1]));
+            if (!isStart) continue;
+
+            std::wstring_view rem(&upperLine[i], upperLine.size() - i);
+
+            // Dacă suntem la nivelul 0 și găsim keyword-ul căutat (DO sau ENDCYCLE)
+            if (depth == 0 && rem.starts_with(upperKey)) {
+                size_t nextIdx = i + upperKey.length();
+                // Verificăm validitatea cuvântului întreg
+                if (nextIdx >= upperLine.size() || iswspace(upperLine[nextIdx]) || wcschr(L";()[]{},", upperLine[nextIdx])) {
+                    return i;
+                }
+            }
+
+            // Gestionăm adâncimea pentru CYCLE-uri imbricate
+            if (rem.starts_with(L"CYCLE")) {
+                size_t next = i + 5;
+                if (next >= upperLine.size() || iswspace(upperLine[next])) {
+                    depth++;
+                    i += 4; // Sărim peste restul cuvântului CYCLE
+                }
+            }
+            else if (rem.starts_with(L"ENDCYCLE")) {
+                depth--;
+                i += 7; // Sărim peste restul cuvântului ENDCYCLE
+            }
+        }
+        return std::wstring::npos;
+    }
+
 
     /*
     void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wstring>& passedArgs) {
@@ -4082,12 +4173,118 @@ void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wst
       return vData{ 0LL };
   }
 
+  vData vOliEngine::handleFloatFunc(const std::vector<vData>& args) {
+      if (args.empty()) return vData{ 0.0 };
+
+      const vData& input = args[0];
+
+      // 1. Deja Float -> returnăm identic
+      if (input.isFloat()) return input;
+
+      // 2. Int -> Double
+      if (input.isInt()) {
+          return vData{ static_cast<double>(std::get<long long>(input.value)) };
+      }
+
+      // 3. String -> Double
+      if (input.isString()) {
+          try {
+              // std::stod se ocupă de conversia wstring -> double
+              return vData{ std::stod(std::get<std::wstring>(input.value)) };
+          }
+          catch (...) {
+              return vData{ 0.0 }; // Fallback la eroare
+          }
+      }
+
+      // 4. Bool -> Double (1.0 sau 0.0)
+      if (input.isBool()) {
+          return vData{ std::get<bool>(input.value) ? 1.0 : 0.0 };
+      }
+
+      return vData{ 0.0 };
+  }
+
+  vData vOliEngine::handleStrFunc(const std::vector<vData>& args) {
+      if (args.empty()) return vData{ L"" }; // Default: șir vid
+
+      const vData& input = args[0];
+
+      // 1. Dacă este deja String, returnăm o copie
+      if (input.isString()) return input;
+
+      // 2. Pentru restul tipurilor (Int, Float, Bool, Array, Map)
+      // Folosim funcția ta vDataToWString care se ocupă deja de formatare
+      return vData{ vDataToWString(input) };
+  }
+  /*
+  vData vOliEngine::handleArrayFunc(const std::vector<vData>& args) {
+      // 1. Dacă nu avem argumente, returnăm un array gol
+      if (args.empty()) {
+          return vData{ vDataArray{} };
+      }
+
+      const vData& input = args[0];
+
+      // 2. Dacă este deja Array, returnăm copia
+      if (input.isArray()) {
+          return input;
+      }
+
+      // 3. Dacă este un alt tip (Int, Float, String, Map), 
+      // îl "împachetăm" într-un array cu un singur element.
+      vDataArray newArray;
+      newArray.push_back(input);
+      return vData{ newArray };
+  }
+  */
+
+  vData vOliEngine::handleArrayFunc(const std::vector<vData>& args) {
+      vDataArray newArray;
+      for (const auto& arg : args) {
+          newArray.push_back(arg);
+      }
+      return vData{ newArray };
+  }
+
+  vData vOliEngine::handleMapFunc(const std::vector<vData>& args) {
+      vDataMap newMap;
+
+      // Dacă nu avem argumente, returnăm un map gol {}
+      if (args.empty()) {
+          return vData{ newMap };
+      }
+
+      // Parcurgem argumentele doi câte doi (cheie, valoare)
+      for (size_t i = 0; i + 1 < args.size(); i += 2) {
+          std::wstring key;
+
+          // Ne asigurăm că cheia este convertită la string
+          if (args[i].isString()) {
+              key = std::get<std::wstring>(args[i].value);
+          }
+          else {
+              key = vDataToWString(args[i]);
+          }
+
+          newMap[key] = args[i + 1];
+      }
+
+      // Dacă numărul de argumente este impar, ultimul va fi ignorat 
+      // sau poți loga un warning.
+      if (args.size() % 2 != 0) {
+          // LOG_WARNING(L"MAP() a primit un număr impar de argumente. Ultima cheie a fost ignorată.");
+      }
+
+      return vData{ newMap };
+  }
 
   void vOliEngine::handleFuncCommand(const ShellCommand& sc) {
       if (sc.args.empty()) {
           LOG_ERROR(L"Usage: func name [param1, param2...]");
           return;
       }
+
 
       // 1. Preluăm numele și îl normalizăm imediat (Uppercase)
       std::wstring funcName = sc.args[0];
@@ -4910,3 +5107,110 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
           updateRootSource(node->children[0], parentContainer);
       }
   }
+
+  /*
+  vData vOliEngine::handleSplitFunc(const std::vector<vData>& args) {
+      // Avem nevoie de cel puțin șirul de intrare. Separatorul poate fi implicit un spațiu.
+      if (args.empty()) return vData{ vDataArray{} };
+
+      std::wstring text = vDataToWString(args[0]);
+      std::wstring delimiter = (args.size() > 1) ? vDataToWString(args[1]) : L" ";
+
+      vDataArray result;
+
+      if (delimiter.empty()) {
+          // Dacă separatorul e vid, putem alege să returnăm caracterele individuale
+          for (wchar_t c : text) {
+              result.push_back(vData{ std::wstring(1, c) });
+          }
+          return vData{ result };
+      }
+
+      size_t start = 0;
+      size_t end = text.find(delimiter);
+
+      while (end != std::wstring::npos) {
+          result.push_back(vData{ text.substr(start, end - start) });
+          start = end + delimiter.length();
+          end = text.find(delimiter, start);
+      }
+
+      // Adăugăm și ultima parte
+      result.push_back(vData{ text.substr(start) });
+
+      return vData{ result };
+  }
+  */
+
+  vData vOliEngine::handleSplitFunc(const std::vector<vData>& args) {
+      if (args.empty()) return vData{ vDataArray{} };
+
+      std::wstring text = vDataToWString(args[0]);
+      // Dacă nu dai separator, implicit e spațiu
+      std::wstring delims = (args.size() > 1) ? vDataToWString(args[1]) : L" ";
+
+      // Curățăm secvențele de escape transmise din shell
+      if (delims == L"\\n") delims = L"\n";
+      else if (delims == L"\\r\\n") delims = L"\r\n";
+      else if (delims == L"\\t") delims = L"\t";
+
+      vDataArray result;
+      size_t lastPos = 0;
+      size_t pos = text.find(delims);
+
+      // Determinăm dacă separatorul este un "spațiu alb" pentru a activa modul Smart
+      bool isWhitespaceSplit = (delims == L" ");
+
+      while (pos != std::wstring::npos) {
+          std::wstring token = text.substr(lastPos, pos - lastPos);
+
+          // MODIFICARE SMART: 
+          // Dacă split-uim după spațiu, ignorăm rezultatele goale (spații consecutive)
+          if (!isWhitespaceSplit || !token.empty()) {
+              result.push_back(vData{ token });
+          }
+
+          lastPos = pos + delims.length();
+          pos = text.find(delims, lastPos);
+      }
+
+      // Adăugăm și ultimul segment
+      std::wstring lastToken = text.substr(lastPos);
+      if (!isWhitespaceSplit || !lastToken.empty()) {
+          result.push_back(vData{ lastToken });
+      }
+
+      return vData{ result };
+  }
+
+  vData vOliEngine::handleJoinFunc(const std::vector<vData>& args) {
+      // Avem nevoie de cel puțin un Array
+      if (args.empty() || !args[0].isArray()) {
+          return vData{ L"" };
+      }
+
+      const vDataArray& list = std::get<vDataArray>(args[0].value);
+      // Separatorul este al doilea argument (implicit spațiu dacă lipsește)
+      std::wstring separator = (args.size() > 1) ? vDataToWString(args[1]) : L" ";
+
+      std::wstring result;
+      for (size_t i = 0; i < list.size(); ++i) {
+          result += vDataToWString(list[i]);
+
+          // Adăugăm separatorul doar dacă nu suntem la ultimul element
+          if (i < list.size() - 1) {
+              result += separator;
+          }
+      }
+
+      return vData{ result };
+  }
+
+  vData vOliEngine::handleTrimFunc(const std::vector<vData>& args) {
+      if (args.empty()) return vData{ L"" };
+
+      // Convertim argumentul în string și îi aplicăm funcția de curățare
+      std::wstring text = vDataToWString(args[0]);
+      return vData{ trim(text) };
+  }
+

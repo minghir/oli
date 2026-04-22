@@ -1,0 +1,69 @@
+echo "--- START POINTER TEST ---"
+
+# 1. TEST: Pointer Simplu (Citire/Scriere)
+set $a = 10
+set $p_a = REF("a")
+echo "Initial a: " + $a
+echo "Prin pointer: " + *$p_a
+
+set *$p_a = 50
+echo "Dupa modificare (*$p_a = 50), a este: " + $a
+
+# ---------------------------------------------------------
+# 2. TEST: Pass-by-Reference in Functii
+func upgrade_item ptr
+    set (*$ptr).val = (*$ptr).val + 100
+    set (*$ptr).calitate = "Epica"
+endfunc
+
+set $sabie = {"nume": "Excalibur", "val": 50, "calitate": "Comuna"}
+echo "Inainte de upgrade: " + $sabie.nume + " (" + $sabie.val + ") - " + $sabie.calitate
+
+upgrade_item(REF("sabie"))
+
+echo "Dupa upgrade: " + $sabie.nume + " (" + $sabie.val + ") - " + $sabie.calitate
+
+# ---------------------------------------------------------
+# 3. TEST: Structuri Inlantuite (Linked List)
+set $n1 = {"id": 1, "next": null}
+set $n2 = {"id": 2, "next": null}
+set $n3 = {"id": 3, "next": null}
+
+# Facem legaturile
+set $n1.next = REF("n2")
+set $n2.next = REF("n3")
+
+echo "ID Nod 2 prin Nod 1: " + (*$n1.next).id
+echo "ID Nod 3 prin Nod 1 (Double Jump): " + (*(*$n1.next).next).id
+
+# ---------------------------------------------------------
+# 4. TEST: Protectie Circulara (Self-Pointer)
+set $self = 0
+set $self = REF("self")
+echo "Self-pointer (nu ar trebui sa inghete): " + $self
+
+echo "--- TEST FINALIZAT CU SUCCES ---"
+dm
+
+func print_list ptr
+    if $ptr == null then
+        return 0
+    endif
+    echo "Nod ID: " + (*$ptr).id
+    print_list((*$ptr).next)
+endfunc
+
+# 1. Definim datele din nou
+set $n1 = {"id": 1, "next": null}
+set $n2 = {"id": 2, "next": null}
+set $n3 = {"id": 3, "next": null}
+
+# 2. Cream legaturile
+set $n1.next = REF("n2")
+set $n2.next = REF("n3")
+
+# 3. Definim functia (daca nu e deja salvata in fisier)
+# [Sfat: Daca folosesti 'then', asigura-te ca parserul tau il ignora sau il mananca]
+
+# 4. Rulam
+print_list(REF("n1"))

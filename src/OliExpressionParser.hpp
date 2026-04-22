@@ -89,7 +89,7 @@ public:
     }
 
    
-
+    /*
     ASTPtr parseUnary() {
         if (match({ L"-", L"!", L"NOT" })) {
             std::wstring op = m_tokens[m_pos - 1];
@@ -99,6 +99,36 @@ public:
             return node;
         }
         return parsePostfix(); // Unary depinde de Postfix
+    }
+    */
+    ASTPtr parseUnary() {
+        // Adăugăm L"*" în lista de operatori unari
+        if (match({ L"-", L"!", L"NOT", L"*" })) {
+            std::wstring op = m_tokens[m_pos - 1];
+
+            // Citim recursiv ce urmează după operator (permite **$ptr)
+            ASTPtr child = parseUnary();
+
+            if (op == L"*") {
+                // Dacă ceea ce urmează este o variabilă, "lipim" asteriscul de ea
+                // pentru ca resolveVariable să o poată procesa dintr-o bucată.
+                if (child && child->type == ASTNodeType::Variable) {
+                    child->value = L"*" + child->value;
+                    return child;
+                }
+
+                // Dacă urmează o expresie complexă, ex: *(getPtr()), creăm un operator special
+                ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, L"DEREFERENCE");
+                node->addChild(child);
+                return node;
+            }
+
+            std::wstring internalOp = (op == L"-") ? L"UNARY_MINUS" : L"NOT";
+            ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, internalOp);
+            node->addChild(child);
+            return node;
+        }
+        return parsePostfix();
     }
 
     ASTPtr parsePower() {

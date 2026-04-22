@@ -58,7 +58,8 @@ using vDataValue = std::variant<
     double,
     bool,
     vDataArray,
-    vDataMap
+    vDataMap,
+    vData* // <--- Noul tip: Pointer către o altă vData
 >;
 
 struct vData {

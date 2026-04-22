@@ -89862,3 +89862,233 @@ $c = b
 ---
 echo $$$c
 ---
+set $a = 10
+---
+set $ptr = REF("a")
+---
+echo "Valoare prin pointer: " + *$ptr
+---
+set $a = 10
+---
+set $ptr = REF("a")
+---
+echo "Valoare: " + *$ptr
+---
+set $a = 10
+---
+set $ptr = REF("a")
+---
+echo "Valoare: " + *$ptr
+---
+set $a = 10
+---
+set $ptr = REF("a")
+---
+set *$ptr = 999
+---
+echo "Valoarea lui $a este acum: " + $a
+---
+dm
+---
+set $a = 10
+---
+set $ptr = REF("a")
+---
+set *$ptr = 999
+---
+echo "Valoarea lui a: " + $a
+---
+echo $ptr
+---
+echo *$ptr
+---
+type($ptr)
+---
+set $x = 42
+---
+set $p = REF("x")
+---
+unset $x
+---
+echo *$p
+---
+set $x = 42
+---
+set $p = REF("x")
+---
+unset $x
+---
+echo *$p
+---
+set $x = 42
+---
+set $p = REF("x")
+---
+unset $x
+---
+echo *$p
+---
+set $x = 42
+---
+set $p = REF("x")
+---
+unset $x
+---
+echo *$p
+---
+set $a = REF("a")
+---
+echo $a
+---
+set $a = 0
+---
+set $a = REF("a")
+---
+echo $a
+---
+echo *$a
+---
+echo **$a
+---
+set $x = 100
+---
+set $p = REF("x")
+---
+set *$p = 500
+---
+echo $x
+---
+set $nod1 = {"val": 10, "next": null}
+---
+set $nod2 = {"val": 20, "next": null}
+---
+set $nod1.next = REF("nod2")
+---
+echo "Valoare nod 2 prin nod 1: " + (*$nod1.next).val
+---
+set $sabie = {"nume": "Excalibur", "val": 100}
+---
+upgrade_item(REF("sabie"))
+---
+echo $sabie.val
+---
+set $sabie = {"val": 100}
+---
+set $p = REF("sabie")
+---
+set (*$p).val = 150
+---
+echo $sabie.val
+---
+echo "--- START POINTER TEST ---"
+---
+set $a = 10
+---
+set $p_a = REF("a")
+---
+echo "Initial a: " + $a
+---
+echo "Prin pointer: " + *$p_a
+---
+set *$p_a = 50
+---
+echo "Dupa modificare (*$p_a = 50), a este: " + $a
+---
+set $sabie = {"nume": "Excalibur", "val": 50, "calitate": "Comuna"}
+---
+echo "Inainte de upgrade: " + $sabie.nume + " (" + $sabie.val + ") - " + $sabie.calitate
+---
+upgrade_item(REF("sabie"))
+---
+echo "Dupa upgrade: " + $sabie.nume + " (" + $sabie.val + ") - " + $sabie.calitate
+---
+set $n1 = {"id": 1, "next": null}
+---
+set $n2 = {"id": 2, "next": null}
+---
+set $n3 = {"id": 3, "next": null}
+---
+set $n1.next = REF("n2")
+---
+set $n2.next = REF("n3")
+---
+echo "ID Nod 2 prin Nod 1: " + (*$n1.next).id
+---
+echo "ID Nod 3 prin Nod 1 (Double Jump): " + (*(*$n1.next).next).id
+---
+set $self = 0
+---
+set $self = REF("self")
+---
+echo "Self-pointer (nu ar trebui sa inghete): " + $self
+---
+echo "--- TEST FINALIZAT CU SUCCES ---"
+---
+dm
+---
+echo $n1.next
+---
+echo $this
+---
+print_list(REF("n1"))
+---
+print_list(REF("n1"))
+---
+return 0
+---
+print_list(REF("n1"))
+---
+return 0
+---
+print_list(REF("n1"))
+---
+return 0
+---
+set $n1 = {"id": 1, "next": null}
+---
+set $n2 = {"id": 2, "next": null}
+---
+set $n3 = {"id": 3, "next": null}
+---
+set $n1.next = REF("n2")
+---
+set $n2.next = REF("n3")
+---
+print_list(REF("n1"))
+---
+return 0
+---
+dm
+---
+cls
+---
+echo "--- START TEST CONTEXT $this ---"
+---
+set $erou = {
+---
+echo "--- START TEST CONTEXT $this ---"
+---
+set $erou = {"nume": "Galahad", "hp": 100, "armura": 20, "status": "afiseaza_status", "lovitura": "primeste_damage"}
+---
+set $orc = {"nume": "Orc Sef", "hp": 50, "armura": 5, "status": "afiseaza_status", "lovitura": "primeste_damage"}
+---
+echo "Situatia initiala:"
+---
+$erou.status()
+---
+$orc.status()
+---
+echo "Incepe lupta!"
+---
+$orc.lovitura(30)
+---
+$erou.lovitura(10)
+---
+echo "Situatia dupa lupta:"
+---
+$erou.status()
+---
+$orc.status()
+---
+echo "--- TEST FINALIZAT ---"
+---

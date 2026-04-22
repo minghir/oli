@@ -617,133 +617,71 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         return executeAST(plan);
     }
     
-/*
-vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
-    if (rawVar.empty()) return { std::monostate{} };
 
-    // 1. Variabile variabile ($$a) - ramane neschimbat
-    // 1. Variabile variabile: număr nelimitat de $
-    // Variabile variabile: suportă orice număr de $
-    if (!rawVar.empty() && rawVar[0] == L'$') {
-        size_t dollarCount = 0;
-        while (dollarCount < rawVar.size() && rawVar[dollarCount] == L'$')
-            dollarCount++;
+    vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
+        std::wstring varName = trim(rawVar);
+        if (varName.empty()) return { std::monostate{} };
 
-        // Rezolvăm ce a rămas după semnele $
-        vData result = resolveVariable(rawVar.substr(dollarCount));
+        // --- STRATUL 1: DEREFERENȚIERE (*) ---
+        if (varName[0] == L'*') {
+            // 1. Rezolvăm recursiv ce se află după '*'
+            vData pointerVar = resolveVariable(varName.substr(1));
 
-        // Dereferențiem pentru fiecare $ extra (peste primul)
-        // EX: Pentru $$b, dollarCount este 2. Facem o dereferențiere extra.
-        for (size_t i = 1; i < dollarCount; ++i) {
-            if (const std::wstring* s = std::get_if<std::wstring>(&result.value)) {
-                // Căutăm variabila cu numele stocat în string (indiferent dacă are $ sau nu)
-                result = resolveVariable(*s);
+            // 2. Încercăm să obținem adresa folosind std::get_if.
+            // Acesta returnează un pointer către valoarea din variantă (vData**) 
+            // sau nullptr dacă tipul din variantă nu este cel cerut.
+            if (vData** addrPtr = std::get_if<vData*>(&pointerVar.value)) {
+                vData* actualAddr = *addrPtr; // Extragem adresa stocată (vData*)
+
+                if (actualAddr) {
+                    return *actualAddr; // Succes! Returnăm valoarea de la acea adresă
+                }
+                else {
+                    LOG_ERROR(L"Runtime Error: Dereferencing a NULL pointer!");
+                }
             }
             else {
-                break;
+                // Dacă am ajuns aici, înseamnă că variabila nu conține un pointer (vData*)
+                LOG_ERROR(L"Runtime Error: '" + varName + L"' is not a pointer (Type mismatch).");
             }
-        }
-        return result;
-    }
-
-    
-
-    // 2. Curățarea numelui
-    std::wstring varName = rawVar;
-    if (varName[0] == L'$') varName = varName.substr(1);
-
-    // Eliminăm accesările de tip proprietate sau index pentru a găsi variabila rădăcină
-    size_t firstSeparator = varName.find_first_of(L".[");
-    if (firstSeparator != std::wstring::npos) {
-        varName = varName.substr(0, firstSeparator);
-    }
-    varName = trim(varName);
-
-    // 3. LOGICA DE SCOPING (Local-First, Global-Second)
-
-    // Pasul A: Căutăm în Frame-ul de deasupra al stivei (Contextul Local al funcției)
-    if (!m_callStack.empty()) {
-        auto& locals = m_callStack.back().localVariables;
-        auto it = locals.find(varName);
-        if (it != locals.end()) {
-            return it->second;
-        }
-    }
-
-    // Pasul B: Căutăm în buzunarul Global (care acum este m_globalVariables)
-    // Aici va fi găsit $memo chiar dacă suntem în interiorul FIBO_MEMO
-    auto itGlobal = m_globalVariables.find(varName);
-    if (itGlobal != m_globalVariables.end()) {
-        return itGlobal->second;
-    }
-
-    // 4. Dacă nu a fost găsită nicăieri, returnăm NULL
-    return { std::monostate{} };
-}
-*/
-    
-    vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
-        if (rawVar.empty()) return { std::monostate{} };
-
-        // 1. GESTIONARE GLOBALĂ EXPLICITĂ (@nume)
-        /*
-        if (rawVar[0] == L'@') {
-            std::wstring globalName = rawVar.substr(1);
-
-            // Eliminăm eventuale proprietăți/indexări pentru a extrage rădăcina
-            size_t firstSep = globalName.find_first_of(L".[");
-            if (firstSep != std::wstring::npos) globalName = globalName.substr(0, firstSep);
-
-            globalName = trim(globalName);
-
-            auto it = m_globalVariables.find(globalName);
-            if (it != m_globalVariables.end()) return it->second;
 
             return { std::monostate{} };
         }
-        */
 
-        if (rawVar[0] == L'@') {
-            std::wstring contentAfterAt = rawVar.substr(1);
+        // --- STRATUL 2: ACCES GLOBAL (@) ---
+        if (varName[0] == L'@') {
+            std::wstring content = varName.substr(1);
 
-            // Verificăm dacă avem un "pointer" (reflexie): @$tinta
-            if (!contentAfterAt.empty() && contentAfterAt[0] == L'$') {
-                // Evaluăm ce se află în variabila locală (ex: $tinta_nume -> "erou")
-                vData evaluatedName = resolveVariable(contentAfterAt);
-
+            // Cazul reflexiv: @$tinta (numele variabilei e într-o variabilă locală)
+            if (!content.empty() && content[0] == L'$') {
+                vData evaluatedName = resolveVariable(content);
                 if (const std::wstring* nameStr = std::get_if<std::wstring>(&evaluatedName.value)) {
-                    // Acum că avem "erou", căutăm "erou" în m_globalVariables
                     auto it = m_globalVariables.find(*nameStr);
                     if (it != m_globalVariables.end()) return it->second;
                 }
                 return { std::monostate{} };
             }
 
-            // --- Logica ta existentă pentru @nume fix ---
-            size_t firstSep = contentAfterAt.find_first_of(L".[");
-            std::wstring rootName = (firstSep != std::wstring::npos) ? contentAfterAt.substr(0, firstSep) : contentAfterAt;
-            rootName = trim(rootName);
+            // Cazul standard: @nume_global
+            size_t firstSep = content.find_first_of(L".[");
+            std::wstring root = (firstSep != std::wstring::npos) ? content.substr(0, firstSep) : content;
 
-            auto it = m_globalVariables.find(rootName);
-            if (it != m_globalVariables.end()) return it->second;
-
-            return { std::monostate{} };
+            auto it = m_globalVariables.find(trim(root));
+            return (it != m_globalVariables.end()) ? it->second : vData{ std::monostate{} };
         }
 
-        // 2. VARIABILE VARIABILE ($$a, $$$b)
-        if (rawVar[0] == L'$') {
+        // --- STRATUL 3: INDIRECȚIE DINAMICĂ ($$, $$$) ---
+        if (varName[0] == L'$') {
             size_t dollarCount = 0;
-            while (dollarCount < rawVar.size() && rawVar[dollarCount] == L'$')
+            while (dollarCount < varName.size() && varName[dollarCount] == L'$')
                 dollarCount++;
 
-            // Rezolvăm restul (poate fi un nume simplu sau altceva)
-            vData result = resolveVariable(rawVar.substr(dollarCount));
+            // Pas 1: Rezolvăm numele de bază (ex: pentru $$$a, rezolvăm mai întâi "a")
+            vData result = resolveVariable(varName.substr(dollarCount));
 
-            // Dereferențiem pentru fiecare $ extra
+            // Pas 2: Aplicăm restul de semne $ ca niște căutări succesive
             for (size_t i = 1; i < dollarCount; ++i) {
                 if (const std::wstring* s = std::get_if<std::wstring>(&result.value)) {
-                    // IMPORTANT: Aici apelăm tot resolveVariable pentru a permite
-                    // ca valoarea din interior să fie ea însăși o variabilă globală (@x)
                     result = resolveVariable(*s);
                 }
                 else {
@@ -753,25 +691,21 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
             return result;
         }
 
-        // 3. CURĂȚARE ȘI SCOPING NORMAL (Local -> Global)
-        std::wstring varName = rawVar;
+        // --- STRATUL 4: SCOPING NORMAL (Local -> Global) ---
+        std::wstring root = varName;
+        size_t sep = root.find_first_of(L".[");
+        if (sep != std::wstring::npos) root = root.substr(0, sep);
+        root = trim(root);
 
-        // Extragere rădăcină (root name)
-        size_t firstSeparator = varName.find_first_of(L".[");
-        if (firstSeparator != std::wstring::npos) {
-            varName = varName.substr(0, firstSeparator);
-        }
-        varName = trim(varName);
-
-        // Pasul A: Local
+        // 1. Căutăm în Frame-ul local (Stivă)
         if (!m_callStack.empty()) {
             auto& locals = m_callStack.back().localVariables;
-            auto it = locals.find(varName);
+            auto it = locals.find(root);
             if (it != locals.end()) return it->second;
         }
 
-        // Pasul B: Global
-        auto itGlobal = m_globalVariables.find(varName);
+        // 2. Căutăm în Globale
+        auto itGlobal = m_globalVariables.find(root);
         if (itGlobal != m_globalVariables.end()) return itGlobal->second;
 
         return { std::monostate{} };
@@ -924,14 +858,18 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
             else if constexpr (std::is_same_v<T, bool>) {
                 return arg ? L"true" : L"false";
             }
+            else if constexpr (std::is_same_v<T, vData*>) {
+                // --- GESTIONARE POINTER REAL ---
+                if (arg == nullptr) return L"[PTR: NULL]";
+                // Încercăm să arătăm adresa hexazecimală
+                wchar_t buf[32];
+                swprintf(buf, 32, L"[PTR: 0x%p]", (void*)arg);
+                return std::wstring(buf);
+            }
             else if constexpr (std::is_same_v<T, vDataArray>) {
-                // ARG este acum std::shared_ptr<std::vector<vData>>
-                if (!arg) return L"[]"; // Siguranță: dacă pointerul e null
-
+                if (!arg) return L"[]";
                 std::wstring res = L"[";
-                // Folosim ->size() pentru a accesa metoda vectorului de sub pointer
                 for (size_t i = 0; i < arg->size(); ++i) {
-                    // Dereferențiem cu (*arg)[i] pentru a ajunge la elementul vData
                     res += this->vDataToWString((*arg)[i]);
                     if (i < arg->size() - 1) res += L", ";
                 }
@@ -939,22 +877,18 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
                 return res;
             }
             else if constexpr (std::is_same_v<T, vDataMap>) {
-                // ARG este acum std::shared_ptr<std::map<...>>
                 if (!arg) return L"{}";
-
                 std::wstring res = L"{";
                 size_t i = 0;
-                // Dereferențiem pointerul (*arg) pentru a putea itera prin Map-ul real
                 for (auto const& [key, val] : *arg) {
                     res += key + L": " + this->vDataToWString(val);
-                    // arg->size() pentru a vedea câte elemente sunt în total
                     if (++i < arg->size()) res += L", ";
                 }
                 res += L"}";
                 return res;
             }
             else {
-                return L"(UNKNOWN)";
+                return L"(UNKNOWN TYPE)";
             }
             }, data.value);
     }
@@ -1272,6 +1206,34 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
 
 
     void vOliEngine::initializeFunctionsHandlers() {
+
+        m_functionsHandlers[L"REF"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) return { std::monostate{} };
+
+            // Avem nevoie de numele variabilei (ex: REF("a"))
+            std::wstring varName = vDataToWString(args[0]);
+            if (varName[0] == L'$') varName.erase(0, 1);
+
+            // Căutăm variabila în memorie (Global sau Local)
+            vData* targetPtr = nullptr;
+            if (!m_callStack.empty()) {
+                auto& locals = m_callStack.back().localVariables;
+                if (locals.count(varName)) targetPtr = &locals[varName];
+            }
+
+            if (!targetPtr && m_globalVariables.count(varName)) {
+                targetPtr = &m_globalVariables[varName];
+            }
+
+            if (targetPtr) {
+                vData refResult;
+                refResult.value = targetPtr; // Stocăm adresa brută
+                return refResult;
+            }
+
+            return { std::monostate{} };
+            };
+
         // Înregistrăm funcția TYPE
         m_functionsHandlers[L"TYPE"] = [this](const std::vector<vData>& args) -> vData {
             if (args.empty()) return { L"NULL" };
@@ -1364,7 +1326,6 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
             case ASTNodeType::Literal: {
                 // --- CREARE ARRAY DIN COD: [1, 2, 3] ---
                 if (node->value == L"ARRAY_OBJECT") {
-                    // Folosim metoda statică sau make_shared direct
                     vDataArray elements = std::make_shared<std::vector<vData>>();
                     for (auto& child : node->children) {
                         if (child) elements->push_back(executeAST(child));
@@ -1378,7 +1339,6 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
                     for (size_t i = 0; i + 1 < node->children.size(); i += 2) {
                         vData keyData = executeAST(node->children[i]);
                         vData valData = executeAST(node->children[i + 1]);
-                        // Dereferențiem pentru a accesa operatorul [] al map-ului
                         (*myMap)[vDataToWString(keyData)] = valData;
                     }
                     return { myMap };
@@ -1394,47 +1354,34 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
             }
 
             case ASTNodeType::Variable: {
+                // resolveVariable gestionează acum și citirea prin pointer (*$ptr)
                 return resolveVariable(node->value);
             }
 
             case ASTNodeType::FunctionCall: {
                 std::wstring funcName;
                 std::vector<vData> evaluatedArgs;
-                vData contextObj = { std::monostate{} }; // Implicit contextul este NULL
+                vData contextObj = { std::monostate{} };
 
-                // 1. IDENTIFICAREA NUMELUI ȘI A CONTEXTULUI ($this)
-
-                // CAZUL A: Apel de tip metodă ($obiect.functie())
+                // 1. IDENTIFICARE CONTEXT ȘI NUME
                 if (!node->children.empty() && (node->children[0]->value == L"." || node->children[0]->value == L"DOT")) {
-                    // Folosim o referință către smart pointer-ul existent, nu îi mai cerem pointerul brut
                     const ASTPtr& dotNode = node->children[0];
-
                     if (dotNode && !dotNode->children.empty()) {
-                        // 1. Evaluăm obiectul din stânga (ex: $bomba)
-                        // Pasăm direct dotNode->children[0], care este deja de tip ASTPtr
                         contextObj = executeAST(dotNode->children[0]);
-
-                        // 2. Evaluăm numele funcției (nodul DOT în sine)
                         funcName = vDataToWString(executeAST(dotNode));
-
-                        // 3. Argumentele (restul copiilor din FunctionCall)
-                        for (size_t i = 1; i < node->children.size(); ++i) {
+                        for (size_t i = 1; i < node->children.size(); ++i)
                             evaluatedArgs.push_back(executeAST(node->children[i]));
-                        }
                     }
                 }
-                // CAZUL B: DYNAMIC_CALL explicit
                 else if (node->value == L"DYNAMIC_CALL" && !node->children.empty()) {
                     funcName = vDataToWString(executeAST(node->children[0]));
                     for (size_t i = 1; i < node->children.size(); ++i)
                         evaluatedArgs.push_back(executeAST(node->children[i]));
                 }
-                // CAZUL C: Apel prin variabilă directă (ex: $func())
                 else if (!node->value.empty() && node->value[0] == L'$') {
-                    funcName = vDataToWString(resolveVariable(node->value.substr(1)));
+                    funcName = vDataToWString(resolveVariable(node->value));
                     for (auto& child : node->children) evaluatedArgs.push_back(executeAST(child));
                 }
-                // CAZUL D: Apel standard (ex: SALUT())
                 else {
                     funcName = node->value;
                     for (auto& child : node->children) evaluatedArgs.push_back(executeAST(child));
@@ -1442,7 +1389,7 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
 
                 if (funcName.empty()) return { std::monostate{} };
 
-                // 2. CONSTRUCTOR (Blueprint)
+                // 2. CONSTRUCTORI (Blueprints)
                 auto itBlueprint = m_blueprints.find(funcName);
                 if (itBlueprint != m_blueprints.end()) {
                     vDataMap instance = std::make_shared<std::map<std::wstring, vData>>();
@@ -1454,19 +1401,15 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
                     return { instance };
                 }
 
-                // 3. EXECUTARE FUNCȚIE
+                // 3. APELARE (Intern/User)
                 std::wstring upperName = funcName;
                 std::transform(upperName.begin(), upperName.end(), upperName.begin(), ::towupper);
 
-                // Handlere interne (print, join, etc.)
                 auto itInternal = m_functionsHandlers.find(upperName);
                 if (itInternal != m_functionsHandlers.end()) return itInternal->second(evaluatedArgs);
 
-                // Funcții definitie de utilizator (Aici pasăm contextObj!)
                 auto itUser = m_userFunctions.find(upperName);
-                if (itUser != m_userFunctions.end()) {
-                    return callUserFunction(upperName, evaluatedArgs, contextObj);
-                }
+                if (itUser != m_userFunctions.end()) return callUserFunction(upperName, evaluatedArgs, contextObj);
 
                 LOG_ERROR(L"[RUNTIME ERROR] Unknown function: " + funcName);
                 return { std::monostate{} };
@@ -1474,41 +1417,115 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
 
             case ASTNodeType::Operator: {
                 // --- ATRIBUIRE (=) ---
+                
+                // --- ATRIBUIRE (=) ---
                 if (node->value == L"=") {
                     if (node->children.size() < 2) return { std::monostate{} };
+
                     ASTPtr left = node->children[0];
                     vData rightVal = executeAST(node->children[1]);
 
+                    // 1. CAZUL SIMPLE: Variabilă sau Dereferențiere directă (set *$ptr = 10)
                     if (left->type == ASTNodeType::Variable) {
-                        setVariable(left->value, rightVal);
+                        std::wstring targetName = left->value;
+
+                        if (!targetName.empty() && targetName[0] == L'*') {
+                            vData ptrInfo = resolveVariable(targetName.substr(1));
+                            if (vData** addrPtr = std::get_if<vData*>(&ptrInfo.value)) {
+                                if (*addrPtr) {
+                                    **addrPtr = rightVal;
+                                    return rightVal;
+                                }
+                            }
+                            LOG_ERROR(L"Runtime Error: Pointer invalid la atribuire: " + targetName);
+                            return { std::monostate{} };
+                        }
+
+                        setVariable(targetName, rightVal);
                         return rightVal;
                     }
 
-                    if (left->value == L"DOT" || left->value == L"." || left->value == L"INDEX" || left->value == L"[") {
-                        std::wstring fullPath = reconstructPath(left);
-                        if (!fullPath.empty()) {
-                            assignToVariable(fullPath, rightVal);
-                            return rightVal;
+                    // 2. CAZUL COMPLEX: Atribuire în câmp/index (set (*$ptr).val = 110)
+                    // În loc de reconstructPath, evaluăm "stânga" punctului pentru a obține obiectul real
+                    if (left->value == L"DOT" || left->value == L".") {
+                        vData container = executeAST(left->children[0]); // <--- Aici rezolvăm (*$ptr)
+                        std::wstring field = left->children[1]->value;
+
+                        if (container.isMap()) {
+                            auto mapPtr = std::get<vDataMap>(container.value);
+                            if (mapPtr) {
+                                (*mapPtr)[field] = rightVal; // Scriem direct în memoria obiectului
+                                return rightVal;
+                            }
                         }
                     }
+
+                    // 3. CAZUL INDEXARE: (set (*$ptr)[0] = "nou")
+                    if (left->value == L"INDEX" || left->value == L"[") {
+                        vData container = executeAST(left->children[0]);
+                        vData index = executeAST(left->children[1]);
+
+                        if (container.isArray()) {
+                            auto arrPtr = std::get<vDataArray>(container.value);
+                            size_t idx = static_cast<size_t>(vDataToDouble(index));
+                            if (arrPtr && idx < arrPtr->size()) {
+                                (*arrPtr)[idx] = rightVal;
+                                return rightVal;
+                            }
+                        }
+                        else if (container.isMap()) {
+                            auto mapPtr = std::get<vDataMap>(container.value);
+                            if (mapPtr) {
+                                (*mapPtr)[vDataToWString(index)] = rightVal;
+                                return rightVal;
+                            }
+                        }
+                    }
+
+                    // Fallback pentru căi care nu implică pointeri (ex: @global.prop)
+                    std::wstring fullPath = reconstructPath(left);
+                    if (!fullPath.empty()) {
+                        assignToVariable(fullPath, rightVal);
+                        return rightVal;
+                    }
+
                     throw std::runtime_error("L-value required for assignment.");
                 }
 
-                // --- ACCES (DOT) ---
+                // --- DEREFERENȚIERE EXPLICITĂ (*) ---
+                if (node->value == L"DEREFERENCE") {
+                    vData ptr = executeAST(node->children[0]);
+
+                    // Folosim get_if pentru a fi consistenți și siguri
+                    if (vData** addrPtr = std::get_if<vData*>(&ptr.value)) {
+                        vData* addr = *addrPtr;
+                        if (addr) {
+                            return *addr;
+                        }
+                        else {
+                            LOG_ERROR(L"Runtime Error: Dereferencing a NULL pointer in expression.");
+                        }
+                    }
+                    else {
+                        // Dacă utilizatorul scrie ceva de genul *("text"), motorul nu crapă, ci raportează:
+                        LOG_ERROR(L"Runtime Error: Cannot dereference a non-pointer value.");
+                    }
+
+                    return { std::monostate{} };
+                }
+
+                // --- ACCES (DOT / INDEX) ---
                 if (node->value == L"DOT" || node->value == L".") {
                     if (node->children.size() < 2) return { std::monostate{} };
                     vData container = executeAST(node->children[0]);
                     std::wstring field = node->children[1]->value;
-
                     if (container.isMap()) {
                         auto mapPtr = std::get<vDataMap>(container.value);
-                        // Verificăm dacă proprietatea există în map-ul de pe heap
                         if (mapPtr && mapPtr->count(field)) return (*mapPtr).at(field);
                     }
                     return { std::monostate{} };
                 }
 
-                // --- ACCES (INDEX) ---
                 if (node->value == L"INDEX" || node->value == L"[") {
                     if (node->children.size() < 2) return { std::monostate{} };
                     vData container = executeAST(node->children[0]);
@@ -1516,19 +1533,11 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
                     return accessContainer(container, index);
                 }
 
-                // --- OPERATORI BINARI & UNARI (Rămân neschimbați) ---
+                // --- BINAR & UNAR ---
                 if (node->children.size() >= 2) {
                     vData lhs = executeAST(node->children[0]);
                     vData rhs = executeAST(node->children[1]);
-                    vData result = executeBinaryOperator(node->value, lhs, rhs);
-                    if (result.isNull()) {
-                        const std::wstring& op = node->value;
-                        if (op == L"-" || op == L"*" || op == L"/" || op == L"^" || op == L"**" || op == L"%") {
-                            LOG_ERROR(L"Operation '" + op + L"' failed. Math error or NULL operand.");
-                            return { std::monostate{} };
-                        }
-                    }
-                    return result;
+                    return executeBinaryOperator(node->value, lhs, rhs);
                 }
 
                 if (node->children.size() >= 1) {
@@ -1849,18 +1858,43 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
     */
 
 vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& left, const vData& right) {
-    // --- 1. OPERATORI DE COALESCENCE (Trebuie să ruleze înainte de verificarea de NULL) ---
+    // --- 1. OPERATORI DE COALESCENCE ---
     if (op == L"??") {
         return left.isNull() ? right : left;
     }
 
-    // --- 2. LOGICĂ ȘI EGALITATE (Suportă operanzi NULL) ---
+    // --- 2. LOGICĂ DE EGALITATE (Punctul critic pentru Pointeri) ---
     if (op == L"==") {
+        // A. Verificăm dacă sunt ambii NULL (monostate)
         if (left.isNull() && right.isNull()) return { true };
+
+        // B. LOGICĂ SPECIALĂ PENTRU POINTERI (vData*)
+        bool leftIsPtr = std::holds_alternative<vData*>(left.value);
+        bool rightIsPtr = std::holds_alternative<vData*>(right.value);
+
+        if (leftIsPtr || rightIsPtr) {
+            // Dacă ambii sunt pointeri, comparăm adresele de memorie brute
+            if (leftIsPtr && rightIsPtr) {
+                return { std::get<vData*>(left.value) == std::get<vData*>(right.value) };
+            }
+
+            // Un pointer real NU este egal cu NULL (monostate), decât dacă adresa e nullptr
+            if (leftIsPtr && right.isNull()) return { std::get<vData*>(left.value) == nullptr };
+            if (rightIsPtr && left.isNull()) return { std::get<vData*>(right.value) == nullptr };
+
+            // Un pointer nu este egal cu un string sau un număr
+            return { false };
+        }
+
+        // C. Logică standard pentru NULL vs restul
         if (left.isNull() || right.isNull()) return { false };
+
+        // D. Comparație numerică (cu toleranță pentru float)
         if (canBeNumeric(left) && canBeNumeric(right)) {
             return { std::abs(vDataToDouble(left) - vDataToDouble(right)) < 1e-9 };
         }
+
+        // E. Fallback: Comparație ca String
         return { vDataToWString(left) == vDataToWString(right) };
     }
 
@@ -1869,70 +1903,58 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         return vData(!vDataToBool(res));
     }
 
-    // --- 3. ADUNAREA / CONCATENAREA (Tratăm NULL ca 0 sau "") ---
+    // --- 3. ADUNAREA / CONCATENAREA ---
     if (op == L"+") {
-        // 1. Dacă oricare este String, forțăm CONCATENARE
         if (left.isString() || right.isString()) {
             return { vDataToWString(left) + vDataToWString(right) };
         }
 
-        // 2. Dacă ambele sunt Int, păstrăm precizia de Long Long
         if (left.isInt() && right.isInt()) {
             return { std::get<long long>(left.value) + std::get<long long>(right.value) };
         }
 
-        // 3. Fallback numeric (Double) pentru Float sau NULL
         if (canBeNumeric(left) || left.isNull() || canBeNumeric(right) || right.isNull()) {
             double valL = left.isNull() ? 0.0 : vDataToDouble(left);
             double valR = right.isNull() ? 0.0 : vDataToDouble(right);
             return { valL + valR };
         }
-
-        // 4. Ultima instanță (ex: obiecte, array-uri transformate în string)
         return { vDataToWString(left) + vDataToWString(right) };
     }
 
     // --- 4. BARIERĂ PENTRU OPERAȚII STRICTE ---
-    // Dacă am ajuns aici și unul e NULL, restul operațiilor (^, *, /, -) nu pot continua.
-    if (left.isNull() || right.isNull()) {
-        return vData(); // Returnăm NULL pur (monostate)
+    // Pointers, Maps și Arrays nu pot participa la matematică directă (^, *, /, -)
+    if (left.isNull() || right.isNull() ||
+        std::holds_alternative<vData*>(left.value) ||
+        std::holds_alternative<vData*>(right.value)) {
+        return vData();
     }
 
     // --- 5. OPERAȚII NUMERICE ---
     if (canBeNumeric(left) && canBeNumeric(right)) {
 
-        // Cazul specific pentru PUTERE (Întotdeauna Double pentru a suporta radicali)
         if (op == L"^" || op == L"**") {
             return { std::pow(vDataToDouble(left), vDataToDouble(right)) };
         }
 
-        // Ramura de Integers (Păstrare precizie)
         if (left.isInt() && right.isInt()) {
             long long iL = std::get<long long>(left.value);
             long long iR = std::get<long long>(right.value);
 
             if (op == L"-") return { iL - iR };
             if (op == L"*") return { iL * iR };
-            //if (op == L"%") return iR != 0 ? vData(iL % iR) : vData();
-            if (op == L"%") {
-                long long iL = static_cast<long long>(vDataToDouble(left));
-                long long iR = static_cast<long long>(vDataToDouble(right));
-                return iR != 0 ? vData(iL % iR) : vData();
-            }
+            if (op == L"%") return iR != 0 ? vData(iL % iR) : vData();
             if (op == L"/") {
                 if (iR == 0) return vData();
                 return (iL % iR == 0) ? vData(iL / iR) : vData((double)iL / (double)iR);
             }
         }
 
-        // Ramura de Floating Point (Fallback)
         double dL = vDataToDouble(left);
         double dR = vDataToDouble(right);
         if (op == L"-") return { dL - dR };
         if (op == L"*") return { dL * dR };
         if (op == L"/") return std::abs(dR) > 1e-12 ? vData(dL / dR) : vData();
 
-        // Comparații numerice
         if (op == L"<")  return { dL < dR };
         if (op == L">")  return { dL > dR };
         if (op == L"<=") return { dL <= dR };
@@ -1951,94 +1973,47 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         if (op == L">")  return { sL > sR };
     }
 
-    return vData(); // Fallback: operație nesuportată returnează NULL
+    return vData();
 }
 
-    double vOliEngine::vDataToDouble(const vData& data) const {
-        if (data.isFloat()) return std::get<double>(data.value);
-        if (data.isInt())   return static_cast<double>(std::get<long long>(data.value));
-        if (data.isBool())  return std::get<bool>(data.value) ? 1.0 : 0.0;
+double vOliEngine::vDataToDouble(const vData& data) const {
+    return std::visit([this](auto&& arg) -> double {
+        using T = std::decay_t<decltype(arg)>;
 
-        if (data.isString()) {
+        if constexpr (std::is_same_v<T, double>) {
+            return arg;
+        }
+        else if constexpr (std::is_same_v<T, long long>) {
+            return static_cast<double>(arg);
+        }
+        else if constexpr (std::is_same_v<T, bool>) {
+            return arg ? 1.0 : 0.0;
+        }
+        else if constexpr (std::is_same_v<T, std::wstring>) {
             try {
-                return std::stod(std::get<std::wstring>(data.value));
+                return std::stod(arg);
             }
             catch (...) {
                 return 0.0;
             }
         }
-        return 0.0;
-    }
-
-    /*
-    vData vOliEngine::parseRawLiteral(const std::wstring& val) {
-        // 1. Convertim într-o variabilă locală low pentru verificare
-        std::wstring lowVal = val;
-        for (auto& c : lowVal) c = std::towlower(c);
-
-        // 2. Verificăm starea specială (Null/Monostate)
-        if (lowVal == L"monostate" || lowVal == L"null" || lowVal == L"none") {
-            return { std::monostate{} };
-        }
-
-        // 3. Verificăm dacă e boolean
-        if (lowVal == L"true")  return { true };
-        if (lowVal == L"false") return { false };
-
-        // 4. Verificăm dacă e un număr (Integer sau Float)
-        try {
-            if (val.find(L'.') != std::wstring::npos) {
-                return { std::stod(val) };
+        else if constexpr (std::is_same_v<T, vData*>) {
+            // --- LOGICA PENTRU POINTERI REALI ---
+            // Dacă vrei ca o variabilă pointer să fie tratată ca număr, 
+            // trebuie să mergem la adresa indicată și să vedem ce e acolo.
+            if (arg != nullptr) {
+                return this->vDataToDouble(*arg); // Recursivitate: extragem numărul de la adresă
             }
-            else {
-                // Verificăm dacă șirul conține doar cifre (și eventual semnul -) 
-                // pentru a evita ca std::stoll să arunce excepții pe string-uri arbitrare
-                return { std::stoll(val) };
-            }
-        }
-        catch (...) {
-            // Dacă nu e număr și nici bool, rămâne string brut
-            return { val };
-        }
-    }
-    */
-    /*
-    vData vOliEngine::parseRawLiteral(const std::wstring& val) {
-        LOG_DEBUG(std::wstring(L"AICIII:") + val);
-        if (val.empty()) return { std::monostate{} };
-
-        std::wstring lowVal = val;
-        for (auto& c : lowVal) c = std::towlower(c);
-
-        if (lowVal == L"null" || lowVal == L"none") return { std::monostate{} };
-        if (lowVal == L"true")  return { true };
-        if (lowVal == L"false") return { false };
-
-        // Verificăm dacă e numeric
-        wchar_t* endPtr = nullptr;
-        const wchar_t* startPtr = val.c_str();
-
-        if (val.find(L'.') != std::wstring::npos) {
-            double d = std::wcstod(startPtr, &endPtr);
-            if (endPtr != startPtr) return { d }; // Succes float
+            return 0.0;
         }
         else {
-            long long ll = std::wcstoll(startPtr, &endPtr, 10);
-            if (endPtr != startPtr) return { ll }; // Succes int
+            // monostate (NULL), vDataArray, vDataMap
+            return 0.0;
         }
+        }, data.value);
+}
 
-        // Dacă endPtr nu a avansat sau e string pur
-
-        std::wcout << L"[DEBUG] RAW LITERAL='" << val << L"'" << std::endl;
-        std::wcout << L"[DEBUG] LENGTH=" << val.size() << std::endl;
-        for (size_t i = 0; i < val.size(); i++) {
-            std::wcout << L"  [" << i << L"] = " << (int)val[i] << std::endl;
-        }
-
-
-        return { val };
-    }
-    */
+    
 
 
 

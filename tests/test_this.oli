@@ -1,0 +1,47 @@
+echo "--- START TEST CONTEXT $this ---"
+
+# 1. Definim functiile care vor rula ca "metode"
+# Acestea se bazeaza pe existenta variabilei $this in scope-ul local
+
+func afiseaza_status
+    echo "----------------------------"
+    echo "Entitate: " + $this.nume
+    echo "Viata:    " + $this.hp
+    echo "Armura:   " + $this.armura
+    echo "----------------------------"
+endfunc
+
+func primeste_damage puncte
+    echo "[LOG] " + $this.nume + " a fost lovit cu " + $puncte + " dmg!"
+    set $this.hp = $this.hp - $puncte
+    if $this.hp < 0 then
+        set $this.hp = 0
+        echo "[LOG] " + $this.nume + " a cazut in lupta!"
+    endif
+endfunc
+
+# ---------------------------------------------------------
+# 2. Cream obiectele (Map-uri)
+# Observatie: Numele functiei este salvat ca STRING in campurile obiectului
+
+set $erou = {"nume": "Galahad", "hp": 100, "armura": 20, "status": "afiseaza_status", "lovitura": "primeste_damage"}
+
+set $orc = {"nume": "Orc Sef", "hp": 50, "armura": 5, "status": "afiseaza_status", "lovitura": "primeste_damage"}
+
+# ---------------------------------------------------------
+# 3. Executam apelurile de tip metoda
+# Aici motorul tau va seta $this = $erou, respectiv $this = $orc
+
+echo "Situatia initiala:"
+$erou.status()
+$orc.status()
+
+echo "Incepe lupta!"
+$orc.lovitura(30)
+$erou.lovitura(10)
+
+echo "Situatia dupa lupta:"
+$erou.status()
+$orc.status()
+
+echo "--- TEST FINALIZAT ---"

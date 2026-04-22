@@ -41,8 +41,12 @@ struct VarPath {
 
 struct vData; // Forward declaration
 
-using vDataArray = std::vector<vData>;
-using vDataMap = std::map<std::wstring, vData>;
+//using vDataArray = std::vector<vData>;
+//using vDataMap = std::map<std::wstring, vData>;
+
+using vDataArray = std::shared_ptr<std::vector<vData>>;
+using vDataMap = std::shared_ptr<std::map<std::wstring, vData>>;
+
 using OliCommandHandler = std::function<void(const ShellCommand&)>;
 //using OliFunctionHandler = std::function<vData(const std::vector<std::wstring>& args)>;
 using OliFunctionHandler = std::function<vData(const std::vector<vData>& args)>;
@@ -60,7 +64,25 @@ using vDataValue = std::variant<
 struct vData {
     vDataValue value;
 
-    //vData() = default;
+    // Helper: extrage vectorul brut dacă există, altfel nullptr
+    std::vector<vData>* rawArray() {
+        if (!isArray()) return nullptr;
+        return std::get<vDataArray>(value).get();
+    }
+
+    // Helper: extrage map-ul brut
+    std::map<std::wstring, vData>* rawMap() {
+        if (!isMap()) return nullptr;
+        return std::get<vDataMap>(value).get();
+    }
+
+    static vData CreateMap() {
+        return vData{ std::make_shared<std::map<std::wstring, vData>>() };
+    }
+
+    static vData CreateArray() {
+        return vData{ std::make_shared<std::vector<vData>>() };
+    }
 
     // Utilitar pentru a verifica dacă este array sau string
     bool isArray() const { return std::holds_alternative<vDataArray>(value); }
@@ -203,7 +225,7 @@ private:
     std::wstring cleanVariableName(const std::wstring& name);
 
     void callProcedure(const Procedure& proc, const std::vector<std::wstring>& passedArgs);
-    vData callUserFunction(const std::wstring& funcName, const std::vector<vData>& args);
+    vData callUserFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context = { std::monostate{} });
     void printTraceback();
     void dumpStackTrace();
 

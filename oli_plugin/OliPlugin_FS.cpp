@@ -15,7 +15,7 @@ void RegisterFileSystemFunctions(std::map<std::wstring, std::function<vData(cons
         for (auto& entry : std::filesystem::directory_iterator(path)) {
             vData item;
             item.value = entry.path().filename().wstring();
-            items.push_back(item);
+            items->push_back(item);
         }
 
         vData result;
@@ -34,7 +34,7 @@ void RegisterFileSystemFunctions(std::map<std::wstring, std::function<vData(cons
                 if (entry.is_regular_file()) {
                     vData f;
                     f.value = entry.path().filename().wstring();
-                    files.push_back(f);
+                    files->push_back(f);
                 }
             }
 

@@ -583,7 +583,18 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         if (std::holds_alternative<std::wstring>(data.value))   return L"STRING";
         if (std::holds_alternative<bool>(data.value))           return L"BOOL";
         if (std::holds_alternative<vDataArray>(data.value))     return L"ARRAY";
-        if (std::holds_alternative<vDataMap>(data.value))       return L"MAP";
+
+        if (std::holds_alternative<vDataMap>(data.value)) {
+            auto& mPtr = std::get<vDataMap>(data.value);
+
+            // Dacă e un Map, verificăm dacă are „buletin” (câmpul __type__)
+            if (mPtr && mPtr->count(L"__type__")) {
+                // Folosim vDataToWString pentru a extrage numele structurii
+                return vDataToWString((*mPtr)[L"__type__"]);
+            }
+            return L"MAP";
+        }
+
         if (std::holds_alternative<std::monostate>(data.value)) return L"NULL";
         return L"UNKNOWN";
     }
@@ -766,73 +777,10 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
         return { std::monostate{} };
     }
     
-/*
-vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
-    if (rawVar.empty()) return { std::monostate{} };
 
-    std::wstring currentPath = rawVar;
-    bool forceGlobal = false;
-
-    // --- PASUL 1: Detecție Scope (@) ---
-    // Nu returnăm imediat, doar setăm un flag și curățăm șirul
-    if (currentPath[0] == L'@') {
-        forceGlobal = true;
-        currentPath.erase(0, 1);
-    }
-
-    // --- PASUL 2: Rezolvare Indirectare recursivă ($) ---
-    // Aici lăsăm logica ta de dollarCount, dar aplicată pe currentPath
-    if (!currentPath.empty() && currentPath[0] == L'$') {
-        size_t dollarCount = 0;
-        while (dollarCount < currentPath.size() && currentPath[dollarCount] == L'$')
-            dollarCount++;
-
-        // Rezolvăm ce e după semnele $
-        vData result = resolveVariable(currentPath.substr(dollarCount));
-
-        // Dereferențiem pentru fiecare $
-        for (size_t i = 0; i < dollarCount; ++i) {
-            if (const std::wstring* s = std::get_if<std::wstring>(&result.value)) {
-                // Dacă avem @ în față, rezultatul final al dereferențierii 
-                // trebuie căutat tot în context global
-                std::wstring nextLookup = (forceGlobal ? L"@" : L"") + *s;
-                result = resolveVariable(nextLookup);
-            }
-            else {
-                break;
-            }
-        }
-        return result;
-    }
-
-    // --- PASUL 3: Identificare Rădăcină și Scoping ---
-    std::wstring varName = currentPath;
-    size_t firstSep = varName.find_first_of(L".[");
-    if (firstSep != std::wstring::npos) varName = varName.substr(0, firstSep);
-    varName = trim(varName);
-
-    // A: Dacă am avut @, căutăm DOAR în Global
-    if (forceGlobal) {
-        auto it = m_globalVariables.find(varName);
-        return (it != m_globalVariables.end()) ? it->second : vData{ std::monostate{} };
-    }
-
-    // B: Scoping normal (Local -> Global)
-    if (!m_callStack.empty()) {
-        auto& locals = m_callStack.back().localVariables;
-        auto it = locals.find(varName);
-        if (it != locals.end()) return it->second;
-    }
-
-    auto itGlobal = m_globalVariables.find(varName);
-    if (itGlobal != m_globalVariables.end()) return itGlobal->second;
-
-    return { std::monostate{} };
-}
-*/
     void vOliEngine::printVData(const vData& data, bool debugMode) {
         if (data.isNull()) {
-            std::wcout << L"~"; // Simbol pentru null/moonstate
+            std::wcout << L"~";
             return;
         }
 
@@ -843,7 +791,6 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
                 std::wcout << arg;
             }
             else if constexpr (std::is_same_v<T, double>) {
-                // Afișăm cu 2 zecimale pentru claritate
                 wchar_t buf[64];
                 swprintf(buf, 64, L"%.2f", arg);
                 std::wcout << buf;
@@ -856,19 +803,30 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
                 std::wcout << (arg ? L"true" : L"false");
             }
             else if constexpr (std::is_same_v<T, vDataArray>) {
+                // ARG este std::shared_ptr<std::vector<vData>>
+                if (!arg) {
+                    std::wcout << L"[]";
+                    return;
+                }
                 std::wcout << L"[";
-                for (size_t i = 0; i < arg.size(); ++i) {
-                    printVData(arg[i], debugMode); // Recursivitate sigură
-                    if (i < arg.size() - 1) std::wcout << L", ";
+                for (size_t i = 0; i < arg->size(); ++i) { // Folosim ->size()
+                    printVData((*arg)[i], debugMode);      // Dereferențiem (*arg)[i]
+                    if (i < arg->size() - 1) std::wcout << L", ";
                 }
                 std::wcout << L"]";
             }
             else if constexpr (std::is_same_v<T, vDataMap>) {
+                // ARG este std::shared_ptr<std::map<...>>
+                if (!arg) {
+                    std::wcout << L"{}";
+                    return;
+                }
                 std::wcout << L"{";
-                for (auto it = arg.begin(); it != arg.end(); ++it) {
+                // Iterăm prin obiectul real folosind *arg
+                for (auto it = arg->begin(); it != arg->end(); ++it) {
                     std::wcout << L"\"" << it->first << L"\": ";
                     printVData(it->second, debugMode);
-                    if (std::next(it) != arg.end()) std::wcout << L", ";
+                    if (std::next(it) != arg->end()) std::wcout << L", ";
                 }
                 std::wcout << L"}";
             }
@@ -905,7 +863,6 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
     }
 
     vData vOliEngine::parseArrayContent(const std::wstring& content) {
-        // 1. Verificăm dacă conține ':' (dar nu în ghilimele) pentru a detecta un Map
         bool containsColon = false;
         bool inQuotes = false;
         for (wchar_t c : content) {
@@ -914,25 +871,34 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
         }
 
         if (containsColon) {
-            vDataMap mapResult;
+            // 1. Inițializăm pointerul către un Map nou în HEAP
+            vDataMap mapResult = std::make_shared<std::map<std::wstring, vData>>();
+
             auto pairs = splitByCommaIgnoringBrackets(content);
             for (const auto& p : pairs) {
                 size_t colonPos = p.find(L':');
                 if (colonPos != std::wstring::npos) {
                     std::wstring k = normalizeSpaces(p.substr(0, colonPos));
-                    if (k.front() == L'"') k = k.substr(1, k.size() - 2); // scoatem ghilimelele
+                    if (k.size() >= 2 && k.front() == L'"' && k.back() == L'"')
+                        k = k.substr(1, k.size() - 2);
 
                     std::wstring v = p.substr(colonPos + 1);
-                    mapResult[k] = evaluateExpression(v);
+
+                    // 2. Dereferențiem pointerul (*) pentru a folosi operatorul []
+                    (*mapResult)[k] = evaluateExpression(v);
                 }
             }
-            return { mapResult };
+            return { mapResult }; // Returnăm vDataValue care conține shared_ptr-ul
         }
         else {
-            // Logica veche de Array
-            vDataArray arrResult;
+            // 3. Inițializăm pointerul către un Vector nou în HEAP
+            vDataArray arrResult = std::make_shared<std::vector<vData>>();
+
             auto elements = splitByCommaIgnoringBrackets(content);
-            for (const auto& e : elements) arrResult.push_back(evaluateExpression(e));
+            for (const auto& e : elements) {
+                // 4. Folosim -> pentru a apela metoda push_back a vectorului de la adresă
+                arrResult->push_back(evaluateExpression(e));
+            }
             return { arrResult };
         }
     }
@@ -949,13 +915,8 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
             }
             else if constexpr (std::is_same_v<T, double>) {
                 wchar_t buf[64];
-                // Folosim %g pentru a lăsa sistemul să aleagă cel mai scurt format (ex: 12 în loc de 12.0000)
                 swprintf(buf, 64, L"%g", arg);
-                std::wstring s(buf);
-
-                // Dacă vrei să forțezi un ".0" chiar și la numere întregi (ca să se vadă că e double), 
-                // poți adăuga o verificare, dar %g este de obicei ce vor utilizatorii de shell.
-                return s;
+                return std::wstring(buf);
             }
             else if constexpr (std::is_same_v<T, std::wstring>) {
                 return arg;
@@ -964,21 +925,30 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
                 return arg ? L"true" : L"false";
             }
             else if constexpr (std::is_same_v<T, vDataArray>) {
+                // ARG este acum std::shared_ptr<std::vector<vData>>
+                if (!arg) return L"[]"; // Siguranță: dacă pointerul e null
+
                 std::wstring res = L"[";
-                for (size_t i = 0; i < arg.size(); ++i) {
-                    // Apelăm recursiv vDataToWString pentru fiecare element
-                    res += this->vDataToWString(arg[i]);
-                    if (i < arg.size() - 1) res += L", ";
+                // Folosim ->size() pentru a accesa metoda vectorului de sub pointer
+                for (size_t i = 0; i < arg->size(); ++i) {
+                    // Dereferențiem cu (*arg)[i] pentru a ajunge la elementul vData
+                    res += this->vDataToWString((*arg)[i]);
+                    if (i < arg->size() - 1) res += L", ";
                 }
                 res += L"]";
                 return res;
             }
             else if constexpr (std::is_same_v<T, vDataMap>) {
+                // ARG este acum std::shared_ptr<std::map<...>>
+                if (!arg) return L"{}";
+
                 std::wstring res = L"{";
                 size_t i = 0;
-                for (auto const& [key, val] : arg) {
+                // Dereferențiem pointerul (*arg) pentru a putea itera prin Map-ul real
+                for (auto const& [key, val] : *arg) {
                     res += key + L": " + this->vDataToWString(val);
-                    if (++i < arg.size()) res += L", ";
+                    // arg->size() pentru a vedea câte elemente sunt în total
+                    if (++i < arg->size()) res += L", ";
                 }
                 res += L"}";
                 return res;
@@ -989,361 +959,128 @@ vData vOliEngine::resolveVariable(const std::wstring& rawVar) {
             }, data.value);
     }
     
-    /*
-    void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newValue) {
-        size_t bracketStart = varExpr.find(L'[');
-
-        // 1. Variabilă simplă ($v = 10)
-        if (bracketStart == std::wstring::npos) {
-            setVariable(varExpr, newValue);
-            return;
-        }
-
-        std::wstring varName = normalizeSpaces(varExpr.substr(0, bracketStart));
-        if (!varName.empty() && varName[0] == L'$') varName.erase(0, 1);
-
-        // --- PASUL 1: Găsirea sau Crearea Rădăcinii ---
-        vData* rootPtr = nullptr;
-
-        if (!m_callStack.empty()) {
-            auto& locals = m_callStack.back().localVariables;
-            if (locals.count(varName)) rootPtr = &locals[varName];
-        }
-
-        if (!rootPtr && m_globalVariables.count(varName)) {
-            rootPtr = &m_globalVariables[varName];
-        }
-
-        if (!rootPtr) {
-            if (m_nextSetIsGlobal || m_callStack.empty()) {
-                rootPtr = &m_globalVariables[varName];
-            }
-            else {
-                rootPtr = &m_callStack.back().localVariables[varName];
-            }
-
-            // Inițializare tip la prima creare
-            if (varExpr.substr(bracketStart, 2) == L"[]") {
-                rootPtr->value = vDataArray{};
-            }
-            else {
-                size_t firstEnd = findClosingBracket(varExpr, bracketStart);
-                if (firstEnd != std::wstring::npos) {
-                    std::wstring content = varExpr.substr(bracketStart + 1, firstEnd - bracketStart - 1);
-                    vData idx = evaluateExpression(content);
-                    // Dacă indexul e numeric, presupunem Array, altfel Map
-                    if (idx.isInt() || idx.isFloat()) rootPtr->value = vDataArray{};
-                    else rootPtr->value = vDataMap{};
-                }
-            }
-        }
-
-        // --- PASUL 2: Navigare către containerul țintă ($a[1][2] -> ținta e $a[1]) ---
-        vData* targetContainer = navigateOrCreatePath(rootPtr, varExpr);
-        if (!targetContainer) return;
-
-        // Extragerea ultimului index
-        size_t lastOpen = varExpr.find_last_of(L'[');
-        size_t lastClose = findClosingBracket(varExpr, lastOpen);
-        if (lastOpen == std::wstring::npos || lastClose == std::wstring::npos) return;
-
-        std::wstring lastIdxExpr = normalizeSpaces(varExpr.substr(lastOpen + 1, lastClose - lastOpen - 1));
-        vData idxVal = lastIdxExpr.empty() ? vData{ std::monostate{} } : evaluateExpression(lastIdxExpr);
-
-        // --- PASUL 3: Asignarea Finală cu Protecția Tipului ---
-
-        // Cazul A: Adăugare la final ($arr[] = val)
-        if (lastIdxExpr.empty()) {
-            if (!targetContainer->isArray()) targetContainer->value = vDataArray{};
-            std::get<vDataArray>(targetContainer->value).push_back(newValue);
-        }
-        // Cazul B: Containerul este deja un ARRAY
-        else if (targetContainer->isArray()) {
-            assignToArrayVar(targetContainer, lastIdxExpr, newValue);
-        }
-        // Cazul C: Containerul este deja un MAP (obiect {})
-        else if (targetContainer->isMap()) {
-            assignToMapVar(targetContainer, lastIdxExpr, newValue);
-        }
-        // Cazul D: Containerul este nou/null (decidem tipul acum)
-        else {
-            if (idxVal.isInt() || idxVal.isFloat()) {
-                targetContainer->value = vDataArray{};
-                assignToArrayVar(targetContainer, lastIdxExpr, newValue);
-            }
-            else {
-                targetContainer->value = vDataMap{};
-                assignToMapVar(targetContainer, lastIdxExpr, newValue);
-            }
-        }
-
-        // --- DEBUG FINAL ---
-        
-        std::wcout << L"[DEBUG] Var: " << varName
-                   << L" | Path: " << varExpr
-                   << L" | Type: " << (targetContainer->isArray() ? L"ARRAY" : L"MAP")
-                   << L" | Index: " << vDataToWString(idxVal) << std::endl;
-        
-    }
-    */
-    /*
+    
     void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newValue) {
         std::wstring trimmedExpr = trim(varExpr);
 
-        // Detectăm primul separator (fie [ fie .)
+        // 1. Gestionare Prefix Global (@)
+        // Dacă expresia începe cu @, forțăm contextul global și eliminăm simbolul
+        bool forceGlobal = (!trimmedExpr.empty() && trimmedExpr[0] == L'@');
+        if (forceGlobal) trimmedExpr.erase(0, 1);
+
+        // 2. Separare Rădăcină de Cale (ex: $erou.poz.x -> rootPart: $erou, path: .poz.x)
         size_t firstSep = trimmedExpr.find_first_of(L"[.");
+        std::wstring rootPart = (firstSep == std::wstring::npos) ? trimmedExpr : trimmedExpr.substr(0, firstSep);
+        std::wstring pathRemainder = (firstSep == std::wstring::npos) ? L"" : trimmedExpr.substr(firstSep);
 
-        // --- CAZUL 0: Variabilă simplă ---
-        if (firstSep == std::wstring::npos) {
-            setVariable(trimmedExpr, newValue);
-            return;
+        // 3. LOGICA DE REFLEXIE (EVALUARE DINAMICĂ)
+        // Dacă rootPart conține $, rezolvăm ce e înăuntru (ex: $tinta_nume -> "erou")
+        if (rootPart.find(L'$') != std::wstring::npos) {
+            vData resolved = resolveVariable(rootPart);
+            if (auto* pStr = std::get_if<std::wstring>(&resolved.value)) {
+                rootPart = *pStr;
+                LOG_DEBUG(L"[REFLEXIE] Nume real determinat din variabila: " + rootPart);
+            }
         }
 
-        // --- 2. DETECȚIE PREFIX ȘI NUME RĂDĂCINĂ ---
-        std::wstring fullVarName = normalizeSpaces(trimmedExpr.substr(0, firstSep));
-        bool forceGlobal = (!fullVarName.empty() && fullVarName[0] == L'@');
-
-        std::wstring varName = fullVarName;
-        if (!varName.empty() && (varName[0] == L'$' || varName[0] == L'@')) {
-            varName.erase(0, 1);
+        // --- PASUL CRITIC: CURĂȚARE SIGIL ($) ---
+        // În m_globalVariables, cheile sunt salvate ca "erou", nu ca "$erou".
+        // Dacă rootPart a rămas cu $ (fie din reflexie, fie din trim), îl eliminăm.
+        if (!rootPart.empty() && rootPart[0] == L'$') {
+            rootPart.erase(0, 1);
         }
-        varName = trim(varName);
 
-        // --- 3. GĂSIREA RĂDĂCINII (Shadowing Policy) ---
+        // 4. OBȚINERE POINTER CĂTRE VARIABILĂ (L-Value)
         vData* rootPtr = nullptr;
-        if (forceGlobal) {
-            rootPtr = &m_globalVariables[varName];
-        }
-        else if (!m_callStack.empty()) {
-            // Dacă suntem în funcție, tinta e locală (copie a boss-ului global)
-            rootPtr = &m_callStack.back().localVariables[varName];
+        if (forceGlobal || m_callStack.empty()) {
+            rootPtr = &m_globalVariables[rootPart];
         }
         else {
-            rootPtr = &m_globalVariables[varName];
+            auto& locals = m_callStack.back().localVariables;
+            // Shadowing logic: dacă există local, îl folosim, altfel mergem pe global
+            rootPtr = (locals.count(rootPart)) ? &locals[rootPart] : &m_globalVariables[rootPart];
         }
 
-        // Dacă rădăcina e NULL, inițializăm în funcție de primul separator
-        if (rootPtr->isNull()) {
-            if (trimmedExpr[firstSep] == L'.') rootPtr->value = vDataMap{};
-            else rootPtr->value = vDataArray{};
-        }
+        // 5. NAVIGARE PRIN PROPRIETĂȚI (ex: .poz.x)
+        // navigateOrCreatePath va returna pointerul către vData care conține "poz" (părintele lui "x")
+        vData* target = navigateOrCreatePath(rootPtr, pathRemainder);
 
-        // --- 4. NAVIGARE CĂTRE PENULTIMUL NOD ---
-        // navigateOrCreatePath trebuie să știe să împartă și după puncte!
-        vData* targetContainer = navigateOrCreatePath(rootPtr, trimmedExpr);
-        if (!targetContainer) return;
+        if (target) {
+            // Extragem field-ul final (ex: "x" din "$erou.poz.x")
+            size_t lastSep = trimmedExpr.find_last_of(L".[");
+            std::wstring field = (lastSep == std::wstring::npos) ? rootPart : trimmedExpr.substr(lastSep + 1);
+            if (!field.empty() && field.back() == L']') field.pop_back();
 
-        // --- 5. ASIGNAREA FINALĂ ---
-        // Extragem ultima parte (după ultimul [ sau .)
-        size_t lastSep = trimmedExpr.find_last_of(L"[.");
-        if (lastSep == std::wstring::npos) return;
+            // 6. ACTUALIZARE VALOARE ÎN HEAP
+            if (auto* pMapPtr = std::get_if<vDataMap>(&target->value)) {
+                // Dacă pointerul partajat este null (neinițializat), creăm obiectul acum
+                if (!(*pMapPtr)) *pMapPtr = std::make_shared<std::map<std::wstring, vData>>();
 
-        if (trimmedExpr[lastSep] == L'.') {
-            // Asignare prin punct: $obj.prop
-            std::wstring field = trim(trimmedExpr.substr(lastSep + 1));
-            if (!targetContainer->isMap()) targetContainer->value = vDataMap{};
-            std::get<vDataMap>(targetContainer->value)[field] = newValue;
-        }
-        else {
-            // Asignare prin bracket: $arr[idx]
-            size_t lastClose = findClosingBracket(trimmedExpr, lastSep);
-            if (lastClose == std::wstring::npos) return;
-            std::wstring idxExpr = trim(trimmedExpr.substr(lastSep + 1, lastClose - lastSep - 1));
+                // (**pMapPtr) dereferențiază pointerul brut, apoi shared_ptr-ul pentru a scrie în Map
+                (**pMapPtr)[field] = newValue;
+                LOG_DEBUG(L"[SUCCESS] Actualizat campul '" + field + L"' pentru variabila: " + rootPart);
+            }
+            else {
+                // Auto-vivificare: dacă nu era Map, îl transformăm într-unul
+                vData newMapObj = vData::CreateMap();
+                auto mPtr = std::get<vDataMap>(newMapObj.value);
+                (*mPtr)[field] = newValue;
 
-            // Refolosim logica ta existentă pentru Array/Map
-            if (idxExpr.empty()) { }
-            else if (targetContainer->isArray()) { assignToArrayVar(targetContainer, idxExpr, newValue); }
-            else { assignToMapVar(targetContainer, idxExpr, newValue); }
+                target->value = newMapObj.value;
+                LOG_DEBUG(L"[SUCCESS] Creat ierarhie noua pentru: " + rootPart + L"." + field);
+            }
         }
     }
-    */
-/*
-void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newValue) {
-    std::wstring trimmedExpr = trim(varExpr);
-
-    // Detectăm primul separator pentru a identifica rădăcina (root)
-    size_t firstSep = trimmedExpr.find_first_of(L"[.");
-
-    // --- CAZUL 0: Variabilă simplă ($a = 10 sau @a = 10) ---
-    if (firstSep == std::wstring::npos) {
-        setVariable(trimmedExpr, newValue);
-        return;
-    }
-
-    // --- 1. DETECȚIE PREFIX ȘI NUME RĂDĂCINĂ ---
-    std::wstring fullVarName = normalizeSpaces(trimmedExpr.substr(0, firstSep));
-    bool forceGlobal = (!fullVarName.empty() && fullVarName[0] == L'@');
-    std::wstring varName = fullVarName;
-
-    // --- 2. LOGICĂ DE DEREFERENȚIERE (Pointer Resolution) ---
-    // Verificăm cazul special @$pointer.prop sau $pointer.prop
-    if (varName.size() > 1 && varName[forceGlobal ? 1 : 0] == L'$') {
-        // Extragem expresia pointer (ex: dacă avem @$tinta, extragem $tinta)
-        std::wstring pointerExpr = forceGlobal ? varName.substr(1) : varName;
-
-        // Întrebăm motorul: "Cine se ascunde în variabila asta?"
-        vData resolvedPointer = resolveVariable(pointerExpr);
-
-        if (const std::wstring* actualName = std::get_if<std::wstring>(&resolvedPointer.value)) {
-            varName = *actualName; // Transformăm "$tinta_nume" în "erou" sau "boss"
-        }
-        else {
-            // Dacă nu e string, nu putem face "deep write" pe un nume dinamic
-            return;
-        }
-    }
-    else {
-        // Logica standard: scoatem prefixul (@ sau $) pentru a obține numele brut
-        if (!varName.empty() && (varName[0] == L'$' || varName[0] == L'@')) {
-            varName.erase(0, 1);
-        }
-    }
-    varName = trim(varName);
-
-    // --- 3. IDENTIFICAREA RĂDĂCINII ÎN MEMORIE (Pointer la vData) ---
-    vData* rootPtr = nullptr;
-    if (forceGlobal) {
-        rootPtr = &m_globalVariables[varName];
-    }
-    else if (!m_callStack.empty()) {
-        // Dacă suntem în interiorul unei funcții, căutăm în localVariables
-        rootPtr = &m_callStack.back().localVariables[varName];
-    }
-    else {
-        rootPtr = &m_globalVariables[varName];
-    }
-
-    // Dacă rădăcina este nulă (variabilă nouă), o inițializăm în funcție de acces
-    if (rootPtr->isNull()) {
-        if (trimmedExpr[firstSep] == L'.') rootPtr->value = vDataMap{};
-        else rootPtr->value = vDataArray{};
-    }
-
-    // --- 4. NAVIGARE CĂTRE PENULTIMUL NOD ---
-    // Trimitem doar restul căii către navigator (ex: ".poz.x")
-    std::wstring pathSegment = trimmedExpr.substr(firstSep);
-    vData* targetContainer = navigateOrCreatePath(rootPtr, pathSegment);
-
-    if (!targetContainer) return;
-
-    // --- 5. ASIGNAREA VALORII FINALE ---
-    size_t lastSep = trimmedExpr.find_last_of(L"[.");
-    if (lastSep == std::wstring::npos || lastSep < firstSep) return;
-
-    if (trimmedExpr[lastSep] == L'.') {
-        // Asignare proprietate: obiect.camp = valoare
-        std::wstring field = trim(trimmedExpr.substr(lastSep + 1));
-        if (!targetContainer->isMap()) targetContainer->value = vDataMap{};
-        std::get<vDataMap>(targetContainer->value)[field] = newValue;
-    }
-    else {
-        // Asignare index: array[idx] = valoare
-        size_t lastClose = findClosingBracket(trimmedExpr, lastSep);
-        if (lastClose == std::wstring::npos) return;
-        std::wstring idxExpr = trim(trimmedExpr.substr(lastSep + 1, lastClose - lastSep - 1));
-
-        if (idxExpr.empty()) {
-            // Cazul $arr[] = valoare (push_back)
-            if (!targetContainer->isArray()) targetContainer->value = vDataArray{};
-            std::get<vDataArray>(targetContainer->value).push_back(newValue);
-        }
-        else if (targetContainer->isArray()) {
-            assignToArrayVar(targetContainer, idxExpr, newValue);
-        }
-        else {
-            assignToMapVar(targetContainer, idxExpr, newValue);
-        }
-    }
-}
-*/
-
-void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newValue) {
-    std::wstring trimmedExpr = trim(varExpr);
-
-    // 1. Detectăm contextul GLOBAL (@)
-    bool forceGlobal = (!trimmedExpr.empty() && trimmedExpr[0] == L'@');
-    if (forceGlobal) trimmedExpr.erase(0, 1);
-
-    size_t firstSep = trimmedExpr.find_first_of(L"[.");
-    std::wstring rootPart = (firstSep == std::wstring::npos) ? trimmedExpr : trimmedExpr.substr(0, firstSep);
-    std::wstring pathRemainder = (firstSep == std::wstring::npos) ? L"" : trimmedExpr.substr(firstSep);
-
-    // 2. REFLEXIE AGRESIVĂ (Curățăm toți de $ și rezolvăm)
-    // Dacă rootPart conține $, înseamnă că e o referință dinamică
-    if (rootPart.find(L'$') != std::wstring::npos) {
-        vData resolved = resolveVariable(rootPart);
-        if (auto* pStr = std::get_if<std::wstring>(&resolved.value)) {
-            rootPart = *pStr;
-            if (rootPart.empty() || rootPart[0] != L'$') rootPart = L"$" + rootPart;
-            LOG_DEBUG(L"[FIX] Reflexie fortata: " + rootPart);
-        }
-    }
-
-    // 3. OBTINERE POINTER (Folosim referință directă la map-ul global)
-    vData* rootPtr = nullptr;
-    if (forceGlobal || m_callStack.empty()) {
-        rootPtr = &m_globalVariables[rootPart];
-    }
-    else {
-        auto& locals = m_callStack.back().localVariables;
-        rootPtr = (locals.count(rootPart)) ? &locals[rootPart] : &m_globalVariables[rootPart];
-    }
-
-    // 4. NAVIGARE (Fără copii!)
-    vData* target = navigateOrCreatePath(rootPtr, pathRemainder);
-
-    if (target) {
-        size_t lastSep = trimmedExpr.find_last_of(L".[");
-        std::wstring field = trimmedExpr.substr(lastSep + 1);
-        if (field.back() == L']') field.pop_back(); // Curățăm indexul
-
-        if (auto* pMap = std::get_if<vDataMap>(&target->value)) {
-            (*pMap)[field] = newValue;
-            LOG_DEBUG(L"[SUCCESS] Scris " + field + L" in obiectul " + rootPart);
-        }
-        else {
-            // Dacă nu e Map, îl transformăm, dar păstrăm referința
-            target->value = vDataMap{};
-            std::get<vDataMap>(target->value)[field] = newValue;
-        }
-
-        // --- FILTRUL DE SIGURANȚĂ ---
-        // Dacă am lucrat pe Global, ne asigurăm că map-ul global a reținut modificarea
-        if (forceGlobal) m_globalVariables[rootPart] = *rootPtr;
-    }
-}
 
     void vOliEngine::assignToArrayVar(vData* container, const std::wstring& indexExpr, const vData& newValue) {
-        vDataArray& arr = std::get<vDataArray>(container->value);
+        // 1. Extragem shared_ptr-ul (telecomanda) din variant
+        auto& arrPtr = std::get<vDataArray>(container->value);
+
+        // 2. Verificăm dacă pointerul este valid (dacă nu, îl inițializăm)
+        if (!arrPtr) {
+            arrPtr = std::make_shared<std::vector<vData>>();
+        }
 
         if (indexExpr.empty()) {
-            // Cazul set a[] = val -> Adaugă elementul la sfârșit
-            arr.push_back(newValue);
+            // Cazul set a[] = val -> Folosim -> pentru a ajunge la vectorul de pe heap
+            arrPtr->push_back(newValue);
         }
         else {
-            // Cazul set a[$i] = val -> Update la index specific
+            // Cazul set a[$i] = val
             vData idxVal = evaluateExpression(indexExpr);
-            long long rawIdx = vDataToLong(idxVal); // Acum funcția e găsită!
+            long long rawIdx = vDataToLong(idxVal);
 
-            if (rawIdx < 0) return; // Index invalid
+            if (rawIdx < 0) return;
 
             size_t idx = static_cast<size_t>(rawIdx);
-            if (idx >= arr.size()) {
-                arr.resize(idx + 1, { std::monostate{} });
-                //arr.resize(idx + 1);
+
+            // 3. Folosim -> pentru metodele vectorului (size, resize)
+            if (idx >= arrPtr->size()) {
+                arrPtr->resize(idx + 1, vData{ std::monostate{} });
             }
-            arr[idx] = newValue;
+
+            // 4. Folosim (*arrPtr)[idx] sau arrPtr->at(idx) pentru accesul la element
+            (*arrPtr)[idx] = newValue;
         }
     }
 
     void vOliEngine::assignToMapVar(vData* container, const std::wstring& indexExpr, const vData& newValue) {
-        if (!std::holds_alternative<vDataMap>(container->value)) container->value = vDataMap();
-        vDataMap& m = std::get<vDataMap>(container->value);
+        // 1. Verificăm dacă nu e Map SAU dacă pointerul este null
+        if (!std::holds_alternative<vDataMap>(container->value) || !std::get<vDataMap>(container->value)) {
+            // Inițializăm pointerul cu un Map nou pe HEAP
+            container->value = std::make_shared<std::map<std::wstring, vData>>();
+        }
 
-        vData keyVal = evaluateExpression(indexExpr); // Suportă chei dinamice
+        // 2. Obținem referința la shared_ptr (telecomanda)
+        auto& mPtr = std::get<vDataMap>(container->value);
+
+        // 3. Evaluăm cheia (rămâne neschimbat)
+        vData keyVal = evaluateExpression(indexExpr);
         std::wstring key = vDataToWString(keyVal);
 
-        m[key] = newValue;
+        // 4. OPERAȚIA CRITICĂ: Dereferențiem pointerul pentru a folosi []
+        // Folosim (*mPtr) pentru a accesa Map-ul real de la adresa indicată
+        (*mPtr)[key] = newValue;
     }
 
     std::vector<std::wstring> vOliEngine::splitPath(const std::wstring& expr) {
@@ -1363,110 +1100,58 @@ void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newV
     }
 
 
-    /*
-    vData* vOliEngine::navigateOrCreatePath(vData* root, const std::wstring& varExpr) {
-        if (!root) return nullptr;
-
-        // 1. Spargem calea în componente: "tinta.stats.hp" -> ["tinta", "stats", "hp"]
-        std::vector<std::wstring> tokens = splitPath(varExpr);
-
-        // Dacă avem doar rădăcina (ex: "$tinta"), returnăm direct root
-        if (tokens.size() <= 1) return root;
-
-        vData* current = root;
-
-        // 2. Navigăm până la PENULTIMUL token
-        // Exemplu pentru tinta.stats.hp: i merge de la 1 la 1 (doar pentru "stats")
-        for (size_t i = 1; i < tokens.size() - 1; ++i) {
-            std::wstring key = tokens[i];
-
-            // Curățăm ghilimelele dacă indexul a fost de tip string: ["stats"] -> stats
-            if (key.size() >= 2 && key.front() == L'\"' && key.back() == L'\"') {
-                key = key.substr(1, key.size() - 2);
-            }
-
-            // Determinăm tipul următorului nivel pentru auto-inițializare
-            std::wstring nextKey = tokens[i + 1];
-            bool nextIsNumeric = !nextKey.empty() && std::iswdigit(nextKey[0]);
-
-            if (current->isMap()) {
-                // Dacă e deja Map (structură), mergem la cheia următoare
-                current = &std::get<vDataMap>(current->value)[key];
-            }
-            else if (current->isArray()) {
-                // Dacă e Array, convertim cheia în index
-                try {
-                    size_t idx = std::stoll(key);
-                    auto& vec = std::get<vDataArray>(current->value);
-                    if (idx >= vec.size()) vec.resize(idx + 1);
-                    current = &vec[idx];
-                }
-                catch (...) { return nullptr; }
-            }
-            else if (current->isNull()) {
-                // AUTO-INITIALIZARE: Dacă e null, decidem ce devine în funcție de indexul curent
-                // Dacă indexul e numeric, facem Array, altfel Map
-                bool currentIsNumeric = !key.empty() && std::iswdigit(key[0]);
-
-                if (currentIsNumeric) current->value = vDataArray{};
-                else current->value = vDataMap{};
-
-                // Re-executăm pasul după inițializare
-                return navigateOrCreatePath(root, varExpr);
-            }
-            else {
-                // Tip incompatibil (ex: încerci să pui punct după un INT)
-                return nullptr;
-            }
-        }
-
-        return current;
-    }
-    */
+   
 
     vData* vOliEngine::navigateOrCreatePath(vData* root, const std::wstring& varExpr) {
         if (!root) return nullptr;
 
-        // 1. Spargem calea. IMPORTANT: ".poz.x" trebuie să devină ["poz", "x"]
         std::vector<std::wstring> tokens = splitPath(varExpr);
-
-        // Dacă nu avem unde naviga, returnăm rădăcina
         if (tokens.empty()) return root;
 
         vData* current = root;
 
-        // 2. Navigăm prin TOATE componentele, mai puțin ULTIMA
-        // Folosim un loop care procesează tot drumul până la obiectul "părinte" al proprietății finale
         for (size_t i = 0; i < tokens.size() - 1; ++i) {
             std::wstring key = tokens[i];
-            if (key.empty()) continue; // Ignorăm segmente goale (ex: de la punctul inițial)
+            if (key.empty()) continue;
 
-            // Curățare ghilimele
             if (key.size() >= 2 && key.front() == L'\"' && key.back() == L'\"') {
                 key = key.substr(1, key.size() - 2);
             }
 
-            // AUTO-INITIALIZARE dacă dăm de un segment care nu există
+            // 1. AUTO-INITIALIZARE (Folosim noile metode statice)
             if (current->isNull()) {
-                // Dacă cheia e numerică, presupunem că vrem Array, altfel Map
-                if (!key.empty() && std::iswdigit(key[0])) current->value = vDataArray{};
-                else current->value = vDataMap{};
+                if (!key.empty() && std::iswdigit(key[0]))
+                    current->value = vData::CreateArray().value;
+                else
+                    current->value = vData::CreateMap().value;
             }
 
+            // 2. NAVIGARE ÎN MAP
             if (current->isMap()) {
-                current = &std::get<vDataMap>(current->value)[key];
+                auto& mapPtr = std::get<vDataMap>(current->value);
+                // Dacă pointerul e null dintr-un motiv oarecare, îl creăm
+                if (!mapPtr) mapPtr = std::make_shared<std::map<std::wstring, vData>>();
+
+                // Returnăm adresa vData-ului din interiorul map-ului real (*mapPtr)
+                current = &((*mapPtr)[key]);
             }
+            // 3. NAVIGARE ÎN ARRAY
             else if (current->isArray()) {
                 try {
-                    size_t idx = std::stoll(key);
-                    auto& vec = std::get<vDataArray>(current->value);
-                    if (idx >= vec.size()) vec.resize(idx + 1);
-                    current = &vec[idx];
+                    size_t idx = static_cast<size_t>(std::stoll(key));
+                    auto& arrPtr = std::get<vDataArray>(current->value);
+                    if (!arrPtr) arrPtr = std::make_shared<std::vector<vData>>();
+
+                    // Folosim -> pentru a accesa metodele vectorului de pe heap
+                    if (idx >= arrPtr->size()) {
+                        arrPtr->resize(idx + 1, vData{ std::monostate{} });
+                    }
+                    // Returnăm adresa vData-ului de la indexul respectiv
+                    current = &((*arrPtr)[idx]);
                 }
                 catch (...) { return nullptr; }
             }
             else {
-                // Am încercat să navigăm într-un tip scalar (int/string/bool)
                 return nullptr;
             }
         }
@@ -1479,48 +1164,55 @@ void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newV
 
         // 1. Index GOL [] -> Adăugare la final
         if (cleanIdx.empty()) {
-            if (!root->isArray()) root->value = vDataArray{};
-            vDataArray& arr = std::get<vDataArray>(root->value);
+            // Inițializăm Array-ul dacă nu există (folosind metoda statică de creare)
+            if (!root->isArray()) root->value = vData::CreateArray().value;
+
+            auto& arrPtr = std::get<vDataArray>(root->value);
+            if (!arrPtr) arrPtr = std::make_shared<std::vector<vData>>(); // Double safety
 
             vData newValue;
-            if (isNextBracketArray) newValue.value = vDataArray{};
-            else newValue.value = vDataMap{};
+            if (isNextBracketArray) newValue.value = vData::CreateArray().value;
+            else newValue.value = vData::CreateMap().value;
 
-            arr.push_back(std::move(newValue));
-            return &arr.back();
+            arrPtr->push_back(std::move(newValue));
+            return &(arrPtr->back()); // Returnăm adresa ultimului element din vectorul de pe heap
         }
 
         vData indexValue = evaluateExpression(cleanIdx);
 
         // 2. Index Numeric -> ARRAY
         if (indexValue.isInt() || indexValue.isFloat()) {
-            if (!root->isArray()) root->value = vDataArray{};
-            vDataArray& arr = std::get<vDataArray>(root->value);
+            if (!root->isArray()) root->value = vData::CreateArray().value;
+
+            auto& arrPtr = std::get<vDataArray>(root->value);
+            if (!arrPtr) arrPtr = std::make_shared<std::vector<vData>>();
 
             size_t idx = (size_t)vDataToLong(indexValue);
-            if (idx >= arr.size()) {
-                arr.resize(idx + 1, { std::monostate{} });
-                //arr.resize(idx + 1);
+            if (idx >= arrPtr->size()) {
+                arrPtr->resize(idx + 1, vData{ std::monostate{} });
             }
 
-            vData& target = arr[idx];
+            vData& target = (*arrPtr)[idx]; // Accesăm elementul din vectorul real
             if (target.isNull()) {
-                if (isNextBracketArray) target.value = vDataArray{};
-                else target.value = vDataMap{};
+                if (isNextBracketArray) target.value = vData::CreateArray().value;
+                else target.value = vData::CreateMap().value;
             }
             return &target;
         }
         // 3. Index String -> MAP
         else {
-            if (!root->isMap()) root->value = vDataMap{};
-            vDataMap& m = std::get<vDataMap>(root->value);
+            if (!root->isMap()) root->value = vData::CreateMap().value;
+
+            auto& mPtr = std::get<vDataMap>(root->value);
+            if (!mPtr) mPtr = std::make_shared<std::map<std::wstring, vData>>();
+
             std::wstring key = vDataToWString(indexValue);
 
-            // Folosim operatorul [] care creează elementul dacă nu există
-            vData& target = m[key];
+            // Dereferențiem mPtr pentru a folosi operatorul [] pe map-ul real
+            vData& target = (*mPtr)[key];
             if (target.isNull()) {
-                if (isNextBracketArray) target.value = vDataArray{};
-                else target.value = vDataMap{};
+                if (isNextBracketArray) target.value = vData::CreateArray().value;
+                else target.value = vData::CreateMap().value;
             }
             return &target;
         }
@@ -1593,12 +1285,26 @@ void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newV
             if (args.empty()) return { 0LL };
             const vData& d = args[0];
 
-            if (d.isArray()) return { static_cast<long long>(std::get<vDataArray>(d.value).size()) };
-            if (d.isMap()) return { static_cast<long long>(std::get<vDataMap>(d.value).size()) };
-            if (d.isString()) return { static_cast<long long>(std::get<std::wstring>(d.value).size()) };
+            // Cazul ARRAY
+            if (d.isArray()) {
+                auto arrPtr = std::get<vDataArray>(d.value);
+                // Folosim ->size() pe pointerul partajat
+                return { static_cast<long long>(arrPtr ? arrPtr->size() : 0) };
+            }
+
+            // Cazul MAP
+            if (d.isMap()) {
+                auto mapPtr = std::get<vDataMap>(d.value);
+                return { static_cast<long long>(mapPtr ? mapPtr->size() : 0) };
+            }
+
+            // Cazul STRING (rămâne neschimbat, wstring nu e pointer)
+            if (d.isString()) {
+                return { static_cast<long long>(std::get<std::wstring>(d.value).size()) };
+            }
 
             return { 0LL };
-        };
+            };
 
        
 
@@ -1656,19 +1362,24 @@ void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newV
         try {
             switch (node->type) {
             case ASTNodeType::Literal: {
+                // --- CREARE ARRAY DIN COD: [1, 2, 3] ---
                 if (node->value == L"ARRAY_OBJECT") {
-                    vDataArray elements;
+                    // Folosim metoda statică sau make_shared direct
+                    vDataArray elements = std::make_shared<std::vector<vData>>();
                     for (auto& child : node->children) {
-                        if (child) elements.push_back(executeAST(child));
+                        if (child) elements->push_back(executeAST(child));
                     }
                     return { elements };
                 }
+
+                // --- CREARE MAP DIN COD: { "a": 1 } ---
                 if (node->value == L"MAP_OBJECT") {
-                    vDataMap myMap;
+                    vDataMap myMap = std::make_shared<std::map<std::wstring, vData>>();
                     for (size_t i = 0; i + 1 < node->children.size(); i += 2) {
                         vData keyData = executeAST(node->children[i]);
                         vData valData = executeAST(node->children[i + 1]);
-                        myMap[vDataToWString(keyData)] = valData;
+                        // Dereferențiem pentru a accesa operatorul [] al map-ului
+                        (*myMap)[vDataToWString(keyData)] = valData;
                     }
                     return { myMap };
                 }
@@ -1679,8 +1390,6 @@ void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newV
                 if (val.size() >= 2 && val.front() == L'"' && val.back() == L'"') {
                     return { val.substr(1, val.size() - 2) };
                 }
-
-             
                 return parseRawLiteral(val);
             }
 
@@ -1691,17 +1400,41 @@ void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newV
             case ASTNodeType::FunctionCall: {
                 std::wstring funcName;
                 std::vector<vData> evaluatedArgs;
+                vData contextObj = { std::monostate{} }; // Implicit contextul este NULL
 
-                // 1. Identificăm numele funcției (apel normal, dinamic sau prin variabilă)
-                if (node->value == L"DYNAMIC_CALL" && !node->children.empty()) {
+                // 1. IDENTIFICAREA NUMELUI ȘI A CONTEXTULUI ($this)
+
+                // CAZUL A: Apel de tip metodă ($obiect.functie())
+                if (!node->children.empty() && (node->children[0]->value == L"." || node->children[0]->value == L"DOT")) {
+                    // Folosim o referință către smart pointer-ul existent, nu îi mai cerem pointerul brut
+                    const ASTPtr& dotNode = node->children[0];
+
+                    if (dotNode && !dotNode->children.empty()) {
+                        // 1. Evaluăm obiectul din stânga (ex: $bomba)
+                        // Pasăm direct dotNode->children[0], care este deja de tip ASTPtr
+                        contextObj = executeAST(dotNode->children[0]);
+
+                        // 2. Evaluăm numele funcției (nodul DOT în sine)
+                        funcName = vDataToWString(executeAST(dotNode));
+
+                        // 3. Argumentele (restul copiilor din FunctionCall)
+                        for (size_t i = 1; i < node->children.size(); ++i) {
+                            evaluatedArgs.push_back(executeAST(node->children[i]));
+                        }
+                    }
+                }
+                // CAZUL B: DYNAMIC_CALL explicit
+                else if (node->value == L"DYNAMIC_CALL" && !node->children.empty()) {
                     funcName = vDataToWString(executeAST(node->children[0]));
                     for (size_t i = 1; i < node->children.size(); ++i)
                         evaluatedArgs.push_back(executeAST(node->children[i]));
                 }
+                // CAZUL C: Apel prin variabilă directă (ex: $func())
                 else if (!node->value.empty() && node->value[0] == L'$') {
                     funcName = vDataToWString(resolveVariable(node->value.substr(1)));
                     for (auto& child : node->children) evaluatedArgs.push_back(executeAST(child));
                 }
+                // CAZUL D: Apel standard (ex: SALUT())
                 else {
                     funcName = node->value;
                     for (auto& child : node->children) evaluatedArgs.push_back(executeAST(child));
@@ -1709,27 +1442,31 @@ void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newV
 
                 if (funcName.empty()) return { std::monostate{} };
 
-                // 2. Verificăm dacă este un Constructor (Blueprint)
+                // 2. CONSTRUCTOR (Blueprint)
                 auto itBlueprint = m_blueprints.find(funcName);
                 if (itBlueprint != m_blueprints.end()) {
-                    vDataMap instance;
-                    instance[L"__type__"] = vData(itBlueprint->second.name);
+                    vDataMap instance = std::make_shared<std::map<std::wstring, vData>>();
+                    (*instance)[L"__type__"] = vData(itBlueprint->second.name);
                     const auto& fields = itBlueprint->second.fields;
                     for (size_t i = 0; i < fields.size(); ++i) {
-                        instance[fields[i]] = (i < evaluatedArgs.size()) ? evaluatedArgs[i] : vData{ std::monostate{} };
+                        (*instance)[fields[i]] = (i < evaluatedArgs.size()) ? evaluatedArgs[i] : vData{ std::monostate{} };
                     }
-                    return vData(instance);
+                    return { instance };
                 }
 
-                // 3. Apelăm funcții interne sau definite de utilizator
+                // 3. EXECUTARE FUNCȚIE
                 std::wstring upperName = funcName;
                 std::transform(upperName.begin(), upperName.end(), upperName.begin(), ::towupper);
 
+                // Handlere interne (print, join, etc.)
                 auto itInternal = m_functionsHandlers.find(upperName);
                 if (itInternal != m_functionsHandlers.end()) return itInternal->second(evaluatedArgs);
 
+                // Funcții definitie de utilizator (Aici pasăm contextObj!)
                 auto itUser = m_userFunctions.find(upperName);
-                if (itUser != m_userFunctions.end()) return callUserFunction(upperName, evaluatedArgs);
+                if (itUser != m_userFunctions.end()) {
+                    return callUserFunction(upperName, evaluatedArgs, contextObj);
+                }
 
                 LOG_ERROR(L"[RUNTIME ERROR] Unknown function: " + funcName);
                 return { std::monostate{} };
@@ -1737,27 +1474,19 @@ void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newV
 
             case ASTNodeType::Operator: {
                 // --- ATRIBUIRE (=) ---
-                
                 if (node->value == L"=") {
                     if (node->children.size() < 2) return { std::monostate{} };
-
                     ASTPtr left = node->children[0];
                     vData rightVal = executeAST(node->children[1]);
 
-                    // 1. Atribuire simplă: $v = val
                     if (left->type == ASTNodeType::Variable) {
                         setVariable(left->value, rightVal);
                         return rightVal;
                     }
 
-                    // 2. Atribuire complexă (Deep Access): $obj.prop = val sau $arr[idx] = val
                     if (left->value == L"DOT" || left->value == L"." || left->value == L"INDEX" || left->value == L"[") {
-                        // Reconstruim drumul complet (ex: "$memo[$n]") pentru a-l trimite la assignToVariable
-                        // assignToVariable va naviga prin pointeri direct la adresa din memoria globală
                         std::wstring fullPath = reconstructPath(left);
-
                         if (!fullPath.empty()) {
-                            LOG_DEBUG(L"DEBUG: Assigning to path: " + fullPath);
                             assignToVariable(fullPath, rightVal);
                             return rightVal;
                         }
@@ -1765,19 +1494,21 @@ void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newV
                     throw std::runtime_error("L-value required for assignment.");
                 }
 
-                // --- ACCES (DOT / INDEX) - Citire (Rămâne neschimbat, aici e ok să returnăm copii) ---
+                // --- ACCES (DOT) ---
                 if (node->value == L"DOT" || node->value == L".") {
                     if (node->children.size() < 2) return { std::monostate{} };
                     vData container = executeAST(node->children[0]);
                     std::wstring field = node->children[1]->value;
 
                     if (container.isMap()) {
-                        auto& m = std::get<vDataMap>(container.value);
-                        if (m.count(field)) return m.at(field);
+                        auto mapPtr = std::get<vDataMap>(container.value);
+                        // Verificăm dacă proprietatea există în map-ul de pe heap
+                        if (mapPtr && mapPtr->count(field)) return (*mapPtr).at(field);
                     }
                     return { std::monostate{} };
                 }
 
+                // --- ACCES (INDEX) ---
                 if (node->value == L"INDEX" || node->value == L"[") {
                     if (node->children.size() < 2) return { std::monostate{} };
                     vData container = executeAST(node->children[0]);
@@ -1785,12 +1516,11 @@ void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newV
                     return accessContainer(container, index);
                 }
 
-                // --- OPERATORI BINARI ---
+                // --- OPERATORI BINARI & UNARI (Rămân neschimbați) ---
                 if (node->children.size() >= 2) {
                     vData lhs = executeAST(node->children[0]);
                     vData rhs = executeAST(node->children[1]);
                     vData result = executeBinaryOperator(node->value, lhs, rhs);
-
                     if (result.isNull()) {
                         const std::wstring& op = node->value;
                         if (op == L"-" || op == L"*" || op == L"/" || op == L"^" || op == L"**" || op == L"%") {
@@ -1801,7 +1531,6 @@ void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newV
                     return result;
                 }
 
-                // --- OPERATORI UNARI ---
                 if (node->children.size() >= 1) {
                     vData operand = executeAST(node->children[0]);
                     if (node->value == L"UNARY_MINUS") return { -vDataToDouble(operand) };
@@ -1853,43 +1582,50 @@ void vOliEngine::assignToVariable(const std::wstring& varExpr, const vData& newV
         std::wstring varName = containerNode->value;
         if (!varName.empty() && varName[0] == L'$') varName = varName.substr(1);
 
-        // 1. Găsim referința corectă (Unde se află containerul?)
         vData* pContainer = nullptr;
 
-        // A. Căutăm în Frame-ul LOCAL curent
+        // 1. Căutăm containerul (Rămâne neschimbat)
         if (!m_callStack.empty()) {
             auto& locals = m_callStack.back().localVariables;
-            if (locals.count(varName)) {
-                pContainer = &locals[varName];
-            }
+            if (locals.count(varName)) pContainer = &locals[varName];
         }
-
-        // B. Dacă nu e local, căutăm în GLOBAL
         if (!pContainer && m_globalVariables.count(varName)) {
             pContainer = &m_globalVariables[varName];
         }
 
-        // C. Verificăm dacă am găsit ceva
         if (!pContainer) {
             LOG_ERROR(L"[RUNTIME ERROR] Variable '" + varName + L"' not found.");
             return;
         }
 
-        // 2. Modificăm conținutul (pContainer este acum o referință directă către memorie)
-        if (pContainer->isMap()) {
-            auto& map = std::get<vDataMap>(pContainer->value);
-            std::wstring k = vDataToWString(key);
-            map[k] = newValue;
-        }
-        else if (pContainer->isArray()) {
-            auto& arr = std::get<vDataArray>(pContainer->value);
-            size_t idx = static_cast<size_t>(vDataToLong(key)); // Folosim Long pentru index
+        // 2. Modificăm conținutul folosind pointerii partajați
 
-            if (idx < arr.size()) {
-                arr[idx] = newValue;
+        // --- CAZUL MAP ---
+        if (pContainer->isMap()) {
+            // Extragem shared_ptr-ul (telecomanda)
+            auto& mapPtr = std::get<vDataMap>(pContainer->value);
+
+            // Verificăm dacă map-ul există pe heap
+            if (!mapPtr) mapPtr = std::make_shared<std::map<std::wstring, vData>>();
+
+            std::wstring k = vDataToWString(key);
+            // Dereferențiem (*mapPtr) pentru a folosi operatorul []
+            (*mapPtr)[k] = newValue;
+        }
+
+        // --- CAZUL ARRAY ---
+        else if (pContainer->isArray()) {
+            auto& arrPtr = std::get<vDataArray>(pContainer->value);
+
+            if (!arrPtr) arrPtr = std::make_shared<std::vector<vData>>();
+
+            size_t idx = static_cast<size_t>(vDataToLong(key));
+
+            // Folosim -> pentru a accesa metodele vectorului de pe heap
+            if (idx < arrPtr->size()) {
+                (*arrPtr)[idx] = newValue;
             }
             else {
-                // Opțional: Resize sau Error dacă indexul e out of bounds
                 LOG_ERROR(L"[RUNTIME ERROR] Array index out of bounds: " + std::to_wstring(idx));
             }
         }
@@ -2344,51 +2080,51 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
     vData vOliEngine::accessContainer(const vData& container, const vData& index) {
         // CAZUL 1: Containerul este un MAP
         if (container.isMap()) {
-            std::wstring key = vDataToWString(index); // Convertim indexul la string (cheia map-ului)
-            const auto& map = std::get<vDataMap>(container.value);
+            std::wstring key = vDataToWString(index);
+            // mapPtr este acum std::shared_ptr<std::map<...>>
+            const auto& mapPtr = std::get<vDataMap>(container.value);
 
-            auto it = map.find(key);
-            if (it != map.end()) {
-                return it->second;
+            // Verificăm dacă pointerul nu este null și căutăm folosind ->
+            if (mapPtr) {
+                auto it = mapPtr->find(key);
+                if (it != mapPtr->end()) {
+                    return it->second; // Returnăm o copie a vData (care poate fi un alt shared_ptr)
+                }
             }
-            //return { L"(Key '" + key + L"' not found)" };
-            return { std::monostate{} }; // În loc de string cu mesaj
+            return { std::monostate{} };
         }
 
         // CAZUL 2: Containerul este un ARRAY
         if (container.isArray()) {
-            // Convertim indexul la un număr întreg
             long long idx = 0;
             if (index.isInt()) idx = std::get<long long>(index.value);
             else if (index.isFloat()) idx = static_cast<long long>(std::get<double>(index.value));
             else {
-                //return { L"(Error: Array index must be a number)" };
-                return { std::monostate{} }; // Index invalid -> monostate
+                return { std::monostate{} };
             }
 
-            const auto& arr = std::get<vDataArray>(container.value);
-            if (idx >= 0 && idx < static_cast<long long>(arr.size())) {
-                return arr[static_cast<size_t>(idx)];
+            const auto& arrPtr = std::get<vDataArray>(container.value);
+
+            // Verificăm validitatea pointerului și indexul folosind ->size()
+            if (arrPtr && idx >= 0 && idx < static_cast<long long>(arrPtr->size())) {
+                // Folosim (*arrPtr) pentru a accesa elementul prin operatorul []
+                return (*arrPtr)[static_cast<size_t>(idx)];
             }
-            //return { L"(Error: Index " + std::to_wstring(idx) + L" out of bounds)" };
-            return { std::monostate{} }; // Index invalid -> monostate
+            return { std::monostate{} };
         }
 
-        // CAZUL 2.5: Containerul este un STRING (pentru a lua un caracter)
+        // CAZUL 2.5: Containerul este un STRING (Rămâne neschimbat)
         if (container.isString()) {
-            long long idx = vDataToLong(index); // Folosim utilitarul creat anterior
+            long long idx = vDataToLong(index);
             const std::wstring& str = std::get<std::wstring>(container.value);
 
             if (idx >= 0 && idx < static_cast<long long>(str.size())) {
                 return { std::wstring(1, str[static_cast<size_t>(idx)]) };
             }
-            //return { L"(Error: String index out of bounds)" };
-            return { std::monostate{} }; // Index invalid -> monostate
+            return { std::monostate{} };
         }
 
-        // CAZUL 3: Nu este un container
-        //return { L"(Error: Type " + getVariantTypeName(container) + L" is not indexable)" };
-        return { std::monostate{} }; // Index invalid -> monostate
+        return { std::monostate{} };
     }
 
     long long vOliEngine::vDataToLong(const vData& data) {
@@ -2412,14 +2148,21 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         return 0;
     }
     
-    /*
+    
+
     void vOliEngine::handleUnsetCommand(const ShellCommand& sc) {
         if (sc.args.empty()) return;
 
         std::wstring fullPath = implode(sc.args, L"");
-        if (!fullPath.empty() && fullPath[0] == L'$') fullPath.erase(0, 1);
+        if (fullPath.empty()) return;
 
-        // 1. Caz special: Ștergere totală (Resetăm doar Globalul)
+        bool forceGlobal = (fullPath[0] == L'@');
+
+        if (fullPath[0] == L'$' || fullPath[0] == L'@') {
+            fullPath.erase(0, 1);
+        }
+
+        // --- RESETARE TOTALĂ (Rămâne validă) ---
         if (fullPath == L"all") {
             m_globalVariables.clear();
             LOG_SUCCESS(L"Memory cleared. All global variables removed.");
@@ -2428,38 +2171,31 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
 
         auto path = parsePath(fullPath);
 
-        // 2. Caz simplu: unset $x
+        // --- CAZUL A: Ștergere variabilă simplă (Rămâne validă) ---
         if (path.indexes.empty()) {
-            bool found = false;
-
-            // Încercăm să ștergem din Local (dacă suntem într-o funcție)
-            if (!m_callStack.empty()) {
-                if (m_callStack.back().localVariables.erase(path.rootName)) {
-                    found = true;
-                    LOG_SUCCESS((L"Local variable $" + path.rootName + L" removed.").c_str());
+            bool deleted = false;
+            if (forceGlobal) {
+                deleted = (m_globalVariables.erase(path.rootName) > 0);
+            }
+            else {
+                if (!m_callStack.empty()) {
+                    deleted = (m_callStack.back().localVariables.erase(path.rootName) > 0);
+                }
+                else {
+                    deleted = (m_globalVariables.erase(path.rootName) > 0);
                 }
             }
 
-            // Dacă nu a fost locală, încercăm în Global
-            if (!found) {
-                if (m_globalVariables.erase(path.rootName)) {
-                    found = true;
-                    LOG_SUCCESS((L"Global variable $" + path.rootName + L" removed.").c_str());
-                }
-            }
-
-            if (!found) {
-                LOG_ERROR((L"Variable $" + path.rootName + L" not found.").c_str());
-            }
+            if (deleted) LOG_SUCCESS(L"Variable removed.");
+            else LOG_ERROR(L"Variable not found.");
             return;
         }
 
-        // 3. Caz complex: unset $a[0][key]
-        // Trebuie să ne asigurăm că resolveToParent știe să caute rootName în ierarhie
-        vData* parent = resolveToParent(path.rootName, path.indexes);
+        // --- CAZUL B: ȘTERGERE DIN CONTAINER (Shared Pointer Logic) ---
+        vData* parent = resolveToParent(path.rootName, path.indexes, forceGlobal);
 
         if (!parent) {
-            LOG_ERROR((L"Could not resolve path: " + fullPath).c_str());
+            LOG_ERROR(L"Could not resolve path.");
             return;
         }
 
@@ -2468,22 +2204,28 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
             lastKey = lastKey.substr(1, lastKey.size() - 2);
         }
 
+        // --- LOGICA PENTRU MAP ---
         if (parent->isMap()) {
-            auto& map = std::get<vDataMap>(parent->value);
-            if (map.erase(lastKey)) {
-                LOG_SUCCESS((L"Key '" + lastKey + L"' removed from Map.").c_str());
+            auto& mapPtr = std::get<vDataMap>(parent->value);
+            // Verificăm dacă pointerul există înainte de erase
+            if (mapPtr && mapPtr->erase(lastKey)) {
+                LOG_SUCCESS(L"Key removed from Map.");
             }
             else {
-                LOG_ERROR((L"Key '" + lastKey + L"' not found in Map.").c_str());
+                LOG_ERROR(L"Key not found.");
             }
         }
+        // --- LOGICA PENTRU ARRAY ---
         else if (parent->isArray()) {
-            auto& vec = std::get<vDataArray>(parent->value);
+            auto& vecPtr = std::get<vDataArray>(parent->value);
+            if (!vecPtr) return;
+
             try {
-                size_t idx = std::stoll(lastKey); // stoll e mai sigur pentru indici mari
-                if (idx < vec.size()) {
-                    vec.erase(vec.begin() + idx);
-                    LOG_SUCCESS((L"Index " + std::to_wstring(idx) + L" removed from Array.").c_str());
+                size_t idx = static_cast<size_t>(std::stoll(lastKey));
+                // Folosim ->size() și ->erase() pe shared_ptr
+                if (idx < vecPtr->size()) {
+                    vecPtr->erase(vecPtr->begin() + idx);
+                    LOG_SUCCESS(L"Index removed from Array.");
                 }
                 else {
                     LOG_ERROR(L"Index out of bounds.");
@@ -2493,178 +2235,13 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
                 LOG_ERROR(L"Invalid array index.");
             }
         }
-    }
-    */
-
-    void vOliEngine::handleUnsetCommand(const ShellCommand& sc) {
-        if (sc.args.empty()) return;
-
-        std::wstring fullPath = implode(sc.args, L"");
-        if (fullPath.empty()) return;
-
-        // --- 1. DETECȚIE PREFIX ȘI MOD (Global vs Local) ---
-        bool forceGlobal = (fullPath[0] == L'@');
-
-        // Curățăm prefixul pentru procesare
-        if (fullPath[0] == L'$' || fullPath[0] == L'@') {
-            fullPath.erase(0, 1);
-        }
-
-        // --- 2. CAZ SPECIAL: RESETARE TOTALĂ ---
-        if (fullPath == L"all") {
-            m_globalVariables.clear();
-            LOG_SUCCESS(L"Memory cleared. All global variables removed.");
-            return;
-        }
-
-        auto path = parsePath(fullPath);
-
-        // --- 3. CAZUL A: ȘTERGERE VARIABILĂ SIMPLĂ (ex: unset $x) ---
-        if (path.indexes.empty()) {
-            bool deleted = false;
-
-            if (forceGlobal) {
-                // @x forțează ștergerea din tabela globală
-                if (m_globalVariables.erase(path.rootName)) {
-                    LOG_SUCCESS((std::wstring(L"Global variable @") + path.rootName + L" removed.").c_str());
-                    deleted = true;
-                }
-            }
-            else {
-                // Logica de Shadowing: Dacă suntem în funcție, acționăm DOAR pe local
-                if (!m_callStack.empty()) {
-                    if (m_callStack.back().localVariables.erase(path.rootName)) {
-                        LOG_SUCCESS((std::wstring(L"Local variable $") + path.rootName + L" removed.").c_str());
-                        deleted = true;
-                    }
-                }
-                else {
-                    // În CLI, unset $x șterge din global
-                    if (m_globalVariables.erase(path.rootName)) {
-                        LOG_SUCCESS((std::wstring(L"Global variable $") + path.rootName + L" removed.").c_str());
-                        deleted = true;
-                    }
-                }
-            }
-
-            if (!deleted) {
-                std::wstring prefix = forceGlobal ? L"@" : L"$";
-                LOG_ERROR((std::wstring(L"Variable ") + prefix + path.rootName + L" not found in current scope.").c_str());
-            }
-            return;
-        }
-
-        // --- 4. CAZUL B: ȘTERGERE DIN CONTAINER (ex: unset $a[0]) ---
-        // Notă: Asigură-te că resolveToParent primește forceGlobal
-        vData* parent = resolveToParent(path.rootName, path.indexes, forceGlobal);
-
-        if (!parent) {
-            std::wstring prefix = forceGlobal ? L"@" : L"$";
-            LOG_ERROR((std::wstring(L"Could not resolve path: ") + prefix + fullPath).c_str());
-            return;
-        }
-
-        std::wstring lastKey = path.indexes.back();
-        // Curățăm ghilimelele pentru cheile de tip Map ("cheie" -> cheie)
-        if (lastKey.size() >= 2 && lastKey.front() == L'\"' && lastKey.back() == L'\"') {
-            lastKey = lastKey.substr(1, lastKey.size() - 2);
-        }
-
-        if (parent->isMap()) {
-            auto& map = std::get<vDataMap>(parent->value);
-            if (map.erase(lastKey)) {
-                LOG_SUCCESS((std::wstring(L"Key '") + lastKey + L"' removed from Map.").c_str());
-            }
-            else {
-                LOG_ERROR((std::wstring(L"Key '") + lastKey + L"' not found in Map.").c_str());
-            }
-        }
-        else if (parent->isArray()) {
-            auto& vec = std::get<vDataArray>(parent->value);
-            try {
-                size_t idx = std::stoll(lastKey);
-                if (idx < vec.size()) {
-                    vec.erase(vec.begin() + idx);
-                    LOG_SUCCESS((std::wstring(L"Index ") + std::to_wstring(idx) + L" removed from Array.").c_str());
-                }
-                else {
-                    LOG_ERROR(L"Index out of bounds.");
-                }
-            }
-            catch (...) {
-                LOG_ERROR(L"Invalid array index for unset.");
-            }
-        }
         else {
-            LOG_ERROR(L"Target is not a container (Array/Map).");
+            LOG_ERROR(L"Target is not a container.");
         }
     }
-    /*
-    vData* vOliEngine::resolveToParent(const std::wstring& rootName, const std::vector<std::wstring>& indexes) {
-        std::wstring cleanRoot = rootName;
-        if (!cleanRoot.empty() && cleanRoot[0] == L'$') cleanRoot = cleanRoot.substr(1);
-
-        vData* current = nullptr;
-
-        // 1. GĂSIREA RĂDĂCINII (Scoping Logic)
-
-        // A. Căutăm în contextul LOCAL (dacă suntem într-o funcție)
-        if (!m_callStack.empty()) {
-            auto& locals = m_callStack.back().localVariables;
-            auto it = locals.find(cleanRoot);
-            if (it != locals.end()) {
-                current = &(it->second);
-            }
-        }
-
-        // B. Dacă nu a fost găsită local, căutăm în GLOBAL
-        if (!current) {
-            auto itGlobal = m_globalVariables.find(cleanRoot);
-            if (itGlobal != m_globalVariables.end()) {
-                current = &(itGlobal->second);
-            }
-        }
-
-        // Dacă variabila nu există deloc, returnăm nullptr
-        if (!current) return nullptr;
-
-        // 2. NAVIGAREA PRIN INDEXURI (Deep Access)
-        // Ne oprim înainte de ultimul index pentru a returna "părintele"
-        for (size_t i = 0; i < indexes.size() - 1; ++i) {
-            const std::wstring& idx = indexes[i];
-
-            if (current->isMap()) {
-                auto& map = std::get<vDataMap>(current->value);
-                // Evaluăm indexul dacă este o expresie sau îl folosim ca atare
-                if (map.count(idx)) {
-                    current = &map[idx];
-                }
-                else return nullptr;
-            }
-            else if (current->isArray()) {
-                auto& vec = std::get<vDataArray>(current->value);
-                try {
-                    // Notă: std::stoll este mai robust pentru indici
-                    size_t nIdx = static_cast<size_t>(std::stoll(idx));
-                    if (nIdx < vec.size()) {
-                        current = &vec[nIdx];
-                    }
-                    else return nullptr;
-                }
-                catch (...) { return nullptr; }
-            }
-            else {
-                return nullptr; // Nu este container (Array/Map)
-            }
-        }
-
-        return current;
-    }
-    */
+    
     vData* vOliEngine::resolveToParent(const std::wstring& rootName, const std::vector<std::wstring>& indexes, bool forceGlobal) {
         std::wstring cleanRoot = rootName;
-
-        // Curățăm prefixele dacă au rămas (deși de obicei sunt curățate înainte de apel)
         if (!cleanRoot.empty() && (cleanRoot[0] == L'$' || cleanRoot[0] == L'@')) {
             cleanRoot = cleanRoot.substr(1);
         }
@@ -2672,69 +2249,53 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
 
         vData* current = nullptr;
 
-        // --- 1. GĂSIREA RĂDĂCINII (Scoping Logic cu Shadowing) ---
-
+        // --- 1. SCOPING (Găsim de unde plecăm) ---
         if (forceGlobal) {
-            // Dacă am folosit @, ignorăm localul complet
             auto itGlobal = m_globalVariables.find(cleanRoot);
-            if (itGlobal != m_globalVariables.end()) {
-                current = &(itGlobal->second);
-            }
+            if (itGlobal != m_globalVariables.end()) current = &(itGlobal->second);
         }
         else {
-            // Căutăm întâi în contextul LOCAL (dacă suntem într-o funcție)
             if (!m_callStack.empty()) {
                 auto& locals = m_callStack.back().localVariables;
                 auto it = locals.find(cleanRoot);
-                if (it != locals.end()) {
-                    current = &(it->second);
-                }
+                if (it != locals.end()) current = &(it->second);
             }
-
-            // Dacă nu a fost găsită local, căutăm în GLOBAL
             if (!current) {
                 auto itGlobal = m_globalVariables.find(cleanRoot);
-                if (itGlobal != m_globalVariables.end()) {
-                    current = &(itGlobal->second);
-                }
+                if (itGlobal != m_globalVariables.end()) current = &(itGlobal->second);
             }
         }
 
-        // Dacă rădăcina nu există în scope-ul permis, ne oprim
         if (!current) return nullptr;
 
-        // --- 2. NAVIGAREA PRIN INDEXURI (Deep Access) ---
-        // Ne oprim înaintea ULTIMULUI index pentru a returna pointer către "părinte"
+        // --- 2. NAVIGARE (Ne oprim cu un pas înainte de final) ---
         for (size_t i = 0; i < indexes.size() - 1; ++i) {
             std::wstring idx = indexes[i];
-
-            // Curățăm ghilimelele pentru chei de tip string ("key" -> key)
             if (idx.size() >= 2 && idx.front() == L'\"' && idx.back() == L'\"') {
                 idx = idx.substr(1, idx.size() - 2);
             }
 
             if (current->isMap()) {
-                auto& map = std::get<vDataMap>(current->value);
-                if (map.count(idx)) {
-                    current = &map[idx];
+                auto& mapPtr = std::get<vDataMap>(current->value);
+                // Verificăm dacă pointerul e valid și cheia există
+                if (mapPtr && mapPtr->count(idx)) {
+                    current = &((*mapPtr)[idx]); // Luăm adresa elementului din heap
                 }
                 else return nullptr;
             }
             else if (current->isArray()) {
-                auto& vec = std::get<vDataArray>(current->value);
+                auto& vecPtr = std::get<vDataArray>(current->value);
                 try {
-                    // Dacă indexul este o expresie, ar trebui evaluat, 
-                    // dar aici presupunem că parsePath a extras deja literali.
                     size_t nIdx = static_cast<size_t>(std::stoll(idx));
-                    if (nIdx < vec.size()) {
-                        current = &vec[nIdx];
+                    if (vecPtr && nIdx < vecPtr->size()) {
+                        current = &((*vecPtr)[nIdx]);
                     }
                     else return nullptr;
                 }
                 catch (...) { return nullptr; }
             }
             else {
-                return nullptr; // Nod intermediar care nu este container
+                return nullptr;
             }
         }
 
@@ -2744,19 +2305,31 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
     vData* vOliEngine::getContainerPointer(vData& container, const std::wstring& keyOrIdx) {
         // 1. Dacă e MAP
         if (container.isMap()) {
-            auto& map = std::get<vDataMap>(container.value);
-            if (map.count(keyOrIdx)) return &map[keyOrIdx]; // Returnăm adresa elementului
+            auto& mapPtr = std::get<vDataMap>(container.value);
+
+            // Verificăm dacă pointerul e valid și cheia există
+            if (mapPtr && mapPtr->count(keyOrIdx)) {
+                // (*mapPtr)[keyOrIdx] accesează vData-ul real
+                // &(...) ia adresa acelui vData pentru a o returna
+                return &((*mapPtr)[keyOrIdx]);
+            }
             return nullptr;
         }
 
         // 2. Dacă e ARRAY
         if (container.isArray()) {
-            auto& arr = std::get<vDataArray>(container.value);
+            auto& arrPtr = std::get<vDataArray>(container.value);
             try {
-                size_t idx = std::stoul(keyOrIdx);
-                if (idx < arr.size()) return &arr[idx];
+                size_t idx = static_cast<size_t>(std::stoul(keyOrIdx));
+
+                // Verificăm pointerul și limitele vectorului folosind ->
+                if (arrPtr && idx < arrPtr->size()) {
+                    return &((*arrPtr)[idx]);
+                }
             }
-            catch (...) { return nullptr; }
+            catch (...) {
+                return nullptr;
+            }
         }
 
         return nullptr;
@@ -2917,7 +2490,7 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
     }
 
     bool vOliEngine::vDataToBool(const vData& data) {
-        // 1. Booleeni expliciți - TREBUIE să fie primii!
+        // 1. Booleeni expliciți
         if (data.isBool()) {
             return std::get<bool>(data.value);
         }
@@ -2935,21 +2508,29 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
             return std::abs(std::get<double>(data.value)) > 1e-9;
         }
 
-        // 5. String-uri - ATENȚIE AICI
+        // 5. String-uri
         if (data.isString()) {
             const std::wstring& s = std::get<std::wstring>(data.value);
             if (s.empty()) return false;
 
-            // Conversie normalizată: doar "true" sau "1" sunt true, restul false
-            // SAU păstrezi logica ta, dar asigură-te că nu mănâncă rezultatele booleene
             std::wstring lowerS = s;
             std::transform(lowerS.begin(), lowerS.end(), lowerS.begin(), ::towlower);
             return (lowerS == L"true" || lowerS == L"1");
         }
 
-        // 6. Containere
-        if (data.isArray()) return !std::get<vDataArray>(data.value).empty();
-        if (data.isMap()) return !std::get<vDataMap>(data.value).empty();
+        // --- 6. CONTAINERE (Aici intervenim) ---
+
+        if (data.isArray()) {
+            auto arrPtr = std::get<vDataArray>(data.value);
+            // Un array e "true" doar dacă pointerul există ȘI vectorul nu e gol
+            return arrPtr && !arrPtr->empty();
+        }
+
+        if (data.isMap()) {
+            auto mapPtr = std::get<vDataMap>(data.value);
+            // Un map e "true" doar dacă pointerul există ȘI map-ul nu e gol
+            return mapPtr && !mapPtr->empty();
+        }
 
         return false;
     }
@@ -3636,7 +3217,7 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         std::wstring upperLine = fullLine;
         std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
 
-        // 1. Găsire Keyword-uri folosind noua funcție specializată
+        // 1. Găsire Keyword-uri (DO și ENDCYCLE)
         size_t cyclePos = upperLine.find(L"CYCLE");
         size_t posDo = findTopLevelCycleKeyword(fullLine, L"DO");
         size_t posEnd = findTopLevelCycleKeyword(fullLine, L"ENDCYCLE");
@@ -3646,7 +3227,7 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
             return;
         }
 
-        // 2. Extragere Header (Sursă AS Iterator)
+        // 2. Extragere Header (Ex: $lista AS $item)
         size_t headerStart = cyclePos + 5;
         std::wstring header = trim(fullLine.substr(headerStart, posDo - headerStart));
 
@@ -3662,64 +3243,68 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         std::wstring sourceExpr = trim(header.substr(0, asPos));
         std::wstring iteratorName = trim(header.substr(asPos + 2));
 
-        // 3. Evaluare Sursă
-        // evaluateExpression va folosi noul resolveVariable (Local -> Global)
+        // 3. Evaluare Sursă (Ce iterăm?)
         vData sourceData = evaluateExpression(sourceExpr);
         if (sourceData.isNull()) {
             LOG_ERROR(L"Cycle error: Source '" + sourceExpr + L"' is NULL.");
             return;
         }
 
-        // 4. Pregătire Instrucțiuni
+        // 4. Pregătire Instrucțiuni din corpul buclei
         size_t bodyStart = posDo + 2;
         std::wstring bodyCommand = trim(fullLine.substr(bodyStart, posEnd - bodyStart));
         std::vector<std::wstring> instructions = preParse(bodyCommand);
 
-        // 5. Shadowing Protection (Modernizat)
-        // Căutăm variabila veche folosind ierarhia corectă
+        // 5. Salvare valoare veche pentru iterator (Shadowing Protection)
         vData oldVal = resolveVariable(iteratorName);
         bool existed = !oldVal.isNull();
 
-        // 6. Execuția efectivă
+        // 6. EXECUȚIA EFECTIVĂ
         if (sourceData.isArray()) {
-            const auto& items = std::get<vDataArray>(sourceData.value);
-            for (const auto& item : items) {
-                if (executeCycleStep(iteratorName, item, instructions)) break;
-                if (m_executionStatus == OliStatus::RETURN_REQUESTED) break;
+            auto arrPtr = std::get<vDataArray>(sourceData.value);
+            if (arrPtr) {
+                // Iterăm prin vectorul real din Heap folosind *arrPtr
+                for (const auto& item : *arrPtr) {
+                    if (executeCycleStep(iteratorName, item, instructions)) break; // BREAK detectat
+                    if (m_executionStatus == OliStatus::RETURN_REQUESTED) break; // RETURN detectat
+                }
             }
         }
         else if (sourceData.isMap()) {
-            const auto& mapItems = std::get<vDataMap>(sourceData.value);
-            for (const auto& pair : mapItems) {
-                // Pentru MAP, returnăm cheia (pair.first) ca fiind valoarea iteratorului
-                if (executeCycleStep(iteratorName, vData{ pair.first }, instructions)) break;
-                if (m_executionStatus == OliStatus::RETURN_REQUESTED) break;
+            auto mapPtr = std::get<vDataMap>(sourceData.value);
+            if (mapPtr) {
+                // Iterăm prin Map-ul real din Heap
+                for (const auto& pair : *mapPtr) {
+                    // Într-un Map, CYCLE returnează de obicei cheia (pair.first)
+                    if (executeCycleStep(iteratorName, vData{ pair.first }, instructions)) break;
+                    if (m_executionStatus == OliStatus::RETURN_REQUESTED) break;
+                }
             }
         }
-        else if (sourceData.isString()) { // <--- ADAUGĂ ACEST CAZ
+        else if (sourceData.isString()) {
+            // String-ul nu este pointer, iterația rămâne clasică
             const std::wstring& str = std::get<std::wstring>(sourceData.value);
             for (wchar_t c : str) {
-                // Trimitem fiecare caracter ca un nou vData de tip String
                 if (executeCycleStep(iteratorName, vData{ std::wstring(1, c) }, instructions)) break;
                 if (m_executionStatus == OliStatus::RETURN_REQUESTED) break;
             }
         }
         else {
-            LOG_ERROR(L"Cycle error: Source is not an Array, Map or String.");
+            LOG_ERROR(L"Cycle error: Source is not iterable (Array, Map or String).");
         }
 
-        // 7. Restaurare (Clean-up)
-        // Dacă am terminat ciclul, curățăm iteratorul sau punem valoarea veche înapoi
+        // 7. RESTAURARE (Curățăm "murdăria" lăsată de iterator în memorie)
         if (existed) {
             setVariable(iteratorName, oldVal);
         }
         else {
-            // Dacă nu exista înainte, o scoatem din contextul curent
+            // Dacă variabila nu exista, o ștergem complet din scope-ul curent
+            std::wstring cleanName = cleanVariableName(iteratorName);
             if (!m_callStack.empty()) {
-                m_callStack.back().localVariables.erase(cleanVariableName(iteratorName));
+                m_callStack.back().localVariables.erase(cleanName);
             }
             else {
-                m_globalVariables.erase(cleanVariableName(iteratorName));
+                m_globalVariables.erase(cleanName);
             }
         }
     }
@@ -4217,65 +3802,40 @@ void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wst
       // Folosim funcția ta vDataToWString care se ocupă deja de formatare
       return vData{ vDataToWString(input) };
   }
-  /*
-  vData vOliEngine::handleArrayFunc(const std::vector<vData>& args) {
-      // 1. Dacă nu avem argumente, returnăm un array gol
-      if (args.empty()) {
-          return vData{ vDataArray{} };
-      }
-
-      const vData& input = args[0];
-
-      // 2. Dacă este deja Array, returnăm copia
-      if (input.isArray()) {
-          return input;
-      }
-
-      // 3. Dacă este un alt tip (Int, Float, String, Map), 
-      // îl "împachetăm" într-un array cu un singur element.
-      vDataArray newArray;
-      newArray.push_back(input);
-      return vData{ newArray };
-  }
-  */
+  
 
   vData vOliEngine::handleArrayFunc(const std::vector<vData>& args) {
-      vDataArray newArray;
-      for (const auto& arg : args) {
-          newArray.push_back(arg);
-      }
-      return vData{ newArray };
+      // Creăm un shared_ptr care copiază conținutul lui 'args' direct în heap
+      return vData{ std::make_shared<std::vector<vData>>(args) };
   }
 
   vData vOliEngine::handleMapFunc(const std::vector<vData>& args) {
-      vDataMap newMap;
+      // 1. Alocăm Map-ul în Heap și obținem pointerul partajat
+      // Folosim std::make_shared pentru eficiență
+      vDataMap newMap = std::make_shared<std::map<std::wstring, vData>>();
 
-      // Dacă nu avem argumente, returnăm un map gol {}
+      // 2. Dacă nu avem argumente, returnăm shared_ptr-ul către map-ul gol
       if (args.empty()) {
           return vData{ newMap };
       }
 
-      // Parcurgem argumentele doi câte doi (cheie, valoare)
+      // 3. Parcurgem argumentele doi câte doi (cheie, valoare)
       for (size_t i = 0; i + 1 < args.size(); i += 2) {
           std::wstring key;
 
-          // Ne asigurăm că cheia este convertită la string
-          if (args[i].isString()) {
-              key = std::get<std::wstring>(args[i].value);
-          }
-          else {
-              key = vDataToWString(args[i]);
-          }
+          // Folosim utilitarul tău vDataToWString pentru a garanta că avem un string
+          key = vDataToWString(args[i]);
 
-          newMap[key] = args[i + 1];
+          // 4. OPERAȚIA CRITICĂ: Dereferențiem pointerul (*) pentru a folosi []
+          // Punem paranteze în jurul dereferențierii pentru prioritate: (*newMap)
+          (*newMap)[key] = args[i + 1];
       }
 
-      // Dacă numărul de argumente este impar, ultimul va fi ignorat 
-      // sau poți loga un warning.
       if (args.size() % 2 != 0) {
-          // LOG_WARNING(L"MAP() a primit un număr impar de argumente. Ultima cheie a fost ignorată.");
+          // LOG_WARNING(L"MAP() ignored odd last argument.");
       }
 
+      // 5. Returnăm vData care ambalează pointerul nostru
       return vData{ newMap };
   }
 
@@ -4317,106 +3877,71 @@ void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wst
       LOG_INFO(L"Started recording function: " + m_activeFuncName);
   }
 
- /*
-  vData vOliEngine::callUserFunction(const std::wstring& funcName, const std::vector<vData>& args) {
-      auto it = m_userFunctions.find(funcName);
-      if (it == m_userFunctions.end()) return vData{ std::monostate{} };
 
-      const Procedure& func = it->second;
-
-      // 1. Snapshot la variabilele globale
-      std::map<std::wstring, vData> globalVariables = std::move(m_variables);
-      m_variables.clear();
-
-      // 2. Setăm argumentele locale
-      for (size_t i = 0; i < func.params.size(); ++i) {
-          m_variables[func.params[i]] = (i < args.size()) ? args[i] : vData{ std::monostate{} };
-      }
-      m_variables[L"return"] = vData{ std::monostate{} };
-
-      // 3. RECONSTRUCȚIA CORPULUI (Soluția pentru erorile tale)
-      std::wstring fullBody;
-      for (const auto& line : func.body) {
-          std::wstring trimmed = trim(line);
-          if (trimmed.empty()) continue;
-
-          fullBody += trimmed;
-          // Adăugăm separator dacă nu există deja
-          if (trimmed.back() != L';') fullBody += L";";
-          fullBody += L" ";
-      }
-
-      // 4. Executăm TOT corpul ca un singur bloc de cod
-      bool prevShouldReturn = m_shouldReturn;
-      m_shouldReturn = false;
-
-      // Aici e magia: executeInternal va vedea tot textul și va 
-      // extrage corect WHILE...ENDWHILE sau IF...ENDIF
-      this->executeInternal(fullBody);
-
-      // 5. Cleanup și Return
-      vData result = m_variables[L"return"];
-      m_variables = std::move(globalVariables);
-      m_shouldReturn = prevShouldReturn;
-
-      return result;
-  }
-  */
-
-  vData vOliEngine::callUserFunction(const std::wstring& funcName, const std::vector<vData>& args) {
+  
+  vData vOliEngine::callUserFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context) {
+      // 1. Găsirea definiției funcției
       auto it = m_userFunctions.find(funcName);
       if (it == m_userFunctions.end()) {
           LOG_ERROR(L"Runtime Error: Function '" + funcName + L"' not found.");
-          return vData{ std::monostate{} };
+          return { std::monostate{} };
       }
 
       const Procedure& func = it->second;
 
-      // --- 1. PREGĂTIRE FRAME NOU ---
+      // --- 2. PREGĂTIRE FRAME NOU ---
       StackFrame frame;
       frame.functionName = funcName;
 
-      // ATENȚIE: Nu mai facem std::move(m_variables). 
-      // m_globalVariables stă pe loc, nu se mișcă nicăieri.
+      // --- 3. INJECTARE CONTEXT ($this) ---
+      // Folosim cheia "this" (fără $). 
+      // În OliEngine, resolveVariable("this") va căuta această cheie în localVariables.
+      frame.localVariables[L"this"] = context;
 
-      // --- 2. SETARE PARAMETRI LOCALI ---
-      // Parametrii funcției (ex: $n) se duc direct în rucsacul local al noului frame
+      // --- 4. SETARE PARAMETRI LOCALI ---
       for (size_t i = 0; i < func.params.size(); ++i) {
           std::wstring pName = cleanVariableName(func.params[i]);
           frame.localVariables[pName] = (i < args.size()) ? args[i] : vData{ std::monostate{} };
       }
 
-      // Variabila specială locală pentru rezultatul funcției
-      frame.localVariables[L"return"] = vData{ std::monostate{} };
+      // Inițializăm rezultatul cu NULL
+      frame.localVariables[L"return"] = { std::monostate{} };
 
-      // --- 3. PUSH PE STIVĂ ---
+      // --- 5. PUSH PE STIVĂ ---
+      // De aici încolo, executeAST va vedea acest frame ca fiind "cel curent"
       m_callStack.push_back(std::move(frame));
 
-      // Salvare stare flag return
+      // Salvare stare flag return pentru a permite recursivitatea corectă
       bool previousShouldReturn = m_shouldReturn;
       m_shouldReturn = false;
 
-      // --- 4. EXECUȚIE ---
+      // --- 6. EXECUȚIE CORP FUNCȚIE ---
+      // Reconstruim corpul într-un script executabil
       std::wstring fullBody;
       for (const auto& line : func.body) {
-          if (line.empty()) continue;
+          if (trim(line).empty()) continue;
           fullBody += line;
-          if (line.back() != L';') fullBody += L";";
-          fullBody += L" ";
+          // Adăugăm separator dacă lipsește pentru a nu "lipi" instrucțiunile
+          if (fullBody.back() != L';') fullBody += L";";
+          fullBody += L"\n";
       }
 
-      // Executăm corpul. Acum, orice "set" sau "resolve" va vedea frame-ul de deasupra.
+      // Execuția propriu-zisă
       this->executeInternal(fullBody);
 
-      // --- 5. COLECTAREA REZULTATULUI ---
-      // Rezultatul este în vârful stivei noastre, în variabila locală "return"
-      vData result = m_callStack.back().localVariables[L"return"];
-
-      // --- 6. POP FRAME (Restaurare) ---
+      // --- 7. COLECTAREA REZULTATULUI ---
+      // IMPORTANT: Luăm rezultatul din frame-ul nostru înainte de a-l șterge
+      vData result = { std::monostate{} };
       if (!m_callStack.empty()) {
-          m_callStack.pop_back(); // Ștergem rucsacul local, eliberăm memoria
+          result = m_callStack.back().localVariables[L"return"];
       }
 
+      // --- 8. RESTAURARE STIVĂ ȘI FLAG-URI ---
+      if (!m_callStack.empty()) {
+          m_callStack.pop_back();
+      }
+
+      // Restaurăm flag-ul de return al apelantului (esențial pentru funcții imbricate)
       m_shouldReturn = previousShouldReturn;
 
       return result;
@@ -5040,15 +4565,30 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
   }
 
   void vOliEngine::updateDataMember(vData& container, const vData& key, const vData& newValue) {
+      // 1. CAZUL MAP
       if (container.isMap()) {
-          auto& m = std::get<vDataMap>(container.value);
-          m[vDataToWString(key)] = newValue;
+          auto& mPtr = std::get<vDataMap>(container.value);
+
+          // Safety: Dacă pointerul e null, îl inițializăm
+          if (!mPtr) mPtr = std::make_shared<std::map<std::wstring, vData>>();
+
+          // Dereferențiem (*mPtr) pentru a folosi operatorul [] pe map-ul real
+          (*mPtr)[vDataToWString(key)] = newValue;
       }
+      // 2. CAZUL ARRAY
       else if (container.isArray()) {
-          auto& a = std::get<vDataArray>(container.value);
+          auto& aPtr = std::get<vDataArray>(container.value);
+
+          // Safety: Dacă pointerul e null, nu avem ce updata (sau îl poți inițializa)
+          if (!aPtr) return;
+
+          // Folosim vDataToLong sau static_cast pe vDataToDouble pentru index
           size_t idx = static_cast<size_t>(vDataToDouble(key));
-          if (idx < a.size()) {
-              a[idx] = newValue;
+
+          // Folosim aPtr->size() pentru a accesa metoda vectorului de pe heap
+          if (idx < aPtr->size()) {
+              // Dereferențiem (*aPtr) pentru a scrie la indexul respectiv
+              (*aPtr)[idx] = newValue;
           }
       }
   }
@@ -5108,97 +4648,73 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       }
   }
 
-  /*
-  vData vOliEngine::handleSplitFunc(const std::vector<vData>& args) {
-      // Avem nevoie de cel puțin șirul de intrare. Separatorul poate fi implicit un spațiu.
-      if (args.empty()) return vData{ vDataArray{} };
-
-      std::wstring text = vDataToWString(args[0]);
-      std::wstring delimiter = (args.size() > 1) ? vDataToWString(args[1]) : L" ";
-
-      vDataArray result;
-
-      if (delimiter.empty()) {
-          // Dacă separatorul e vid, putem alege să returnăm caracterele individuale
-          for (wchar_t c : text) {
-              result.push_back(vData{ std::wstring(1, c) });
-          }
-          return vData{ result };
-      }
-
-      size_t start = 0;
-      size_t end = text.find(delimiter);
-
-      while (end != std::wstring::npos) {
-          result.push_back(vData{ text.substr(start, end - start) });
-          start = end + delimiter.length();
-          end = text.find(delimiter, start);
-      }
-
-      // Adăugăm și ultima parte
-      result.push_back(vData{ text.substr(start) });
-
-      return vData{ result };
-  }
-  */
+  
 
   vData vOliEngine::handleSplitFunc(const std::vector<vData>& args) {
-      if (args.empty()) return vData{ vDataArray{} };
+      // 1. Returnăm un Array gol (inițializat corect în heap)
+      if (args.empty()) {
+          return vData{ std::make_shared<std::vector<vData>>() };
+      }
 
       std::wstring text = vDataToWString(args[0]);
-      // Dacă nu dai separator, implicit e spațiu
       std::wstring delims = (args.size() > 1) ? vDataToWString(args[1]) : L" ";
 
-      // Curățăm secvențele de escape transmise din shell
+      // Curățăm secvențele de escape (rămâne neschimbat)
       if (delims == L"\\n") delims = L"\n";
       else if (delims == L"\\r\\n") delims = L"\r\n";
       else if (delims == L"\\t") delims = L"\t";
 
-      vDataArray result;
+      // 2. Alocăm vectorul în HEAP
+      auto result = std::make_shared<std::vector<vData>>();
+
       size_t lastPos = 0;
       size_t pos = text.find(delims);
-
-      // Determinăm dacă separatorul este un "spațiu alb" pentru a activa modul Smart
       bool isWhitespaceSplit = (delims == L" ");
 
       while (pos != std::wstring::npos) {
           std::wstring token = text.substr(lastPos, pos - lastPos);
 
-          // MODIFICARE SMART: 
-          // Dacă split-uim după spațiu, ignorăm rezultatele goale (spații consecutive)
           if (!isWhitespaceSplit || !token.empty()) {
-              result.push_back(vData{ token });
+              // 3. Folosim -> pentru a accesa push_back pe vectorul din heap
+              result->push_back(vData{ token });
           }
 
           lastPos = pos + delims.length();
           pos = text.find(delims, lastPos);
       }
 
-      // Adăugăm și ultimul segment
       std::wstring lastToken = text.substr(lastPos);
       if (!isWhitespaceSplit || !lastToken.empty()) {
-          result.push_back(vData{ lastToken });
+          result->push_back(vData{ lastToken });
       }
 
+      // 4. Returnăm shared_ptr-ul
       return vData{ result };
   }
 
   vData vOliEngine::handleJoinFunc(const std::vector<vData>& args) {
-      // Avem nevoie de cel puțin un Array
+      // 1. Validare: Avem nevoie de cel puțin un Array
       if (args.empty() || !args[0].isArray()) {
           return vData{ L"" };
       }
 
-      const vDataArray& list = std::get<vDataArray>(args[0].value);
-      // Separatorul este al doilea argument (implicit spațiu dacă lipsește)
+      // 2. Extragem shared_ptr-ul către vector
+      const auto& listPtr = std::get<vDataArray>(args[0].value);
+
+      // Verificăm dacă pointerul este valid (nu e null)
+      if (!listPtr) return vData{ L"" };
+
+      // 3. Separatorul (rămâne neschimbat)
       std::wstring separator = (args.size() > 1) ? vDataToWString(args[1]) : L" ";
 
       std::wstring result;
-      for (size_t i = 0; i < list.size(); ++i) {
-          result += vDataToWString(list[i]);
 
-          // Adăugăm separatorul doar dacă nu suntem la ultimul element
-          if (i < list.size() - 1) {
+      // 4. Folosim ->size() pentru a accesa vectorul de pe heap
+      for (size_t i = 0; i < listPtr->size(); ++i) {
+          // 5. Dereferențiem (*listPtr)[i] pentru a ajunge la elementul vData
+          result += vDataToWString((*listPtr)[i]);
+
+          if (i < listPtr->size() - 1) {
               result += separator;
           }
       }

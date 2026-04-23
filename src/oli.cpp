@@ -59,7 +59,12 @@ int main(int argc, char* argv[]) {
 
         // Citim fișierul linie cu linie
         std::wifstream file(scriptPath);
-        file.imbue(std::locale(""));
+        try {
+            file.imbue(std::locale("en_US.UTF-8"));
+        }
+        catch (...) {
+            file.imbue(std::locale::classic());
+        }
 
         std::wstring line;
         while (std::getline(file, line)) {

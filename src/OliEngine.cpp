@@ -11,7 +11,7 @@
 #include <thread>
 #include <chrono>
 #include <string_view>
-
+/*
 void vOliEngine::execute(const std::wstring& line) {
     // 1. Curățare
     std::wstring cleanLine = trim(line);
@@ -23,13 +23,20 @@ void vOliEngine::execute(const std::wstring& line) {
         cleanLine = trim(cleanLine.substr(0, commentPos));
     }
 
+    // 2. DETECTARE PARANTEZE (Multi-line support)
+    // Numărăm deschiderile și închiderile pentru a ști dacă blocul e complet
+    for (wchar_t c : cleanLine) {
+        if (c == L'{' || c == L'[') m_bracketDepth++;
+        if (c == L'}' || c == L']') m_bracketDepth--;
+    }
+
     std::wstring upperLine = cleanLine;
     std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
 
     // --- LOG DIAGNOSTIC ---
     //LOG_DEBUG(L"[EXEC] Input: '" + cleanLine + L"' | Depth before: " + std::to_wstring(m_blockDepth));
 
-    // 2. Gestionare înregistrare FUNC/PROC
+    // 3. Gestionare înregistrare FUNC/PROC
     if (m_isRecording || m_isRecordingFunc) {
         if (upperLine == L"ENDPROC" || upperLine == L"ENDFUNC") {
             m_isRecording = false; m_isRecordingFunc = false; m_blockDepth = 0;
@@ -95,7 +102,7 @@ void vOliEngine::execute(const std::wstring& line) {
     }
 
     // 6. Decizia de așteptare
-    if (m_blockDepth > 0 || hasBackslash) {
+    if (m_blockDepth > 0 ||  m_bracketDepth > 0 || hasBackslash) {
         //LOG_DEBUG(L"[EXEC] Accumulating... (Depth: " + std::to_wstring(m_blockDepth) + L")");
         return;
     }
@@ -108,7 +115,124 @@ void vOliEngine::execute(const std::wstring& line) {
 
     if (trim(finalBlock).empty()) return;
 
-    addToHistory(finalBlock);
+    //addToHistory(finalBlock);
+    this->executeInternal(finalBlock);
+}
+*/
+#include <algorithm> // Necesar pentru std::replace
+
+void vOliEngine::execute(const std::wstring& line) {
+    // --- 1. CURĂȚARE ȘI COMENTARII ---
+    std::wstring cleanLine = trim(line);
+
+    // Eliminăm comentariile de tip #
+    size_t commentPos = cleanLine.find(L'#');
+    if (commentPos != std::wstring::npos) {
+        cleanLine = trim(cleanLine.substr(0, commentPos));
+    }
+
+    if (cleanLine.empty() && m_accumulator.empty()) return;
+
+    // --- 2. DETECTARE PARANTEZE (MAPS/ARRAYS) ---
+    // Această numărătoare ne spune dacă suntem în interiorul unei definiții de obiect
+    for (wchar_t c : cleanLine) {
+        if (c == L'{' || c == L'[') m_bracketDepth++;
+        if (c == L'}' || c == L']') m_bracketDepth--;
+    }
+
+    std::wstring upperLine = cleanLine;
+    std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
+
+    // --- 3. GESTIONARE ÎNREGISTRARE FUNC/PROC ---
+    // Dacă suntem în modul record, salvăm liniile direct în corpul funcției
+    if (m_isRecording || m_isRecordingFunc) {
+        if (upperLine == L"ENDPROC" || upperLine == L"ENDFUNC") {
+            m_isRecording = false;
+            m_isRecordingFunc = false;
+            m_blockDepth = 0;
+            m_bracketDepth = 0; // Reset de siguranță
+            vOliKeyWords::registerDynamicCommand(m_activeProcName);
+            LOG_SUCCESS(L"Procedure/Function saved.");
+            return;
+        }
+
+        if (m_isRecording) m_procedures[m_activeProcName].body.push_back(cleanLine);
+        else m_userFunctions[m_activeFuncName].body.push_back(cleanLine);
+        return;
+    }
+
+    // --- 4. TRACKING ADÂNCIME BLOCURI (IF, WHILE, etc.) ---
+    auto checkAndLog = [&](const std::wstring& key, bool increment) {
+        size_t p = upperLine.find(key);
+        if (p != std::wstring::npos) {
+            bool startOk = (p == 0 || iswspace(upperLine[p - 1]));
+            bool endOk = (p + key.length() >= upperLine.length() || iswspace(upperLine[p + key.length()]));
+            if (startOk && endOk) {
+                if (increment) m_blockDepth++;
+                else if (m_blockDepth > 0) m_blockDepth--;
+                return true;
+            }
+        }
+        return false;
+        };
+
+    // Incrementăm adâncimea pentru cuvinte cheie
+    checkAndLog(L"IF", true);
+    checkAndLog(L"WHILE", true);
+    checkAndLog(L"FOR", true);
+    checkAndLog(L"REPEAT", true);
+    checkAndLog(L"CYCLE", true);
+    checkAndLog(L"PROC", true);
+    checkAndLog(L"FUNC", true);
+    checkAndLog(L"SWITCH", true);
+
+    // Decrementăm pentru finaluri
+    checkAndLog(L"ENDIF", false);
+    checkAndLog(L"ENDWHILE", false);
+    checkAndLog(L"ENDFOR", false);
+    checkAndLog(L"ENDREPEAT", false);
+    checkAndLog(L"ENDCYCLE", false);
+    checkAndLog(L"ENDPROC", false);
+    checkAndLog(L"ENDFUNC", false);
+    checkAndLog(L"ENDSWITCH", false);
+
+    // --- 5. ACUMULARE ---
+    bool hasBackslash = (!cleanLine.empty() && cleanLine.back() == L'\\');
+    if (hasBackslash) cleanLine.pop_back();
+
+    if (!m_accumulator.empty()) m_accumulator += L"\n";
+    m_accumulator += cleanLine;
+
+    // Declanșare imediată pentru începutul definiției de PROC/FUNC
+    if (upperLine.find(L"PROC ") == 0 || upperLine.find(L"FUNC ") == 0) {
+        std::wstring startCmd = m_accumulator;
+        m_accumulator.clear();
+        this->executeInternal(startCmd);
+        return;
+    }
+
+    // --- 6. DECIZIA DE AȘTEPTARE ---
+    // Dacă avem blocuri deschise, paranteze deschise sau backslash, nu executăm încă.
+    if (m_blockDepth > 0 || m_bracketDepth > 0 || hasBackslash) {
+        return;
+    }
+
+    // --- 7. EXECUȚIE BLOC COMPLET ---
+    std::wstring finalBlock = m_accumulator;
+    m_accumulator.clear();
+    m_bracketDepth = 0; // Resetăm pentru următoarea comandă
+
+    if (trim(finalBlock).empty()) return;
+
+    // --- FIX CRITIC: APLATIZAREA PENTRU MULTI-LINE MAPS/ARRAYS ---
+    // Dacă avem un bloc care nu este un corp de FUNC/PROC sau un IF complex,
+    // înlocuim \n cu spațiu. Astfel, preParse nu va sparge Map-ul în bucăți
+    // care ar genera erori de tip "Lipseste }" în parserul de expresii.
+    if (m_blockDepth == 0) {
+        std::replace(finalBlock.begin(), finalBlock.end(), L'\n', L' ');
+    }
+
+    // addToHistory(finalBlock); // Opțional, poți reactiva dacă vrei history
     this->executeInternal(finalBlock);
 }
 
@@ -584,18 +708,21 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         if (std::holds_alternative<bool>(data.value))           return L"BOOL";
         if (std::holds_alternative<vDataArray>(data.value))     return L"ARRAY";
 
+        // --- ADAUGĂM SUPORTUL PENTRU POINTERI ---
+        if (std::holds_alternative<vData*>(data.value))         return L"POINTER";
+
         if (std::holds_alternative<vDataMap>(data.value)) {
             auto& mPtr = std::get<vDataMap>(data.value);
 
             // Dacă e un Map, verificăm dacă are „buletin” (câmpul __type__)
             if (mPtr && mPtr->count(L"__type__")) {
-                // Folosim vDataToWString pentru a extrage numele structurii
                 return vDataToWString((*mPtr)[L"__type__"]);
             }
             return L"MAP";
         }
 
         if (std::holds_alternative<std::monostate>(data.value)) return L"NULL";
+
         return L"UNKNOWN";
     }
 
@@ -769,7 +896,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             }
             }, data.value);
     }
-
+    /*
     void vOliEngine::handleDumpMemCommand(const ShellCommand& sc) {
         if (m_globalVariables.empty()) {
             LOG_INFO(L"Memory is empty. No variables set.");
@@ -794,6 +921,65 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         }
         std::wcout << std::wstring(40, L'-') << std::endl;
         std::wcout << L"Total variables: " << m_globalVariables.size() << L"\n" << std::endl;
+    }
+    */
+
+    void vOliEngine::handleDumpMemCommand(const ShellCommand& sc) {
+        if (m_globalVariables.empty()) {
+            LOG_INFO(L"Memory is empty. No variables set.");
+            return;
+        }
+
+        LOG_RAW(L"\n" + std::wstring(75, L'='));
+        LOG_RAW(L"   OLI ENGINE - VIRTUAL RAM ARCHITECTURE (SINGLE-LINE DUMP)");
+        LOG_RAW(std::wstring(75, L'='));
+
+        // Cap de tabel
+        std::wstringstream header;
+        header << std::left << std::setw(15) << L"VARIABLE"
+            << std::setw(12) << L"TYPE"
+            << std::setw(20) << L"MEMORY_REF"
+            << L"VALUE";
+        LOG_RAW(header.str());
+        LOG_RAW(std::wstring(75, L'-'));
+
+        for (const auto& [name, data] : m_globalVariables) {
+            std::wstringstream line;
+
+            // 1. Numele și Tipul
+            line << std::left << std::setw(15) << name
+                << std::setw(12) << getVariantTypeName(data);
+
+            // 2. Adresa (MEMORY_REF)
+            if (auto* p = std::get_if<vData*>(&data.value)) {
+                wchar_t buf[32];
+                swprintf(buf, 32, L"0x%p", (void*)*p);
+                line << std::setw(20) << buf;
+            }
+            else if (auto* m = std::get_if<vDataMap>(&data.value)) {
+                wchar_t buf[32];
+                swprintf(buf, 32, L"M:0x%p", (void*)m->get());
+                line << std::setw(20) << buf;
+            }
+            else if (auto* a = std::get_if<vDataArray>(&data.value)) {
+                wchar_t buf[32];
+                swprintf(buf, 32, L"A:0x%p", (void*)a->get());
+                line << std::setw(20) << buf;
+            }
+            else {
+                line << std::setw(20) << L"[INTERNAL]";
+            }
+
+            // 3. Valoarea (Lipiți valoarea direct pe același rând)
+            line << vDataToWString(data);
+
+            // Trimitem un singur log pe rând
+            LOG_RAW(line.str());
+        }
+
+        LOG_RAW(std::wstring(75, L'='));
+        LOG_INFO(L"Total Variables in Heap: " + std::to_wstring(m_globalVariables.size()));
+        LOG_RAW(std::wstring(75, L'=') + L"\n");
     }
 
     vData vOliEngine::parseArrayContent(const std::wstring& content) {
@@ -1232,6 +1418,18 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             }
 
             return { std::monostate{} };
+            };
+
+
+        m_functionsHandlers[L"CLONE"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) {
+                LOG_ERROR(L"[RUNTIME ERROR] CLONE() necesita un argument.");
+                return { std::monostate{} };
+            }
+
+            // Deoarece handler-ul primeste deja argumentele evaluate,
+            // pur si simplu trimitem primul argument catre deepCopy.
+            return this->deepCopy(args[0]);
             };
 
         // Înregistrăm funcția TYPE
@@ -4705,3 +4903,33 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       return vData{ trim(text) };
   }
 
+  vData vOliEngine::deepCopy(const vData& source) {
+      // 1. GESTIONARE MAP
+      if (auto* oldMapPtr = std::get_if<vDataMap>(&source.value)) {
+          auto oldMap = *oldMapPtr;
+          // Cream un shared_ptr NOU către un std::map NOU
+          auto newMap = std::make_shared<std::map<std::wstring, vData>>();
+
+          for (auto const& [key, val] : *oldMap) {
+              // Copiem recursiv fiecare valoare din map
+              (*newMap)[key] = deepCopy(val);
+          }
+          return vData(newMap);
+      }
+
+      // 2. GESTIONARE ARRAY
+      if (auto* oldArrPtr = std::get_if<vDataArray>(&source.value)) {
+          auto oldArr = *oldArrPtr;
+          // Cream un shared_ptr NOU către un std::vector NOU
+          auto newArr = std::make_shared<std::vector<vData>>();
+
+          for (const auto& item : *oldArr) {
+              newArr->push_back(deepCopy(item));
+          }
+          return vData(newArr);
+      }
+
+      // 3. TIPURI SIMPLE (INT, FLOAT, STRING, POINTER)
+      // Acestea se copiază prin valoare în variant, deci nu au nevoie de logică specială
+      return source;
+  }

@@ -136,6 +136,7 @@ private:
     std::map<std::wstring, Procedure> m_userFunctions; // Refolosim structura Procedure
     bool m_isRecordingFunc = false;
     std::wstring m_activeFuncName;
+    int m_bracketDepth = 0;
 
     bool m_shouldReturn = false;
 
@@ -257,6 +258,7 @@ private:
 
     void updateDataMember(vData& container, const vData& key, const vData& newValue);
     void updateRootSource(ASTPtr node, const vData& updatedValue);
+    vData deepCopy(const vData& source);
 
     // Metodele de suport pentru handlere
     void handleQuitCommand(const ShellCommand& sc);

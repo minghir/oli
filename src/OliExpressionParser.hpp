@@ -200,7 +200,7 @@ ASTPtr parsePrimary() {
         }
         m_pos++;
     }
-
+    /*
     ASTPtr parseMap() {
         // Presupunem că '{' a fost deja consumat de match() în parsePrimary
         ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Literal, L"MAP_OBJECT");
@@ -243,6 +243,68 @@ ASTPtr parsePrimary() {
         }
 
         consume(L"}", "Asteptam '}' la finalul obiectului Map");
+        return node;
+    }
+    */
+    ASTPtr parseMap() {
+        // În acest punct, '{' a fost deja consumat de parsePrimary()
+        ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Literal, L"MAP_OBJECT");
+
+        // 1. Gestionăm cazul Map-ului gol: {}
+        if (check(L"}")) {
+            m_pos++; // Consumăm '}'
+            return node;
+        }
+
+        // 2. Bucla de citire a perechilor cheie:valoare
+        while (m_pos < m_tokens.size()) {
+
+            // --- CITIRE CHEIE ---
+            // Folosim parsePrimary() deoarece cheia este de obicei un Literal ("nume") 
+            // sau o variabilă ($cheie).
+            ASTPtr key = parsePrimary();
+            if (!key) {
+                throw std::runtime_error("Eroare Map: Se astepta o cheie (literal sau variabila).");
+            }
+
+            // --- CITIRE SEPARATOR ':' ---
+            if (!match({ L":" })) {
+                throw std::runtime_error("Eroare Map: Lipseste ':' dupa cheia '" +
+                    std::string(key->value.begin(), key->value.end()) + "'.");
+            }
+
+            // --- CITIRE VALOARE ---
+            // Folosim parseCoalescing() pentru a permite orice expresie, 
+            // inclusiv calcule, alte Map-uri sau Array-uri.
+            ASTPtr value = parseCoalescing();
+            if (!value) {
+                throw std::runtime_error("Eroare Map: Lipseste valoarea pentru cheia '" +
+                    std::string(key->value.begin(), key->value.end()) + "'.");
+            }
+
+            // Adăugăm perechea în arborele AST
+            node->addChild(key);
+            node->addChild(value);
+
+            // --- GESTIONARE CONTINUARE (Virgulă sau Inchidere) ---
+            if (match({ L"," })) {
+                // Suport pentru "trailing comma": dacă după virgulă urmează '}', ne oprim.
+                if (check(L"}")) {
+                    break;
+                }
+                // Altfel, continuăm bucla pentru următoarea pereche.
+                continue;
+            }
+            else {
+                // Dacă nu avem virgulă, singurul token valid rămas este '}'.
+                // Bucla se va opri aici, iar consume() de mai jos va verifica închiderea.
+                break;
+            }
+        }
+
+        // 3. Finalizarea obiectului
+        consume(L"}", "Eroare Map: Obiect neinchis. Se astepta '}' la final.");
+
         return node;
     }
 

@@ -149,5 +149,11 @@
     <None Include="docs\commands\unset.md">
       <Filter>docs\commands</Filter>
     </None>
+    <None Include="docs\commands\if.md">
+      <Filter>docs\commands</Filter>
+    </None>
+    <None Include="docs\commands\while.md">
+      <Filter>docs\commands</Filter>
+    </None>
   </ItemGroup>
 </Project>

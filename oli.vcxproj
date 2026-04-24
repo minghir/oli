@@ -153,9 +153,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="clone.md" />
+    <None Include="docs\commands\if.md" />
     <None Include="docs\commands\proc.md" />
     <None Include="docs\commands\set.md" />
     <None Include="docs\commands\unset.md" />
+    <None Include="docs\commands\while.md" />
     <None Include="docs\functions\ref.md" />
     <None Include="docs\manual.md" />
     <None Include="Makefile" />

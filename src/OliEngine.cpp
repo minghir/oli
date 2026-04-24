@@ -124,9 +124,9 @@ void vOliEngine::execute(const std::wstring& line) {
     // Dacă avem un bloc care nu este un corp de FUNC/PROC sau un IF complex,
     // înlocuim \n cu spațiu. Astfel, preParse nu va sparge Map-ul în bucăți
     // care ar genera erori de tip "Lipseste }" în parserul de expresii.
-    if (m_blockDepth == 0) {
-        std::replace(finalBlock.begin(), finalBlock.end(), L'\n', L' ');
-    }
+   // if (m_blockDepth == 0) {
+   //     std::replace(finalBlock.begin(), finalBlock.end(), L'\n', L' ');
+   // }
 
     // addToHistory(finalBlock); // Opțional, poți reactiva dacă vrei history
     this->executeInternal(finalBlock);
@@ -300,7 +300,7 @@ void vOliEngine::executeCommand(const std::wstring& fullCommand) {
         LOG_ERROR(L"Unknown command or procedure: " + cmdName);
     }
 }
-
+/*
 std::vector<std::wstring> vOliEngine::preParse(const std::wstring& input) {
     std::vector<std::wstring> result;
     std::wstring current;
@@ -365,6 +365,89 @@ std::vector<std::wstring> vOliEngine::preParse(const std::wstring& input) {
     }
 
     if (!trim(current).empty()) result.push_back(trim(current));
+    return result;
+}
+*/
+std::vector<std::wstring> vOliEngine::preParse(const std::wstring& input) {
+    std::vector<std::wstring> result;
+    std::wstring current;
+    int blockDepth = 0;   // Pentru WHILE, IF, etc.
+    int bracketDepth = 0; // Pentru { } și [ ]
+    bool inQuotes = false;
+
+    for (size_t i = 0; i < input.length(); ++i) {
+        wchar_t c = input[i];
+
+        // 1. Gestionare ghilimele (ignorăm tot ce e în string-uri)
+        if (c == L'"' && (i == 0 || input[i - 1] != L'\\')) {
+            inQuotes = !inQuotes;
+        }
+
+        if (!inQuotes) {
+            // 2. Tracking paranteze (pentru Map-uri și Array-uri multi-line)
+            if (c == L'{' || c == L'[') bracketDepth++;
+            if (c == L'}' || c == L']') bracketDepth--;
+
+            // 3. Tracking blocuri de control (START)
+            // Verificăm dacă suntem la începutul unui cuvânt
+            bool isStartOfWord = (i == 0 || iswspace(input[i - 1]) || input[i - 1] == L';');
+            if (isStartOfWord) {
+                std::wstring_view remView(&input[i], input.length() - i);
+                std::wstring startPrefix;
+                for (size_t j = 0; j < 10 && j < remView.size(); ++j)
+                    startPrefix += std::towupper(remView[j]);
+
+                auto startsWithKey = [&](const std::wstring& k) {
+                    if (startPrefix.size() < k.size()) return false;
+                    if (startPrefix.substr(0, k.size()) != k) return false;
+                    return (startPrefix.size() == k.size() || iswspace(startPrefix[k.size()]) || startPrefix[k.size()] == L';');
+                    };
+
+                if (startsWithKey(L"WHILE") || startsWithKey(L"REPEAT") || startsWithKey(L"IF") ||
+                    startsWithKey(L"FOR") || startsWithKey(L"CYCLE") || startsWithKey(L"SWITCH") ||
+                    startsWithKey(L"PROC") || startsWithKey(L"FUNC")) {
+                    blockDepth++;
+                }
+            }
+
+            // 4. DECIZIA DE TĂIERE (Separator)
+            // Tăiem instrucțiunea DOAR dacă nu suntem în interiorul niciunui bloc sau paranteze
+            if (blockDepth == 0 && bracketDepth == 0 && (c == L';' || c == L'\n')) {
+                std::wstring cmd = trim(current);
+                if (!cmd.empty()) result.push_back(cmd);
+                current.clear();
+                continue;
+            }
+        }
+
+        current += c;
+
+        // 5. Tracking blocuri de control (END)
+        if (!inQuotes) {
+            auto endsWithKey = [&](const std::wstring& k) {
+                if (current.length() < k.length()) return false;
+                std::wstring tail = current.substr(current.length() - k.length());
+                for (auto& ch : tail) ch = std::towupper(ch);
+                if (tail != k) return false;
+
+                size_t startIdx = current.length() - k.length();
+                if (startIdx > 0 && !iswspace(current[startIdx - 1]) && current[startIdx - 1] != L';') return false;
+                return true;
+                };
+
+            if (endsWithKey(L"ENDWHILE") || endsWithKey(L"ENDREPEAT") || endsWithKey(L"ENDIF") ||
+                endsWithKey(L"ENDFOR") || endsWithKey(L"ENDCYCLE") || endsWithKey(L"ENDSWITCH") ||
+                endsWithKey(L"ENDPROC") || endsWithKey(L"ENDFUNC")) {
+                blockDepth--;
+                if (blockDepth < 0) blockDepth = 0;
+            }
+        }
+    }
+
+    // Adăugăm și ultima bucată dacă a mai rămas ceva
+    std::wstring lastCmd = trim(current);
+    if (!lastCmd.empty()) result.push_back(lastCmd);
+
     return result;
 }
 
@@ -2607,7 +2690,7 @@ double vOliEngine::vDataToDouble(const vData& data) const {
 
 
     
-
+/*
     void vOliEngine::handleWhileCommand(const std::wstring& fullLine) {
         std::wstring upperLine = fullLine;
         std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
@@ -2657,6 +2740,78 @@ double vOliEngine::vDataToDouble(const vData& data) const {
                         return;
                     }
                     if (m_executionStatus == OliStatus::RETURN_REQUESTED) return;
+                }
+            }
+        next_iteration:;
+        }
+    }
+    */
+    void vOliEngine::handleWhileCommand(const std::wstring& fullLine) {
+        // 1. Pregătim o versiune UPPER pentru căutare (case-insensitivity)
+        std::wstring upperLine = fullLine;
+        std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
+
+        // 2. Găsim pozițiile folosind upperLine pentru a ignora casing-ul (do vs DO)
+        // IMPORTANT: Folosim upperLine ca sursă de căutare, indicii vor fi identici pentru fullLine
+        size_t whilePos = upperLine.find(L"WHILE");
+        size_t posDo = findTopLevelKeyword(upperLine, L"DO", L"WHILE");
+        size_t posEnd = findTopLevelKeyword(upperLine, L"ENDWHILE", L"WHILE");
+
+        // Fallback robust în caz că findTopLevelKeyword nu a fost precis
+        if (posDo == std::wstring::npos) posDo = upperLine.find(L" DO ");
+        if (posEnd == std::wstring::npos) posEnd = upperLine.rfind(L"ENDWHILE");
+
+        if (whilePos == std::wstring::npos || posDo == std::wstring::npos || posEnd == std::wstring::npos) {
+            LOG_ERROR(L"Malformed WHILE: Missing DO or ENDWHILE keywords.");
+            return;
+        }
+
+        // 3. Calculăm indicii de start pentru conținut
+        // Găsim poziția exactă a lui "DO" (fără spațiul din față dacă am folosit fallback-ul cu spațiu)
+        size_t actualDoPos = upperLine.find(L"DO", posDo);
+
+        // Extragem Condiția: între WHILE (+5) și DO
+        size_t condStart = whilePos + 5;
+        std::wstring conditionPart = trim(fullLine.substr(condStart, actualDoPos - condStart));
+
+        // Extragem Corpul: imediat după DO (+2) până la ENDWHILE
+        size_t bodyStart = actualDoPos + 2;
+        std::wstring bodyCommand = fullLine.substr(bodyStart, posEnd - bodyStart);
+
+        // 4. Pregătim instrucțiunile (preParse le împarte corect în vector)
+        std::vector<std::wstring> instructions = preParse(bodyCommand);
+        if (instructions.empty()) return;
+
+        // 5. Bucla de execuție a motorului Oli
+        int safetyBreak = 0;
+        while (true) {
+            // Safety check pentru a nu bloca procesorul în bucle infinite
+            if (++safetyBreak > 10000) {
+                LOG_ERROR(L"Safety limit reached (10000 iterations). Possible infinite loop.");
+                break;
+            }
+
+            // Evaluăm condiția la fiecare iterație
+            vData condRes = evaluateExpression(conditionPart);
+            if (!vDataToBool(condRes)) break;
+
+            for (const auto& instr : instructions) {
+                // Executăm intern fiecare linie din corpul buclei
+                this->executeInternal(instr);
+
+                // GESTIONARE STATUS (Crucial pentru BREAK / CONTINUE / RETURN)
+                if (m_executionStatus != OliStatus::RUNNING) {
+                    if (m_executionStatus == OliStatus::CONTINUE_REQUESTED) {
+                        m_executionStatus = OliStatus::RUNNING;
+                        goto next_iteration; // Sărim peste restul instrucțiunilor din această tură
+                    }
+                    if (m_executionStatus == OliStatus::BREAK_REQUESTED) {
+                        m_executionStatus = OliStatus::RUNNING;
+                        return; // Ieșim complet din funcția handleWhile (terminăm bucla)
+                    }
+                    if (m_executionStatus == OliStatus::RETURN_REQUESTED) {
+                        return; // Propagăm return-ul în sus pe stivă
+                    }
                 }
             }
         next_iteration:;
@@ -3567,9 +3722,18 @@ void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wst
 
     for (size_t i = 0; i < proc.params.size(); ++i) {
         std::wstring pName = cleanVariableName(proc.params[i]);
+        /*
         if (i < passedArgs.size()) {
             // Evaluarea se face în contextul de dinainte de apel
             evaluatedParams[pName] = evaluateExpression(passedArgs[i]);
+        }*/
+        if (i < passedArgs.size()) {
+            std::wstring arg = passedArgs[i];
+            // Dacă utilizatorul a scris 'n' în loc de '$n', îl ajutăm noi:
+            if (!arg.empty() && arg[0] != L'$' && arg[0] != L'\"' && !iswdigit(arg[0])) {
+                arg = L"$" + arg;
+            }
+            evaluatedParams[pName] = evaluateExpression(arg);
         }
         else {
             evaluatedParams[pName] = vData{ std::monostate{} };

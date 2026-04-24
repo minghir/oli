@@ -9,7 +9,7 @@ endfunc
 
 
 proc sort array
-set $arr = $$array 
+set $arr = $array 
 set $i=0 
 set $j=0 
 set $n = COUNT_ARR($arr) 

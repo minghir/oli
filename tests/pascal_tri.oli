@@ -1,0 +1,44 @@
+# Pascal's Triangle in Oli
+proc pascaltriangle n
+	
+    set $i = 0
+    while $i < $n do
+        set $c = 1
+        set $rowText = ""
+        
+        # 1. Handle leading spaces for alignment
+        set $spacesNeeded = 2 * ($n - 1 - $i)
+        set $j = 1
+        while $j <= $spacesNeeded do
+            set $rowText = $rowText + " "
+            set $j = $j + 1
+        endwhile
+
+        # 2. Calculate and format numbers
+        set $k = 0
+        while $k <= $i do
+            # Simple padding logic to mimic %3d
+            if $c < 10 then
+                set $rowText = $rowText + "  " + $c + " "
+            else
+                if $c < 100 then
+                    set $rowText = $rowText + " " + $c + " "
+                else
+                    set $rowText = $rowText + $c + " "
+                endif
+            endif
+
+            # The formula: c = c * (i - k) / (k + 1)
+            set $c = $c * ($i - $k) / ($k + 1)
+            set $k = $k + 1
+        endwhile
+
+        # 3. Print the completed row
+        echo $rowText
+        set $i = $i + 1
+    endwhile
+endproc
+
+# Main execution
+echo "--- Pascal's Triangle (Oli Edition) ---"
+pascaltriangle 8

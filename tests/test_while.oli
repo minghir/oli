@@ -1,4 +1,12 @@
 unset all ; cls
+func COUNT_ARR arr_to_count
+set $i=0
+  cycle $arr_to_count as val do 
+	set $i = $i + 1 
+	endcycle
+  return $i
+endfunc
+
 proc sort array
 set $arr = $$array 
 set $i=0 

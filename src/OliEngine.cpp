@@ -4832,41 +4832,42 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
 
 
   void vOliEngine::handleHelpCommand(const ShellCommand& sc) {
-      std::wstring target;
-
-      if (sc.args.empty()) {
-          // Dacă utilizatorul scrie doar 'help', afișăm manualul general
-          target = L"manual";
-      }
-      else {
-          target = sc.args[0];
-      }
-
+      std::wstring target = sc.args.empty() ? L"manual" : sc.args[0];
       std::transform(target.begin(), target.end(), target.begin(), ::towlower);
 
-      // Căutăm fișierul în ordine: manual, commands, functions
-      std::wstring path;
+      // 1. Construim calea
+      std::wstring pathStr;
       if (target == L"manual") {
-          path = L"docs/manual.md";
+          pathStr = L"docs/manual.md";
       }
       else {
-          // Verificăm în commands
-          path = L"docs/commands/" + target + L".md";
-          // Dacă nu există, verificăm în functions (necesită logică de exists sau încercare open)
+          pathStr = L"docs/commands/" + target + L".md";
       }
 
-      std::wifstream file(path);
-      // Dacă path-ul de commands a eșuat, încercăm în functions
+      // 2. Deschidem fișierul folosind std::filesystem::path pentru conversia automată
+      // Aceasta rezolvă eroarea de pe Linux (convertind intern wstring în path-ul nativ)
+      std::wifstream file{ (std::filesystem::path(pathStr)) };
+
+      // 3. Fallback pentru funcții dacă nu e în comenzi
       if (!file.is_open() && target != L"manual") {
-          path = L"docs/functions/" + target + L".md";
-          file.open(path);
+          pathStr = L"docs/functions/" + target + L".md";
+          file.open(std::filesystem::path({pathStr}));
       }
 
       if (file.is_open()) {
+          // IMPORTANT pentru Linux: Setează localizarea pentru a citi corect UTF-8
+          try {
+              file.imbue(std::locale("en_US.UTF-8"));
+          }
+          catch (...) {
+              file.imbue(std::locale::classic());
+          }
+
           LOG_RAW(L"\n--- Oli Help System ---");
+
           std::wstring line;
           while (std::getline(file, line)) {
-              // Un mic artificiu vizual: titlurile cu '#' să fie galbene/verzi
+              // Logica de culori pentru consolă
               if (!line.empty() && line[0] == L'#') {
                   ConsoleManager::getInstance().writeRaw(line + L"\n", FOREGROUND_GREEN | FOREGROUND_INTENSITY);
               }

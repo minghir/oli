@@ -8,6 +8,15 @@
     <Filter Include="tests">
       <UniqueIdentifier>{f69b4caa-077a-44fa-bd79-2919a142e9b7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="docs">
+      <UniqueIdentifier>{2848e0d0-921c-424e-8231-e41864c37c29}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="docs\commands">
+      <UniqueIdentifier>{c3105026-341e-4401-9384-3ab1dbb62032}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="docs\functions">
+      <UniqueIdentifier>{2a3b4908-5338-42c9-9134-190c824cf50d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\ASTNode.cpp">
@@ -124,5 +133,21 @@
       <Filter>tests</Filter>
     </None>
     <None Include="README.md" />
+    <None Include="docs\commands\set.md">
+      <Filter>docs\commands</Filter>
+    </None>
+    <None Include="docs\functions\ref.md">
+      <Filter>docs\functions</Filter>
+    </None>
+    <None Include="clone.md" />
+    <None Include="docs\manual.md">
+      <Filter>docs</Filter>
+    </None>
+    <None Include="docs\commands\proc.md">
+      <Filter>docs\commands</Filter>
+    </None>
+    <None Include="docs\commands\unset.md">
+      <Filter>docs\commands</Filter>
+    </None>
   </ItemGroup>
 </Project>

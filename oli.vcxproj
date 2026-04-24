@@ -152,6 +152,12 @@
     <ClInclude Include="src\Shell.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="clone.md" />
+    <None Include="docs\commands\proc.md" />
+    <None Include="docs\commands\set.md" />
+    <None Include="docs\commands\unset.md" />
+    <None Include="docs\functions\ref.md" />
+    <None Include="docs\manual.md" />
     <None Include="Makefile" />
     <None Include="README.md" />
     <None Include="tests\atac_test.oli" />

@@ -31,13 +31,7 @@ public:
     }
 
 };
-/*
-int main(int argc, char* argv[]) {
-    oli app(RunMode::CONSOLE);
-    app.startConsole();
-    return app.run();
-}
-*/
+
 
 int main(int argc, char* argv[]) {
 

@@ -281,6 +281,8 @@ private:
 
     void handleClearCommand(const ShellCommand& sc);
     void handleDefCommand(const ShellCommand& sc);
+
+    void handleHelpCommand(const ShellCommand& sc);
     
 
     void initializeFunctionsHandlers();

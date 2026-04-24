@@ -11,114 +11,6 @@
 #include <thread>
 #include <chrono>
 #include <string_view>
-/*
-void vOliEngine::execute(const std::wstring& line) {
-    // 1. Curățare
-    std::wstring cleanLine = trim(line);
-    if (cleanLine.empty() && m_accumulator.empty()) return;
-
-    // Eliminare comentarii
-    size_t commentPos = cleanLine.find(L'#');
-    if (commentPos != std::wstring::npos) {
-        cleanLine = trim(cleanLine.substr(0, commentPos));
-    }
-
-    // 2. DETECTARE PARANTEZE (Multi-line support)
-    // Numărăm deschiderile și închiderile pentru a ști dacă blocul e complet
-    for (wchar_t c : cleanLine) {
-        if (c == L'{' || c == L'[') m_bracketDepth++;
-        if (c == L'}' || c == L']') m_bracketDepth--;
-    }
-
-    std::wstring upperLine = cleanLine;
-    std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
-
-    // --- LOG DIAGNOSTIC ---
-    //LOG_DEBUG(L"[EXEC] Input: '" + cleanLine + L"' | Depth before: " + std::to_wstring(m_blockDepth));
-
-    // 3. Gestionare înregistrare FUNC/PROC
-    if (m_isRecording || m_isRecordingFunc) {
-        if (upperLine == L"ENDPROC" || upperLine == L"ENDFUNC") {
-            m_isRecording = false; m_isRecordingFunc = false; m_blockDepth = 0;
-            vOliKeyWords::registerDynamicCommand(m_activeProcName);
-            LOG_SUCCESS(L"Procedure/Function saved.");
-            return;
-        }
-        if (m_isRecording) m_procedures[m_activeProcName].body.push_back(cleanLine);
-        else m_userFunctions[m_activeFuncName].body.push_back(cleanLine);
-        return;
-    }
-
-    // 3. Tracking adâncime (Versiune ultra-sensibilă la loguri)
-    auto checkAndLog = [&](const std::wstring& key, bool increment) {
-        size_t p = upperLine.find(key);
-        if (p != std::wstring::npos) {
-            // Verificare cuvânt întreg
-            bool startOk = (p == 0 || iswspace(upperLine[p - 1]));
-            bool endOk = (p + key.length() >= upperLine.length() || iswspace(upperLine[p + key.length()]));
-
-            if (startOk && endOk) {
-                if (increment) m_blockDepth++;
-                else if (m_blockDepth > 0) m_blockDepth--;
-                //LOG_DEBUG(L"[BLOCK] Found '" + key + L"'. New Depth: " + std::to_wstring(m_blockDepth));
-                return true;
-            }
-        }
-        return false;
-    };
-
-    checkAndLog(L"IF", true);
-    checkAndLog(L"WHILE", true);
-    checkAndLog(L"FOR", true);
-    checkAndLog(L"REPEAT", true);
-    checkAndLog(L"CYCLE", true);
-    checkAndLog(L"PROC", true);
-    checkAndLog(L"FUNC", true);
-    checkAndLog(L"SWITCH", true); // <--- ADAUGĂ ASTA
-
-    checkAndLog(L"ENDIF", false);
-    checkAndLog(L"ENDWHILE", false);
-    checkAndLog(L"ENDFOR", false);
-    checkAndLog(L"ENDREPEAT", false);
-    checkAndLog(L"ENDCYCLE", false);
-    checkAndLog(L"ENDPROC", false);
-    checkAndLog(L"ENDFUNC", false);
-    checkAndLog(L"ENDSWITCH", false); // <--- ADAUGĂ ASTA
-
-    // 4. Acumulare
-    bool hasBackslash = (!cleanLine.empty() && cleanLine.back() == L'\\');
-    if (hasBackslash) cleanLine.pop_back();
-
-    if (!m_accumulator.empty()) m_accumulator += L"\n";
-    m_accumulator += cleanLine;
-
-    // 5. Declanșare PROC/FUNC
-    if (upperLine.find(L"PROC ") == 0 || upperLine.find(L"FUNC ") == 0) {
-        //LOG_DEBUG(L"[EXEC] Starting PROC/FUNC definition...");
-        std::wstring startCmd = m_accumulator;
-        m_accumulator.clear();
-        this->executeInternal(startCmd);
-        return;
-    }
-
-    // 6. Decizia de așteptare
-    if (m_blockDepth > 0 ||  m_bracketDepth > 0 || hasBackslash) {
-        //LOG_DEBUG(L"[EXEC] Accumulating... (Depth: " + std::to_wstring(m_blockDepth) + L")");
-        return;
-    }
-
-    // 7. EXECUȚIE BLOC COMPLET
-    std::wstring finalBlock = m_accumulator;
-    m_accumulator.clear();
-
-    //LOG_DEBUG(L"[EXEC] Block Complete. Sending to executeInternal. Length: " + std::to_wstring(finalBlock.length()));
-
-    if (trim(finalBlock).empty()) return;
-
-    //addToHistory(finalBlock);
-    this->executeInternal(finalBlock);
-}
-*/
 #include <algorithm> // Necesar pentru std::replace
 
 void vOliEngine::execute(const std::wstring& line) {
@@ -162,7 +54,11 @@ void vOliEngine::execute(const std::wstring& line) {
     }
 
     // --- 4. TRACKING ADÂNCIME BLOCURI (IF, WHILE, etc.) ---
+    bool isHelpCall = (upperLine.find(L"HELP") == 0);
+
     auto checkAndLog = [&](const std::wstring& key, bool increment) {
+        if (isHelpCall) return false; // Dacă e help, nu numărăm blocuri!
+
         size_t p = upperLine.find(key);
         if (p != std::wstring::npos) {
             bool startOk = (p == 0 || iswspace(upperLine[p - 1]));
@@ -553,7 +449,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         // INFO și HELP (din OliKeyWords)
         m_commandHandlers[L"INFO"] = wrap([this](const auto& sc) { /* handleInfoCommand(sc); */ });
         m_commandHandlers[L"D"] = m_commandHandlers[L"INFO"];
-        m_commandHandlers[L"HELP"] = wrap([this](const auto& sc) { /* handleHelpCommand(sc); */ });
+        m_commandHandlers[L"HELP"] = wrap([this](const auto& sc) {  handleHelpCommand(sc);  });
         m_commandHandlers[L"H"] = m_commandHandlers[L"HELP"];
 
         m_commandHandlers[L"RUN"] = wrap([this](const auto& sc) { handleRunCommand(sc); });
@@ -4932,4 +4828,55 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       // 3. TIPURI SIMPLE (INT, FLOAT, STRING, POINTER)
       // Acestea se copiază prin valoare în variant, deci nu au nevoie de logică specială
       return source;
+  }
+
+
+  void vOliEngine::handleHelpCommand(const ShellCommand& sc) {
+      std::wstring target;
+
+      if (sc.args.empty()) {
+          // Dacă utilizatorul scrie doar 'help', afișăm manualul general
+          target = L"manual";
+      }
+      else {
+          target = sc.args[0];
+      }
+
+      std::transform(target.begin(), target.end(), target.begin(), ::towlower);
+
+      // Căutăm fișierul în ordine: manual, commands, functions
+      std::wstring path;
+      if (target == L"manual") {
+          path = L"docs/manual.md";
+      }
+      else {
+          // Verificăm în commands
+          path = L"docs/commands/" + target + L".md";
+          // Dacă nu există, verificăm în functions (necesită logică de exists sau încercare open)
+      }
+
+      std::wifstream file(path);
+      // Dacă path-ul de commands a eșuat, încercăm în functions
+      if (!file.is_open() && target != L"manual") {
+          path = L"docs/functions/" + target + L".md";
+          file.open(path);
+      }
+
+      if (file.is_open()) {
+          LOG_RAW(L"\n--- Oli Help System ---");
+          std::wstring line;
+          while (std::getline(file, line)) {
+              // Un mic artificiu vizual: titlurile cu '#' să fie galbene/verzi
+              if (!line.empty() && line[0] == L'#') {
+                  ConsoleManager::getInstance().writeRaw(line + L"\n", FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+              }
+              else {
+                  LOG_RAW(line);
+              }
+          }
+          LOG_RAW(L"-------------------------\n");
+      }
+      else {
+          LOG_ERROR(L"Documentation not found for: " + target);
+      }
   }

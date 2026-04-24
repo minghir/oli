@@ -155,5 +155,23 @@
     <None Include="docs\commands\while.md">
       <Filter>docs\commands</Filter>
     </None>
+    <None Include="docs\commands\cycle.md">
+      <Filter>docs\commands</Filter>
+    </None>
+    <None Include="docs\commands\for.md">
+      <Filter>docs\commands</Filter>
+    </None>
+    <None Include="docs\commands\repeat.md">
+      <Filter>docs\commands</Filter>
+    </None>
+    <None Include="docs\commands\switch.md">
+      <Filter>docs\commands</Filter>
+    </None>
+    <None Include="docs\commands\func.md">
+      <Filter>docs\commands</Filter>
+    </None>
+    <None Include="docs\commands\def.md">
+      <Filter>docs</Filter>
+    </None>
   </ItemGroup>
 </Project>

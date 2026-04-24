@@ -12,7 +12,7 @@
 #include <chrono>
 #include <string_view>
 #include <algorithm> // Necesar pentru std::replace
-
+/*
 void vOliEngine::execute(const std::wstring& line) {
     // --- 1. CURĂȚARE ȘI COMENTARII ---
     std::wstring cleanLine = trim(line);
@@ -55,14 +55,47 @@ void vOliEngine::execute(const std::wstring& line) {
 
     // --- 4. TRACKING ADÂNCIME BLOCURI (IF, WHILE, etc.) ---
     bool isHelpCall = (upperLine.find(L"HELP") == 0);
+    
+    //auto checkAndLog = [&](const std::wstring& key, bool increment) {
+      //  if (isHelpCall) return false; // Dacă e help, nu numărăm blocuri!
+
+        //size_t p = upperLine.find(key);
+        //if (p != std::wstring::npos) {
+          //  bool startOk = (p == 0 || iswspace(upperLine[p - 1]));
+            //bool endOk = (p + key.length() >= upperLine.length() || iswspace(upperLine[p + key.length()]));
+            //if (startOk && endOk) {
+              //  if (increment) m_blockDepth++;
+                //else if (m_blockDepth > 0) m_blockDepth--;
+                //return true;
+            //}
+        //}
+        //return false;
+        //};
+    
+    // În execute(), înainte de checkAndLog
+    bool lineInQuotes = false;
+    std::wstring lineForDepthCheck = upperLine;
+
+    // O mică rutină care înlocuiește conținutul dintre ghilimele cu spații 
+    // doar pentru numărătoarea de blocuri
+    for (size_t i = 0; i < lineForDepthCheck.length(); ++i) {
+        if (lineForDepthCheck[i] == L'"') lineInQuotes = !lineInQuotes;
+        if (lineInQuotes) lineForDepthCheck[i] = L' ';
+    }
+    // Acum folosește lineForDepthCheck în loc de upperLine în interiorul checkAndLog
+
 
     auto checkAndLog = [&](const std::wstring& key, bool increment) {
-        if (isHelpCall) return false; // Dacă e help, nu numărăm blocuri!
+        if (isHelpCall) return false;
 
         size_t p = upperLine.find(key);
         if (p != std::wstring::npos) {
-            bool startOk = (p == 0 || iswspace(upperLine[p - 1]));
-            bool endOk = (p + key.length() >= upperLine.length() || iswspace(upperLine[p + key.length()]));
+            // Verificăm dacă e cuvânt de sine stătător
+            bool startOk = (p == 0 || iswspace(upperLine[p - 1]) || wcschr(L";()[]{}\"", upperLine[p - 1]));
+            bool endOk = (p + key.length() >= upperLine.length() ||
+                iswspace(upperLine[p + key.length()]) ||
+                wcschr(L";()[]{}\"", upperLine[p + key.length()])); // Am adăugat ghilimeaua aici
+
             if (startOk && endOk) {
                 if (increment) m_blockDepth++;
                 else if (m_blockDepth > 0) m_blockDepth--;
@@ -131,8 +164,134 @@ void vOliEngine::execute(const std::wstring& line) {
     // addToHistory(finalBlock); // Opțional, poți reactiva dacă vrei history
     this->executeInternal(finalBlock);
 }
+*/
+void vOliEngine::execute(const std::wstring& line) {
+    // --- 1. CURĂȚARE ȘI COMENTARII ---
+    std::wstring cleanLine = trim(line);
 
+    size_t commentPos = cleanLine.find(L'#');
+    if (commentPos != std::wstring::npos) {
+        cleanLine = trim(cleanLine.substr(0, commentPos));
+    }
 
+    if (cleanLine.empty() && m_accumulator.empty()) return;
+
+    // --- 2. DETECTARE PARANTEZE (MAPS/ARRAYS) ---
+    // Notă: Ideal ar fi ca și aici să ignorăm parantezele din string-uri pe viitor
+    for (wchar_t c : cleanLine) {
+        if (c == L'{' || c == L'[') m_bracketDepth++;
+        if (c == L'}' || c == L']') m_bracketDepth--;
+    }
+
+    std::wstring upperLine = cleanLine;
+    std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
+
+    // --- 3. GESTIONARE ÎNREGISTRARE FUNC/PROC ---
+    if (m_isRecording || m_isRecordingFunc) {
+        if (upperLine == L"ENDPROC" || upperLine == L"ENDFUNC") {
+            m_isRecording = false;
+            m_isRecordingFunc = false;
+            m_blockDepth = 0;
+            m_bracketDepth = 0;
+            vOliKeyWords::registerDynamicCommand(m_activeProcName);
+            LOG_SUCCESS(L"Procedure/Function saved.");
+            return;
+        }
+
+        if (m_isRecording) m_procedures[m_activeProcName].body.push_back(cleanLine);
+        else m_userFunctions[m_activeFuncName].body.push_back(cleanLine);
+        return;
+    }
+
+    // --- 4. MASCARE GHILIMELE PENTRU TRACKING ADÂNCIME ---
+    // Creăm o versiune a liniei unde tot ce e între ghilimele devine spațiu
+    bool lineInQuotes = false;
+    std::wstring lineForDepthCheck = upperLine;
+
+    for (size_t i = 0; i < lineForDepthCheck.length(); ++i) {
+        // Detectăm ghilimelele (ținând cont de escape character \ dacă e cazul)
+        if (lineForDepthCheck[i] == L'"' && (i == 0 || lineForDepthCheck[i - 1] != L'\\')) {
+            lineInQuotes = !lineInQuotes;
+            lineForDepthCheck[i] = L' '; // Mascăm și ghilimeaua însăși
+            continue;
+        }
+        if (lineInQuotes) {
+            lineForDepthCheck[i] = L' '; // Mascăm conținutul string-ului
+        }
+    }
+
+    bool isHelpCall = (upperLine.find(L"HELP") == 0);
+
+    // Lambda îmbunătățit care caută în linia filtrată
+    auto checkAndLog = [&](const std::wstring& key, bool increment) {
+        if (isHelpCall) return false;
+
+        // FIX CRITIC: Căutăm în lineForDepthCheck pentru a ignora textul din echo
+        size_t p = lineForDepthCheck.find(key);
+        if (p != std::wstring::npos) {
+            // Verificăm dacă este cuvânt de sine stătător folosind delimitatori
+            bool startOk = (p == 0 || iswspace(lineForDepthCheck[p - 1]) || wcschr(L";()[]{}\"", lineForDepthCheck[p - 1]));
+            bool endOk = (p + key.length() >= lineForDepthCheck.length() ||
+                iswspace(lineForDepthCheck[p + key.length()]) ||
+                wcschr(L";()[]{}\"", lineForDepthCheck[p + key.length()]));
+
+            if (startOk && endOk) {
+                if (increment) m_blockDepth++;
+                else if (m_blockDepth > 0) m_blockDepth--;
+                return true;
+            }
+        }
+        return false;
+        };
+
+    // Actualizăm blockDepth pentru structurile de control
+    checkAndLog(L"IF", true);
+    checkAndLog(L"WHILE", true);
+    checkAndLog(L"FOR", true);
+    checkAndLog(L"REPEAT", true);
+    checkAndLog(L"CYCLE", true);
+    checkAndLog(L"PROC", true);
+    checkAndLog(L"FUNC", true);
+    checkAndLog(L"SWITCH", true);
+
+    checkAndLog(L"ENDIF", false);
+    checkAndLog(L"ENDWHILE", false);
+    checkAndLog(L"ENDFOR", false);
+    checkAndLog(L"ENDREPEAT", false);
+    checkAndLog(L"ENDCYCLE", false);
+    checkAndLog(L"ENDPROC", false);
+    checkAndLog(L"ENDFUNC", false);
+    checkAndLog(L"ENDSWITCH", false);
+
+    // --- 5. ACUMULARE ---
+    bool hasBackslash = (!cleanLine.empty() && cleanLine.back() == L'\\');
+    if (hasBackslash) cleanLine.pop_back();
+
+    if (!m_accumulator.empty()) m_accumulator += L"\n";
+    m_accumulator += cleanLine;
+
+    // Declanșare pentru PROC/FUNC (avem nevoie de antet pentru a începe recording-ul)
+    if (upperLine.find(L"PROC ") == 0 || upperLine.find(L"FUNC ") == 0) {
+        std::wstring startCmd = m_accumulator;
+        m_accumulator.clear();
+        this->executeInternal(startCmd);
+        return;
+    }
+
+    // --- 6. DECIZIA DE AȘTEPTARE ---
+    if (m_blockDepth > 0 || m_bracketDepth > 0 || hasBackslash) {
+        return;
+    }
+
+    // --- 7. EXECUȚIE BLOC COMPLET ---
+    std::wstring finalBlock = m_accumulator;
+    m_accumulator.clear();
+    m_bracketDepth = 0;
+
+    if (trim(finalBlock).empty()) return;
+
+    this->executeInternal(finalBlock);
+}
 void vOliEngine::executeInternal(const std::wstring& fullInput) {
     std::wstring trimmedInput = trim(fullInput);
     if (trimmedInput.empty()) return;
@@ -4479,6 +4638,7 @@ void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wst
       }
   }
 
+  /*
   size_t vOliEngine::findTopLevelSwitchKeyword(const std::wstring& line, const std::wstring& keyword) {
       int depth = 0;
       bool inQuotes = false;
@@ -4503,6 +4663,53 @@ void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wst
                       if (startOk && endOk) return i;
                   }
               }
+          }
+      }
+      return std::wstring::npos;
+  }
+  */
+
+  size_t vOliEngine::findTopLevelSwitchKeyword(const std::wstring& line, const std::wstring& keyword) {
+      int depth = 0;
+      bool inQuotes = false;
+      std::wstring upperKey = toUpper(keyword);
+      size_t kwLen = upperKey.length();
+
+      for (size_t i = 0; i < line.length(); ++i) {
+          if (line[i] == L'"' && (i == 0 || line[i - 1] != L'\\')) {
+              inQuotes = !inQuotes;
+              continue;
+          }
+          if (inQuotes) continue;
+
+          // --- FIX CRITIC: Verificăm keyword-ul la nivelul de adâncime curent ---
+          // Dacă căutăm CASE/DEFAULT, vrem să le găsim la depth 1 (în interiorul SWITCH-ului curent)
+          // Dacă căutăm ENDSWITCH, vrem să îl găsim când depth redevine 0 (sau este 1 înainte de scădere)
+
+          std::wstring sub = toUpper(line.substr(i, kwLen));
+          if (sub == upperKey) {
+              bool startOk = (i == 0 || iswspace(line[i - 1]) || wcschr(L";()[]{}\"", line[i - 1]));
+              bool endOk = (i + kwLen >= line.length() || iswspace(line[i + kwLen]) || wcschr(L";()[]{}\"", line[i + kwLen]));
+
+              // Logica de aur: CASE/DEFAULT apar la depth 1. ENDSWITCH ne scoate la depth 0.
+              if (startOk && endOk) {
+                  // Dacă căutăm ENDSWITCH, acceptăm să îl găsim la depth 1 (pentru că el ne va închide blocul)
+                  if (upperKey == L"ENDSWITCH" && depth == 1) return i;
+                  // Dacă căutăm CASE/DEFAULT, le vrem la depth 1
+                  if ((upperKey == L"CASE" || upperKey == L"DEFAULT") && depth == 1) return i;
+                  // Fallback pentru alte căutări la nivel 0
+                  if (depth == 0 && upperKey != L"ENDSWITCH") return i;
+              }
+          }
+
+          // --- Gestionare adâncime (după verificare) ---
+          if (line.substr(i, 6) == L"SWITCH") {
+              depth++;
+              i += 5;
+          }
+          else if (line.substr(i, 9) == L"ENDSWITCH") {
+              depth--;
+              i += 8;
           }
       }
       return std::wstring::npos;

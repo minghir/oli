@@ -17,6 +17,15 @@ while $counter < 5 DO
     set $counter = $counter + 1
 endwhile
 
+## SINGLE-LINE USAGE
+If you want to write a loop on a single line (especially in the interactive shell), you **MUST** use semicolons (`;`) to separate instructions.
+
+### CORRECT:
+while $i < 5 DO echo $i; set $i = $i + 1 endwhile
+
+### INCORRECT (Will fail):
+while $i < 5 DO echo $i set $i = $i + 1 endwhile
+
 ## CONTROL COMMANDS
 Inside a WHILE loop, you can use:
 - **BREAK**: Immediately exits the loop.

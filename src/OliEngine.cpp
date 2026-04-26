@@ -1752,81 +1752,227 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             }
 
             case ASTNodeType::Operator: {
-                // --- ATRIBUIRE (=) ---
-                
-                // --- ATRIBUIRE (=) ---
-                if (node->value == L"=") {
-                    if (node->children.size() < 2) return { std::monostate{} };
+                std::wstring op = node->value;
 
-                    ASTPtr left = node->children[0];
-                    vData rightVal = executeAST(node->children[1]);
+                // 1. Identificăm dacă este o formă de atribuire sau incrementare
+                bool isCompound = (op == L"+=" || op == L"-=" || op == L"*=" || op == L"/=");
+                bool isSimpleAssign = (op == L"=");
+                bool isPostfix = (op == L"POSTFIX_INC" || op == L"POSTFIX_DEC");
 
-                    // 1. CAZUL SIMPLE: Variabilă sau Dereferențiere directă (set *$ptr = 10)
-                    if (left->type == ASTNodeType::Variable) {
-                        std::wstring targetName = left->value;
+                if (isSimpleAssign || isCompound || isPostfix) {
+                    if (node->children.empty()) return { std::monostate{} };
 
+                    ASTPtr leftNode = node->children[0];
+
+                    // Pasul A: Obținem valoarea curentă (necesară pentru Compound și Postfix)
+                    vData currentVal = (isSimpleAssign) ? vData{} : executeAST(leftNode);
+                    vData newValue;
+
+                    // Pasul B: Calculăm noua valoare care va fi scrisă în memorie
+                    if (isSimpleAssign) {
+                        newValue = executeAST(node->children[1]);
+                    }
+                    else if (isCompound) {
+                        vData rhsEvaluated = executeAST(node->children[1]);
+                        // Extragem operatorul matematic de bază (ex: "+" din "+=")
+                        std::wstring baseOp = op.substr(0, 1);
+                        newValue = executeBinaryOperator(baseOp, currentVal, rhsEvaluated);
+                    }
+                    else if (isPostfix) {
+                        std::wstring baseOp = (op == L"POSTFIX_INC") ? L"+" : L"-";
+                        newValue = executeBinaryOperator(baseOp, currentVal, vData(1LL)); // Pas de 1
+                    }
+
+                    // Pasul C: LOGICA DE SCRIERE (SETTER)
+                    // Refolosim structura ta existentă pentru a scrie în Variabile, Pointeri, Map-uri sau Array-uri
+
+                    // --- 1. Variabilă sau Dereferențiere (*$ptr) ---
+                    /*
+                    if (leftNode->type == ASTNodeType::Variable) {
+                        std::wstring targetName = leftNode->value;
+
+                        // --- 1. DETECTARE ȘI NORMALIZARE SCOPE (@ vs $) ---
+                        // Păstrăm intenția originală de scope (Global vs Local)
+                        bool forceGlobal = (!targetName.empty() && targetName[0] == L'@');
+
+                        // Dacă începe cu @, îl tratăm temporar ca pe un $ pentru a declanșa bucla de indirație
+                        if (forceGlobal) {
+                            targetName[0] = L'$';
+                        }
+
+                        // --- 2. REZOLVARE LANȚ DE INDIRAȚIE (L-Value) ---
+                        int safetyGuard = 0;
+                        // Cât timp avem prefix de indirație (ex: $$b, $$$c)
+                        while (targetName.size() > 1 && targetName[0] == L'$' && targetName[1] == L'$') {
+                            // Evaluăm ce se află sub primul strat (ex: din "$$c" evaluăm "$c")
+                            vData nextNameData = resolveVariable(targetName.substr(1));
+                            std::wstring nextName = vDataToWString(nextNameData);
+
+                            if (nextName.empty() || nextName == L"null") {
+                                LOG_ERROR(L"Runtime Error: Indirection broken for variable: " + targetName);
+                                return { std::monostate{} };
+                            }
+
+                            // Normalizăm numele rezultat pentru următoarea iterație a buclei
+                            if (nextName[0] != L'$' && nextName[0] != L'@') {
+                                targetName = L"$" + nextName;
+                            }
+                            else {
+                                targetName = nextName;
+                            }
+
+                            // Prevenim recursivitatea infinită ($a = "a")
+                            if (++safetyGuard > 20) {
+                                LOG_ERROR(L"Runtime Error: Too many levels of indirection (Circular reference?)");
+                                return { std::monostate{} };
+                            }
+                        }
+
+                        // --- 3. RESTAURARE SCOPE ORIGINAL ---
+                        // Dacă am început cu @, forțăm numele final să fie tot global
+                        if (forceGlobal && !targetName.empty()) {
+                            if (targetName[0] == L'$') {
+                                targetName[0] = L'@';
+                            }
+                            else if (targetName[0] != L'@') {
+                                targetName = L"@" + targetName;
+                            }
+                        }
+
+                        // --- 4. LOGICĂ DE SCRIERE (POINTERI SAU VARIABILE) ---
+
+                        // A. Caz special: Dereferențiere (*$ptr = ...)
                         if (!targetName.empty() && targetName[0] == L'*') {
                             vData ptrInfo = resolveVariable(targetName.substr(1));
                             if (vData** addrPtr = std::get_if<vData*>(&ptrInfo.value)) {
-                                if (*addrPtr) {
-                                    **addrPtr = rightVal;
-                                    return rightVal;
+                                if (*addrPtr && *addrPtr) {
+                                    **addrPtr = newValue;
+                                    return isPostfix ? currentVal : newValue;
                                 }
                             }
-                            LOG_ERROR(L"Runtime Error: Pointer invalid la atribuire: " + targetName);
+                            LOG_ERROR(L"Runtime Error: Invalid pointer assignment for " + targetName);
                             return { std::monostate{} };
                         }
 
-                        setVariable(targetName, rightVal);
-                        return rightVal;
+                        // B. Caz standard: Variabilă (Locală sau Globală)
+                        // Acum targetName este numele „curat” (ex: "@a" sau "$score")
+                        setVariable(targetName, newValue);
+
+                        return isPostfix ? currentVal : newValue;
+                    }
+                    */
+                    if (leftNode->type == ASTNodeType::Variable) {
+                        std::wstring rawName = leftNode->value;
+
+                        // --- 1. DETECTARE POINTER (*) ---
+                        // Verificăm dacă avem o operație de dereferențiere (ex: *$$pName)
+                        bool isPointer = (!rawName.empty() && rawName[0] == L'*');
+                        std::wstring targetName = isPointer ? rawName.substr(1) : rawName;
+
+                        // --- 2. DETECTARE ȘI NORMALIZARE SCOPE (@) ---
+                        // Păstrăm intenția originală de scope (Global vs Local)
+                        bool forceGlobal = (!targetName.empty() && targetName[0] == L'@');
+
+                        // Normalizăm temporar prefixul pentru a permite buclei de indirație să funcționeze
+                        if (forceGlobal) {
+                            targetName[0] = L'$';
+                        }
+
+                        // --- 3. REZOLVARE LANȚ DE INDIRAȚIE (L-Value) ---
+                        // Săpăm prin semnele $ până găsim numele final (ex: de la "$$pName" la "$ptrToRoot")
+                        int safetyGuard = 0;
+                        while (targetName.size() > 1 && targetName[0] == L'$' && targetName[1] == L'$') {
+                            vData nextNameData = resolveVariable(targetName.substr(1));
+                            std::wstring nextName = vDataToWString(nextNameData);
+
+                            if (nextName.empty() || nextName == L"null") {
+                                LOG_ERROR(L"Runtime Error: Indirection broken for " + targetName);
+                                return { std::monostate{} };
+                            }
+
+                            // Ne asigurăm că numele rezultat are prefixul corect pentru următoarea iterație
+                            targetName = (nextName[0] == L'$' || nextName[0] == L'@') ? nextName : L"$" + nextName;
+
+                            if (++safetyGuard > 20) {
+                                LOG_ERROR(L"Runtime Error: Circular reference detected in indirection chain.");
+                                return { std::monostate{} };
+                            }
+                        }
+
+                        // --- 4. RESTAURARE SCOPE ORIGINAL ---
+                        if (forceGlobal && !targetName.empty()) {
+                            if (targetName[0] == L'$') targetName[0] = L'@';
+                            else if (targetName[0] != L'@') targetName = L"@" + targetName;
+                        }
+
+                        // --- 5. LOGICĂ DE SCRIERE FINALĂ ---
+
+                        // A. Caz special: Scrierea printr-un pointer real (*$var)
+                        if (isPointer) {
+                            // Rezolvăm variabila care conține adresa (ex: rezolvăm "$ptrToRoot")
+                            vData ptrInfo = resolveVariable(targetName);
+                            if (vData** addrPtr = std::get_if<vData*>(&ptrInfo.value)) {
+                                if (*addrPtr && *addrPtr) {
+                                    **addrPtr = newValue;
+                                    return isPostfix ? currentVal : newValue;
+                                }
+                            }
+                            LOG_ERROR(L"Runtime Error: Invalid pointer assignment for *" + targetName);
+                            return { std::monostate{} };
+                        }
+
+                        // B. Caz standard: Scrierea într-o variabilă (acum cu numele complet rezolvat)
+                        setVariable(targetName, newValue);
+
+                        return isPostfix ? currentVal : newValue;
                     }
 
-                    // 2. CAZUL COMPLEX: Atribuire în câmp/index (set (*$ptr).val = 110)
-                    // În loc de reconstructPath, evaluăm "stânga" punctului pentru a obține obiectul real
-                    if (left->value == L"DOT" || left->value == L".") {
-                        vData container = executeAST(left->children[0]); // <--- Aici rezolvăm (*$ptr)
-                        std::wstring field = left->children[1]->value;
 
+                    // --- 2. Acces membru (obj.prop) ---
+                    if (leftNode->value == L"DOT" || leftNode->value == L".") {
+                        vData container = executeAST(leftNode->children[0]);
+                        std::wstring field = leftNode->children[1]->value;
                         if (container.isMap()) {
                             auto mapPtr = std::get<vDataMap>(container.value);
                             if (mapPtr) {
-                                (*mapPtr)[field] = rightVal; // Scriem direct în memoria obiectului
-                                return rightVal;
+                                (*mapPtr)[field] = newValue;
+                                return isPostfix ? currentVal : newValue;
                             }
                         }
                     }
 
-                    // 3. CAZUL INDEXARE: (set (*$ptr)[0] = "nou")
-                    if (left->value == L"INDEX" || left->value == L"[") {
-                        vData container = executeAST(left->children[0]);
-                        vData index = executeAST(left->children[1]);
-
+                    // --- 3. Indexare (arr[index]) ---
+                    if (leftNode->value == L"INDEX" || leftNode->value == L"[") {
+                        vData container = executeAST(leftNode->children[0]);
+                        vData index = executeAST(leftNode->children[1]);
                         if (container.isArray()) {
                             auto arrPtr = std::get<vDataArray>(container.value);
                             size_t idx = static_cast<size_t>(vDataToDouble(index));
                             if (arrPtr && idx < arrPtr->size()) {
-                                (*arrPtr)[idx] = rightVal;
-                                return rightVal;
+                                (*arrPtr)[idx] = newValue;
+                                return isPostfix ? currentVal : newValue;
                             }
                         }
                         else if (container.isMap()) {
                             auto mapPtr = std::get<vDataMap>(container.value);
                             if (mapPtr) {
-                                (*mapPtr)[vDataToWString(index)] = rightVal;
-                                return rightVal;
+                                (*mapPtr)[vDataToWString(index)] = newValue;
+                                return isPostfix ? currentVal : newValue;
                             }
                         }
                     }
 
-                    // Fallback pentru căi care nu implică pointeri (ex: @global.prop)
-                    std::wstring fullPath = reconstructPath(left);
+                    // Fallback pentru căi complexe
+                    std::wstring fullPath = reconstructPath(leftNode);
                     if (!fullPath.empty()) {
-                        assignToVariable(fullPath, rightVal);
-                        return rightVal;
+                        assignToVariable(fullPath, newValue);
+                        return isPostfix ? currentVal : newValue;
                     }
 
                     throw std::runtime_error("L-value required for assignment.");
                 }
+
+               
 
                 // --- DEREFERENȚIERE EXPLICITĂ (*) ---
                 if (node->value == L"DEREFERENCE") {

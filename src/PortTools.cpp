@@ -201,7 +201,7 @@ namespace PortTools {
 #endif
     }
 
-    std::wstring PortTools::getFormattedTime(const std::wstring& format) {
+    std::wstring getFormattedTime(const std::wstring& format) {
         auto now = std::chrono::system_clock::now();
         std::time_t time_t_now = std::chrono::system_clock::to_time_t(now);
         struct tm timeinfo;

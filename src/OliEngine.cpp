@@ -2119,30 +2119,14 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             return vData((long long)secunde);
             };
 
-        // --- DATE() -> Returnează "YYYY-MM-DD" ---
+        // --- DATE() ---
         m_functionsHandlers[L"DATE"] = [this](const std::vector<vData>& args) -> vData {
-            auto acum = std::chrono::system_clock::now();
-            std::time_t timp_c = std::chrono::system_clock::to_time_t(acum);
-
-            struct tm t;
-            localtime_s(&t, &timp_c); // Pe Linux folosește localtime_r(&timp_c, &t);
-
-            std::wstringstream ss;
-            ss << std::get_time(&t, L"%Y-%m-%d");
-            return vData(ss.str());
+            return vData(PortTools::getFormattedTime(L"%Y-%m-%d"));
             };
 
-        // --- TIME() -> Returnează "HH:MM:SS" ---
+        // --- TIME() ---
         m_functionsHandlers[L"TIME"] = [this](const std::vector<vData>& args) -> vData {
-            auto acum = std::chrono::system_clock::now();
-            std::time_t timp_c = std::chrono::system_clock::to_time_t(acum);
-
-            struct tm t;
-            localtime_s(&t, &timp_c);
-
-            std::wstringstream ss;
-            ss << std::get_time(&t, L"%H:%M:%S");
-            return vData(ss.str());
+            return vData(PortTools::getFormattedTime(L"%H:%M:%S"));
             };
 
         m_functionsHandlers[L"MSTIME"] = [this](const std::vector<vData>& args) -> vData {

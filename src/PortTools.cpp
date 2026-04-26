@@ -200,4 +200,23 @@ namespace PortTools {
         return input;
 #endif
     }
+
+    std::wstring PortTools::getFormattedTime(const std::wstring& format) {
+        auto now = std::chrono::system_clock::now();
+        std::time_t time_t_now = std::chrono::system_clock::to_time_t(now);
+        struct tm timeinfo;
+
+#ifdef _WIN32
+        // Windows: ordinea parametrilor este (&struct, &time_t)
+        localtime_s(&timeinfo, &time_t_now);
+#else
+        // Linux/POSIX: ordinea parametrilor este (&time_t, &struct)
+        localtime_r(&time_t_now, &timeinfo);
+#endif
+
+        std::wstringstream ss;
+        // Folosim put_time (ieșire), nu get_time (intrare)
+        ss << std::put_time(&timeinfo, format.c_str());
+        return ss.str();
+    }
 } // namespace PortTools

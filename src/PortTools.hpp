@@ -43,6 +43,9 @@ namespace PortTools {
     bool getConsoleInput(const std::wstring& prompt, std::wstring& outLine);
 
     std::wstring normalize_newlines_for_write(const std::wstring& input);
+
+    // Returnează timpul curent formatat conform unui șablon (ex: "%Y-%m-%d")
+    std::wstring getFormattedTime(const std::wstring& format);
 }
 
 #endif

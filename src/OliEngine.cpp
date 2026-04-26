@@ -1783,84 +1783,19 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                         newValue = executeBinaryOperator(baseOp, currentVal, vData(1LL)); // Pas de 1
                     }
 
-                    // Pasul C: LOGICA DE SCRIERE (SETTER)
-                    // Refolosim structura ta existentă pentru a scrie în Variabile, Pointeri, Map-uri sau Array-uri
-
-                    // --- 1. Variabilă sau Dereferențiere (*$ptr) ---
-                    /*
-                    if (leftNode->type == ASTNodeType::Variable) {
-                        std::wstring targetName = leftNode->value;
-
-                        // --- 1. DETECTARE ȘI NORMALIZARE SCOPE (@ vs $) ---
-                        // Păstrăm intenția originală de scope (Global vs Local)
-                        bool forceGlobal = (!targetName.empty() && targetName[0] == L'@');
-
-                        // Dacă începe cu @, îl tratăm temporar ca pe un $ pentru a declanșa bucla de indirație
-                        if (forceGlobal) {
-                            targetName[0] = L'$';
-                        }
-
-                        // --- 2. REZOLVARE LANȚ DE INDIRAȚIE (L-Value) ---
-                        int safetyGuard = 0;
-                        // Cât timp avem prefix de indirație (ex: $$b, $$$c)
-                        while (targetName.size() > 1 && targetName[0] == L'$' && targetName[1] == L'$') {
-                            // Evaluăm ce se află sub primul strat (ex: din "$$c" evaluăm "$c")
-                            vData nextNameData = resolveVariable(targetName.substr(1));
-                            std::wstring nextName = vDataToWString(nextNameData);
-
-                            if (nextName.empty() || nextName == L"null") {
-                                LOG_ERROR(L"Runtime Error: Indirection broken for variable: " + targetName);
-                                return { std::monostate{} };
-                            }
-
-                            // Normalizăm numele rezultat pentru următoarea iterație a buclei
-                            if (nextName[0] != L'$' && nextName[0] != L'@') {
-                                targetName = L"$" + nextName;
-                            }
-                            else {
-                                targetName = nextName;
-                            }
-
-                            // Prevenim recursivitatea infinită ($a = "a")
-                            if (++safetyGuard > 20) {
-                                LOG_ERROR(L"Runtime Error: Too many levels of indirection (Circular reference?)");
-                                return { std::monostate{} };
+                    // Aceasta rezolvă eroarea "L-value required" când ai * în stânga
+                    if (leftNode->value == L"DEREFERENCE") {
+                        vData ptrVal = executeAST(leftNode->children[0]);
+                        if (vData** addrPtr = std::get_if<vData*>(&ptrVal.value)) {
+                            if (*addrPtr) {
+                                **addrPtr = newValue;
+                                return isPostfix ? currentVal : newValue;
                             }
                         }
-
-                        // --- 3. RESTAURARE SCOPE ORIGINAL ---
-                        // Dacă am început cu @, forțăm numele final să fie tot global
-                        if (forceGlobal && !targetName.empty()) {
-                            if (targetName[0] == L'$') {
-                                targetName[0] = L'@';
-                            }
-                            else if (targetName[0] != L'@') {
-                                targetName = L"@" + targetName;
-                            }
-                        }
-
-                        // --- 4. LOGICĂ DE SCRIERE (POINTERI SAU VARIABILE) ---
-
-                        // A. Caz special: Dereferențiere (*$ptr = ...)
-                        if (!targetName.empty() && targetName[0] == L'*') {
-                            vData ptrInfo = resolveVariable(targetName.substr(1));
-                            if (vData** addrPtr = std::get_if<vData*>(&ptrInfo.value)) {
-                                if (*addrPtr && *addrPtr) {
-                                    **addrPtr = newValue;
-                                    return isPostfix ? currentVal : newValue;
-                                }
-                            }
-                            LOG_ERROR(L"Runtime Error: Invalid pointer assignment for " + targetName);
-                            return { std::monostate{} };
-                        }
-
-                        // B. Caz standard: Variabilă (Locală sau Globală)
-                        // Acum targetName este numele „curat” (ex: "@a" sau "$score")
-                        setVariable(targetName, newValue);
-
-                        return isPostfix ? currentVal : newValue;
+                        LOG_ERROR(L"Runtime Error: Invalid pointer assignment.");
+                        return { std::monostate{} };
                     }
-                    */
+
                     if (leftNode->type == ASTNodeType::Variable) {
                         std::wstring rawName = leftNode->value;
 
@@ -1931,6 +1866,21 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                     // --- 2. Acces membru (obj.prop) ---
                     if (leftNode->value == L"DOT" || leftNode->value == L".") {
                         vData container = executeAST(leftNode->children[0]);
+                        // AUTO-DEREFERENȚIERE: Mergem la obiectul real dacă avem pointer
+                        // Sărim prin oricâte niveluri de pointeri (ptr -> ptr -> ptr -> obiect)
+                        int jumpGuard = 0;
+                        while (vData** addrPtr = std::get_if<vData*>(&container.value)) {
+                            if (*addrPtr && *addrPtr) {
+                                container = **addrPtr;
+                            }
+                            else break;
+
+                            if (++jumpGuard > 20) {
+                                LOG_ERROR(L"Runtime Error: Circular pointer reference detected.");
+                                break;
+                            }
+                        }
+
                         std::wstring field = leftNode->children[1]->value;
                         if (container.isMap()) {
                             auto mapPtr = std::get<vDataMap>(container.value);
@@ -1944,6 +1894,21 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                     // --- 3. Indexare (arr[index]) ---
                     if (leftNode->value == L"INDEX" || leftNode->value == L"[") {
                         vData container = executeAST(leftNode->children[0]);
+
+                        // Sărim prin oricâte niveluri de pointeri (ptr -> ptr -> ptr -> obiect)
+                        int jumpGuard = 0;
+                        while (vData** addrPtr = std::get_if<vData*>(&container.value)) {
+                            if (*addrPtr && *addrPtr) {
+                                container = **addrPtr;
+                            }
+                            else break;
+
+                            if (++jumpGuard > 20) {
+                                LOG_ERROR(L"Runtime Error: Circular pointer reference detected.");
+                                break;
+                            }
+                        }
+
                         vData index = executeAST(leftNode->children[1]);
                         if (container.isArray()) {
                             auto arrPtr = std::get<vDataArray>(container.value);
@@ -2000,6 +1965,22 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                 if (node->value == L"DOT" || node->value == L".") {
                     if (node->children.size() < 2) return { std::monostate{} };
                     vData container = executeAST(node->children[0]);
+
+                    // ACEEAȘI AUTO-DEREFERENȚIERE AICI
+                    // Sărim prin oricâte niveluri de pointeri (ptr -> ptr -> ptr -> obiect)
+                    int jumpGuard = 0;
+                    while (vData** addrPtr = std::get_if<vData*>(&container.value)) {
+                        if (*addrPtr && *addrPtr) {
+                            container = **addrPtr;
+                        }
+                        else break;
+
+                        if (++jumpGuard > 20) {
+                            LOG_ERROR(L"Runtime Error: Circular pointer reference detected.");
+                            break;
+                        }
+                    }
+
                     std::wstring field = node->children[1]->value;
                     if (container.isMap()) {
                         auto mapPtr = std::get<vDataMap>(container.value);
@@ -2011,6 +1992,21 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                 if (node->value == L"INDEX" || node->value == L"[") {
                     if (node->children.size() < 2) return { std::monostate{} };
                     vData container = executeAST(node->children[0]);
+
+                    // Sărim prin oricâte niveluri de pointeri (ptr -> ptr -> ptr -> obiect)
+                    int jumpGuard = 0;
+                    while (vData** addrPtr = std::get_if<vData*>(&container.value)) {
+                        if (*addrPtr && *addrPtr) {
+                            container = **addrPtr;
+                        }
+                        else break;
+
+                        if (++jumpGuard > 20) {
+                            LOG_ERROR(L"Runtime Error: Circular pointer reference detected.");
+                            break;
+                        }
+                    }
+
                     vData index = executeAST(node->children[1]);
                     return accessContainer(container, index);
                 }

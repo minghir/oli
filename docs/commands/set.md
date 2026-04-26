@@ -67,3 +67,30 @@ Type Fluidity: Oli is dynamically typed. A variable can change from INT to STRIN
 Reference Persistence: Global variables remain in the Heap until unset all is called or the session terminates.
 
 "To assign a value is to define a reality. To refer to it is to remember that reality exists." - **Oli Engine**
+
+
+# COMMAND: SET
+The primary command for memory allocation and value assignment.
+
+## SYNTAX
+`SET $<variable> = <expression>`  
+`$<variable> <compound_op> <expression>`  
+`$<variable>++` / `$<variable>--`
+
+## COMPOUND OPERATORS
+Oli supports shorthand for updating values:
+- `+=`, `-=`, `*=`, `/=`: Performs the math and assigns back.
+- `++`, `--`: Postfix increment/decrement.
+- **Example**: `$i += 1` is equivalent to `$i = $i + 1`.
+
+## INDIRECTION (The $ Chain)
+Oli can resolve variable names stored inside other variables.
+- Each `$` "peels" one layer of naming.
+- **L-Value Support**: You can assign values to a chain.
+- **Example**: 
+  ```oli
+  $a = 10
+  $b = "a"
+  $c = "b"
+  echo $$$c     # Output: 10
+  $$$c = 20     # $a is now 20

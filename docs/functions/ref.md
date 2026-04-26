@@ -1,18 +1,22 @@
-# FUNCTION: REF(variable_name)
-Returns the memory address (pointer) of a specific variable.
+### 2. Actualizare `ref.md` (Adăugăm Auto-Dereferențierea)
 
-## DESCRIPTION:
-Creates a "pointer" to the memory slot where the variable's value is stored. 
-If you modify the value via this pointer, the original variable is updated.
+```markdown
+# FUNCTION: REF(var_name)
+Returns the raw memory address (pointer) of a specific variable.
 
-## USAGE:
-set $a = 10
-set $p = REF("a")
-echo $p        # Displays [PTR: 0x...]
+## USAGE
+`set $ptr = REF("variable_name")`
 
-## DEREFERENCING:
-To read or modify the value at the address stored in $p, 
-use the '*' operator before the variable name.
+## DEREFERENCING
+1. **Explicit (`*`)**: Used for raw values.
+   - `set *$ptr = 100` (Writes 100 to the address).
+2. **Implicit (Auto-Deref)**: Used for members and indexes.
+   - If `$ptr` points to a Map/Struct, you can use `$ptr.field` directly.
+   - If `$ptr` points to an Array, you can use `$ptr[index]` directly.
 
-echo *$p       # Displays 10
-set *$p = 20   # $a is now 20!
+## RULES
+- `REF` ignores the `$` or `@` prefix in the string argument.
+- It searches **Local Scope** first, then **Global Scope**.
+
+---
+"A pointer is a map to a hidden treasure; use it wisely." - **Oli Engine**

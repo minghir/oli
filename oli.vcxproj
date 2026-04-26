@@ -166,6 +166,7 @@
     <None Include="docs\commands\while.md" />
     <None Include="docs\functions\ref.md" />
     <None Include="docs\manual.md" />
+    <None Include="docs\memory.md" />
     <None Include="Makefile" />
     <None Include="README.md" />
     <None Include="tests\atac_test.oli" />

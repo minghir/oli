@@ -300,6 +300,12 @@ private:
     vData handleSplitFunc(const std::vector<vData>& args);
     vData handleJoinFunc(const std::vector<vData>& args);
     vData handleTrimFunc(const std::vector<vData>& args);
+
+    vData handleReadFileFunc(const std::vector<vData>& args);
+    vData handleWriteFileFunc(const std::vector<vData>& args);
+    vData handleAppendFileFunc(const std::vector<vData>& args);
+    vData handleExistsFileFunc(const std::vector<vData>& args);
+    vData handleDeleteFileFunc(const std::vector<vData>& args);
     //vData handleKeysFunc(const std::vector<vData>& args);
     
 

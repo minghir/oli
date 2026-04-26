@@ -41,6 +41,8 @@ namespace PortTools {
     bool readLineFromPipe(FILE* pipe, std::wstring& outLine);
 
     bool getConsoleInput(const std::wstring& prompt, std::wstring& outLine);
+
+    std::wstring normalize_newlines_for_write(const std::wstring& input);
 }
 
 #endif

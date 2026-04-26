@@ -159,6 +159,6 @@ bool isNumber(const std::wstring& s);
 bool startsWith(const std::wstring& text, const std::wstring& prefix, bool ignoreCase = true);
 
 bool iequals(std::wstring_view a, std::wstring_view b);
-
+std::wstring unescape(const std::wstring& s);
 #endif // STRINGUTILS_HPP
 

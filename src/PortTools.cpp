@@ -180,4 +180,24 @@ namespace PortTools {
         return true;
 #endif
     }
+
+    std::wstring normalize_newlines_for_write(const std::wstring& input) {
+#ifdef _WIN32
+        // Windows cere CRLF (\r\n)
+        std::wstring out;
+        out.reserve(input.size() * 2);
+
+        for (wchar_t c : input) {
+            if (c == L'\n')
+                out += L"\r\n";
+            else
+                out += c;
+        }
+
+        return out;
+#else
+        // Linux folosește doar \n
+        return input;
+#endif
+    }
 } // namespace PortTools

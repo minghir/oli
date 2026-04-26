@@ -1341,3 +1341,24 @@ bool iequals(std::wstring_view a, std::wstring_view b) {
     return std::equal(a.begin(), a.end(), b.begin(), b.end(),
         [](wchar_t a, wchar_t b) { return std::towlower(a) == std::towlower(b); });
 }
+
+std::wstring unescape(const std::wstring& s) {
+    std::wstring out;
+    out.reserve(s.size());
+
+    for (size_t i = 0; i < s.size(); ++i) {
+        if (s[i] == L'\\' && i + 1 < s.size()) {
+            wchar_t next = s[i + 1];
+            switch (next) {
+            case L'n': out += L'\n'; i++; continue;
+            case L't': out += L'\t'; i++; continue;
+            case L'r': out += L'\r'; i++; continue;
+            case L'\\': out += L'\\'; i++; continue;
+            case L'"': out += L'"'; i++; continue;
+            }
+        }
+        out += s[i];
+    }
+
+    return out;
+}

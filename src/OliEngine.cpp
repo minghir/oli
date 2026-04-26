@@ -834,7 +834,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             executeAST(root);
         }
         catch (...) {
-            LOG_ERROR(L"Eroare la execuția AST-ului de asignare.");
+            LOG_ERROR(L"Error during execution of the assignment AST node.");
         }
     }
 
@@ -864,6 +864,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         return L"UNKNOWN";
     }
 
+    /*
     vData vOliEngine::evaluateExpression(const std::wstring& expr) {
         // Apel corect prin numele clasei:
         std::vector<std::wstring> tokens = vOliCommandParser::tokenize(expr);
@@ -872,13 +873,26 @@ void vOliEngine::addToHistory(const std::wstring& command) {
 
         OliExpressionParser parser(tokens);
         ASTPtr plan = parser.parse();
-        /*
-        if (plan) {
-            std::wcout << L"--- Debug AST ---" << std::endl;
-            plan->dump(); // Asta îți va desena arborele în consolă
-            std::wcout << L"-----------------" << std::endl;
+      
+        return executeAST(plan);
+    }
+    */
+
+    vData vOliEngine::evaluateExpression(const std::wstring& expr) {
+        std::wstring cleanExpr = expr;
+
+        // Dacă expresia începe cu "set ", îl eliminăm pentru a o transforma 
+        // dintr-o comandă de shell într-o expresie de atribuire validă
+        if (cleanExpr.substr(0, 4) == L"set ") {
+            cleanExpr = cleanExpr.substr(4);
         }
-        */
+
+        std::vector<std::wstring> tokens = vOliCommandParser::tokenize(cleanExpr);
+        if (tokens.empty()) return { std::monostate{} };
+
+        OliExpressionParser parser(tokens);
+        ASTPtr plan = parser.parse();
+
         return executeAST(plan);
     }
     
@@ -1561,7 +1575,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
 
         m_functionsHandlers[L"CLONE"] = [this](const std::vector<vData>& args) -> vData {
             if (args.empty()) {
-                LOG_ERROR(L"[RUNTIME ERROR] CLONE() necesita un argument.");
+                LOG_ERROR(L"[RUNTIME ERROR] CLONE() requires a parameter.");
                 return { std::monostate{} };
             }
 
@@ -1652,6 +1666,12 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         m_functionsHandlers[L"SPLIT"] = [this](const auto& args) {return this->handleSplitFunc(args); };
         m_functionsHandlers[L"JOIN"] = [this](const auto& args) {return this->handleJoinFunc(args); };
 
+        m_functionsHandlers[L"READFILE"] = [this](const auto& args) {return this->handleReadFileFunc(args); };
+        m_functionsHandlers[L"WRITEFILE"] = [this](const auto& args) {return this->handleWriteFileFunc(args); };
+        m_functionsHandlers[L"APPENDFILE"] = [this](const auto& args) {return this->handleAppendFileFunc(args); };
+        m_functionsHandlers[L"EXISTSFILE"] = [this](const auto& args) {return this->handleExistsFileFunc(args); };
+        m_functionsHandlers[L"DELETEFILE"] = [this](const auto& args) {return this->handleDeleteFileFunc(args); };
+
     }
 
     vData vOliEngine::executeAST(ASTPtr node) {
@@ -1684,7 +1704,9 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                 if (val == L"monostate" || val == L"NULL" || val == L"null") return { std::monostate{} };
 
                 if (val.size() >= 2 && val.front() == L'"' && val.back() == L'"') {
-                    return { val.substr(1, val.size() - 2) };
+                    std::wstring raw = val.substr(1, val.size() - 2);
+                    return { unescape(raw) };
+                    //return { val.substr(1, val.size() - 2) };
                 }
                 return parseRawLiteral(val);
             }
@@ -2844,7 +2866,7 @@ double vOliEngine::vDataToDouble(const vData& data) const {
         size_t posEndif = findTopLevelIfKeyword(fullLine, L"ENDIF");
 
         if (posThen == std::wstring::npos || posEndif == std::wstring::npos) {
-            LOG_ERROR(L"Eroare IF: Lipsesc cuvintele cheie THEN sau ENDIF.");
+            LOG_ERROR(L"IF error: Missing required keywords THEN or ENDIF.");
             return;
         }
 
@@ -4145,23 +4167,37 @@ void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wst
         }
     }
 
-  vData vOliEngine::handleEvalFunc(const std::vector<vData>& args) {
-      if (args.empty()) return vData{ 0.0 };
+    vData vOliEngine::handleEvalFunc(const std::vector<vData>& args) {
+        if (args.empty()) return { 0LL }; // Sau std::monostate{} pentru NULL
 
-      // 1. Extragem expresia sub formă de text
-      std::wstring expr;
-      if (std::holds_alternative<std::wstring>(args[0].value)) {
-          expr = std::get<std::wstring>(args[0].value);
-      }
-      else {
-          // Dacă e număr, îl returnăm ca atare
-          return args[0];
-      }
+        // 1. Dacă nu e string, returnăm valoarea pură (ex: EVAL(5) -> 5)
+        if (!std::holds_alternative<std::wstring>(args[0].value)) {
+            return args[0];
+        }
 
-      // 2. „Recursivitate” de evaluare: 
-      // Chemăm evaluatorul principal pe conținutul string-ului
-      return evaluateExpression(expr);
-  }
+        std::wstring expr = std::get<std::wstring>(args[0].value);
+
+        // Curățăm spațiile inutile de la început/final
+        expr = trim(expr);
+
+        if (expr.empty()) return { std::monostate{} };
+
+        try {
+            // 2. Evaluarea propriu-zisă
+            // IMPORTANT: Asigură-te că evaluateExpression folosește scope-ul curent!
+            vData result = evaluateExpression(expr);
+            return result;
+        }
+        catch (const std::exception& e) {
+            std::wstring errorMsg = PortTools::utf8_to_wstring(e.what());
+            LOG_ERROR(L"[EVAL ERROR] Failed to evaluate: '" + expr + L"'. Details: " + errorMsg);
+            return { std::monostate{} }; // Returnăm NULL în caz de eroare de sintaxă
+        }
+        catch (...) {
+            LOG_ERROR(L"[EVAL ERROR] Critical failure in EVAL of: " + expr);
+            return { std::monostate{} };
+        }
+    }
 
 
   void vOliEngine::handleListProcsCommand(const ShellCommand& sc) {
@@ -4537,7 +4573,7 @@ void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wst
       size_t posEnd = findTopLevelKeyword(fullLine, L"ENDFOR", L"FOR");
 
       if (posTo == std::wstring::npos || posDo == std::wstring::npos || posEnd == std::wstring::npos) {
-          LOG_ERROR(L"Malformed FOR: Lipsesc TO, DO sau ENDFOR");
+          LOG_ERROR(L"Malformed FOR statement: TO, DO or ENDFOR keyword missing.");
           return;
       }
 
@@ -4564,7 +4600,7 @@ void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wst
       // 4. Extragere nume variabilă și valoare inițială
       size_t eqPos = initPart.find(L'=');
       if (eqPos == std::wstring::npos) {
-          LOG_ERROR(L"FOR init format invalid. Folosește: FOR $i = 1 TO...");
+          LOG_ERROR(L"Invalid FOR init format. Expected: FOR $i = 1 TO ...");
           return;
       }
 
@@ -4708,7 +4744,7 @@ void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wst
   void vOliEngine::handleSwitchCommand(const std::wstring& fullLine) {
       size_t posEnd = findTopLevelSwitchKeyword(fullLine, L"ENDSWITCH");
       if (posEnd == std::wstring::npos) {
-          LOG_ERROR(L"Eroare SWITCH: Lipseste ENDSWITCH.");
+          LOG_ERROR(L"SWITCH error: ENDSWITCH keyword is missing.");
           return;
       }
 
@@ -5393,4 +5429,243 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       else {
           LOG_ERROR(L"Documentation not found for: " + target);
       }
+  }
+
+  /*
+  vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
+      vData result;
+
+      // 1. Validare argumente
+      if (args.size() != 1 || !std::holds_alternative<std::wstring>(args[0].value)) {
+          LOG_ERROR(L"[RUNTIME ERROR] readfile() requires a single string path.");
+          result.value = std::wstring(L"");
+          return result;
+      }
+
+      std::wstring path = std::get<std::wstring>(args[0].value);
+
+      try {
+          // 2. Convertim path-ul wide → UTF-8 pentru Linux
+          std::string utf8_path = PortTools::wstring_to_utf8(path);
+
+          // 3. Citim fișierul ca bytes
+          std::ifstream file(utf8_path, std::ios::binary);
+          if (!file.is_open()) {
+              LOG_ERROR(L"[RUNTIME ERROR] Cannot open file: " + path);
+              result.value = std::wstring(L"");
+              return result;
+          }
+
+          std::string buffer((std::istreambuf_iterator<char>(file)),
+              std::istreambuf_iterator<char>());
+
+          // 4. Convertim UTF-8 → wstring
+          std::wstring wcontent = PortTools::utf8_to_wstring(buffer);
+
+          result.value = wcontent;
+          return result;
+      }
+      catch (...) {
+          LOG_ERROR(L"[RUNTIME ERROR] Unknown error in readfile().");
+      }
+
+      result.value = std::wstring(L"");
+      return result;
+  }
+  */
+
+  vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
+      vData result;
+      if (args.empty() || !std::holds_alternative<std::wstring>(args[0].value)) {
+          LOG_ERROR(L"[RUNTIME ERROR] readfile() requires a path string.");
+          return { std::wstring(L"") };
+      }
+
+      std::wstring path = std::get<std::wstring>(args[0].value);
+      try {
+          std::string utf8_path = PortTools::wstring_to_utf8(path);
+          std::ifstream file(utf8_path, std::ios::binary);
+
+          if (!file.is_open()) {
+              LOG_ERROR(L"[RUNTIME ERROR] Cannot open file: " + path);
+              return { std::wstring(L"") };
+          }
+
+          std::string buffer((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+          std::wstring wcontent = PortTools::utf8_to_wstring(buffer);
+
+          // --- FIX: Eliminare BOM dacă există ---
+          if (!wcontent.empty() && (unsigned short)wcontent[0] == 0xFEFF) {
+              wcontent.erase(0, 1);
+          }
+
+          result.value = wcontent;
+          return result;
+      }
+      catch (...) {
+          LOG_ERROR(L"[RUNTIME ERROR] Exception in readfile().");
+      }
+      return { std::wstring(L"") };
+  }
+
+
+  vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
+      vData result;
+
+      // 1. Validare argumente
+      if (args.size() != 2 ||
+          !std::holds_alternative<std::wstring>(args[0].value) ||
+          !std::holds_alternative<std::wstring>(args[1].value))
+      {
+          LOG_ERROR(L"[RUNTIME ERROR] writefile() requires (path, content).");
+          result.value = 0;
+          return result;
+      }
+
+      std::wstring pathW = std::get<std::wstring>(args[0].value);
+      std::wstring contentW = std::get<std::wstring>(args[1].value);
+      contentW = PortTools::normalize_newlines_for_write(contentW);
+      try {
+          // 2. Convertim wide → UTF-8 pentru Linux
+          std::string path = PortTools::wstring_to_utf8(pathW);
+          std::string content = PortTools::wstring_to_utf8(contentW);
+
+          // 3. Scriem fișierul în mod overwrite
+          std::ofstream file(path, std::ios::binary | std::ios::trunc);
+          if (!file.is_open()) {
+              LOG_ERROR(L"[RUNTIME ERROR] Cannot write file: " + pathW);
+              result.value = 0;
+              return result;
+          }
+
+          file.write(content.data(), content.size());
+          file.close();
+
+          result.value = 1; // succes
+          return result;
+      }
+      catch (...) {
+          LOG_ERROR(L"[RUNTIME ERROR] Unknown error in writefile().");
+      }
+
+      result.value = 0;
+      return result;
+  }
+
+  vData vOliEngine::handleAppendFileFunc(const std::vector<vData>& args) {
+      vData result;
+
+      // 1. Validare argumente
+      if (args.size() != 2 ||
+          !std::holds_alternative<std::wstring>(args[0].value) ||
+          !std::holds_alternative<std::wstring>(args[1].value))
+      {
+          LOG_ERROR(L"[RUNTIME ERROR] appendfile() requires (path, content).");
+          result.value = 0;
+          return result;
+      }
+
+      std::wstring pathW = std::get<std::wstring>(args[0].value);
+      std::wstring contentW = std::get<std::wstring>(args[1].value);
+
+      // Normalizează newline-urile în funcție de OS
+      contentW = PortTools::normalize_newlines_for_write(contentW);
+
+      try {
+          // 2. Convertim wide → UTF-8 pentru Linux
+          std::string path = PortTools::wstring_to_utf8(pathW);
+          std::string content = PortTools::wstring_to_utf8(contentW);
+
+          // 3. Deschidem fișierul în modul append
+          std::ofstream file(path, std::ios::binary | std::ios::app);
+          if (!file.is_open()) {
+              LOG_ERROR(L"[RUNTIME ERROR] Cannot append to file: " + pathW);
+              result.value = 0;
+              return result;
+          }
+
+          // 4. Scriem la final
+          file.write(content.data(), content.size());
+          file.close();
+
+          result.value = 1; // succes
+          return result;
+      }
+      catch (...) {
+          LOG_ERROR(L"[RUNTIME ERROR] Unknown error in appendfile().");
+      }
+
+      result.value = 0;
+      return result;
+  }
+
+
+  vData vOliEngine::handleExistsFileFunc(const std::vector<vData>& args) {
+      vData result;
+
+      // 1. Validare argumente
+      if (args.size() != 1 ||
+          !std::holds_alternative<std::wstring>(args[0].value))
+      {
+          LOG_ERROR(L"[RUNTIME ERROR] existsfile() requires a single string path.");
+          result.value = 0;
+          return result;
+      }
+
+      std::wstring pathW = std::get<std::wstring>(args[0].value);
+
+      try {
+          // 2. Convertim wide → UTF-8 pentru Linux
+          std::string path = PortTools::wstring_to_utf8(pathW);
+
+          // 3. Verificăm existența
+          bool ok = std::filesystem::exists(path);
+
+          result.value = ok ? 1 : 0;
+          return result;
+      }
+      catch (...) {
+          LOG_ERROR(L"[RUNTIME ERROR] existsfile() failed for: " + pathW);
+      }
+
+      result.value = 0;
+      return result;
+  }
+
+  vData vOliEngine::handleDeleteFileFunc(const std::vector<vData>& args) {
+      vData result;
+
+      // 1. Validare argumente
+      if (args.size() != 1 ||
+          !std::holds_alternative<std::wstring>(args[0].value))
+      {
+          LOG_ERROR(L"[RUNTIME ERROR] deletefile() requires a single string path.");
+          result.value = 0;
+          return result;
+      }
+
+      std::wstring pathW = std::get<std::wstring>(args[0].value);
+
+      try {
+          // 2. Convertim wide → UTF-8 pentru Linux
+          std::string path = PortTools::wstring_to_utf8(pathW);
+
+          // 3. Încercăm să ștergem fișierul
+          bool ok = false;
+
+          if (std::filesystem::exists(path) &&
+              std::filesystem::is_regular_file(path))
+          {
+              ok = std::filesystem::remove(path);
+          }
+
+          result.value = ok ? 1 : 0;
+          return result;
+      }
+      catch (...) {
+          LOG_ERROR(L"[RUNTIME ERROR] deletefile() failed for: " + pathW);
+      }
+
+      result.value = 0;
+      return result;
   }

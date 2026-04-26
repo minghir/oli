@@ -145,7 +145,7 @@ public:
     }
     
   
-
+/*
 ASTPtr parsePrimary() {
     std::wstring current = peek();
     if (current.empty()) return nullptr;
@@ -171,7 +171,39 @@ ASTPtr parsePrimary() {
     m_pos++;
     return std::make_shared<ASTNode>(ASTNodeType::Literal, current);
 }
+*/
 
+    ASTPtr parsePrimary() {
+        std::wstring current = peek();
+        if (current.empty()) return nullptr;
+
+        // 1. Variabile
+        if (current[0] == L'$' || current[0] == L'@') {
+            m_pos++;
+            return std::make_shared<ASTNode>(ASTNodeType::Variable, current);
+        }
+
+        // 2. Structuri (match consumă automat token-ul, deci e ok)
+        if (match({ L"[" })) return parseArray();
+        if (match({ L"{" })) return parseMap();
+        if (match({ L"(" })) {
+            ASTPtr node = parseCoalescing();
+            consume(L")", "Lipseste )");
+            return node;
+        }
+
+        // 3. Bariera (NU consumăm, doar verificăm)
+        if (current == L"}" || current == L"]" || current == L")" ||
+            current == L"," || current == L":") {
+            return nullptr;
+        }
+
+        // 4. Literale (Dacă am ajuns aici, e sigur un număr sau string)
+        // IMPORTANT: Folosim un token "proaspăt" de la m_pos
+        std::wstring literalValue = m_tokens[m_pos];
+        m_pos++;
+        return std::make_shared<ASTNode>(ASTNodeType::Literal, literalValue);
+    }
 
     // Utilitare pentru deplasarea în lista de tokeni
     bool match(std::initializer_list<std::wstring> ops) {
@@ -192,6 +224,7 @@ ASTPtr parsePrimary() {
 
     std::wstring peek() { return m_pos < m_tokens.size() ? m_tokens[m_pos] : L""; }
 
+    /*
     void consume(std::wstring token, std::string error) {
         if (!check(token)) {
             std::wstring found = (m_pos < m_tokens.size()) ? m_tokens[m_pos] : L"EOF";
@@ -200,6 +233,26 @@ ASTPtr parsePrimary() {
         }
         m_pos++;
     }
+    */
+
+    void consume(std::wstring token, std::string error) {
+        if (!check(token)) {
+            std::wstring found = (m_pos < m_tokens.size()) ? m_tokens[m_pos] : L"EOF";
+
+            // CONVERSIE SIGURĂ (Manuală pentru a evita crash-ul iteratorilor)
+            std::string foundStr;
+            for (wchar_t wc : found) foundStr += (wc < 128) ? (char)wc : '?';
+
+            std::string expectedStr;
+            for (wchar_t wc : token) expectedStr += (wc < 128) ? (char)wc : '?';
+
+            std::string fullError = error + " (Gasit: '" + foundStr + "' in loc de '" + expectedStr + "')";
+            throw std::runtime_error(fullError);
+        }
+        m_pos++;
+    }
+
+
     /*
     ASTPtr parseMap() {
         // Presupunem că '{' a fost deja consumat de match() în parsePrimary
@@ -323,7 +376,7 @@ ASTPtr parsePrimary() {
 ASTPtr parsePostfix() {
     // Începem cu unitatea de bază ($c1, "nume", 100, etc.)
     ASTPtr node = parsePrimary();
-
+    if (!node) return nullptr;
     // Bucla permite înlănțuiri: $c1.locatie.x sau $arr[0].nume
     while (true) {
 

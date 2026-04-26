@@ -37,7 +37,7 @@ private:
     
 public:
    
-
+   /*
     static std::vector<std::wstring> tokenize(const std::wstring& line) {
         std::vector<std::wstring> tokens;
         std::wstring tok;
@@ -118,6 +118,104 @@ public:
             tok += c;
         }
         flush();
+        return tokens;
+    }
+    */
+
+    static std::vector<std::wstring> tokenize(const std::wstring& line) {
+        std::vector<std::wstring> tokens;
+        std::wstring tok;
+        bool inQuotes = false;
+
+        auto flush = [&]() {
+            if (!tok.empty()) {
+                tokens.push_back(tok);
+                tok.clear();
+            }
+            };
+
+        for (size_t i = 0; i < line.size(); ++i) {
+            wchar_t c = line[i];
+
+            // --- 1. GESTIONARE GHILIMELE (CU SUPORT PENTRU ESCAPE \") ---
+            if (c == L'"') {
+                // Verificăm dacă ghilimeaua este „escapată” (precedată de \)
+                bool isEscaped = (i > 0 && line[i - 1] == L'\\');
+
+                if (isEscaped) {
+                    // Dacă e escapată, face parte din conținutul token-ului
+                    tok += c;
+                }
+                else {
+                    // Dacă nu e escapată, este un delimitator de string (început sau sfârșit)
+                    inQuotes = !inQuotes;
+                    tok += c;
+                    // Dacă tocmai am închis o pereche de ghilimele, salvăm string-ul ca un token întreg
+                    if (!inQuotes) flush();
+                }
+                continue;
+            }
+
+            // --- 2. LOGICĂ PENTRU TOKENI ÎN AFARA GHILIMELELOR ---
+            if (!inQuotes) {
+                // A. Operatori compuși (verificăm 2 caractere înainte)
+                if (i + 1 < line.size()) {
+                    std::wstring two = line.substr(i, 2);
+                    if (two == L"==" || two == L"!=" || two == L">=" || two == L"<=" ||
+                        two == L"&&" || two == L"||" || two == L"++" || two == L"--" ||
+                        two == L"**" || two == L"??" ||
+                        two == L"+=" || two == L"-=" || two == L"*=" || two == L"/=") {
+                        flush();
+                        tokens.push_back(two);
+                        i++; // Sărim peste al doilea caracter al operatorului
+                        continue;
+                    }
+                }
+
+                // B. Logica de punct (Diferențiere între FLOAT și DOT operator)
+                if (c == L'.') {
+                    bool isFloat = false;
+                    // Cazul: 3.14 (cifre de ambele părți)
+                    if (i > 0 && iswdigit(line[i - 1]) && i + 1 < line.size() && iswdigit(line[i + 1])) {
+                        isFloat = true;
+                    }
+                    // Cazul: .5 sau număr început anterior care primește zecimală
+                    else if (!tok.empty() && std::all_of(tok.begin(), tok.end(), ::iswdigit)) {
+                        if (i + 1 < line.size() && iswdigit(line[i + 1])) {
+                            isFloat = true;
+                        }
+                    }
+
+                    if (isFloat) {
+                        tok += c;
+                    }
+                    else {
+                        flush();
+                        tokens.push_back(L"."); // Îl tratăm ca operator de acces (DOT)
+                    }
+                    continue;
+                }
+
+                // C. Separatori și Operatori simpli
+                if (wcschr(L"=+-*<>|;()[]{},:%/!^", c)) {
+                    flush();
+                    tokens.push_back(std::wstring(1, c));
+                    continue;
+                }
+
+                // D. Spații albe (delimitatori de tokeni)
+                if (iswspace(c)) {
+                    flush();
+                    continue;
+                }
+            }
+
+            // --- 3. CONSTRUIRE TOKEN ---
+            // Dacă am ajuns aici, caracterul face parte din token-ul curent (literal, variabilă, etc.)
+            tok += c;
+        }
+
+        flush(); // Salvăm ultimul token rămas în buffer
         return tokens;
     }
 

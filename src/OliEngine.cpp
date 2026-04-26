@@ -12,162 +12,12 @@
 #include <chrono>
 #include <string_view>
 #include <algorithm> // Necesar pentru std::replace
+
 /*
 void vOliEngine::execute(const std::wstring& line) {
     // --- 1. CURĂȚARE ȘI COMENTARII ---
     std::wstring cleanLine = trim(line);
-
-    // Eliminăm comentariile de tip #
-    size_t commentPos = cleanLine.find(L'#');
-    if (commentPos != std::wstring::npos) {
-        cleanLine = trim(cleanLine.substr(0, commentPos));
-    }
-
     if (cleanLine.empty() && m_accumulator.empty()) return;
-
-    // --- 2. DETECTARE PARANTEZE (MAPS/ARRAYS) ---
-    // Această numărătoare ne spune dacă suntem în interiorul unei definiții de obiect
-    for (wchar_t c : cleanLine) {
-        if (c == L'{' || c == L'[') m_bracketDepth++;
-        if (c == L'}' || c == L']') m_bracketDepth--;
-    }
-
-    std::wstring upperLine = cleanLine;
-    std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
-
-    // --- 3. GESTIONARE ÎNREGISTRARE FUNC/PROC ---
-    // Dacă suntem în modul record, salvăm liniile direct în corpul funcției
-    if (m_isRecording || m_isRecordingFunc) {
-        if (upperLine == L"ENDPROC" || upperLine == L"ENDFUNC") {
-            m_isRecording = false;
-            m_isRecordingFunc = false;
-            m_blockDepth = 0;
-            m_bracketDepth = 0; // Reset de siguranță
-            vOliKeyWords::registerDynamicCommand(m_activeProcName);
-            LOG_SUCCESS(L"Procedure/Function saved.");
-            return;
-        }
-
-        if (m_isRecording) m_procedures[m_activeProcName].body.push_back(cleanLine);
-        else m_userFunctions[m_activeFuncName].body.push_back(cleanLine);
-        return;
-    }
-
-    // --- 4. TRACKING ADÂNCIME BLOCURI (IF, WHILE, etc.) ---
-    bool isHelpCall = (upperLine.find(L"HELP") == 0);
-    
-    //auto checkAndLog = [&](const std::wstring& key, bool increment) {
-      //  if (isHelpCall) return false; // Dacă e help, nu numărăm blocuri!
-
-        //size_t p = upperLine.find(key);
-        //if (p != std::wstring::npos) {
-          //  bool startOk = (p == 0 || iswspace(upperLine[p - 1]));
-            //bool endOk = (p + key.length() >= upperLine.length() || iswspace(upperLine[p + key.length()]));
-            //if (startOk && endOk) {
-              //  if (increment) m_blockDepth++;
-                //else if (m_blockDepth > 0) m_blockDepth--;
-                //return true;
-            //}
-        //}
-        //return false;
-        //};
-    
-    // În execute(), înainte de checkAndLog
-    bool lineInQuotes = false;
-    std::wstring lineForDepthCheck = upperLine;
-
-    // O mică rutină care înlocuiește conținutul dintre ghilimele cu spații 
-    // doar pentru numărătoarea de blocuri
-    for (size_t i = 0; i < lineForDepthCheck.length(); ++i) {
-        if (lineForDepthCheck[i] == L'"') lineInQuotes = !lineInQuotes;
-        if (lineInQuotes) lineForDepthCheck[i] = L' ';
-    }
-    // Acum folosește lineForDepthCheck în loc de upperLine în interiorul checkAndLog
-
-
-    auto checkAndLog = [&](const std::wstring& key, bool increment) {
-        if (isHelpCall) return false;
-
-        size_t p = upperLine.find(key);
-        if (p != std::wstring::npos) {
-            // Verificăm dacă e cuvânt de sine stătător
-            bool startOk = (p == 0 || iswspace(upperLine[p - 1]) || wcschr(L";()[]{}\"", upperLine[p - 1]));
-            bool endOk = (p + key.length() >= upperLine.length() ||
-                iswspace(upperLine[p + key.length()]) ||
-                wcschr(L";()[]{}\"", upperLine[p + key.length()])); // Am adăugat ghilimeaua aici
-
-            if (startOk && endOk) {
-                if (increment) m_blockDepth++;
-                else if (m_blockDepth > 0) m_blockDepth--;
-                return true;
-            }
-        }
-        return false;
-        };
-
-    // Incrementăm adâncimea pentru cuvinte cheie
-    checkAndLog(L"IF", true);
-    checkAndLog(L"WHILE", true);
-    checkAndLog(L"FOR", true);
-    checkAndLog(L"REPEAT", true);
-    checkAndLog(L"CYCLE", true);
-    checkAndLog(L"PROC", true);
-    checkAndLog(L"FUNC", true);
-    checkAndLog(L"SWITCH", true);
-
-    // Decrementăm pentru finaluri
-    checkAndLog(L"ENDIF", false);
-    checkAndLog(L"ENDWHILE", false);
-    checkAndLog(L"ENDFOR", false);
-    checkAndLog(L"ENDREPEAT", false);
-    checkAndLog(L"ENDCYCLE", false);
-    checkAndLog(L"ENDPROC", false);
-    checkAndLog(L"ENDFUNC", false);
-    checkAndLog(L"ENDSWITCH", false);
-
-    // --- 5. ACUMULARE ---
-    bool hasBackslash = (!cleanLine.empty() && cleanLine.back() == L'\\');
-    if (hasBackslash) cleanLine.pop_back();
-
-    if (!m_accumulator.empty()) m_accumulator += L"\n";
-    m_accumulator += cleanLine;
-
-    // Declanșare imediată pentru începutul definiției de PROC/FUNC
-    if (upperLine.find(L"PROC ") == 0 || upperLine.find(L"FUNC ") == 0) {
-        std::wstring startCmd = m_accumulator;
-        m_accumulator.clear();
-        this->executeInternal(startCmd);
-        return;
-    }
-
-    // --- 6. DECIZIA DE AȘTEPTARE ---
-    // Dacă avem blocuri deschise, paranteze deschise sau backslash, nu executăm încă.
-    if (m_blockDepth > 0 || m_bracketDepth > 0 || hasBackslash) {
-        return;
-    }
-
-    // --- 7. EXECUȚIE BLOC COMPLET ---
-    std::wstring finalBlock = m_accumulator;
-    m_accumulator.clear();
-    m_bracketDepth = 0; // Resetăm pentru următoarea comandă
-
-    if (trim(finalBlock).empty()) return;
-
-    // --- FIX CRITIC: APLATIZAREA PENTRU MULTI-LINE MAPS/ARRAYS ---
-    // Dacă avem un bloc care nu este un corp de FUNC/PROC sau un IF complex,
-    // înlocuim \n cu spațiu. Astfel, preParse nu va sparge Map-ul în bucăți
-    // care ar genera erori de tip "Lipseste }" în parserul de expresii.
-   // if (m_blockDepth == 0) {
-   //     std::replace(finalBlock.begin(), finalBlock.end(), L'\n', L' ');
-   // }
-
-    // addToHistory(finalBlock); // Opțional, poți reactiva dacă vrei history
-    this->executeInternal(finalBlock);
-}
-*/
-void vOliEngine::execute(const std::wstring& line) {
-    // --- 1. CURĂȚARE ȘI COMENTARII ---
-    std::wstring cleanLine = trim(line);
 
     size_t commentPos = cleanLine.find(L'#');
     if (commentPos != std::wstring::npos) {
@@ -292,6 +142,129 @@ void vOliEngine::execute(const std::wstring& line) {
 
     this->executeInternal(finalBlock);
 }
+*/
+void vOliEngine::execute(const std::wstring& line) {
+    // --- 1. CURĂȚARE INIȚIALĂ ---
+    std::wstring cleanLine = trim(line);
+    if (cleanLine.empty() && m_accumulator.empty()) return;
+
+    // --- 2. MASCARE GHILIMELE (PAS CRITIC) ---
+    // Creăm o variantă a liniei unde tot ce e între ghilimele devine spațiu.
+    // Asta previne detectarea eronată a parantezelor sau cuvintelor cheie din string-uri.
+    bool lineInQuotes = false;
+    std::wstring maskedLine = cleanLine;
+    for (size_t i = 0; i < maskedLine.length(); ++i) {
+        // Detectăm ghilimelele și ignorăm escape-ul \"
+        if (maskedLine[i] == L'"' && (i == 0 || maskedLine[i - 1] != L'\\')) {
+            lineInQuotes = !lineInQuotes;
+            maskedLine[i] = L' ';
+            continue;
+        }
+        if (lineInQuotes) {
+            maskedLine[i] = L' '; // Mascăm conținutul string-ului
+        }
+    }
+
+    // --- 3. DETECTARE COMENTARII (DOAR ÎN AFARA GHILIMELELOR) ---
+    size_t commentPos = maskedLine.find(L'#');
+    if (commentPos != std::wstring::npos) {
+        cleanLine = trim(cleanLine.substr(0, commentPos));
+        maskedLine = trim(maskedLine.substr(0, commentPos));
+    }
+
+    if (cleanLine.empty() && m_accumulator.empty()) return;
+
+    // --- 4. ACTUALIZARE ADÂNCIME PARANTEZE (MAPS/ARRAYS) ---
+    // Folosim maskedLine pentru a fi siguri că nu numărăm paranteze din string-uri
+    for (wchar_t c : maskedLine) {
+        if (c == L'{' || c == L'[') m_bracketDepth++;
+        if (c == L'}' || c == L']') m_bracketDepth--;
+    }
+
+    // Pregătim o variantă Uppercase a liniei mascate pentru detectarea comenzilor
+    std::wstring upperMasked = maskedLine;
+    std::transform(upperMasked.begin(), upperMasked.end(), upperMasked.begin(), ::towupper);
+
+    // --- 5. GESTIONARE ÎNREGISTRARE FUNC/PROC ---
+    if (m_isRecording || m_isRecordingFunc) {
+        if (upperMasked == L"ENDPROC" || upperMasked == L"ENDFUNC") {
+            m_isRecording = false;
+            m_isRecordingFunc = false;
+            m_blockDepth = 0;
+            m_bracketDepth = 0;
+            vOliKeyWords::registerDynamicCommand(m_activeProcName);
+            LOG_SUCCESS(L"Procedure/Function saved.");
+            return;
+        }
+
+        if (m_isRecording) m_procedures[m_activeProcName].body.push_back(cleanLine);
+        else m_userFunctions[m_activeFuncName].body.push_back(cleanLine);
+        return;
+    }
+
+    // --- 6. ACTUALIZARE ADÂNCIME BLOCURI (IF, WHILE, etc.) ---
+    auto checkBlock = [&](const std::wstring& key, bool increment) {
+        size_t p = upperMasked.find(key);
+        if (p != std::wstring::npos) {
+            // Verificăm dacă este cuvânt de sine stătător
+            bool startOk = (p == 0 || iswspace(upperMasked[p - 1]) || wcschr(L";()[]{}\"", upperMasked[p - 1]));
+            bool endOk = (p + key.length() >= upperMasked.length() || iswspace(upperMasked[p + key.length()]) || wcschr(L";()[]{}\"", upperMasked[p + key.length()]));
+
+            if (startOk && endOk) {
+                if (increment) m_blockDepth++;
+                else if (m_blockDepth > 0) m_blockDepth--;
+                return true;
+            }
+        }
+        return false;
+        };
+
+    // Incrementări
+    checkBlock(L"IF", true);      checkBlock(L"WHILE", true);
+    checkBlock(L"FOR", true);     checkBlock(L"REPEAT", true);
+    checkBlock(L"CYCLE", true);   checkBlock(L"PROC", true);
+    checkBlock(L"FUNC", true);    checkBlock(L"SWITCH", true);
+
+    // Decrementări
+    checkBlock(L"ENDIF", false);  checkBlock(L"ENDWHILE", false);
+    checkBlock(L"ENDFOR", false); checkBlock(L"ENDREPEAT", false);
+    checkBlock(L"ENDCYCLE", false); checkBlock(L"ENDPROC", false);
+    checkBlock(L"ENDFUNC", false); checkBlock(L"ENDSWITCH", false);
+
+    // --- 7. ACUMULARE ---
+    bool hasBackslash = (!cleanLine.empty() && cleanLine.back() == L'\\');
+    if (hasBackslash) cleanLine.pop_back();
+
+    if (!m_accumulator.empty()) m_accumulator += L"\n";
+    m_accumulator += cleanLine;
+
+    // Declanșare specială pentru început de PROC/FUNC
+    // (trebuie să trimitem antetul la executeInternal pentru a activa m_isRecording)
+    if (upperMasked.find(L"PROC ") == 0 || upperMasked.find(L"FUNC ") == 0) {
+        std::wstring startCmd = m_accumulator;
+        m_accumulator.clear();
+        this->executeInternal(startCmd);
+        return;
+    }
+
+    // --- 8. DECIZIA DE EXECUȚIE ---
+    // Dacă suntem într-un bloc deschis (IF, WHILE), într-un Map/Array neînchis sau avem backslash, așteptăm.
+    if (m_blockDepth > 0 || m_bracketDepth > 0 || hasBackslash) {
+        return;
+    }
+
+    // Executăm blocul acumulat
+    std::wstring finalBlock = m_accumulator;
+    m_accumulator.clear();
+
+    // Resetări de siguranță pentru buffer
+    m_bracketDepth = 0;
+
+    if (trim(finalBlock).empty()) return;
+
+    this->executeInternal(finalBlock);
+}
+/*
 void vOliEngine::executeInternal(const std::wstring& fullInput) {
     std::wstring trimmedInput = trim(fullInput);
     if (trimmedInput.empty()) return;
@@ -368,25 +341,7 @@ void vOliEngine::executeInternal(const std::wstring& fullInput) {
         return;
     }
 
-    // --- PRIORITATE 3: ATRIBUIRE (x = 5) ---
-    /*
-    size_t eqPos = input.find(L'=');
-    if (eqPos != std::wstring::npos && eqPos > 0) {
-        // Excludem operatorii de comparație (==, !=, <=, >=)
-        bool isComp = (eqPos + 1 < input.size() && input[eqPos + 1] == L'=') ||
-            (input[eqPos - 1] == L'!' || input[eqPos - 1] == L'>' || input[eqPos - 1] == L'<');
-
-        if (!isComp) {
-            std::wstring leftSide = trim(input.substr(0, eqPos));
-            if (!leftSide.empty() && (leftSide[0] == L'$' || iswalpha(leftSide[0]))) {
-                if (leftSide[0] == L'$') leftSide.erase(0, 1);
-                //LOG_DEBUG(L"[EXEC] Assignment detected for: " + leftSide);
-                executeCommand(L"SET " + leftSide + L" = " + input.substr(eqPos + 1));
-                return;
-            }
-        }
-    }
-    */
+    
     // --- PRIORITATE 3: ATRIBUIRE (x = 5, x += 5, etc.) ---
     size_t eqPos = input.find(L'=');
     if (eqPos != std::wstring::npos && eqPos > 0) {
@@ -430,6 +385,122 @@ void vOliEngine::executeInternal(const std::wstring& fullInput) {
     }
     catch (...) {
         LOG_ERROR(L"Unknown error executing: " + firstWord);
+    }
+}
+*/
+
+void vOliEngine::executeInternal(const std::wstring& fullInput) {
+    std::wstring trimmedInput = trim(fullInput);
+    if (trimmedInput.empty()) return;
+
+    // --- PASUL 1: DESCOMPUNEREA ÎN INSTRUCȚIUNI ---
+    // preParse sparge blocul în instrucțiuni individuale (separate de ; sau \n)
+    std::vector<std::wstring> instructions = preParse(trimmedInput);
+
+    if (instructions.size() > 1) {
+        for (const auto& instr : instructions) {
+            if (instr.empty()) continue;
+
+            // Verificăm dacă un 'return' anterior sau o eroare a cerut oprirea
+            if (m_shouldReturn || m_executionStatus != OliStatus::RUNNING) {
+                break;
+            }
+
+            this->executeInternal(instr); // Recursivitate pentru fiecare linie
+        }
+        return;
+    }
+
+    // --- PASUL 2: PROCESAREA UNEI SINGURE INSTRUCȚIUNI ---
+    std::wstring input = instructions[0];
+
+    // Identificăm dacă este un bloc de control (IF, WHILE, etc.)
+    std::wstring upperCheck = input;
+    std::transform(upperCheck.begin(), upperCheck.end(), upperCheck.begin(), ::towupper);
+
+    bool isControlBlock = false;
+    static const std::vector<std::wstring> controlKeywords = {
+        L"WHILE", L"REPEAT", L"IF", L"FOR", L"PROC", L"FUNC", L"CYCLE", L"SWITCH"
+    };
+
+    for (const auto& key : controlKeywords) {
+        if (upperCheck.find(key) == 0) {
+            if (upperCheck.length() == key.length() || iswspace(upperCheck[key.length()])) {
+                isControlBlock = true;
+                break;
+            }
+        }
+    }
+
+    // Extragem primul cuvânt (comanda sau procedura)
+    size_t firstSpace = input.find_first_of(L" \t\n\r(");
+    std::wstring firstWord = (firstSpace != std::wstring::npos) ? input.substr(0, firstSpace) : input;
+    std::wstring upperFirst = firstWord;
+    std::transform(upperFirst.begin(), upperFirst.end(), upperFirst.begin(), ::towupper);
+
+    // --- PRIORITATE 1: COMENZI DE SISTEM ȘI BLOCURI DE CONTROL ---
+    if (isControlBlock || vOliKeyWords::isShellCommand(upperFirst)) {
+        this->executeCommand(input);
+        return;
+    }
+
+    // --- PRIORITATE 2: PROCEDURI UTILIZATOR ---
+    if (m_procedures.count(firstWord)) {
+        std::wstring argsPart = (firstSpace != std::wstring::npos) ? input.substr(firstSpace + 1) : L"";
+        std::vector<std::wstring> rawTokens = wexplodeQuoteSafe(argsPart, L' ');
+        std::vector<std::wstring> cleanArgs;
+        for (const auto& arg : rawTokens) {
+            std::wstring t = trim(arg);
+            if (!t.empty()) cleanArgs.push_back(t);
+        }
+        callProcedure(m_procedures[firstWord], cleanArgs);
+        return;
+    }
+
+    // --- PRIORITATE 3: ATRIBUIRE (x = 5, x += 5, etc.) ---
+    // Căutăm semnul egal, dar ne asigurăm că nu este un operator de comparație
+    size_t eqPos = input.find(L'=');
+    if (eqPos != std::wstring::npos && eqPos > 0) {
+        bool isComparison = (eqPos + 1 < input.size() && input[eqPos + 1] == L'=') ||
+            (input[eqPos - 1] == L'!' || input[eqPos - 1] == L'>' || input[eqPos - 1] == L'<');
+
+        if (!isComparison) {
+            // Verificăm dacă avem operatori compuși (+=, -=, etc.)
+            size_t varEndPos = eqPos;
+            wchar_t prevChar = input[eqPos - 1];
+            if (prevChar == L'+' || prevChar == L'-' || prevChar == L'*' || prevChar == L'/') {
+                varEndPos = eqPos - 1;
+            }
+
+            std::wstring leftSide = trim(input.substr(0, varEndPos));
+
+            // Dacă partea stângă începe cu $ sau literă, o tratăm ca pe un SET
+            if (!leftSide.empty() && (leftSide[0] == L'$' || iswalpha(leftSide[0]))) {
+                executeCommand(L"SET " + input);
+                return;
+            }
+        }
+    }
+
+    // --- PRIORITATE 4: EVALUARE EXPRESIE (FALLBACK) ---
+    try {
+        vData result = evaluateExpression(input);
+        if (!result.isNull()) {
+            LOG_RAW(vDataToWString(result));
+        }
+    }
+    catch (const std::exception& e) {
+        // --- REPARAȚIE CRITICĂ PENTRU CRASH ---
+        // Nu folosim std::wstring(err.begin(), err.end()) deoarece provoacă Access Violation
+        std::string err(e.what());
+        std::wstring werr;
+        werr.reserve(err.size());
+        for (char c : err) { werr += static_cast<wchar_t>(static_cast<unsigned char>(c)); }
+
+        LOG_ERROR(L"Runtime Error: " + werr);
+    }
+    catch (...) {
+        LOG_ERROR(L"An unknown critical error occurred during execution.");
     }
 }
 
@@ -1545,6 +1616,17 @@ void vOliEngine::addToHistory(const std::wstring& command) {
 
     void vOliEngine::initializeFunctionsHandlers() {
 
+        m_functionsHandlers[L"INCLUDE"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) return vData(0LL);
+
+            // Creăm un obiect ShellCommand artificial
+            ShellCommand sc;
+            sc.args.push_back(vDataToWString(args[0]));
+
+            this->handleRunCommand(sc);
+            return vData(1LL);
+            };
+
         m_functionsHandlers[L"REF"] = [this](const std::vector<vData>& args) -> vData {
             if (args.empty()) return { std::monostate{} };
 
@@ -1572,6 +1654,39 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             return { std::monostate{} };
             };
 
+        // --- ISREF(value) -> 1 dacă e pointer, 0 dacă e valoare pură ---
+        m_functionsHandlers[L"ISREF"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) return vData(0LL);
+            bool isRef = std::holds_alternative<vData*>(args[0].value);
+            return vData(isRef ? 1LL : 0LL);
+            };
+
+        // --- DEREF(ref) -> Extrage valoarea din spatele pointerului ---
+        m_functionsHandlers[L"DEREF"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) return vData(std::monostate{});
+
+            if (std::holds_alternative<vData*>(args[0].value)) {
+                vData* ptr = std::get<vData*>(args[0].value);
+                if (ptr) return *ptr; // Returnăm valoarea la care pointează
+            }
+
+            // Dacă nu e pointer, returnăm valoarea ca atare (comportament de siguranță)
+            return args[0];
+            };
+
+        // --- SETREF(ref, value) -> Scrie o valoare nouă la adresa indicată ---
+        m_functionsHandlers[L"SETREF"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.size() < 2) return vData(0LL);
+
+            if (std::holds_alternative<vData*>(args[0].value)) {
+                vData* ptr = std::get<vData*>(args[0].value);
+                if (ptr) {
+                    *ptr = args[1]; // Modificăm memoria originală!
+                    return vData(1LL); // Succes
+                }
+            }
+            return vData(0LL); // Eșec (nu era un pointer valid)
+            };
 
         m_functionsHandlers[L"CLONE"] = [this](const std::vector<vData>& args) -> vData {
             if (args.empty()) {
@@ -1628,6 +1743,17 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             return this->handleRandomFunc(args);
         };
 
+        m_functionsHandlers[L"HASH"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) return vData(0LL);
+
+            std::wstring str = vDataToWString(args[0]);
+            std::hash<std::wstring> hasher;
+            size_t hashValue = hasher(str);
+
+            return vData((long long)hashValue);
+            };
+
+
         m_functionsHandlers[L"WAIT"] = [this](const std::vector<vData>& args) -> vData {
             return this->handleWaitFunc(args);
         };
@@ -1663,14 +1789,367 @@ void vOliEngine::addToHistory(const std::wstring& command) {
 
         m_functionsHandlers[L"TRIM"] = [this](const auto& args) { return handleTrimFunc(args); };
 
+        //functii array
+        // --- PUSH(array, value) -> Adaugă la final ---
+        m_functionsHandlers[L"PUSH"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.size() < 2 || !args[0].isArray()) return { 0LL };
+            auto arrPtr = std::get<vDataArray>(args[0].value);
+            if (arrPtr) {
+                arrPtr->push_back(args[1]);
+                return { static_cast<long long>(arrPtr->size()) };
+            }
+            return { 0LL };
+            };
+
+        // --- POP(array) -> Scoate de la final și returnează valoarea ---
+        m_functionsHandlers[L"POP"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty() || !args[0].isArray()) return { std::monostate{} };
+            auto arrPtr = std::get<vDataArray>(args[0].value);
+            if (arrPtr && !arrPtr->empty()) {
+                vData val = arrPtr->back();
+                arrPtr->pop_back();
+                return val;
+            }
+            return { std::monostate{} };
+            };
+
+        // --- SHIFT(array) -> Scoate de la început și returnează ---
+        m_functionsHandlers[L"SHIFT"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty() || !args[0].isArray()) return { std::monostate{} };
+            auto arrPtr = std::get<vDataArray>(args[0].value);
+            if (arrPtr && !arrPtr->empty()) {
+                vData val = (*arrPtr)[0];
+                arrPtr->erase(arrPtr->begin());
+                return val;
+            }
+            return { std::monostate{} };
+            };
+
+        // --- UNSHIFT(array, value) -> Adaugă la început ---
+        m_functionsHandlers[L"UNSHIFT"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.size() < 2 || !args[0].isArray()) return { 0LL };
+            auto arrPtr = std::get<vDataArray>(args[0].value);
+            if (arrPtr) {
+                arrPtr->insert(arrPtr->begin(), args[1]);
+                return { static_cast<long long>(arrPtr->size()) };
+            }
+            return { 0LL };
+            };
+
+        // --- INDEXOF(array, value) -> Caută valoarea și returnează indexul sau -1 ---
+        m_functionsHandlers[L"INDEXOF"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.size() < 2 || !args[0].isArray()) return { -1LL };
+            auto arrPtr = std::get<vDataArray>(args[0].value);
+            if (arrPtr) {
+                for (size_t i = 0; i < arrPtr->size(); ++i) {
+                    // Presupunem că vData are operatorul == implementat corect
+                    if ((*arrPtr)[i] == args[1]) return { static_cast<long long>(i) };
+                }
+            }
+            return { -1LL };
+            };
+
+        // --- SORT(array) -> Sortează array-ul (In-place) ---
+        m_functionsHandlers[L"SORT"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty() || !args[0].isArray()) return { std::monostate{} };
+
+            auto arrPtr = std::get<vDataArray>(args[0].value);
+            if (arrPtr && arrPtr->size() > 1) {
+                // Adăugăm "-> bool" pentru a forța deducția corectă
+                std::sort(arrPtr->begin(), arrPtr->end(), [](const vData& a, const vData& b) -> bool {
+                    // 1. Dacă tipurile sunt diferite, le sortăm după indexul variantei
+                    if (a.value.index() != b.value.index()) {
+                        return a.value.index() < b.value.index();
+                    }
+
+                    // 2. Dacă sunt de același tip, facem comparația specifică
+                    if (a.isInt())
+                        return std::get<long long>(a.value) < std::get<long long>(b.value);
+                    if (a.isFloat())
+                        return std::get<double>(a.value) < std::get<double>(b.value);
+                    if (a.isString())
+                        return std::get<std::wstring>(a.value) < std::get<std::wstring>(b.value);
+
+                    // Pentru Maps, Arrays sau null, nu avem o ordine naturală
+                    return false;
+                    });
+            }
+            return args[0]; // Returnăm array-ul (care e deja sortat in-place)
+            };
+
+		//functii pt map-uri
+        // --- HASKEY(map, key) -> Returnează 1 dacă cheia există, altfel 0 ---
+        m_functionsHandlers[L"HASKEY"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.size() < 2 || !args[0].isMap()) return { 0LL };
+
+            auto mapPtr = std::get<vDataMap>(args[0].value);
+            std::wstring key = vDataToWString(args[1]);
+
+            if (mapPtr && mapPtr->count(key)) {
+                return { 1LL };
+            }
+            return { 0LL };
+            };
+
+        // --- KEYS(map) -> Returnează un ARRAY cu toate cheile (string-uri) ---
+        m_functionsHandlers[L"KEYS"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty() || !args[0].isMap()) return vData::CreateArray();
+
+            auto mapPtr = std::get<vDataMap>(args[0].value);
+            vData result = vData::CreateArray();
+            auto arrPtr = result.rawArray(); // Presupunem că ai acest helper pentru acces la vectorul intern
+
+            if (mapPtr) {
+                for (auto const& [key, val] : *mapPtr) {
+                    arrPtr->push_back(vData(key));
+                }
+            }
+            return result;
+            };
+
+        // --- VALUES(map) -> Returnează un ARRAY cu toate valorile ---
+        m_functionsHandlers[L"VALUES"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty() || !args[0].isMap()) return vData::CreateArray();
+
+            auto mapPtr = std::get<vDataMap>(args[0].value);
+            vData result = vData::CreateArray();
+            auto arrPtr = result.rawArray();
+
+            if (mapPtr) {
+                for (auto const& [key, val] : *mapPtr) {
+                    arrPtr->push_back(val); // Aici adăugăm valoarea (deep copy sau referință vData)
+                }
+            }
+            return result;
+            };
+
+		// functii pt stringuri
         m_functionsHandlers[L"SPLIT"] = [this](const auto& args) {return this->handleSplitFunc(args); };
         m_functionsHandlers[L"JOIN"] = [this](const auto& args) {return this->handleJoinFunc(args); };
+        // --- UPPER(str) ---
+        m_functionsHandlers[L"UPPER"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) return { L"" };
+            // Folosim to_upper definit in StringUtils.hpp
+            return { to_upper(vDataToWString(args[0])) };
+            };
+
+        // --- LOWER(str) ---
+        m_functionsHandlers[L"LOWER"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) return { L"" };
+            // Folosim to_lower definit in StringUtils.hpp
+            return { to_lower(vDataToWString(args[0])) };
+            };
+
+        // --- REPLACE(str, old, new) ---
+        m_functionsHandlers[L"REPLACE"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.size() < 3) return args.empty() ? vData{ L"" } : args[0];
+
+            std::wstring str = vDataToWString(args[0]);
+            std::wstring from = vDataToWString(args[1]);
+            std::wstring to = vDataToWString(args[2]);
+
+            // Folosim rpl_wstr_in_wstr din StringUtils.hpp (care face replace global)
+            return { rpl_wstr_in_wstr(str, from, to) };
+            };
+
+        // --- FIND(str, pattern) ---
+        m_functionsHandlers[L"FIND"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.size() < 2) return { -1LL };
+
+            std::wstring str = vDataToWString(args[0]);
+            std::wstring pattern = vDataToWString(args[1]);
+
+            size_t pos = str.find(pattern);
+            if (pos == std::wstring::npos) return { -1LL };
+
+            return { static_cast<long long>(pos) };
+            };
+
+        // --- SUBSTR(str, start, [length]) ---
+        m_functionsHandlers[L"SUBSTR"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.size() < 2) return args.empty() ? vData{ L"" } : args[0];
+
+            std::wstring str = vDataToWString(args[0]);
+            int start = static_cast<int>(vDataToDouble(args[1]));
+
+            // Validare start bounds
+            if (start < 0) start = 0;
+            if (start >= (int)str.length()) return { L"" };
+
+            if (args.size() >= 3) {
+                int len = static_cast<int>(vDataToDouble(args[2]));
+                if (len < 0) return { L"" };
+                return { str.substr(start, len) };
+            }
+
+            return { str.substr(start) };
+            };
+
+        // functii mate
+// --- ABS(x) -> Valoarea absolută ---
+        m_functionsHandlers[L"ABS"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) return { 0.0 };
+            return { std::fabs(this->vDataToDouble(args[0])) };
+            };
+
+        // --- ROUND(x) -> Rotunjire la cel mai apropiat întreg ---
+        m_functionsHandlers[L"ROUND"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) return { 0.0 };
+            return { std::round(this->vDataToDouble(args[0])) };
+            };
+
+        // --- FLOOR(x) -> Cel mai mare întreg mai mic sau egal cu x ---
+        m_functionsHandlers[L"FLOOR"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) return { 0.0 };
+            return { std::floor(this->vDataToDouble(args[0])) };
+            };
+
+        // --- CEIL(x) -> Cel mai mic întreg mai mare sau egal cu x ---
+        m_functionsHandlers[L"CEIL"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) return { 0.0 };
+            return { std::ceil(this->vDataToDouble(args[0])) };
+            };
+
+        // --- MIN(a, b) -> Returnează valoarea minimă ---
+        m_functionsHandlers[L"MIN"] = [this](const std::vector<vData>& args) -> vData {
+            // Dacă nu avem 2 argumente, returnăm primul argument sau 0.0
+            if (args.size() < 2) return args.empty() ? vData{ 0.0 } : args[0];
+
+            double a = this->vDataToDouble(args[0]);
+            double b = this->vDataToDouble(args[1]);
+            return { std::min<double>(a, b) };
+            };
+
+        // --- MAX(a, b) -> Returnează valoarea maximă ---
+        m_functionsHandlers[L"MAX"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.size() < 2) return args.empty() ? vData{ 0.0 } : args[0];
+
+            double a = this->vDataToDouble(args[0]);
+            double b = this->vDataToDouble(args[1]);
+            return { std::max<double>(a, b) };
+            };
+
 
         m_functionsHandlers[L"READFILE"] = [this](const auto& args) {return this->handleReadFileFunc(args); };
         m_functionsHandlers[L"WRITEFILE"] = [this](const auto& args) {return this->handleWriteFileFunc(args); };
         m_functionsHandlers[L"APPENDFILE"] = [this](const auto& args) {return this->handleAppendFileFunc(args); };
         m_functionsHandlers[L"EXISTSFILE"] = [this](const auto& args) {return this->handleExistsFileFunc(args); };
         m_functionsHandlers[L"DELETEFILE"] = [this](const auto& args) {return this->handleDeleteFileFunc(args); };
+
+        // Prototip conceptual pentru handlere
+        m_functionsHandlers[L"JSON_ENCODE"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) return vData(L"null");
+
+            // Funcție lambda internă pentru recursivitate
+            std::function<std::wstring(const vData&)> encode = [&](const vData& d) -> std::wstring {
+                // 1. Rezolvăm pointerii (dacă d e pointer, mergem la valoare)
+                const vData* current = &d;
+                if (std::holds_alternative<vData*>(current->value)) {
+                    vData* ptr = std::get<vData*>(current->value);
+                    if (ptr) current = ptr;
+                }
+
+                // 2. Switch pe tipul de date
+                if (current->isString()) return L"\"" + std::get<std::wstring>(current->value) + L"\"";
+                if (current->isInt())    return std::to_wstring(std::get<long long>(current->value));
+                if (current->isFloat()) {
+                    std::wstring s = std::to_wstring(std::get<double>(current->value));
+                    s.erase(s.find_last_not_of(L'0') + 1, std::string::npos);
+                    if (s.back() == L'.') s.pop_back();
+                    return s;
+                }
+                if (current->isBool())   return std::get<bool>(current->value) ? L"true" : L"false";
+
+                if (current->isArray()) {
+                    auto arr = std::get<vDataArray>(current->value);
+                    std::wstring res = L"[";
+                    for (size_t i = 0; i < arr->size(); ++i) {
+                        res += encode((*arr)[i]) + (i == arr->size() - 1 ? L"" : L",");
+                    }
+                    return res + L"]";
+                }
+
+                if (current->isMap()) {
+                    auto m = std::get<vDataMap>(current->value);
+                    std::wstring res = L"{";
+                    size_t i = 0;
+                    for (auto const& [key, val] : *m) {
+                        res += L"\"" + key + L"\":" + encode(val) + (i == m->size() - 1 ? L"" : L",");
+                        i++;
+                    }
+                    return res + L"}";
+                }
+
+                return L"null";
+                };
+
+            return vData(encode(args[0]));
+            };
+
+        m_functionsHandlers[L"JSON_DECODE"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty() || !args[0].isString()) return vData(std::monostate{});
+
+            std::wstring rawJson = std::get<std::wstring>(args[0].value);
+
+            // 1. Curățăm spațiile de la margini
+            std::wstring cleanJson = trim(rawJson);
+
+            // 2. IMPORTANT: Dacă string-ul a venit „împachetat” în ghilimele de la Shell, 
+            // le scoatem, altfel parserul îl va vedea ca pe un literal string, nu ca pe un obiect.
+            if (cleanJson.size() >= 2 && cleanJson.front() == L'"' && cleanJson.back() == L'"') {
+                cleanJson = cleanJson.substr(1, cleanJson.size() - 2);
+            }
+
+            // 3. Unescape (pentru a transforma \" în ")
+            cleanJson = unescape(cleanJson);
+
+            size_t pos = 0;
+            try {
+                return parseJSONValue(cleanJson, pos);
+            }
+            catch (...) {
+                return vData(std::monostate{});
+            }
+            };
+
+        // --- NOW() -> Returnează Unix Timestamp (secunde de la 1970) ---
+        m_functionsHandlers[L"NOW"] = [this](const std::vector<vData>& args) -> vData {
+            auto acum = std::chrono::system_clock::now();
+            auto secunde = std::chrono::duration_cast<std::chrono::seconds>(acum.time_since_epoch()).count();
+            return vData((long long)secunde);
+            };
+
+        // --- DATE() -> Returnează "YYYY-MM-DD" ---
+        m_functionsHandlers[L"DATE"] = [this](const std::vector<vData>& args) -> vData {
+            auto acum = std::chrono::system_clock::now();
+            std::time_t timp_c = std::chrono::system_clock::to_time_t(acum);
+
+            struct tm t;
+            localtime_s(&t, &timp_c); // Pe Linux folosește localtime_r(&timp_c, &t);
+
+            std::wstringstream ss;
+            ss << std::get_time(&t, L"%Y-%m-%d");
+            return vData(ss.str());
+            };
+
+        // --- TIME() -> Returnează "HH:MM:SS" ---
+        m_functionsHandlers[L"TIME"] = [this](const std::vector<vData>& args) -> vData {
+            auto acum = std::chrono::system_clock::now();
+            std::time_t timp_c = std::chrono::system_clock::to_time_t(acum);
+
+            struct tm t;
+            localtime_s(&t, &timp_c);
+
+            std::wstringstream ss;
+            ss << std::get_time(&t, L"%H:%M:%S");
+            return vData(ss.str());
+            };
+
+        m_functionsHandlers[L"MSTIME"] = [this](const std::vector<vData>& args) -> vData {
+            auto acum = std::chrono::high_resolution_clock::now();
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(acum.time_since_epoch()).count();
+            return vData((long long)ms);
+            };
 
     }
 
@@ -2477,6 +2956,24 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
 }
 
 double vOliEngine::vDataToDouble(const vData& data) const {
+    // Folosim o logică iterativă pentru pointeri, nu recursivă, 
+    // ca să protejăm stiva (Stack) și să fim mai rapizi.
+
+    const vData* current = &data;
+    int jumpGuard = 0;
+
+    // 1. REZOLVARE POINTERI (Unpacking)
+    // Săpăm prin pointeri până dăm de valoarea reală
+    while (std::holds_alternative<vData*>(current->value)) {
+        vData* next = std::get<vData*>(current->value);
+
+        if (next == nullptr || next == current) break; // Siguranță: pointer null sau auto-referință
+        current = next;
+
+        if (++jumpGuard > 10) break; // Siguranță: Prevenim buclele infinite (ex: A -> B -> A)
+    }
+
+    // 2. CONVERSIE VALOARE FINALĂ
     return std::visit([this](auto&& arg) -> double {
         using T = std::decay_t<decltype(arg)>;
 
@@ -2490,27 +2987,19 @@ double vOliEngine::vDataToDouble(const vData& data) const {
             return arg ? 1.0 : 0.0;
         }
         else if constexpr (std::is_same_v<T, std::wstring>) {
+            if (arg.empty()) return 0.0;
             try {
+                // std::stod poate fi sensibil la setările regionale (puncte vs virgule)
                 return std::stod(arg);
             }
             catch (...) {
                 return 0.0;
             }
         }
-        else if constexpr (std::is_same_v<T, vData*>) {
-            // --- LOGICA PENTRU POINTERI REALI ---
-            // Dacă vrei ca o variabilă pointer să fie tratată ca număr, 
-            // trebuie să mergem la adresa indicată și să vedem ce e acolo.
-            if (arg != nullptr) {
-                return this->vDataToDouble(*arg); // Recursivitate: extragem numărul de la adresă
-            }
-            return 0.0;
-        }
-        else {
-            // monostate (NULL), vDataArray, vDataMap
-            return 0.0;
-        }
-        }, data.value);
+        // Pointerii sunt deja rezolvați mai sus, deci aici returnăm 0.0 
+        // pentru restul tipurilor (Map, Array, monostate)
+        return 0.0;
+        }, current->value);
 }
 
     
@@ -3320,6 +3809,15 @@ double vOliEngine::vDataToDouble(const vData& data) const {
             this->execute(finalLine);
         }
         file.close();
+
+        if (m_blockDepth > 0 || m_bracketDepth > 0) {
+            LOG_ERROR(L"Unexpected end of script: unclosed blocks detected! (Depth: " + std::to_wstring(m_blockDepth) + L")");
+
+            // --- RESET CRITIC ---
+            m_blockDepth = 0;
+            m_bracketDepth = 0;
+            m_accumulator.clear();
+        }
     }
 
     vData vOliEngine::handleInputFunc(const std::vector<vData>& args) {
@@ -5473,7 +5971,7 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       return result;
   }
   */
-
+  /*
   vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
       vData result;
       if (args.empty() || !std::holds_alternative<std::wstring>(args[0].value)) {
@@ -5508,7 +6006,7 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       return { std::wstring(L"") };
   }
 
-
+  
   vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
       vData result;
 
@@ -5551,6 +6049,75 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       result.value = 0;
       return result;
   }
+  */
+vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
+    if (args.empty() || !args[0].isString()) {
+        LOG_ERROR(L"[RUNTIME ERROR] readfile() requires a path string.");
+        return vData(std::monostate{}); // Returnăm NULL, nu string gol
+    }
+
+    std::wstring pathW = std::get<std::wstring>(args[0].value);
+    try {
+        std::string utf8_path = PortTools::wstring_to_utf8(pathW);
+        std::ifstream file(utf8_path, std::ios::binary);
+
+        if (!file.is_open()) {
+            // Nu logăm eroare neapărat, lăsăm scriptul să decidă ce face cu NULL-ul
+            return vData(std::monostate{});
+        }
+
+        // Citire eficientă
+        std::string buffer((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+        std::wstring wcontent = PortTools::utf8_to_wstring(buffer);
+
+        // Eliminare BOM (Byte Order Mark)
+        if (!wcontent.empty() && (unsigned short)wcontent[0] == 0xFEFF) {
+            wcontent.erase(0, 1);
+        }
+
+        return vData(wcontent);
+    }
+    catch (...) {
+        LOG_ERROR(L"[RUNTIME ERROR] Exception reading file: " + pathW);
+        return vData(std::monostate{});
+    }
+}
+
+vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
+    // Validare: avem nevoie de cel puțin path (string) și ceva de scris (orice)
+    if (args.size() < 2 || !args[0].isString()) {
+        LOG_ERROR(L"[RUNTIME ERROR] writefile() requires (path, content).");
+        return vData(0LL);
+    }
+
+    std::wstring pathW = std::get<std::wstring>(args[0].value);
+
+    // REPARAT: Convertim ORICE tip de dată în string (Map, Array, Number)
+    // Folosim helper-ul tău vDataToWString sau o conversie similară
+    std::wstring contentW = vDataToWString(args[1]);
+
+    contentW = PortTools::normalize_newlines_for_write(contentW);
+
+    try {
+        std::string path = PortTools::wstring_to_utf8(pathW);
+        std::string content = PortTools::wstring_to_utf8(contentW);
+
+        std::ofstream file(path, std::ios::binary | std::ios::trunc);
+        if (!file.is_open()) {
+            LOG_ERROR(L"[RUNTIME ERROR] Cannot open for writing: " + pathW);
+            return vData(0LL);
+        }
+
+        file.write(content.data(), content.size());
+        file.close();
+
+        return vData(1LL); // Succes (long long)
+    }
+    catch (...) {
+        LOG_ERROR(L"[RUNTIME ERROR] Exception writing file: " + pathW);
+        return vData(0LL);
+    }
+}
 
   vData vOliEngine::handleAppendFileFunc(const std::vector<vData>& args) {
       vData result;
@@ -5668,4 +6235,160 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
 
       result.value = 0;
       return result;
+  }
+
+  vData vOliEngine::parseJSONValue(const std::wstring& json, size_t& pos) {
+      auto skipWhitespace = [&]() {
+          while (pos < json.length() && std::iswspace(json[pos])) pos++;
+          };
+
+      skipWhitespace();
+      if (pos >= json.length()) return vData(std::monostate{});
+
+      wchar_t c = json[pos];
+
+      // --- CASE: OBJECT { ... } ---
+      if (c == L'{') {
+          pos++; // Consumăm '{'
+          vData mapObj = vData::CreateMap();
+          auto mapPtr = std::get<vDataMap>(mapObj.value);
+
+          skipWhitespace();
+          if (pos < json.length() && json[pos] == L'}') {
+              pos++; // Obiect gol
+              return mapObj;
+          }
+
+          while (pos < json.length()) {
+              skipWhitespace();
+              // În JSON, cheia TREBUIE să fie un string
+              vData keyData = parseJSONValue(json, pos);
+              std::wstring key = keyData.isString() ? std::get<std::wstring>(keyData.value) : L"";
+
+              skipWhitespace();
+              if (pos < json.length() && json[pos] == L':') {
+                  pos++; // Consumăm separatorul ':'
+              }
+
+              // Citim valoarea asociată cheii
+              (*mapPtr)[key] = parseJSONValue(json, pos);
+
+              skipWhitespace();
+              if (pos < json.length() && json[pos] == L',') {
+                  pos++; // Consumăm virgula și continuăm bucla
+                  // Verificăm dacă urmează direct închiderea (trailing comma)
+                  skipWhitespace();
+                  if (pos < json.length() && json[pos] == L'}') {
+                      pos++; break;
+                  }
+              }
+              else if (pos < json.length() && json[pos] == L'}') {
+                  pos++; // Am ajuns la finalul obiectului
+                  break;
+              }
+              else {
+                  // Eroare de sintaxă (lipsă virgulă sau închidere)
+                  break;
+              }
+          }
+          return mapObj;
+      }
+
+      // --- CASE: ARRAY [ ... ] ---
+      else if (c == L'[') {
+          pos++; // Consumăm '['
+          vData arrObj = vData::CreateArray();
+          auto arrPtr = arrObj.rawArray();
+
+          skipWhitespace();
+          if (pos < json.length() && json[pos] == L']') {
+              pos++; // Array gol
+              return arrObj;
+          }
+
+          while (pos < json.length()) {
+              arrPtr->push_back(parseJSONValue(json, pos));
+
+              skipWhitespace();
+              if (pos < json.length() && json[pos] == L',') {
+                  pos++; // Consumăm virgula
+                  skipWhitespace();
+                  if (pos < json.length() && json[pos] == L']') {
+                      pos++; break; // Trailing comma
+                  }
+              }
+              else if (pos < json.length() && json[pos] == L']') {
+                  pos++; // Final de array
+                  break;
+              }
+              else {
+                  break;
+              }
+          }
+          return arrObj;
+      }
+
+      // --- CASE: STRING " ... " ---
+      else if (c == L'"') {
+          pos++; // Consumăm ghilimeaua de deschidere
+          std::wstring s;
+          while (pos < json.length() && json[pos] != L'"') {
+              if (json[pos] == L'\\') {
+                  pos++;
+                  if (pos >= json.length()) break;
+                  wchar_t esc = json[pos++];
+                  switch (esc) {
+                  case L'n': s += L'\n'; break;
+                  case L't': s += L'\t'; break;
+                  case L'r': s += L'\r'; break;
+                  case L'\\': s += L'\\'; break;
+                  case L'"': s += L'"'; break;
+                  case L'b': s += L'\b'; break;
+                  case L'f': s += L'\f'; break;
+                  case L'/': s += L'/'; break;
+                  default: s += esc; break;
+                  }
+              }
+              else {
+                  s += json[pos++];
+              }
+          }
+          if (pos < json.length() && json[pos] == L'"') pos++; // Consumăm ghilimeaua de închidere
+          return vData(s);
+      }
+
+      // --- CASE: BOOLEAN / NULL (Folosim o metodă sigură de potrivire) ---
+      auto match = [&](const std::wstring& word) -> bool {
+          if (pos + word.length() <= json.length() && json.compare(pos, word.length(), word) == 0) {
+              pos += word.length();
+              return true;
+          }
+          return false;
+          };
+
+      if (match(L"true"))  return vData(true);
+      if (match(L"false")) return vData(false);
+      if (match(L"null"))  return vData(std::monostate{});
+
+      // --- CASE: NUMBER ---
+      if (std::iswdigit(c) || c == L'-') {
+          size_t start = pos;
+          bool isFloat = false;
+          // Extindem setul de caractere pentru numere (inclusiv notația științifică)
+          while (pos < json.length() && (std::iswdigit(json[pos]) || json[pos] == L'.' ||
+              json[pos] == L'-' || json[pos] == L'e' || json[pos] == L'E' || json[pos] == L'+')) {
+              if (json[pos] == L'.') isFloat = true;
+              pos++;
+          }
+          std::wstring numStr = json.substr(start, pos - start);
+          try {
+              if (isFloat) return vData(std::stod(numStr));
+              return vData(std::stoll(numStr));
+          }
+          catch (...) { return vData(0LL); }
+      }
+
+      // Fallback de siguranță pentru a preveni buclele infinite
+      pos++;
+      return vData(std::monostate{});
   }

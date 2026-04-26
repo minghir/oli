@@ -233,7 +233,7 @@ private:
 
     bool canBeNumeric(const vData& data) const;
     bool compareVData(const vData& lhs, const vData& rhs);
-
+    vData parseJSONValue(const std::wstring& json, size_t& pos);
 
     void initializeCommandsHandlers();
     

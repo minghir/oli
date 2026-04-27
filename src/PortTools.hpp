@@ -46,6 +46,9 @@ namespace PortTools {
 
     // Returnează timpul curent formatat conform unui șablon (ex: "%Y-%m-%d")
     std::wstring getFormattedTime(const std::wstring& format);
+
+    // Returnează extensia corectă pentru plugin (.dll sau .so)
+    std::wstring getPluginExtension();
 }
 
 #endif

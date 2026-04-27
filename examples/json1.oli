@@ -1,0 +1,57 @@
+# --- CONFIGURARE ---
+cls; unset all
+set $db_file = "users_db.json"
+
+# 1. DEFINIREA STRUCTURII (Interfațare cu handleDefCommand)
+def struct User { id, name, role, last_login }
+
+# 2. CREAREA DATELOR (Folosind MAP și ARRAY)
+set $users = ARRAY()
+
+# Creăm primul utilizator (folosind structura ca blueprint mental)
+set $u1 = MAP()
+set $u1["id"] = 1
+set $u1["name"] = "Alice"
+set $u1["role"] = "Admin"
+set $u1["last_login"] = NOW()
+
+# Creăm al doilea utilizator
+set $u2 = MAP()
+set $u2["id"] = 2
+set $u2["name"] = "Bob"
+set $u2["role"] = "User"
+set $u2["last_login"] = NOW()
+
+# Îi adăugăm în baza de date
+PUSH($users, $u1)
+PUSH($users, $u2)
+
+echo ">>> Baza de date creată în memorie (2 utilizatori)."
+
+# 3. INTERFAȚARE CU LUMEA REALĂ (Scriere)
+set $json_data = JSON_ENCODE($users)
+echo ">>> Serializare JSON completă."
+
+WRITEFILE($db_file, $json_data)
+echo ">>> Baza de date a fost salvată în: " + $db_file
+
+# 4. RESETARE ȘI RESTAURARE (Testăm dacă persistă)
+set $users = NULL
+echo ">>> Memorie curățată. Încercăm restaurarea de pe disc..."
+
+if EXISTSFILE($db_file) then
+    set $raw_content = READFILE($db_file)
+    set $restored_db = JSON_DECODE($raw_content)
+    
+    echo "--- DATE RESTAURATE ---"
+    set $k = 0
+    while $k < LEN($restored_db) do
+        set $u = $restored_db[$k]
+        echo "User [" + STR($u["id"]) + "]: " + $u["name"] + " (" + $u["role"] + ")"
+        set $k++
+    endwhile
+else
+    echo "[EROARE] Fișierul nu a fost găsit!"
+endif
+
+dm

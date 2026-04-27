@@ -61,7 +61,7 @@ using vDataValue = std::variant<
     vDataMap,
     vData* // <--- Noul tip: Pointer către o altă vData
 >;
-
+/*
 struct vData {
     vDataValue value;
 
@@ -99,6 +99,72 @@ struct vData {
         return this->value == other.value;
     }
 };
+*/
+struct vData {
+    vDataValue value;
+
+    // --- LOGICA DE DEREFERENȚIERE (Inima structurii) ---
+    // Returnează referința către datele reale, trecând prin pointeri dacă e cazul
+    vData& getTrueData() {
+        if (std::holds_alternative<vData*>(value)) {
+            vData* ptr = std::get<vData*>(value);
+            return ptr ? ptr->getTrueData() : *this;
+        }
+        return *this;
+    }
+
+    const vData& getTrueData() const {
+        if (std::holds_alternative<vData*>(value)) {
+            vData* ptr = std::get<vData*>(value);
+            return ptr ? ptr->getTrueData() : *this;
+        }
+        return *this;
+    }
+
+    // --- HELPERI PENTRU ACCES RAW ---
+    std::vector<vData>* rawArray() {
+        auto& trueData = getTrueData();
+        if (!trueData.isArray()) return nullptr;
+        return std::get<vDataArray>(trueData.value).get();
+    }
+
+    std::map<std::wstring, vData>* rawMap() {
+        auto& trueData = getTrueData();
+        if (!trueData.isMap()) return nullptr;
+        return std::get<vDataMap>(trueData.value).get();
+    }
+
+    // --- FACTORY METHODS ---
+    static vData CreateMap() {
+        return vData{ std::make_shared<std::map<std::wstring, vData>>() };
+    }
+
+    static vData CreateArray() {
+        return vData{ std::make_shared<std::vector<vData>>() };
+    }
+
+    // --- VERIFICĂRI DE TIP (Acum funcționează și pentru pointeri) ---
+    bool isArray()  const { return std::holds_alternative<vDataArray>(getTrueData().value); }
+    bool isMap()    const { return std::holds_alternative<vDataMap>(getTrueData().value); }
+    bool isString() const { return std::holds_alternative<std::wstring>(getTrueData().value); }
+    bool isInt()    const { return std::holds_alternative<long long>(getTrueData().value); }
+    bool isFloat()  const { return std::holds_alternative<double>(getTrueData().value); }
+    bool isBool()   const { return std::holds_alternative<bool>(getTrueData().value); }
+    bool isNull()   const { return std::holds_alternative<std::monostate>(getTrueData().value); }
+    bool isPointer() const { return std::holds_alternative<vData*>(value); }
+
+    // --- OPERATORI ---
+    bool operator==(const vData& other) const {
+        const vData& t1 = this->getTrueData();
+        const vData& t2 = other.getTrueData();
+
+        // Dacă tipurile de bază după dereferențiere sunt diferite, nu sunt egale
+        if (t1.value.index() != t2.value.index()) return false;
+
+        // Comparăm valorile reale
+        return t1.value == t2.value;
+    }
+};
 
 enum class OliStatus {
     RUNNING,
@@ -125,8 +191,8 @@ private:
     std::unordered_map<std::wstring, std::function<void(const std::wstring&)>> m_commandHandlers;
     std::map<std::wstring, OliFunctionHandler> m_functionsHandlers;
 
-    std::map<std::wstring, vData> m_globalVariables;
-
+    //std::map<std::wstring, vData> m_globalVariables;
+    std::unordered_map<std::wstring, vData> m_globalVariables;
 
     std::map<std::wstring, Procedure> m_procedures;
     bool m_isRecording = false;
@@ -242,6 +308,7 @@ private:
 
     void handleWhileCommand(const std::wstring& fullLine);
     size_t findTopLevelWhileKeyword(const std::wstring& line, const std::wstring& keyword);
+    void debugWhile(const std::wstring& condition, const std::vector<std::wstring>& instrs);
     
     void handleRepeatCommand(const std::wstring& fullLine);
     

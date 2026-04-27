@@ -1,0 +1,60 @@
+# Mandelbrot Optimizat
+set $width = 60
+set $height = 30
+set $max_iter = 20
+
+# Pre-calculăm constantele de scalare în afara buclelor
+set $step_y = 2.0 / $height
+set $step_x = 3.0 / $width
+
+set $py = 0
+while $py < $height do
+    set $line = ""
+    # Mutăm calculul lui y0 aici (se schimbă doar pe verticală)
+    set $y0 = ($py * $step_y) - 1.0
+    
+    set $px = 0
+    while $px < $width do
+        set $x0 = ($px * $step_x) - 2.0
+        
+        set $zx = 0.0
+        set $zy = 0.0
+        set $iter = 0
+        
+        while $iter < $max_iter do
+            # Reducem numărul de 'set'-uri intermediare. 
+            # Calculăm pătratele direct în condiție dacă motorul permite.
+            set $zx2 = $zx * $zx
+            set $zy2 = $zy * $zy
+            
+            if ($zx2 + $zy2) > 4.0 then
+                break
+            endif
+            
+            # Folosim o singură variabilă temporară pentru a reduce map lookups
+            set $zy = (2.0 * $zx * $zy) + $y0
+            set $zx = $zx2 - $zy2 + $x0
+            set $iter = $iter + 1
+        endwhile
+        
+        # Flattening the logic: Alegem caracterul mai eficient
+        set $char = " "
+        if $iter == $max_iter then 
+            set $char = "#" 
+        else
+            if $iter > 10 then 
+                set $char = "*" 
+            else
+                if $iter > 5 then 
+                    set $char = "." 
+                endif
+            endif
+        endif
+        
+        set $line = $line + $char
+        set $px = $px + 1
+    endwhile
+    
+    echo $line
+    set $py = $py + 1
+endwhile

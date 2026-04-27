@@ -1849,6 +1849,21 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             return { -1LL };
             };
 
+        m_functionsHandlers[L"SET_AT"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.size() < 3 || !args[0].isArray()) return vData(0LL);
+
+            // Luăm shared_ptr-ul. Orice modificare pe arrPtr->at() 
+            // se va vedea în toate variabilele care dețin acest array.
+            auto arrPtr = std::get<vDataArray>(args[0].value);
+            size_t idx = static_cast<size_t>(vDataToDouble(args[1]));
+
+            if (arrPtr && idx < arrPtr->size()) {
+                (*arrPtr)[idx] = args[2]; // <--- Aceasta este scrierea critică
+                return vData(1LL);
+            }
+            return vData(0LL);
+            };
+
         // --- SORT(array) -> Sortează array-ul (In-place) ---
         m_functionsHandlers[L"SORT"] = [this](const std::vector<vData>& args) -> vData {
             if (args.empty() || !args[0].isArray()) return { std::monostate{} };
@@ -2938,7 +2953,7 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
 
     return vData();
 }
-
+/*
 double vOliEngine::vDataToDouble(const vData& data) const {
     // Folosim o logică iterativă pentru pointeri, nu recursivă, 
     // ca să protejăm stiva (Stack) și să fim mai rapizi.
@@ -2985,7 +3000,7 @@ double vOliEngine::vDataToDouble(const vData& data) const {
         return 0.0;
         }, current->value);
 }
-
+*/
     
 
 
@@ -3074,7 +3089,7 @@ double vOliEngine::vDataToDouble(const vData& data) const {
 
         return { std::monostate{} };
     }
-
+    /*
     long long vOliEngine::vDataToLong(const vData& data) {
         if (std::holds_alternative<long long>(data.value)) {
             return std::get<long long>(data.value);
@@ -3095,8 +3110,65 @@ double vOliEngine::vDataToDouble(const vData& data) const {
         }
         return 0;
     }
+    */
+
+    double vOliEngine::vDataToDouble(const vData& data) const {
+        const vData* current = &data;
+        int jumpGuard = 0;
+
+        // 1. REZOLVARE POINTERI (Dereferențiere iterativă)
+        while (std::holds_alternative<vData*>(current->value)) {
+            vData* next = std::get<vData*>(current->value);
+            if (!next || next == current || ++jumpGuard > 10) break;
+            current = next;
+        }
+
+        // 2. CONVERSIE VALOARE REALĂ
+        return std::visit([this](auto&& arg) -> double {
+            using T = std::decay_t<decltype(arg)>;
+
+            if constexpr (std::is_same_v<T, double>) return arg;
+            if constexpr (std::is_same_v<T, long long>) return static_cast<double>(arg);
+            if constexpr (std::is_same_v<T, bool>) return arg ? 1.0 : 0.0;
+            if constexpr (std::is_same_v<T, std::wstring>) {
+                if (arg.empty()) return 0.0;
+                try { return std::stod(arg); }
+                catch (...) { return 0.0; }
+            }
+            return 0.0; // Map, Array, Null, etc.
+            }, current->value);
+    }
     
-    
+    long long vOliEngine::vDataToLong(const vData& data) {
+        // PASUL 1: Întotdeauna extragem datele reale (eliminăm "blindajul" de pointer)
+        const vData& actual = data.getTrueData();
+
+        // PASUL 2: Conversia propriu-zisă pe datele dereferențiate
+        if (std::holds_alternative<long long>(actual.value)) {
+            return std::get<long long>(actual.value);
+        }
+
+        if (std::holds_alternative<double>(actual.value)) {
+            // Conversie cu trunchiere de la float la int
+            return static_cast<long long>(std::get<double>(actual.value));
+        }
+
+        if (std::holds_alternative<std::wstring>(actual.value)) {
+            try {
+                return std::stoll(std::get<std::wstring>(actual.value));
+            }
+            catch (...) {
+                return 0; // String-ul nu este un număr valid
+            }
+        }
+
+        if (std::holds_alternative<bool>(actual.value)) {
+            return std::get<bool>(actual.value) ? 1 : 0;
+        }
+
+        // Default pentru Array, Map sau Null
+        return 0;
+    }
 
     void vOliEngine::handleUnsetCommand(const ShellCommand& sc) {
         if (sc.args.empty()) return;
@@ -3332,6 +3404,7 @@ double vOliEngine::vDataToDouble(const vData& data) const {
         return std::wstring::npos;
     }
 
+    /*
     void vOliEngine::handleIfCommand(const std::wstring& fullLine) {
         // 1. Găsim pozițiile delimitatorilor la nivelul de top (fără /)
         size_t posThen = findTopLevelIfKeyword(fullLine, L"THEN");
@@ -3386,9 +3459,69 @@ double vOliEngine::vDataToDouble(const vData& data) const {
             }
         }
     }
+    */
 
+    void vOliEngine::handleIfCommand(const std::wstring& fullLine) {
+        // 1. Găsim delimitatorii la nivelul de top
+        size_t posThen = findTopLevelIfKeyword(fullLine, L"THEN");
+        size_t posElse = findTopLevelIfKeyword(fullLine, L"ELSE");
+        size_t posEndif = findTopLevelIfKeyword(fullLine, L"ENDIF");
+
+        // --- LOGICĂ DE ERORI (GUARD RAILS) ---
+        if (posThen == std::wstring::npos) {
+            LOG_ERROR(L"Sintaxă IF invalidă: Lipsește 'THEN'. Oli nu știe când să înceapă execuția.");
+            return;
+        }
+
+        if (posEndif == std::wstring::npos) {
+            LOG_ERROR(L"Sintaxă IF invalidă: Blocul IF nu este închis. Lipsește 'ENDIF'.");
+            return;
+        }
+
+        // Verificăm ordinea logică (THEN trebuie să fie înainte de ENDIF)
+        if (posThen > posEndif) {
+            LOG_ERROR(L"Structură IF coruptă: 'THEN' apare după 'ENDIF'. Verifică imbricarea blocurilor.");
+            return;
+        }
+
+        // Verificăm ELSE (dacă există, trebuie să fie între THEN și ENDIF)
+        if (posElse != std::wstring::npos && (posElse < posThen || posElse > posEndif)) {
+            LOG_ERROR(L"Structură IF coruptă: 'ELSE' este plasat în afara limitelor THEN-ENDIF.");
+            return;
+        }
+        // -------------------------------------
+
+        // 2. Evaluăm Condiția (între 'IF' și 'THEN')
+        // Substr de la indexul 2 (după 'IF') până la 'THEN'
+        std::wstring conditionPart = fullLine.substr(2, posThen - 2);
+        vData result = evaluateExpression(normalizeSpaces(conditionPart));
+        bool isTrue = vDataToBool(result);
+
+        // 3. Extragem blocul de cod corect
+        std::wstring commandToRun;
+        if (isTrue) {
+            size_t start = posThen + 4; // după "THEN"
+            size_t end = (posElse != std::wstring::npos) ? posElse : posEndif;
+            commandToRun = fullLine.substr(start, end - start);
+        }
+        else if (posElse != std::wstring::npos) {
+            size_t start = posElse + 4; // după "ELSE"
+            commandToRun = fullLine.substr(start, posEndif - start);
+        }
+
+        // 4. Execuție recursivă folosind preParse (pe codul brut, multiline)
+        if (!trim(commandToRun).empty()) {
+            std::vector<std::wstring> subInstructions = preParse(commandToRun);
+            for (const auto& subInstr : subInstructions) {
+                this->executeInternal(subInstr);
+
+                // Verificăm dacă instrucțiunea a cerut oprirea execuției (BREAK/RETURN)
+                if (m_executionStatus != OliStatus::RUNNING) return;
+            }
+        }
+    }
    
-
+    
     size_t vOliEngine::findTopLevelIfKeyword(const std::wstring& line, const std::wstring& keyword) {
         int depth = 0;
         bool inQuotes = false;
@@ -3436,6 +3569,9 @@ double vOliEngine::vDataToDouble(const vData& data) const {
         }
         return std::wstring::npos;
     }
+    
+
+
 
     bool vOliEngine::vDataToBool(const vData& data) {
         // 1. Booleeni expliciți
@@ -3542,6 +3678,17 @@ double vOliEngine::vDataToDouble(const vData& data) const {
         }
     }
     */
+
+    void vOliEngine::debugWhile(const std::wstring& condition, const std::vector<std::wstring>& instrs) {
+        LOG_INFO(L"--- [DEBUG WHILE] ---");
+        LOG_INFO(L"Conditie: " + condition);
+        LOG_INFO(L"Instructiuni detectate: " + std::to_wstring(instrs.size()));
+        for (size_t i = 0; i < instrs.size(); ++i) {
+            LOG_INFO(L"  [" + std::to_wstring(i) + L"]: " + instrs[i]);
+        }
+        LOG_INFO(L"---------------------");
+    }
+
     void vOliEngine::handleWhileCommand(const std::wstring& fullLine) {
         // 1. Pregătim o versiune UPPER pentru căutare (case-insensitivity)
         std::wstring upperLine = fullLine;
@@ -3552,6 +3699,7 @@ double vOliEngine::vDataToDouble(const vData& data) const {
         size_t whilePos = upperLine.find(L"WHILE");
         size_t posDo = findTopLevelKeyword(upperLine, L"DO", L"WHILE");
         size_t posEnd = findTopLevelKeyword(upperLine, L"ENDWHILE", L"WHILE");
+        if (posEnd == std::wstring::npos) posEnd = upperLine.rfind(L"ENDWHILE");
 
         // Fallback robust în caz că findTopLevelKeyword nu a fost precis
         if (posDo == std::wstring::npos) posDo = upperLine.find(L" DO ");
@@ -3576,6 +3724,9 @@ double vOliEngine::vDataToDouble(const vData& data) const {
 
         // 4. Pregătim instrucțiunile (preParse le împarte corect în vector)
         std::vector<std::wstring> instructions = preParse(bodyCommand);
+
+        //debugWhile(conditionPart, instructions);
+
         if (instructions.empty()) return;
 
         // 5. Bucla de execuție a motorului Oli
@@ -3615,7 +3766,7 @@ double vOliEngine::vDataToDouble(const vData& data) const {
     }
 
     
-
+    /*
     size_t vOliEngine::findTopLevelKeyword(const std::wstring& line, const std::wstring& keyword, const std::wstring& startCommand) {
         int depth = 0;
         bool inQuotes = false;
@@ -3689,7 +3840,86 @@ double vOliEngine::vDataToDouble(const vData& data) const {
 
         return std::wstring::npos;
     }
+    */
+    // Helper pentru a detecta orice fel de whitespace (inclusiv Non-Breaking Space)
+    inline bool isOliWhitespace(wchar_t c) {
+        return iswspace(c) || c == L'\xA0';
+    }
 
+    // Helper pentru a detecta separatori de cuvinte
+    inline bool isOliSeparator(wchar_t c) {
+        if (isOliWhitespace(c)) return true;
+        return wcschr(L"=+-*<>|;()[]{},:%/#!", c) != nullptr;
+    }
+
+    size_t vOliEngine::findTopLevelKeyword(const std::wstring& line, const std::wstring& keyword, const std::wstring& startCommand) {
+        int depth = 0;
+        bool inQuotes = false;
+
+        // Convertim totul la Upper o singură dată pentru eficiență
+        std::wstring upperLine = line;
+        for (auto& c : upperLine) c = std::towupper(c);
+        std::wstring upperKey = keyword;
+        for (auto& c : upperKey) c = std::towupper(c);
+        std::wstring upperStart = startCommand;
+        for (auto& c : upperStart) c = std::towupper(c);
+
+        size_t mainPos = upperLine.find(upperStart);
+        if (mainPos == std::wstring::npos) return std::wstring::npos;
+
+        size_t searchStart = mainPos + upperStart.length();
+
+        for (size_t i = searchStart; i < upperLine.size(); ++i) {
+            // 1. Skip ghilimele
+            if (upperLine[i] == L'"' && (i == 0 || upperLine[i - 1] != L'\\')) {
+                inQuotes = !inQuotes;
+                continue;
+            }
+            if (inQuotes) continue;
+
+            // 2. Verificăm început de cuvânt folosind helper-ul robust
+            bool isStart = (i == 0 || isOliSeparator(upperLine[i - 1]));
+            if (!isStart) continue;
+
+            std::wstring_view rem(&upperLine[i], upperLine.size() - i);
+
+            // --- A. DETECTARE KEYWORD ȚINTĂ ---
+            if (depth == 0 && rem.starts_with(upperKey)) {
+                size_t nextIdx = i + upperKey.length();
+                if (nextIdx >= upperLine.size() || isOliSeparator(upperLine[nextIdx])) {
+                    return i;
+                }
+            }
+
+            // --- B. TRACKING ADÂNCIME ---
+            // Incrementăm pentru orice bloc nou
+            static const std::vector<std::wstring> startTokens = { L"WHILE", L"IF", L"FOR", L"REPEAT", L"FUNC", L"PROC" };
+            for (const auto& token : startTokens) {
+                if (rem.starts_with(token)) {
+                    size_t nextIdx = i + token.length();
+                    if (nextIdx >= upperLine.size() || isOliSeparator(upperLine[nextIdx])) {
+                        depth++;
+                        i = nextIdx - 1; // Avansăm indexul
+                        goto next_loop_iter;
+                    }
+                }
+            }
+
+            // Decrementăm pentru orice închidere
+            if (rem.starts_with(L"END") || rem.starts_with(L"UNTIL")) {
+                // Nu scădem dacă suntem deja la 0 (înseamnă că END-ul găsit este chiar keyword-ul nostru)
+                if (depth > 0) depth--;
+
+                // Sărim peste cuvântul END... (ex: ENDWHILE)
+                while (i < upperLine.size() && iswalnum(upperLine[i])) i++;
+                i--;
+            }
+
+        next_loop_iter:;
+        }
+
+        return std::wstring::npos;
+    }
     /*
     void vOliEngine::handleRunCommand(const ShellCommand& sc) {
         if (sc.args.empty()) {
@@ -4609,7 +4839,7 @@ void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wst
       }
   }
   */
-
+/*
     void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
         // 1. Verificăm argumentele
         if (sc.args.empty()) {
@@ -4648,6 +4878,51 @@ void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wst
             PortTools::freeDynamicLibrary(hLib);
         }
     }
+*/
+
+void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
+    if (sc.args.empty()) {
+        LOG_ERROR(L"Usage: plugin \"path/to/plugin\"");
+        return;
+    }
+
+    std::wstring dllPath = sc.args[0];
+
+    // Scoatem ghilimelele
+    if (dllPath.size() >= 2 && dllPath.front() == L'"' && dllPath.back() == L'"') {
+        dllPath = dllPath.substr(1, dllPath.size() - 2);
+    }
+
+    // Adăugăm extensia corectă dacă lipsește
+    std::wstring ext = PortTools::getPluginExtension();
+    if (dllPath.size() < ext.size() ||
+        dllPath.substr(dllPath.size() - ext.size()) != ext)
+    {
+        dllPath += ext;
+    }
+
+    // --- 2. Încărcăm biblioteca ---
+    PortTools::LibHandle hLib = PortTools::loadDynamicLibrary(dllPath);
+
+    if (!hLib) {
+        LOG_ERROR(L"Could not load plugin: " + dllPath +
+            L" (Error: " + PortTools::getLastErrorString() + L")");
+        return;
+    }
+
+    typedef void (*RegisterFunc)(std::map<std::wstring, OliFunctionHandler>&);
+    RegisterFunc regFunc = (RegisterFunc)PortTools::getFunctionSymbol(hLib, "LoadOliPlugin");
+
+    if (regFunc) {
+        regFunc(this->m_functionsHandlers);
+        LOG_SUCCESS(L"Plugin loaded: " + dllPath);
+        LOG_SUCCESS(L"          Native functions injected into Oli memory.");
+    }
+    else {
+        LOG_ERROR(L"Invalid Plugin: Export 'LoadOliPlugin' not found in " + dllPath);
+        PortTools::freeDynamicLibrary(hLib);
+    }
+}
 
     vData vOliEngine::handleEvalFunc(const std::vector<vData>& args) {
         if (args.empty()) return { 0LL }; // Sau std::monostate{} pentru NULL
@@ -5546,15 +5821,28 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
 
     // 4. LOGICA DE SCOPING (Shadowing activat)
     if (!m_callStack.empty()) {
-        // Suntem în funcție: Orice 'set $a' devine LOCAL.
-        // Nu ne interesează dacă există o globală numită 'a'.
-        // Aceasta va fi "ascunsă" de variabila locală nouă.
+        auto& locals = m_callStack.back().localVariables;
+        if (locals.count(cleanName)) {
+            locals[cleanName] = value;
+            return;
+        }
+    }
+
+    // B. IMPORTANT: Verificăm dacă variabila există deja în Globale
+    // Dacă utilizatorul a definit-o deja global, o actualizăm acolo!
+    if (m_globalVariables.count(cleanName)) {
+        m_globalVariables[cleanName] = value;
+        return;
+    }
+
+    // C. Dacă nu a fost găsită nicăieri, decidem unde o creăm (nouă)
+    if (!m_callStack.empty()) {
         m_callStack.back().localVariables[cleanName] = value;
     }
     else {
-        // Suntem în contextul principal: Totul este Global.
         m_globalVariables[cleanName] = value;
     }
+
 }
 
 

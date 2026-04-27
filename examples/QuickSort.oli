@@ -1,0 +1,50 @@
+cls; unset all
+
+# 1. FUNCTIA DE PARTITIONARE
+# Alege pivotul si rearanjeaza elementele
+func partition arr low high
+    set $pivot = $arr[$high]
+    set $i = $low - 1
+    set $j = $low
+    
+    while $j < $high do
+        if $arr[$j] <= $pivot then
+            set $i = $i + 1
+            # Swap elemente
+            set $temp = $arr[$i]
+            set $arr[$i] = $arr[$j]
+            set $arr[$j] = $temp
+        endif
+        set $j = $j + 1
+    endwhile
+    
+    # Punem pivotul la locul lui
+    set $pivot_pos = $i + 1
+    set $temp = $arr[$pivot_pos]
+    set $arr[$pivot_pos] = $arr[$high]
+    set $arr[$high] = $temp
+    
+    return $pivot_pos
+endfunc
+
+# 2. FUNCTIA RECURSIVA QSORT
+func qsort arr  low  high
+    if $low < $high then
+        # Obtinem indexul pivotului
+        set $p = partition($arr, $low, $high)
+        
+        # Apeluri recursive pentru stanga si dreapta
+        qsort($arr, $low, $p - 1)
+        qsort($arr, $p + 1, $high)
+    endif
+endfunc
+
+# --- TESTARE ---
+set $date = ARRAY(42, 7, 101, 12, 5, 88, 3, 19)
+echo "Array original: " + STR($date)
+
+set $n = LEN($date)
+qsort($date, 0, $n - 1)
+
+echo "Array sortat:   " + STR($date)
+dm

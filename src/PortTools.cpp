@@ -219,4 +219,12 @@ namespace PortTools {
         ss << std::put_time(&timeinfo, format.c_str());
         return ss.str();
     }
+
+    std::wstring PortTools::getPluginExtension() {
+#ifdef _WIN32
+        return L".dll";
+#else
+        return L".so";
+#endif
+    }
 } // namespace PortTools

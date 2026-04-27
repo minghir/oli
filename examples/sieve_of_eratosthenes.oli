@@ -1,0 +1,46 @@
+plugin oli_plugin/oli_plugin
+cls; unset all
+
+set $limit = 100
+set $sieve = ARRAY()
+
+# 1. INITIALIZARE
+set $i = 0
+while $i <= $limit do
+    PUSH($sieve, 1)
+    $i++
+endwhile
+
+# Folosim scrierea nativa pe care ai implementat-o in executeAST!
+set $sieve[0] = 0
+set $sieve[1] = 0
+
+# 2. FILTRARE
+set $p = 2
+set $max_p = ROUND(SQRT($limit))
+
+while $p <= $max_p do
+    if $sieve[$p] == 1 then
+        set $j = $p * $p
+        while $j <= $limit do
+            # SINTAXA NATIVA: Aceasta va chema codul tau C++ de la "INDEX"
+            set $sieve[$j] = 0 
+            set $j = $j + $p
+        endwhile
+    endif
+    set $p++
+endwhile
+
+# 3. AFISARE
+set $count = 0
+set $k = 2
+while $k <= $limit do
+    if $sieve[$k] == 1 then
+        set $count++
+    endif
+    set $k++
+endwhile
+
+echo "--------------------------------"
+echo "Total numere prime gasite: " + STR($count)
+echo "Speram la: 25"

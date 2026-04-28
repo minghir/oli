@@ -1,60 +1,129 @@
-# --- OLI-BASIC INTERACTIVE MONITOR (Fixed) ---
+# --- CONFIGURARE ENGINE ---
 plugin "oli_plugin/oli_plugin"
 config max_iterations 0
-cls
-unset all
-set $program = MAP()
+cls; unset all
+
+# --- INIȚIALIZARE MEMORIE BASIC ---
+set $tb_program = MAP()
+set $tb_vars = ARRAY()
+for $i = 0 to 25 do PUSH($tb_vars, 0) endfor
+
+set $tb_jump_to = -1
+
+# --- HELPER: PARSER DE EXPRESII (Safe Strings) ---
+func tbasic_parse_expr $expr
+    set $e = TRIM($expr)
+    # Dacă e string cu ghilimele, scoatem ghilimelele și returnăm textul pur
+    if SUBSTR($e, 0, 1) == "\"" then
+        return REPLACE($e, "\"", "")
+    endif
+
+    # Dacă e formulă, înlocuim variabilele A-Z
+    set $work = UPPER($e)
+    for $idx = 0 to 25 do
+        set $char = CHR(65 + $idx)
+        set $work = REPLACE($work, $char, STR($tb_vars[$idx]))
+    endfor
+    return EVAL($work)
+endfunc
+
+# --- MOTORUL DE EXECUȚIE (CORE) ---
+func tbasic_run
+    set $keys = KEYS($tb_program); SORT($keys)
+    set $pc_idx = 0; set $tb_jump_to = -1
+    
+    echo "[Running Oli-BASIC Program...]"
+    
+    while $pc_idx < LEN($keys) do
+        set $content = TRIM($tb_program[$keys[$pc_idx]])
+        set $parts = SPLIT($content, " ")
+        set $cmd = UPPER($parts[0])
+
+        # 1. LET
+        if $cmd == "LET" then
+            set $eq_pos = FIND($content, "=")
+            set $v_name = TRIM(SUBSTR($content, 4, $eq_pos - 4))
+            set $res = tbasic_parse_expr(SUBSTR($content, $eq_pos + 1))
+            set $tb_vars[ASC(UPPER($v_name)) - 65] = $res
+        endif
+
+        # 2. PRINT
+        if $cmd == "PRINT" then
+            echo tbasic_parse_expr(SUBSTR($content, 6))
+        endif
+
+        # 3. INPUT
+        if $cmd == "INPUT" then
+            set $comma_pos = FIND($content, ",")
+            set $prompt = REPLACE(SUBSTR($content, 6, $comma_pos - 6), "\"", "")
+            set $v_name = TRIM(SUBSTR($content, $comma_pos + 1))
+            set $user_val = INPUT($prompt + " ")
+            set $tb_vars[ASC(UPPER($v_name)) - 65] = INT($user_val)
+        endif
+
+        # 4. GOTO
+        if $cmd == "GOTO" then
+            set $tb_jump_to = INT($parts[1])
+        endif
+
+        # 5. IF
+        if $cmd == "IF" then
+            set $then_pos = FIND(UPPER($content), " THEN ")
+            set $cond = SUBSTR($content, 3, $then_pos - 3)
+            if tbasic_parse_expr($cond) == 1 then
+                # Dacă condiția e adevărată, executăm ce urmează după THEN
+                set $action = TRIM(SUBSTR($content, $then_pos + 6))
+                set $act_parts = SPLIT($action, " ")
+                if UPPER($act_parts[0]) == "GOTO" then
+                    set $tb_jump_to = INT($act_parts[1])
+                endif
+            endif
+        endif
+
+        # GESTIONARE JUMP (GOTO)
+        if $tb_jump_to != -1 then
+            set $new_idx = INDEXOF($keys, $tb_jump_to)
+            if $new_idx != -1 then
+                set $pc_idx = $new_idx
+                set $tb_jump_to = -1
+                continue
+            endif
+        endif
+
+        set $pc_idx = $pc_idx + 1
+    endwhile
+    echo "[Done]"
+endfunc
+
+# --- MONITORUL INTERACTIV ---
 set $running = 1
-
-echo "Oli-BASIC Version 1.0 (2026)"
-echo "Ready. Type 'RUN', 'LIST', 'NEW' or 'EXIT'."
-
+echo "Oli-BASIC v1.2 - Ready"
 while $running == 1 do
     set $raw = INPUT("BASIC> ")
     set $input = TRIM($raw)
-    
     if $input == "" then continue endif
     if UPPER($input) == "EXIT" then break endif
 
     set $parts = SPLIT($input, " ")
-    set $first = $parts[0]
-    set $line_no = INT($first)
+    set $line_no = INT($parts[0])
 
     if $line_no > 0 then
-        set $cmd_text = SUBSTR($input, LEN($first))
-        set $program[$line_no] = TRIM($cmd_text)
+        set $cmd_text = TRIM(SUBSTR($input, LEN($parts[0])))
+        if $cmd_text == "" then
+            unset $tb_program[$line_no]
+        else
+            set $tb_program[$line_no] = $cmd_text
+        endif
     else
-        set $cmd = UPPER($input)
-        
-        if $cmd == "LIST" then
-            set $keys = KEYS($program)
-            SORT($keys)
-            set $i = 0
-            while $i < LEN($keys) do
-                set $k = $keys[$i]
-                echo STR($k) + " " + $program[$k]
-                $i++
-            endwhile
-        else 
-            if $cmd == "NEW" then
-                set $program = MAP()
-                echo "Memory Cleared."
-            else 
-                if $cmd == "RUN" then
-                    echo "[Running...]"
-                    set $keys = KEYS($program)
-                    SORT($keys)
-                    set $i = 0
-                    while $i < LEN($keys) do
-                        set $line_to_run = $program[$keys[$i]]
-                        EVAL($line_to_run)
-                        $i++
-                    endwhile
-                    echo "[Done]"
-                else
-                    EVAL($input)
-                endif # Inchide RUN
-            endif # Inchide NEW
-        endif # Inchide LIST
-    endif # Inchide line_no
+        if UPPER($input) == "RUN" then
+            tbasic_run()
+        else if UPPER($input) == "LIST" then
+            set $k = KEYS($tb_program); SORT($k)
+            for $j = 0 to LEN($k)-1 do echo STR($k[$j]) + " " + $tb_program[$k[$j]] endfor
+        else if UPPER($input) == "NEW" then
+            set $tb_program = MAP()
+        endif 
+		endif 
+		endif
+    endif
 endwhile

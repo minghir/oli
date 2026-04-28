@@ -1,0 +1,138 @@
+# --- CONFIGURARE ENGINE ---
+plugin "oli_plugin/oli_plugin"
+config max_iterations 0
+cls; unset all
+
+# --- INIȚIALIZARE MEMORIE ---
+set $tb_program = MAP()
+set $tb_vars = ARRAY()
+for $i = 0 to 25 do PUSH($tb_vars, 0) endfor
+set $tb_jump_to = -1 
+
+# --- HELPER: PARSER DE EXPRESII ---
+func tbasic_parse_expr $p_expr
+set $p_e = TRIM($p_expr)
+if SUBSTR($p_e, 0, 1) == "\"" then
+return REPLACE($p_e, "\"", "")
+endif
+set $p_work = UPPER($p_e)
+for $idx = 0 to 25 do
+set $char = CHR(65 + $idx)
+set $p_work = REPLACE($p_work, $char, STR($tb_vars[$idx]))
+endfor
+return EVAL($p_work)
+endfunc
+
+# --- FUNCȚIE: EXECUTĂ O LINIE ---
+func tbasic_exec_line $line_content
+set $l_c = TRIM($line_content)
+if $l_c == "" then 
+return 0 
+endif
+set $p_parts = SPLIT($l_c, " ")
+set $p_cmd = UPPER($p_parts[0])
+
+if $p_cmd == "LET" then
+set $eq_pos = FIND($l_c, "=")
+set $v_name = TRIM(SUBSTR($l_c, 4, $eq_pos - 4))
+set $v_idx = ASC(UPPER($v_name)) - 65
+set $tb_vars[$v_idx] = tbasic_parse_expr(SUBSTR($l_c, $eq_pos + 1))
+return 1
+endif
+
+if $p_cmd == "PRINT" then
+set $p_v = TRIM(SUBSTR($l_c, 6))
+if SUBSTR($p_v, 0, 1) == "\"" then
+echo REPLACE($p_v, "\"", "")
+else
+echo tbasic_parse_expr($p_v)
+endif
+return 1
+endif
+
+if $p_cmd == "INPUT" then
+set $c_pos = FIND($l_c, ",")
+set $p_msg = REPLACE(SUBSTR($l_c, 6, $c_pos - 6), "\"", "")
+set $v_raw = TRIM(SUBSTR($l_c, $c_pos + 1))
+set $u_val = INPUT($p_msg + " ")
+set $tb_vars[ASC(UPPER($v_raw)) - 65] = INT($u_val)
+return 1
+endif
+
+if $p_cmd == "GOTO" then
+set $tb_jump_to = INT($p_parts[1])
+return 1
+endif
+
+if $p_cmd == "IF" then
+set $u_l = UPPER($l_c)
+set $t_p = FIND($u_l, " THEN ")
+set $cond = SUBSTR($l_c, 3, $t_p - 3)
+set $act = TRIM(SUBSTR($l_c, $t_p + 6))
+set $test = tbasic_parse_expr($cond)
+# REPARAȚIA: Verificăm dacă EVAL a returnat "true" sau 1
+if $test == "true" then
+tbasic_exec_line($act)
+endif
+if $test == 1 then
+tbasic_exec_line($act)
+endif
+return 1
+endif
+endfunc
+
+# --- MOTORUL DE RUN ---
+func tbasic_run
+set $keys = KEYS($tb_program); SORT($keys)
+set $pc = 0; set $tb_jump_to = -1
+echo "[Oli-BASIC Running...]"
+while $pc < LEN($keys) do
+tbasic_exec_line($tb_program[$keys[$pc]])
+if $tb_jump_to != -1 then
+set $target = $tb_jump_to
+set $tb_jump_to = -1
+set $new_pc = INDEXOF($keys, $target)
+if $new_pc != -1 then
+set $pc = $new_pc
+continue
+endif
+endif
+set $pc = $pc + 1
+endwhile
+echo "[Done]"
+endfunc
+
+# --- MONITORUL INTERACTIV ---
+set $running = 1
+echo "Oli-BASIC v1.9 - Ready (Stable IF)"
+while $running == 1 do
+set $input = TRIM(INPUT("BASIC> "))
+if $input == "" then 
+continue 
+endif
+set $up_in = UPPER($input)
+if $up_in == "EXIT" then 
+break 
+endif
+if $up_in == "RUN" then 
+tbasic_run()
+continue 
+endif
+if $up_in == "LIST" then
+set $k = KEYS($tb_program); SORT($k)
+for $j = 0 to LEN($k)-1 do 
+echo STR($k[$j]) + " " + $tb_program[$k[$j]] 
+endfor
+continue
+endif
+if $up_in == "NEW" then
+set $tb_program = MAP(); for $v = 0 to 25 do set $tb_vars[$v] = 0 endfor; echo "Memory Cleared."; continue
+endif
+set $parts = SPLIT($input, " ")
+set $line_no = INT($parts[0])
+if $line_no > 0 then
+set $tb_program[$line_no] = TRIM(SUBSTR($input, LEN($parts[0])))
+else
+tbasic_exec_line($input)
+endif
+endwhile

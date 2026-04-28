@@ -1,0 +1,118 @@
+# --- CONFIGURARE ENGINE ---
+plugin "oli_plugin/oli_plugin"
+config max_iterations 0
+cls; unset all
+# --- INIȚIALIZARE MEMORIE BASIC ---
+set $tb_program = MAP()
+set $tb_vars = ARRAY()
+
+# Creăm cele 26 de sloturi pentru variabilele A-Z
+for $i = 0 to 25 do 
+    PUSH($tb_vars, 0) 
+endfor
+
+# --- CONFIGURARE GLOBALĂ ---
+set $tb_jump_to = -1  # Valoarea -1 înseamnă "nu sărim nicăieri"
+
+# --- HELPER: PARSER DE EXPRESII ---
+# Înlocuiește literele A-Z cu valorile din $tb_vars înainte de EVAL
+func tbasic_parse_expr $expr
+    set $work = UPPER($expr) # Forțăm totul la majuscule
+    
+    for $idx = 0 to 25 do
+        set $char = CHR(65 + $idx)
+        set $val = STR($tb_vars[$idx])
+        
+        # Facem înlocuirea direct
+        set $work = REPLACE($work, $char, $val)
+    endfor
+    
+    # --- LINIE DE DEBUG (O poți șterge după ce merge) ---
+    # echo "DEBUG: Evaluăm -> " + $work
+    
+    return EVAL($work)
+endfunc
+
+# --- MOTORUL DE EXECUȚIE (CORE) ---
+func tbasic_run
+    set $keys = KEYS($tb_program)
+    SORT($keys)
+    
+    set $pc_idx = 0
+    echo "[Running Oli-BASIC Program...]"
+    
+    while $pc_idx < LEN($keys) do
+        set $line_no = $keys[$pc_idx]
+        set $content = $tb_program[$line_no]
+        set $parts = SPLIT($content, " ")
+        set $cmd = UPPER($parts[0])
+
+        # --- COMANDA: LET A = EXPR ---
+        if $cmd == "LET" then
+            set $v_name = $parts[1]
+            set $eq_pos = FIND($content, "=")
+            set $expr = SUBSTR($content, $eq_pos + 1)
+            
+            set $res = tbasic_parse_expr($expr)
+            set $v_idx = ASC(UPPER($v_name)) - 65
+            set $tb_vars[$v_idx] = $res
+        endif
+
+        # --- COMANDA: PRINT EXPR ---
+        if $cmd == "PRINT" then
+            set $expr = SUBSTR($content, 6)
+            echo tbasic_parse_expr($expr)
+        endif
+
+        # Incrementăm Program Counter-ul
+        set $pc_idx = $pc_idx + 1
+    endwhile
+    echo "[Done]"
+endfunc
+
+# --- MONITORUL INTERACTIV (UI) ---
+set $running = 1
+echo "Oli-BASIC v1.1 - Memory Ready"
+echo "Commands: LIST, RUN, NEW, EXIT or [Line No] [Command]"
+
+while $running == 1 do
+    set $raw = UPPER(INPUT("BASIC> "))
+    set $input = TRIM($raw)
+    
+    if $input == "" then continue endif
+    if UPPER($input) == "EXIT" then break endif
+
+    set $parts = SPLIT($input, " ")
+    set $line_no = INT($parts[0])
+
+    if $line_no > 0 then
+        # EDITARE: Adăugăm sau ștergem linii
+        set $cmd_text = TRIM(SUBSTR($input, LEN($parts[0])))
+        if $cmd_text == "" then
+            unset $tb_program[$line_no]
+            echo "Line " + STR($line_no) + " deleted."
+        else
+            set $tb_program[$line_no] = $cmd_text
+        endif
+    else
+        # COMANZI DIRECTE
+        set $direct = UPPER($input)
+        if $direct == "LIST" then
+            set $k = KEYS($tb_program)
+            SORT($k)
+            for $j = 0 to LEN($k)-1 do
+                echo STR($k[$j]) + " " + $tb_program[$k[$j]]
+            endfor
+        else if $direct == "RUN" then
+            tbasic_run()
+        else if $direct == "NEW" then
+            set $tb_program = MAP()
+            echo "Memory Cleared."
+        else
+            # Modul Imediat (executăm direct ce scrie utilizatorul)
+            EVAL($input)
+        endif 
+		endif 
+		endif
+    endif
+endwhile

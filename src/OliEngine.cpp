@@ -598,6 +598,7 @@ std::vector<std::wstring> vOliEngine::preParse(const std::wstring& input) {
     return result;
 }
 */
+/*
 std::vector<std::wstring> vOliEngine::preParse(const std::wstring& input) {
     std::vector<std::wstring> result;
     std::wstring current;
@@ -675,6 +676,104 @@ std::vector<std::wstring> vOliEngine::preParse(const std::wstring& input) {
     }
 
     // Adăugăm și ultima bucată dacă a mai rămas ceva
+    std::wstring lastCmd = trim(current);
+    if (!lastCmd.empty()) result.push_back(lastCmd);
+
+    return result;
+}
+*/
+
+std::vector<std::wstring> vOliEngine::preParse(const std::wstring& input) {
+    std::vector<std::wstring> result;
+    std::wstring current;
+    int blockDepth = 0;
+    int bracketDepth = 0;
+    bool inQuotes = false;
+
+    // Definim cuvintele cheie pentru o căutare mai curată
+    const std::vector<std::wstring> openKeys = { L"WHILE", L"REPEAT", L"IF", L"FOR", L"CYCLE", L"SWITCH", L"PROC", L"FUNC" };
+    const std::vector<std::wstring> closeKeys = { L"ENDWHILE", L"ENDREPEAT", L"ENDIF", L"ENDFOR", L"ENDCYCLE", L"ENDSWITCH", L"ENDPROC", L"ENDFUNC" };
+
+    for (size_t i = 0; i < input.length(); ++i) {
+        wchar_t c = input[i];
+
+        // 1. Gestionare ghilimele (ignorăm conținutul lor)
+        if (c == L'"' && (i == 0 || input[i - 1] != L'\\')) {
+            inQuotes = !inQuotes;
+        }
+
+        if (!inQuotes) {
+            // 2. Tracking paranteze (pentru Map/Array multi-line)
+            if (c == L'{' || c == L'[') bracketDepth++;
+            if (c == L'}' || c == L']') bracketDepth--;
+
+            // 3. Tracking blocuri (START) - Ignorăm spațiile de indentare
+            bool isPotentialStart = (i == 0 || iswspace(input[i - 1]) || input[i - 1] == L';');
+            if (isPotentialStart && !iswspace(c)) {
+                std::wstring_view remView(&input[i], input.length() - i);
+
+                for (const auto& k : openKeys) {
+                    if (remView.size() >= k.size()) {
+                        // Verificare case-insensitive manuală pentru performanță
+                        bool match = true;
+                        for (size_t j = 0; j < k.size(); ++j) {
+                            if (std::towupper(remView[j]) != k[j]) { match = false; break; }
+                        }
+
+                        if (match) {
+                            // Verificăm să fie cuvânt întreg (nu parte din "IFFY")
+                            size_t nextIdx = k.size();
+                            if (nextIdx >= remView.size() || iswspace(remView[nextIdx]) || wcschr(L";()[]{}=+-*/", remView[nextIdx])) {
+                                blockDepth++;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 4. DECIZIA DE TĂIERE
+            // Tăiem DOAR dacă suntem la adâncime 0 (toate blocurile sunt închise)
+            if (blockDepth == 0 && bracketDepth == 0 && (c == L';' || c == L'\n')) {
+                std::wstring cmd = trim(current);
+                if (!cmd.empty()) result.push_back(cmd);
+                current.clear();
+                continue;
+            }
+        }
+
+        current += c;
+
+        // 5. Tracking blocuri (END)
+        if (!inQuotes) {
+            // Verificăm dacă tocmai am terminat de adăugat un keyword de închidere în 'current'
+            bool isAtEnd = (i + 1 == input.length() || iswspace(input[i + 1]) || input[i + 1] == L';' || input[i + 1] == L'\n');
+            if (isAtEnd) {
+                for (const auto& k : closeKeys) {
+                    if (current.length() >= k.length()) {
+                        size_t startPos = current.length() - k.length();
+
+                        // Validăm că keyword-ul de închidere este un cuvânt separat
+                        bool validStart = (startPos == 0 || iswspace(current[startPos - 1]) || current[startPos - 1] == L';');
+                        if (!validStart) continue;
+
+                        bool match = true;
+                        for (size_t j = 0; j < k.size(); ++j) {
+                            if (std::towupper(current[startPos + j]) != k[j]) { match = false; break; }
+                        }
+
+                        if (match) {
+                            blockDepth--;
+                            if (blockDepth < 0) blockDepth = 0;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Adăugăm restul rămas
     std::wstring lastCmd = trim(current);
     if (!lastCmd.empty()) result.push_back(lastCmd);
 

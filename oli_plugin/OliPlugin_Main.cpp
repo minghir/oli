@@ -15,6 +15,7 @@ void RegisterMathFunctions(std::map<std::wstring, std::function<vData(const std:
 void RegisterBitOpFunctions(std::map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry);
 void RegisterFileSystemFunctions(std::map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry);
 void RegisterTimeFunctions(std::map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry);
+void RegisterKeyboardFunctions(std::map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry);
 
 OLI_EXPORT  void LoadOliPlugin(std::map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
         RegisterMathFunctions(registry);
@@ -22,4 +23,5 @@ OLI_EXPORT  void LoadOliPlugin(std::map<std::wstring, std::function<vData(const 
         RegisterTimeFunctions(registry);
         RegisterBitOpFunctions(registry);
         RegisterFileSystemFunctions(registry);
+		RegisterKeyboardFunctions(registry);
     }

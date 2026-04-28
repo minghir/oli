@@ -216,6 +216,10 @@ private:
     std::map<std::wstring, vTypeBlueprint> m_blueprints;
 
     bool m_nextSetIsGlobal = false;
+
+    // 0 înseamnă "fără limită" (infinit), orice valoare > 0 este pragul de siguranță
+    long long m_maxIterations = 10000;
+
 public:
 
     vOliEngine(){
@@ -350,6 +354,7 @@ private:
     void handleDefCommand(const ShellCommand& sc);
 
     void handleHelpCommand(const ShellCommand& sc);
+    void handleConfigCommand(const ShellCommand& sc);
     
 
     void initializeFunctionsHandlers();

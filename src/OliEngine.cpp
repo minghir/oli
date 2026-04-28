@@ -793,6 +793,9 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         m_commandHandlers[L"DEFINE"] = wrap([this](const auto& sc) { handleDefCommand(sc); });
         m_commandHandlers[L"DEF"] = m_commandHandlers[L"DEFINE"];
 
+        m_commandHandlers[L"CONFIG"] = wrap([this](const auto& sc) { handleConfigCommand(sc); });
+        m_commandHandlers[L"CONF"] = m_commandHandlers[L"CONFIG"];
+
         
     }
 
@@ -2148,6 +2151,50 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             auto acum = std::chrono::high_resolution_clock::now();
             auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(acum.time_since_epoch()).count();
             return vData((long long)ms);
+            };
+
+        m_functionsHandlers[L"CHR"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) return vData{ L"" };
+
+            const vData& input = args[0];
+            long long code = 0;
+
+            // 1. Extragerea valorii numerice (indiferent dacă e Int sau Float)
+            if (input.isInt()) {
+                code = std::get<long long>(input.value);
+            }
+            else if (input.isFloat()) {
+                code = static_cast<long long>(std::get<double>(input.value));
+            }
+            else if (input.isString()) {
+                try {
+                    code = std::stoll(std::get<std::wstring>(input.value));
+                }
+                catch (...) {
+                    return vData{ L"" };
+                }
+            }
+
+            // 2. Conversia în caracter (folosind wchar_t pentru consistență cu Oli)
+            // Ne asigurăm că valoarea este într-un interval rezonabil
+            if (code < 0) return vData{ L"" };
+
+            wchar_t ch = static_cast<wchar_t>(code);
+
+            // Returnăm un wstring format dintr-un singur caracter
+            return vData{ std::wstring(1, ch) };
+            };
+
+        // Mapăm și sub numele de CHAR pentru prietenie cu alte limbaje
+        m_functionsHandlers[L"CHAR"] = m_functionsHandlers[L"CHR"];
+
+        m_functionsHandlers[L"ASC"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty() || !args[0].isString()) return vData{ 0LL };
+
+            const std::wstring& str = std::get<std::wstring>(args[0].value);
+            if (str.empty()) return vData{ 0LL };
+
+            return vData{ static_cast<long long>(str[0]) };
             };
 
     }
@@ -3733,9 +3780,12 @@ double vOliEngine::vDataToDouble(const vData& data) const {
         int safetyBreak = 0;
         while (true) {
             // Safety check pentru a nu bloca procesorul în bucle infinite
-            if (++safetyBreak > 10000) {
-                LOG_ERROR(L"Safety limit reached (10000 iterations). Possible infinite loop.");
-                break;
+            if (m_maxIterations > 0) {
+                if (++safetyBreak > m_maxIterations) {
+                    LOG_ERROR(L"Safety limit reached (" + std::to_wstring(m_maxIterations) +
+                        L" iterations). Use 'CONFIG MAX_ITERATIONS 0' for infinite loops.");
+                    break;
+                }
             }
 
             // Evaluăm condiția la fiecare iterație
@@ -6663,4 +6713,62 @@ vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
       // Fallback de siguranță pentru a preveni buclele infinite
       pos++;
       return vData(std::monostate{});
+  }
+
+  void vOliEngine::handleConfigCommand(const ShellCommand& sc) {
+      // 1. Dacă nu avem argumente, listăm setările actuale (Stil DUMP)
+      if (sc.args.empty()) {
+          LOG_RAW(L"\n--- Oli Engine Configuration ---");
+          LOG_RAW(L"MAX_ITERATIONS: " + (m_maxIterations == 0 ? L"INFINITE" : std::to_wstring(m_maxIterations)));
+          // Aici poți adăuga și alte setări pe măsură ce le implementăm
+          LOG_RAW(L"--------------------------------\n");
+          LOG_RAW(L"Tip: Folosește 'CONFIG <PARAM> <VALOARE>' pentru a schimba.");
+          return;
+      }
+
+      std::wstring target = to_upper(sc.args[0]);
+
+      // 2. Dacă avem exact 1 argument, căutăm documentația pentru acel config (Stil HELP)
+      if (sc.args.size() == 1) {
+          std::wstring target = to_upper(sc.args[0]);
+          std::wstring pathStr = L"docs/config/" + to_lower(target) + L".md";
+
+          std::ifstream file{ std::filesystem::path(pathStr), std::ios::binary };
+
+          if (file.is_open()) {
+              std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+              std::wstring wContent = PortTools::utf8_to_wstring(content);
+
+              LOG_RAW(L"\n--- Config Info: " + target + L" ---");
+              std::wstringstream wss(wContent);
+              std::wstring line;
+              while (std::getline(wss, line)) {
+                  if (!line.empty() && line[0] == L'#')
+                      ConsoleManager::getInstance().writeRaw(line + L"\n", FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+                  else
+                      LOG_RAW(line);
+              }
+              LOG_RAW(L"-----------------------------\n");
+          }
+          else {
+              LOG_ERROR(L"No configuration documentation for: " + target);
+          }
+          return;
+      }
+
+      // 3. Dacă avem 2+ argumente, încercăm să schimbăm valoarea
+      std::wstring valueStr = sc.args[1];
+
+      if (target == L"MAX_ITERATIONS") {
+          try {
+              m_maxIterations = std::stoll(valueStr);
+              LOG_SUCCESS(L"MAX_ITERATIONS updated to: " + (m_maxIterations == 0 ? L"INFINITE" : std::to_wstring(m_maxIterations)));
+          }
+          catch (...) {
+              LOG_ERROR(L"Invalid numeric value: " + valueStr);
+          }
+      }
+      else {
+          LOG_ERROR(L"Unknown configuration parameter: " + target);
+      }
   }

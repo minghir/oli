@@ -41,6 +41,7 @@ private:
         L"CLEAR", L"CLS",
         L"TRACE",
         L"DEFINE", L"DEF",
+        L"CONFIG", L"CONF"
     };
 
     static inline const std::unordered_set<std::wstring> DATA_TYPES = {

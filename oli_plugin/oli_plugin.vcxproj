@@ -128,8 +128,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>copy /Y "$(TargetPath)" "$(ProjectDir)"</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>xcopy /Y /I "$(TargetPath)" "$(SolutionDir)oli\oli_plugin\"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -150,6 +154,7 @@
   <ItemGroup>
     <ClCompile Include="OliPlugin_BitOp.cpp" />
     <ClCompile Include="OliPlugin_FS.cpp" />
+    <ClCompile Include="OliPlugin_Keyboard.cpp" />
     <ClCompile Include="OliPlugin_Main.cpp" />
     <ClCompile Include="OliPlugin_Math.cpp" />
     <ClCompile Include="OliPlugin_DB.cpp" />

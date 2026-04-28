@@ -23,7 +23,6 @@ while $p <= $max_p do
     if $sieve[$p] == 1 then
         set $j = $p * $p
         while $j <= $limit do
-            # SINTAXA NATIVA: Aceasta va chema codul tau C++ de la "INDEX"
             set $sieve[$j] = 0 
             set $j = $j + $p
         endwhile

@@ -1,0 +1,60 @@
+# --- OLI-BASIC INTERACTIVE MONITOR (Fixed) ---
+plugin "oli_plugin/oli_plugin"
+config max_iterations 0
+cls
+unset all
+set $program = MAP()
+set $running = 1
+
+echo "Oli-BASIC Version 1.0 (2026)"
+echo "Ready. Type 'RUN', 'LIST', 'NEW' or 'EXIT'."
+
+while $running == 1 do
+    set $raw = INPUT("BASIC> ")
+    set $input = TRIM($raw)
+    
+    if $input == "" then continue endif
+    if UPPER($input) == "EXIT" then break endif
+
+    set $parts = SPLIT($input, " ")
+    set $first = $parts[0]
+    set $line_no = INT($first)
+
+    if $line_no > 0 then
+        set $cmd_text = SUBSTR($input, LEN($first))
+        set $program[$line_no] = TRIM($cmd_text)
+    else
+        set $cmd = UPPER($input)
+        
+        if $cmd == "LIST" then
+            set $keys = KEYS($program)
+            SORT($keys)
+            set $i = 0
+            while $i < LEN($keys) do
+                set $k = $keys[$i]
+                echo STR($k) + " " + $program[$k]
+                $i++
+            endwhile
+        else 
+            if $cmd == "NEW" then
+                set $program = MAP()
+                echo "Memory Cleared."
+            else 
+                if $cmd == "RUN" then
+                    echo "[Running...]"
+                    set $keys = KEYS($program)
+                    SORT($keys)
+                    set $i = 0
+                    while $i < LEN($keys) do
+                        set $line_to_run = $program[$keys[$i]]
+                        EVAL($line_to_run)
+                        $i++
+                    endwhile
+                    echo "[Done]"
+                else
+                    EVAL($input)
+                endif # Inchide RUN
+            endif # Inchide NEW
+        endif # Inchide LIST
+    endif # Inchide line_no
+endwhile

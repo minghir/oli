@@ -1,4 +1,4 @@
-plugin oli_plugin/oli_plugin
+plugin "oli_plugin/oli_plugin"
 cls; unset all
 
 set $limit = 100
@@ -44,3 +44,4 @@ endwhile
 echo "--------------------------------"
 echo "Total numere prime gasite: " + STR($count)
 echo "Speram la: 25"
+dm

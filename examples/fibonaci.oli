@@ -1,0 +1,45 @@
+cls; unset all
+$a=1
+$b=0
+echo $b
+for $i=1 to 1000 do
+ $b = $a + $b
+ $a = $b - $a
+if $b >= 1000000 then
+	break
+	else
+	echo $b
+endif
+endfor
+
+unset all
+func fib n 
+	if $n <= 1 then
+		return $n
+	else
+		return fib( $n - 1 ) + fib( $n - 2 )
+	endif
+endfunc
+
+for $i = 1 to 20 do
+   echo fib($i)
+endfor
+	
+unset all
+set $memo = array()
+set $memo[0] = 0
+set $memo[1] = 1
+
+func fib_memo n
+	if @memo[$n] != null then
+		return @memo[$n]
+	endif
+	set $res = fib_memo( $n - 1 ) + fib_memo( $n - 2 )
+	set @memo[$n] = $res
+	return $res
+endfunc
+	
+	
+for $i = 1 to 92 do
+   echo fib_memo($i)
+endfor

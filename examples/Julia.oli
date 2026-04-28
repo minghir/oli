@@ -1,0 +1,60 @@
+# Julia Set
+set $width = 60
+set $height = 30
+set $max_iter = 20
+
+set $step_y = 2.0 / $height
+set $step_x = 3.0 / $width
+
+# Constant defining the Julia shape
+set $kx = -0.7
+set $ky = 0.27015
+
+set $py = 0
+while $py < $height do
+    set $line = ""
+    set $y0 = ($py * $step_y) - 1.0
+    
+    set $px = 0
+    while $px < $width do
+        set $x0 = ($px * $step_x) - 2.0
+        
+        # Julia: start z at pixel
+        set $zx = $x0
+        set $zy = $y0
+        set $iter = 0
+        
+        while $iter < $max_iter do
+            set $zx2 = $zx * $zx
+            set $zy2 = $zy * $zy
+            
+            if ($zx2 + $zy2) > 4.0 then
+                break
+            endif
+            
+            # Julia recurrence: z = z^2 + k
+            set $zy = (2.0 * $zx * $zy) + $ky
+            set $zx = $zx2 - $zy2 + $kx
+            set $iter = $iter + 1
+        endwhile
+        
+        set $char = " "
+        if $iter == $max_iter then 
+            set $char = "#" 
+        else
+            if $iter > 10 then 
+                set $char = "*" 
+            else
+                if $iter > 5 then 
+                    set $char = "." 
+                endif
+            endif
+        endif
+        
+        set $line = $line + $char
+        set $px = $px + 1
+    endwhile
+    
+    echo $line
+    set $py = $py + 1
+endwhile

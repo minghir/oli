@@ -220,7 +220,7 @@ namespace PortTools {
         return ss.str();
     }
 
-    std::wstring PortTools::getPluginExtension() {
+    std::wstring getPluginExtension() {
 #ifdef _WIN32
         return L".dll";
 #else

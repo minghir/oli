@@ -11,7 +11,6 @@ while $i <= $limit do
     $i++
 endwhile
 
-# Folosim scrierea nativa pe care ai implementat-o in executeAST!
 set $sieve[0] = 0
 set $sieve[1] = 0
 

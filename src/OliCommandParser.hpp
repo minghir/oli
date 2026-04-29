@@ -37,91 +37,7 @@ private:
     
 public:
    
-   /*
-    static std::vector<std::wstring> tokenize(const std::wstring& line) {
-        std::vector<std::wstring> tokens;
-        std::wstring tok;
-        bool inQuotes = false;
-
-        auto flush = [&]() {
-            if (!tok.empty()) {
-                tokens.push_back(tok);
-                tok.clear();
-            }
-            };
-
-        for (size_t i = 0; i < line.size(); ++i) {
-            wchar_t c = line[i];
-
-            if (c == L'"') {
-                inQuotes = !inQuotes;
-                tok += c;
-                if (!inQuotes) flush();
-                continue;
-            }
-
-            if (!inQuotes) {
-                // 1. Operatori compuși
-                if (i + 1 < line.size()) {
-                    std::wstring two = line.substr(i, 2);
-                    if (two == L"==" || two == L"!=" || two == L">=" || two == L"<=" ||
-                        two == L"&&" || two == L"||" || two == L"++" || two == L"--" ||
-                        two == L"**" || two == L"??" ||
-                        two == L"+=" || two == L"-=" || two == L"*=" || two == L"/=") {
-                        flush();
-                        tokens.push_back(two);
-                        i++; continue;
-                    }
-                }
-
-               
-                // 2. LOGICĂ PUNCT (FLOAT vs DOT)
-                if (c == L'.') {
-                    bool isFloat = false;
-
-                    // Un punct este zecimal DOAR DACĂ este înconjurat de cifre
-                    // Exemplu: "2.5" -> DA | "c1.locatie" -> NU (chiar dacă are '1' în spate)
-                    if (i > 0 && iswdigit(line[i - 1]) && i + 1 < line.size() && iswdigit(line[i + 1])) {
-                        isFloat = true;
-                    }
-
-                    // EXCEPȚIE: Dacă deja am început să scriem un număr (ex: "123.")
-                    // Verificăm dacă TOATĂ porțiunea 'tok' de până acum este formată doar din cifre
-                    if (!tok.empty() && std::all_of(tok.begin(), tok.end(), ::iswdigit)) {
-                        if (i + 1 < line.size() && iswdigit(line[i + 1])) {
-                            isFloat = true;
-                        }
-                    }
-
-                    if (isFloat) {
-                        tok += c;
-                    }
-                    else {
-                        flush();
-                        tokens.push_back(L"."); // SĂ FIE DOT OPERATOR!
-                    }
-                    continue;
-                }
-
-                // 3. Separatori (AM SCOS PUNCTUL DE AICI!)
-                if (wcschr(L"=+-*<>|;()[]{},:%/!^", c)) {
-                    flush();
-                    tokens.push_back(std::wstring(1, c));
-                    continue;
-                }
-
-                if (iswspace(c)) {
-                    flush();
-                    continue;
-                }
-            }
-            tok += c;
-        }
-        flush();
-        return tokens;
-    }
-    */
-
+/*
     static std::vector<std::wstring> tokenize(const std::wstring& line) {
         std::vector<std::wstring> tokens;
         std::wstring tok;
@@ -218,6 +134,73 @@ public:
         flush(); // Salvăm ultimul token rămas în buffer
         return tokens;
     }
+*/
+
+static std::vector<std::wstring> tokenize(const std::wstring& line) {
+    std::vector<std::wstring> tokens;
+    std::wstring tok;
+    bool inQuotes = false;
+    wchar_t quoteChar = L'\0';
+
+    auto flush = [&]() {
+        if (!tok.empty()) {
+            tokens.push_back(tok);
+            tok.clear();
+        }
+    };
+
+    for (size_t i = 0; i < line.size(); ++i) {
+        wchar_t c = line[i];
+
+        // 1. GESTIONARE STRING-URI (Prioritate maximă)
+        if ((c == L'"' || c == L'\'') && (i == 0 || line[i - 1] != L'\\')) {
+            if (!inQuotes) {
+                inQuotes = true;
+                quoteChar = c;
+            } else if (c == quoteChar) {
+                inQuotes = false;
+                quoteChar = L'\0';
+                // NU dăm flush aici dacă vrem să permitem concatenări de tipul "A"BC
+            }
+            tok += c;
+            continue;
+        }
+
+        // 2. DACĂ SUNTEM ÎN GHILIMELE, ACCEPTĂM ORICE CARACTER
+        if (inQuotes) {
+            tok += c;
+            continue;
+        }
+
+        // 3. LOGICĂ PENTRU EXTERIORUL GHILIMELELOR
+        if (iswspace(c)) {
+            flush();
+            continue;
+        }
+
+        // Operatori compuși (==, !=, etc.)
+        if (i + 1 < line.size()) {
+            std::wstring two = line.substr(i, 2);
+            if (two == L"==" || two == L"!=" || two == L">=" || two == L"<=" ||
+                two == L"&&" || two == L"||") {
+                flush();
+                tokens.push_back(two);
+                i++; continue;
+            }
+        }
+
+        // Separatori (virgula, paranteze, etc.)
+        if (wcschr(L"=+-*<>|;()[]{},:%/!^", c)) {
+            flush();
+            tokens.push_back(std::wstring(1, c));
+            continue;
+        }
+
+        tok += c;
+    }
+    flush();
+    return tokens;
+}
 
     static ShellCommand parse(const std::wstring& line) {
         ShellCommand cmd;

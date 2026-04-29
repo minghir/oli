@@ -10,129 +10,214 @@ for $i = 0 to 25 do PUSH($tb_vars, 0) endfor
 set $tb_jump_to = -1 
 
 # --- HELPER: PARSER DE EXPRESII ---
-func tbasic_parse_expr $p_expr
-set $p_e = TRIM($p_expr)
-if SUBSTR($p_e, 0, 1) == "\"" then
-return REPLACE($p_e, "\"", "")
-endif
-set $p_work = UPPER($p_e)
-for $idx = 0 to 25 do
-set $char = CHR(65 + $idx)
-set $p_work = REPLACE($p_work, $char, STR($tb_vars[$idx]))
-endfor
-return EVAL($p_work)
+ffunc tbasic_parse_expr $p_expr
+    set $p_e = TRIM($p_expr)
+    
+    # --- FIX: Dacă începe cu ghilimele, e text pur, nu-l mai evalua! ---
+    if SUBSTR($p_e, 0, 1) == "\"" then
+        return REPLACE($p_e, "\"", "")
+    endif
+    
+    # Dacă e variabilă sau calcul, mergem mai departe
+    set $p_work = UPPER($p_e)
+    for $idx = 0 to 25 do
+        set $char = CHR(65 + $idx)
+        set $p_work = REPLACE($p_work, $char, STR($tb_vars[$idx]))
+    endfor
+    
+    return EVAL($p_work)
 endfunc
 
 # --- FUNCȚIE: EXECUTĂ O LINIE ---
 func tbasic_exec_line $line_content
-set $l_c = TRIM($line_content)
-if $l_c == "" then 
-return 0 
-endif
-set $p_parts = SPLIT($l_c, " ")
-set $p_cmd = UPPER($p_parts[0])
 
-if $p_cmd == "LET" then
-set $eq_pos = FIND($l_c, "=")
-set $v_name = TRIM(SUBSTR($l_c, 4, $eq_pos - 4))
-set $v_idx = ASC(UPPER($v_name)) - 65
-set $tb_vars[$v_idx] = tbasic_parse_expr(SUBSTR($l_c, $eq_pos + 1))
-return 1
-endif
+#echo "Execut:{"+$line_content+"}"
 
-if $p_cmd == "PRINT" then
-set $p_v = TRIM(SUBSTR($l_c, 6))
-if SUBSTR($p_v, 0, 1) == "\"" then
-echo REPLACE($p_v, "\"", "")
-else
-echo tbasic_parse_expr($p_v)
-endif
-return 1
-endif
+	set $l_c = TRIM($line_content)
+	if $l_c == "" then 
+		return 0 
+	endif
+	
+	set $p_parts = SPLIT($l_c, " ")
+	#echo "Aici dupa split:" + STR($p_parts)
+	set $p_cmd = UPPER($p_parts[0])
+	#echo "COMANDA($p_cmd): {" + $p_cmd +"}"
+	
+	#echo "INAINTE DE LET"
+	if $p_cmd == "LET" then
+		##echo "SUNT in LET"
+		set $eq_pos = FIND($l_c, "=")
+		##echo "eq_pos=" + $eq_pos
+		set $v_name = TRIM(SUBSTR($l_c, 4, $eq_pos - 4))
+		##echo "V name=" + $v_name
+		set $v_idx = ASC(UPPER($v_name)) - 65
+		##echo "v_idx=" + $v_idx
+		set $de_evaluat = SUBSTR($l_c, $eq_pos + 1)
+		##echo "De evaluat:" + $de_evaluat
+		set @tb_vars[$v_idx] = tbasic_parse_expr($de_evaluat)
+		##echo "tb_vars=" + $tb_vars[$v_idx]
+		return 1
+	endif
+	
+	
+	#echo "INAINTE DE IFFFF"
+	if $p_cmd == "IF" then
+		#echo "SUNT IN IF .............."
+		set $u_l = UPPER($l_c)
+		#echo "U_L:" + $u_l
+		set $t_p = FIND($u_l, " THEN ")
+		#echo "T_P:" + $t_p
+		set $cond = SUBSTR($l_c, 3, $t_p - 3)
+		#echo "COND:" + $cond
+		set $act = TRIM(SUBSTR($l_c, $t_p + 6))
+		#echo "ACT:" + $act
+		#echo "Parsez conditia:" + $cond
+		set $test = tbasic_parse_expr($cond)
+		#echo "A rezultat:" + $test
+		# REPARAȚIA: Verificăm dacă EVAL a returnat "true" sau 1
+		if $test == true then
+			set $void = tbasic_exec_line($act)
+		endif
+		if $test == 1 then
+			set $void = tbasic_exec_line($act)
+		endif
+		return 1
+	endif
+	
+	
+	#echo "INAINTE DE GOTO"
+	if $p_cmd == "GOTO" then
+		#echo "Sunt in GOTO"
+		set $tb_jump_to = INT($p_parts[1])
+		return 1
+	endif
+	
+	
+	#echo "INAINTE DE PRINT"
+	if $p_cmd == "PRINT" then
+		##echo "Sunt in PRINT"
+		set $p_v = TRIM(SUBSTR($l_c, 6))
+		
+		#if SUBSTR($p_v, 0, 1) == "\"" then
+		#	#echo REPLACE($p_v, "\"", "")
+		#else
+		#	#echo tbasic_parse_expr($p_v)
+		#endif
+		echo "Parsez:" + $p_v
+		set $val = tbasic_parse_expr($p_v)
+		echo "Printez" + $val
+		echo STR($val))
+		#echo "AM PRINTAT:"
+		return 1
+	endif
+	
+	# --- DEFINIM VARIABILA DE VERIFICARE ---
+	# Verificăm dacă avem GGG sau GG fără să folosim variabile intermediare care pot fi null
+	if  $p_cmd == "INPUT" then
+		set $c_pos = FIND($l_c, ",")
+		if $c_pos == -1 then return 0 endif
 
-if $p_cmd == "INPUT" then
-set $c_pos = FIND($l_c, ",")
-set $p_msg = REPLACE(SUBSTR($l_c, 6, $c_pos - 6), "\"", "")
-set $v_raw = TRIM(SUBSTR($l_c, $c_pos + 1))
-set $u_val = INPUT($p_msg + " ")
-set $tb_vars[ASC(UPPER($v_raw)) - 65] = INT($u_val)
-return 1
-endif
-
-if $p_cmd == "GOTO" then
-set $tb_jump_to = INT($p_parts[1])
-return 1
-endif
-
-if $p_cmd == "IF" then
-set $u_l = UPPER($l_c)
-set $t_p = FIND($u_l, " THEN ")
-set $cond = SUBSTR($l_c, 3, $t_p - 3)
-set $act = TRIM(SUBSTR($l_c, $t_p + 6))
-set $test = tbasic_parse_expr($cond)
-# REPARAȚIA: Verificăm dacă EVAL a returnat "true" sau 1
-if $test == "true" then
-tbasic_exec_line($act)
-endif
-if $test == 1 then
-tbasic_exec_line($act)
-endif
-return 1
-endif
+		# Folosim un mesaj fix pentru test - dacă ăsta merge, știm că buba e la SUBSTR
+		set $res = INPUT("Ghiceste: ")
+		
+		# Forțăm scrierea într-o variabilă simplă, NU în array, să vedem dacă trece
+		# set $G = INT($res) 
+		
+		# Dacă vrei neapărat în array, asigură-te că indexul e curat
+		set $v_idx_raw = 6 # Corespunde lui G (71 - 65)
+		set @tb_vars[6] = INT($res)
+		
+		return 1
+	endif
+	
+	
+	
 endfunc
 
-# --- MOTORUL DE RUN ---
 func tbasic_run
-set $keys = KEYS($tb_program); SORT($keys)
-set $pc = 0; set $tb_jump_to = -1
-echo "[Oli-BASIC Running...]"
-while $pc < LEN($keys) do
-tbasic_exec_line($tb_program[$keys[$pc]])
-if $tb_jump_to != -1 then
-set $target = $tb_jump_to
-set $tb_jump_to = -1
-set $new_pc = INDEXOF($keys, $target)
-if $new_pc != -1 then
-set $pc = $new_pc
-continue
-endif
-endif
-set $pc = $pc + 1
-endwhile
-echo "[Done]"
+    set $keys = KEYS($tb_program)
+    SORT($keys)
+    set $pc = 0
+    set $tb_jump_to = -1
+    #echo "[Oli-BASIC Running...]"
+    
+    while $pc < LEN($keys) do
+        # Debug: sa vedem ce e in keys la pozitia curenta
+        # #echo "PC:" + $pc + " LINE:" + $keys[$pc]
+        
+        #tbasic_exec_line($tb_program[$keys[$pc]])
+		set $void = tbasic_exec_line($tb_program[$keys[$pc]])
+        
+        if $tb_jump_to != -1 then
+            # REPARAȚIE: Forțăm căutarea să fie compatibilă (String vs String)
+            set $target = STR($tb_jump_to) 
+            set $tb_jump_to = -1
+            
+            # Căutăm în array-ul de chei convertit sau direct
+            set $new_pc = INDEXOF($keys, $target)
+            
+            # Dacă INDEXOF tot nu merge, facem o căutare manuală (brute force)
+            if $new_pc == -1 then
+                for $find_idx = 0 to LEN($keys)-1 do
+                    if STR($keys[$find_idx]) == $target then
+                        set $new_pc = $find_idx
+                        break
+                    endif
+                endfor
+            endif
+
+            if $new_pc != -1 then
+                set $pc = $new_pc
+                continue # Sari direct la iterația următoare cu noul PC
+            else
+                #echo "ERROR: Line " + $target + " not found in " + STR($keys)
+                break
+            endif
+        endif
+        
+        set $pc = $pc + 1
+    endwhile
+    #echo "[Done]"
 endfunc
 
 # --- MONITORUL INTERACTIV ---
-set $running = 1
-echo "Oli-BASIC v1.9 - Ready (Stable IF)"
-while $running == 1 do
-set $input = TRIM(INPUT("BASIC> "))
-if $input == "" then 
-continue 
-endif
-set $up_in = UPPER($input)
-if $up_in == "EXIT" then 
-break 
-endif
-if $up_in == "RUN" then 
-tbasic_run()
-continue 
-endif
-if $up_in == "LIST" then
-set $k = KEYS($tb_program); SORT($k)
-for $j = 0 to LEN($k)-1 do 
-echo STR($k[$j]) + " " + $tb_program[$k[$j]] 
-endfor
-continue
-endif
-if $up_in == "NEW" then
-set $tb_program = MAP(); for $v = 0 to 25 do set $tb_vars[$v] = 0 endfor; echo "Memory Cleared."; continue
-endif
-set $parts = SPLIT($input, " ")
-set $line_no = INT($parts[0])
-if $line_no > 0 then
-set $tb_program[$line_no] = TRIM(SUBSTR($input, LEN($parts[0])))
-else
-tbasic_exec_line($input)
-endif
+#set $running = 1
+#echo "Oli-BASIC v1.9 - Ready (Stable IF)"
+#while $running == 1 do
+while true do
+	set $input = TRIM(INPUT("BASIC> "))
+	if $input == "" then 
+		continue 
+	endif
+	set $up_in = UPPER($input)
+	if $up_in == "EXIT" then 
+		break 
+	endif
+	if $up_in == "RUN" then 
+		tbasic_run()
+		continue 
+	endif
+	if $up_in == "LIST" then
+		set $k = KEYS($tb_program)
+		SORT($k)
+		for $j = 0 to LEN($k)-1 do 
+			#echo STR($k[$j]) + " " + $tb_program[$k[$j]] 
+		endfor
+		continue
+	endif
+	if $up_in == "NEW" then
+		set $tb_program = MAP(); 
+		for $v = 0 to 25 do 
+			set $tb_vars[$v] = 0 
+		endfor; 
+			#echo "Memory Cleared."; 
+			continue
+	endif
+	set $parts = SPLIT($input, " ")
+	set $line_no = INT($parts[0])
+	if $line_no > 0 then
+		set $tb_program[$line_no] = TRIM(SUBSTR($input, LEN($parts[0])))
+	else
+		set $void = tbasic_exec_line($input)
+	endif
 endwhile

@@ -6,6 +6,7 @@
 #include <variant>
 #include <bit> // Pentru std::popcount în C++20
 
+
 // Helper: Conversie sigură vData -> long long pentru operații pe biți
 inline long long toInt(const vData& v) {
     if (std::holds_alternative<long long>(v.value))

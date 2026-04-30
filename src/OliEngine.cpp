@@ -2337,6 +2337,15 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             return vData{ static_cast<long long>(str[0]) };
             };
 
+        m_functionsHandlers[L"WRITE"] = [this](const std::vector<vData>& args) -> vData {
+            if (args.empty()) return { 0LL };
+
+            std::wstring str = vDataToWString(args[0]);
+            std::wcout << str; // FĂRĂ std::endl
+            std::wcout.flush(); // Ne asigurăm că apare pe ecran imediat
+
+            return { 0LL };
+            };
     }
 
     vData vOliEngine::executeAST(ASTPtr node) {

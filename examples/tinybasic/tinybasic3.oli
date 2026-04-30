@@ -154,22 +154,62 @@ func tbasic_exec_line $line_content
     endif
 	
 	
-	#echo "INAINTE DE PRINT"
 	if $p_cmd == "PRINT" then
-		##echo "Sunt in PRINT"
-		set $p_v = TRIM(SUBSTR($l_c, 6))
+		set $p_args = TRIM(SUBSTR($l_c, 6))
 		
-		#if SUBSTR($p_v, 0, 1) == "\"" then
-		#	#echo REPLACE($p_v, "\"", "")
-		#else
-		#	#echo tbasic_parse_expr($p_v)
-		#endif
-		#echo "Parsez:" + $p_v
-		set $val = tbasic_parse_expr($p_v)
-		#echo "Printez" + $val
-		$to_print = STR($val)
-		echo $to_print
-		#echo "AM PRINTAT:"
+		# Cazul PRINT simplu (doar newline)
+		if $p_args == "" then
+			echo ""
+			return 1
+		endif
+
+		# Detectăm dacă avem separator la final (; sau ,)
+		set $last_char = SUBSTR($p_args, LEN($p_args) - 1, 1)
+		set $has_trailing = false
+		if $last_char == ";" || $last_char == "," then
+			set $has_trailing = true
+		endif
+
+		set $current_part = ""
+		set $in_q = false
+		
+		for $i = 0 to LEN($p_args) - 1 do
+			set $char = SUBSTR($p_args, $i, 1)
+			
+			if ASC($char) == 34 then # Ghilimele (ASCII 34)
+				set $in_q = NOT($in_q)
+				set $current_part = $current_part + $char
+			else 
+				if ($char == "," || $char == ";") && $in_q == false then
+				# Am ajuns la un separator, scriem ce am adunat
+					if TRIM($current_part) != "" then
+						set $val = tbasic_parse_expr($current_part)
+						set $void = WRITE(STR($val)) # Folosim WRITE nativ
+					endif
+				
+					# Gestionăm spațierea (virgula adaugă tab/spații)
+					if $char == "," then 
+						set $void = WRITE("    ") 
+					endif
+				
+					set $current_part = ""
+				else
+					set $current_part = $current_part + $char
+				endif
+			endif
+		endfor
+
+		# Scriem și ultima parte rămasă
+		if TRIM($current_part) != "" then
+			set $val = tbasic_parse_expr($current_part)
+			set $void = WRITE(STR($val))
+		endif
+
+		# DACĂ nu avem separator la final, dăm un rând nou
+		if $has_trailing == false then
+			echo "" 
+		endif
+		
 		return 1
 	endif
 	
@@ -258,7 +298,7 @@ func tbasic_exec_line $line_content
 		
 		if $raw_content == null then
 			echo "Eroare: Fisierul " + $filename + " nu exista!"
-			continue
+			return 1
 		endif
 		
 		# Resetăm programul curent
@@ -288,8 +328,8 @@ endfunc
 
 func tbasic_run
     set $keys = KEYS($tb_program)
-	dm
-	trace
+	#dm
+	#trace
     #SORT($keys)
 	set $keys = SORT_NUMERIC_ARRAY($keys)
     set $pc = 0

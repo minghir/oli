@@ -9,6 +9,8 @@ set $tb_program = MAP()
 set $tb_vars = ARRAY()
 for $i = 0 to 25 do PUSH($tb_vars, 0) endfor
 set $tb_jump_to = -1 
+set $tb_gosub_stack = ARRAY()  # <--- NOU: Stiva pentru GOSUB
+set $pc = -1
 
 func tb_split $line
     set $result = ARRAY()
@@ -126,6 +128,31 @@ func tbasic_exec_line $line_content
 		return 1
 	endif
 	
+	# --- COMANDA GOSUB ---
+    if $p_cmd == "GOSUB" then
+		# Folosim @pc pentru a accesa contorul din funcția run
+		$void = PUSH($tb_gosub_stack, @pc) 
+		set $tb_jump_to = INT($p_parts[1])
+		return 1
+	endif
+	
+	# --- COMANDA RETURN ---
+    if $p_cmd == "RETURN" then
+        if LEN($tb_gosub_stack) == 0 then
+            echo "RUNTIME ERROR: RETURN without GOSUB"
+            return -1
+        endif
+        
+        # Scoatem ultimul PC salvat
+        set $return_pc = POP($tb_gosub_stack)
+        
+        # Setăm PC-ul în tbasic_run la poziția de după GOSUB
+        # Deoarece tbasic_run va face $pc = $pc + 1 la finalul buclei, 
+        # setăm direct indexul recuperat.
+        set @pc = $return_pc 
+        return 1
+    endif
+	
 	
 	#echo "INAINTE DE PRINT"
 	if $p_cmd == "PRINT" then
@@ -191,6 +218,72 @@ func tbasic_exec_line $line_content
 		return 1
 	endif
 	
+	if SUBSTR($up_in, 0, 4) == "SAVE" then
+		set $filename = TRIM(SUBSTR($input, 5))
+		# Curățăm ghilimelele dacă utilizatorul a scris SAVE "program.bas"
+		set $filename = REPLACE($filename, CHR(34), "")
+		
+		if $filename == "" then set $filename = "program.bas" endif
+		
+		set $k = KEYS($tb_program)
+		set $k = SORT_NUMERIC_ARRAY($k)
+		
+		set $file_content = ""
+		for $idx = 0 to LEN($k)-1 do 
+			set $line_num = $k[$idx]
+			set $line_text = $tb_program[$line_num]
+			# Construim linia: "10 PRINT A" + Newline
+			set $file_content = $file_content + STR($line_num) + " " + $line_text + CHR(10)
+		endfor
+		
+		# Apelăm funcția ta nativă din C++
+		set $res = WRITEFILE($filename, $file_content)
+		
+		if $res == 1 then
+			echo "Program salvat cu succes in: " + $filename
+		else
+			echo "EROARE la salvarea fisierului!"
+		endif
+		continue
+	endif
+
+	if SUBSTR($up_in, 0, 4) == "LOAD" then
+		set $filename = TRIM(SUBSTR($input, 5))
+		set $filename = REPLACE($filename, CHR(34), "")
+		
+		if $filename == "" then set $filename = "program.bas" endif
+		
+		# Citim tot conținutul prin funcția ta C++
+		set $raw_content = READFILE($filename)
+		
+		if $raw_content == null then
+			echo "Eroare: Fisierul " + $filename + " nu exista!"
+			continue
+		endif
+		
+		# Resetăm programul curent
+		set $tb_program = MAP()
+		
+		# Spargem conținutul în linii (presupunând că ai un SPLIT după \n)
+		set $lines = SPLIT($raw_content, CHR(10))
+		
+		cycle $lines as $single_line do
+			set $trimmed = TRIM($single_line)
+			if $trimmed != "" then
+				set $parts = TB_SPLIT($trimmed)
+				set $ln = INT($parts[0])
+				if $ln > 0 then
+					# Extragem restul liniei de după numărul liniei
+					set $content = TRIM(SUBSTR($trimmed, LEN($parts[0])))
+					set $tb_program[$ln] = $content
+				endif
+			endif
+		endcycle
+		
+		echo "Incarcat " + LEN($tb_program) + " linii din " + $filename
+		continue
+	endif
+	
 endfunc
 
 func tbasic_run
@@ -198,7 +291,7 @@ func tbasic_run
 	dm
 	trace
     #SORT($keys)
-	SORT_NUMERIC_ARRAY($keys)
+	set $keys = SORT_NUMERIC_ARRAY($keys)
     set $pc = 0
     set $tb_jump_to = -1
     #echo "[Oli-BASIC Running...]"

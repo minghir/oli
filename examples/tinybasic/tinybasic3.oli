@@ -1,6 +1,7 @@
 # --- CONFIGURARE ENGINE ---
 plugin "oli_plugin/oli_plugin"
 config max_iterations 0
+include("examples/tinybasic/int_sort.oli")
 cls; unset all
 
 # --- INIȚIALIZARE MEMORIE ---
@@ -9,20 +10,55 @@ set $tb_vars = ARRAY()
 for $i = 0 to 25 do PUSH($tb_vars, 0) endfor
 set $tb_jump_to = -1 
 
+func tb_split $line
+    set $result = ARRAY()
+    set $current_tok = ""
+    set $in_quotes = false
+    set $len = LEN($line)
+    
+    for $i = 0 to $len - 1 do
+        set $char = SUBSTR($line, $i, 1)
+        
+        # Folosim codul ASCII 34 pentru ghilimele
+        if ASC($char) == 34 then
+            if $in_quotes == true then 
+                set $in_quotes = false 
+            else 
+                set $in_quotes = true 
+            endif
+            set $current_tok = $current_tok + $char
+        else 
+            # Verificăm spațiul (ASCII 32) sau string-ul " "
+            if $char == " " && $in_quotes == false then
+                if $current_tok != "" then
+                    $void = PUSH($result, $current_tok)
+                    set $current_tok = ""
+                endif
+            else
+                set $current_tok = $current_tok + $char
+            endif
+        endif
+    endfor
+    
+    if $current_tok != "" then
+        $void = PUSH($result, $current_tok)
+    endif
+    return $result
+endfunc
+
 # --- HELPER: PARSER DE EXPRESII ---
-ffunc tbasic_parse_expr $p_expr
+func tbasic_parse_expr $p_expr
     set $p_e = TRIM($p_expr)
     
-    # --- FIX: Dacă începe cu ghilimele, e text pur, nu-l mai evalua! ---
-    if SUBSTR($p_e, 0, 1) == "\"" then
-        return REPLACE($p_e, "\"", "")
+    set $first_c = SUBSTR($p_e, 0, 1)
+    if ASC($first_c) == 34 then
+        return REPLACE($p_e, CHAR(34), "")
     endif
     
-    # Dacă e variabilă sau calcul, mergem mai departe
     set $p_work = UPPER($p_e)
     for $idx = 0 to 25 do
-        set $char = CHR(65 + $idx)
-        set $p_work = REPLACE($p_work, $char, STR($tb_vars[$idx]))
+        set $char_to_rep = CHR(65 + $idx)
+        set $p_work = REPLACE($p_work, $char_to_rep, STR($tb_vars[$idx]))
     endfor
     
     return EVAL($p_work)
@@ -37,8 +73,8 @@ func tbasic_exec_line $line_content
 	if $l_c == "" then 
 		return 0 
 	endif
-	
-	set $p_parts = SPLIT($l_c, " ")
+	#echo "Aici inainte de splict:" + $l_c
+	set $p_parts = TB_SPLIT($l_c)
 	#echo "Aici dupa split:" + STR($p_parts)
 	set $p_cmd = UPPER($p_parts[0])
 	#echo "COMANDA($p_cmd): {" + $p_cmd +"}"
@@ -53,34 +89,32 @@ func tbasic_exec_line $line_content
 		set $v_idx = ASC(UPPER($v_name)) - 65
 		##echo "v_idx=" + $v_idx
 		set $de_evaluat = SUBSTR($l_c, $eq_pos + 1)
-		##echo "De evaluat:" + $de_evaluat
+		#echo "De evaluat:" + $de_evaluat
 		set @tb_vars[$v_idx] = tbasic_parse_expr($de_evaluat)
-		##echo "tb_vars=" + $tb_vars[$v_idx]
+		#echo "tb_vars=" + $tb_vars[$v_idx]
 		return 1
 	endif
 	
 	
-	#echo "INAINTE DE IFFFF"
 	if $p_cmd == "IF" then
-		#echo "SUNT IN IF .............."
 		set $u_l = UPPER($l_c)
-		#echo "U_L:" + $u_l
 		set $t_p = FIND($u_l, " THEN ")
-		#echo "T_P:" + $t_p
 		set $cond = SUBSTR($l_c, 3, $t_p - 3)
-		#echo "COND:" + $cond
 		set $act = TRIM(SUBSTR($l_c, $t_p + 6))
-		#echo "ACT:" + $act
-		#echo "Parsez conditia:" + $cond
+		
 		set $test = tbasic_parse_expr($cond)
-		#echo "A rezultat:" + $test
-		# REPARAȚIA: Verificăm dacă EVAL a returnat "true" sau 1
+		
+		# Verificăm ambele variante (boolean sau numeric)
 		if $test == true then
-			set $void = tbasic_exec_line($act)
+			set $if_res = tbasic_exec_line($act)
+			return $if_res # OPREȘTE execuția aici pentru a evita dublarea
 		endif
-		if $test == 1 then
-			set $void = tbasic_exec_line($act)
-		endif
+		
+		#if $test == 1 then
+		#	set $void = tbasic_exec_line($act)
+		#	return 1 # OPREȘTE execuția aici
+		#endif
+		
 		return 1
 	endif
 	
@@ -103,40 +137,68 @@ func tbasic_exec_line $line_content
 		#else
 		#	#echo tbasic_parse_expr($p_v)
 		#endif
-		echo "Parsez:" + $p_v
+		#echo "Parsez:" + $p_v
 		set $val = tbasic_parse_expr($p_v)
-		echo "Printez" + $val
-		echo STR($val))
+		#echo "Printez" + $val
+		$to_print = STR($val)
+		echo $to_print
 		#echo "AM PRINTAT:"
 		return 1
 	endif
 	
 	# --- DEFINIM VARIABILA DE VERIFICARE ---
-	# Verificăm dacă avem GGG sau GG fără să folosim variabile intermediare care pot fi null
-	if  $p_cmd == "INPUT" then
+	if $p_cmd == "INPUT" then
 		set $c_pos = FIND($l_c, ",")
 		if $c_pos == -1 then return 0 endif
 
-		# Folosim un mesaj fix pentru test - dacă ăsta merge, știm că buba e la SUBSTR
-		set $res = INPUT("Ghiceste: ")
+		# Căutăm prima ghilimele
+		set $start_q = FIND($l_c, CHR(34))
 		
-		# Forțăm scrierea într-o variabilă simplă, NU în array, să vedem dacă trece
-		# set $G = INT($res) 
+		# Pentru a găsi a doua ghilimele fără FIND_LAST:
+		# Luăm restul string-ului de după prima ghilimele
+		set $rest_of_line = SUBSTR($l_c, $start_q + 1)
+		set $end_q_relative = FIND($rest_of_line, CHR(34))
 		
-		# Dacă vrei neapărat în array, asigură-te că indexul e curat
-		set $v_idx_raw = 6 # Corespunde lui G (71 - 65)
-		set @tb_vars[6] = INT($res)
+		# Extragem mesajul
+		set $msg = SUBSTR($rest_of_line, 0, $end_q_relative)
+
+		# Variabila de după virgulă
+		set $var_raw = TRIM(SUBSTR($l_c, $c_pos + 1))
+		
+		set $res = INPUT($msg)
+		
+		set $v_idx = ASC(UPPER($var_raw)) - 65
+		set @tb_vars[INT($v_idx)] = INT($res)
 		
 		return 1
 	endif
 	
+	if $p_cmd == "END" then
+		return -1
+	endif
 	
+	if $p_cmd == "REM" then
+		return 1
+	endif
+	
+	if $p_cmd == "CLS" then
+		cls
+		return 1
+	endif
+	
+	if $p_cmd == "TEST" then
+		test()
+		return 1
+	endif
 	
 endfunc
 
 func tbasic_run
     set $keys = KEYS($tb_program)
-    SORT($keys)
+	dm
+	trace
+    #SORT($keys)
+	SORT_NUMERIC_ARRAY($keys)
     set $pc = 0
     set $tb_jump_to = -1
     #echo "[Oli-BASIC Running...]"
@@ -146,8 +208,13 @@ func tbasic_run
         # #echo "PC:" + $pc + " LINE:" + $keys[$pc]
         
         #tbasic_exec_line($tb_program[$keys[$pc]])
-		set $void = tbasic_exec_line($tb_program[$keys[$pc]])
+		set $res = tbasic_exec_line($tb_program[$keys[$pc]])
         
+		if $res == -1 then
+            set $tb_running = false
+            break
+        endif
+		
         if $tb_jump_to != -1 then
             # REPARAȚIE: Forțăm căutarea să fie compatibilă (String vs String)
             set $target = STR($tb_jump_to) 
@@ -199,9 +266,11 @@ while true do
 	endif
 	if $up_in == "LIST" then
 		set $k = KEYS($tb_program)
-		SORT($k)
+		#SORT($k)
+		SORT_NUMERIC_ARRAY($k)
 		for $j = 0 to LEN($k)-1 do 
-			#echo STR($k[$j]) + " " + $tb_program[$k[$j]] 
+			# Extragem numarul liniei si continutul
+			echo STR($k[$j]) + " " + $tb_program[$k[$j]] 
 		endfor
 		continue
 	endif
@@ -213,10 +282,10 @@ while true do
 			#echo "Memory Cleared."; 
 			continue
 	endif
-	set $parts = SPLIT($input, " ")
+	set $parts = TB_SPLIT($input)
 	set $line_no = INT($parts[0])
 	if $line_no > 0 then
-		set $tb_program[$line_no] = TRIM(SUBSTR($input, LEN($parts[0])))
+		set $tb_program[INT($line_no)] = TRIM(SUBSTR($input, LEN($parts[0])))
 	else
 		set $void = tbasic_exec_line($input)
 	endif

@@ -1,0 +1,20 @@
+func SORT_NUMERIC_ARRAY $array
+    set $arr = $array 
+    set $i = 0 
+    set $n = LEN($arr) 
+    
+    while $i < $n do 
+       set $j = $i + 1 
+       while $j < $n do 
+               # Transformăm valorile în INT pentru a asigura comparația numerică
+               if INT($arr[$i]) > INT($arr[$j]) then 
+                       set $temp = $arr[$i] 
+                       set $arr[$i] = $arr[$j] 
+                       set $arr[$j] = $temp 
+               endif 
+               set $j = $j + 1 
+       endwhile 
+       set $i = $i + 1 
+    endwhile 
+    return $arr
+endfunc

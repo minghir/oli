@@ -37,7 +37,7 @@ private:
     
 public:
    
-/*
+
     static std::vector<std::wstring> tokenize(const std::wstring& line) {
         std::vector<std::wstring> tokens;
         std::wstring tok;
@@ -134,7 +134,7 @@ public:
         flush(); // Salvăm ultimul token rămas în buffer
         return tokens;
     }
-*/
+/*
 
 static std::vector<std::wstring> tokenize(const std::wstring& line) {
     std::vector<std::wstring> tokens;
@@ -201,7 +201,7 @@ static std::vector<std::wstring> tokenize(const std::wstring& line) {
     flush();
     return tokens;
 }
-
+*/
     static ShellCommand parse(const std::wstring& line) {
         ShellCommand cmd;
         if (line.empty()) return cmd;

@@ -1967,6 +1967,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             };
 
         // --- SORT(array) -> Sortează array-ul (In-place) ---
+		/*
         m_functionsHandlers[L"SORT"] = [this](const std::vector<vData>& args) -> vData {
             if (args.empty() || !args[0].isArray()) return { std::monostate{} };
 
@@ -1993,7 +1994,47 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             }
             return args[0]; // Returnăm array-ul (care e deja sortat in-place)
             };
+		*/
+		m_functionsHandlers[L"SORT"] = [this](const std::vector<vData>& args) -> vData {
+			if (args.empty() || !args[0].isArray()) return { std::monostate{} };
 
+			auto arrPtr = std::get<vDataArray>(args[0].value);
+			if (arrPtr && arrPtr->size() > 1) {
+				std::sort(arrPtr->begin(), arrPtr->end(), [](const vData& a, const vData& b) -> bool {
+					if (a.value.index() != b.value.index()) {
+						return a.value.index() < b.value.index();
+					}
+
+					if (a.isInt())
+						return std::get<long long>(a.value) < std::get<long long>(b.value);
+					if (a.isFloat())
+						return std::get<double>(a.value) < std::get<double>(b.value);
+
+					if (a.isString()) {
+						std::wstring s1 = std::get<std::wstring>(a.value);
+						std::wstring s2 = std::get<std::wstring>(b.value);
+
+						// --- REPARAȚIE PENTRU TINY BASIC ---
+						// Verificăm dacă ambele string-uri reprezintă numere
+						bool s1Numeric = !s1.empty() && std::all_of(s1.begin(), s1.end(), iswdigit);
+						bool s2Numeric = !s2.empty() && std::all_of(s2.begin(), s2.end(), iswdigit);
+
+						if (s1Numeric && s2Numeric) {
+							try {
+								// Comparăm valorile numerice, nu caracterele
+								return std::stoll(s1) < std::stoll(s2);
+							} catch (...) {
+								return s1 < s2;
+							}
+						}
+						return s1 < s2;
+					}
+
+					return false;
+				});
+			}
+			return args[0];
+		};
 		//functii pt map-uri
         // --- HASKEY(map, key) -> Returnează 1 dacă cheia există, altfel 0 ---
         m_functionsHandlers[L"HASKEY"] = [this](const std::vector<vData>& args) -> vData {
@@ -6043,8 +6084,22 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
           // Bonus: Afișăm și câte variabile locale sunt în acel frame
           std::wstring info = L"Frame [" + std::to_wstring(depth++) + L"]: Called from " + name;
           info += L" (" + std::to_wstring(it->localVariables.size()) + L" variables)";
+		  LOG_INFO(info); 
+		  if (it->localVariables.empty()) {
+            LOG_INFO(L"    (no local variables)");
+        } else {
+            for (const auto& [varName, varData] : it->localVariables) {
+                // Folosim vDataToWString sau o metodă de debug pentru a vedea valoarea
+                std::wstring valStr = vDataToWString(varData); 
+                
+                // Limităm lungimea string-ului dacă e prea mare (ex: codul sursă al unei funcții)
+                if (valStr.length() > 50) valStr = valStr.substr(0, 47) + L"...";
 
-          LOG_INFO(info);
+                LOG_INFO(L"    " + varName + L" = " + valStr);
+            }
+        }
+
+         
       }
 
       LOG_INFO(L"----------------------------------");

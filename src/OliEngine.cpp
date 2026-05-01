@@ -3168,25 +3168,33 @@ void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
 }
 
 void vOliEngine::handleListProcsCommand(const ShellCommand& sc) {
-
     if (m_procedures.empty()) {
         ConsoleManager::getInstance().writeRaw(L"No user procedures defined.");
         return;
     }
 
+    // 1. Colectăm cheile într-un vector pentru sortare
+    std::vector<std::wstring> sortedNames;
+    for (auto const& [name, _] : m_procedures) {
+        sortedNames.push_back(name);
+    }
+
+    // 2. Sortăm alfabetic
+    std::sort(sortedNames.begin(), sortedNames.end());
+
     ConsoleManager::getInstance().writeRaw(L"--- [User Defined Procedures] ---");
     ConsoleManager::getInstance().writeRaw(L"NAME            PARAMETERS");
     ConsoleManager::getInstance().writeRaw(L"---------------------------------");
 
-    for (auto const& [name, proc] : m_procedures) {
+    // 3. Afișăm folosind vectorul sortat
+    for (const auto& name : sortedNames) {
+        const auto& proc = m_procedures[name];
         std::wstring paramsStr = L"[";
         for (size_t i = 0; i < proc.params.size(); ++i) {
-            paramsStr += proc.params[i];
-            if (i < proc.params.size() - 1) paramsStr += L", ";
+            paramsStr += proc.params[i] + (i < proc.params.size() - 1 ? L", " : L"");
         }
         paramsStr += L"]";
 
-        // Formatare simplă pentru aliniere
         std::wstring padding(std::max<int>(1, 15 - (int)name.length()), L' ');
         ConsoleManager::getInstance().writeRaw(name + padding + paramsStr);
     }

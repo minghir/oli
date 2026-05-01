@@ -74,9 +74,29 @@ void vOliEngine::execute(const std::wstring& line) {
     }
 
     // --- 6. ACTUALIZARE ADÂNCIME BLOCURI (IF, WHILE, etc.) ---
+    /*
     auto checkBlock = [&](const std::wstring& key, bool increment) {
         size_t p = upperMasked.find(key);
         if (p != std::wstring::npos) {
+            // Verificăm dacă este cuvânt de sine stătător
+            bool startOk = (p == 0 || iswspace(upperMasked[p - 1]) || wcschr(L";()[]{}\"", upperMasked[p - 1]));
+            bool endOk = (p + key.length() >= upperMasked.length() || iswspace(upperMasked[p + key.length()]) || wcschr(L";()[]{}\"", upperMasked[p + key.length()]));
+
+            if (startOk && endOk) {
+                if (increment) m_blockDepth++;
+                else if (m_blockDepth > 0) m_blockDepth--;
+                return true;
+            }
+        }
+        return false;
+        };
+    */
+    auto checkBlock = [&](const std::wstring& key, bool increment, bool mustBeStart = false) {
+        size_t p = upperMasked.find(key);
+        if (p != std::wstring::npos) {
+            // Dacă am setat mustBeStart, verificăm să fie la poziția 0
+            if (mustBeStart && p != 0) return false;
+
             // Verificăm dacă este cuvânt de sine stătător
             bool startOk = (p == 0 || iswspace(upperMasked[p - 1]) || wcschr(L";()[]{}\"", upperMasked[p - 1]));
             bool endOk = (p + key.length() >= upperMasked.length() || iswspace(upperMasked[p + key.length()]) || wcschr(L";()[]{}\"", upperMasked[p + key.length()]));
@@ -93,8 +113,8 @@ void vOliEngine::execute(const std::wstring& line) {
     // Incrementări
     checkBlock(L"IF", true);      checkBlock(L"WHILE", true);
     checkBlock(L"FOR", true);     checkBlock(L"REPEAT", true);
-    checkBlock(L"CYCLE", true);   checkBlock(L"PROC", true);
-    checkBlock(L"FUNC", true);    checkBlock(L"SWITCH", true);
+    checkBlock(L"CYCLE", true);   checkBlock(L"PROC", true, true);
+    checkBlock(L"FUNC", true, true);    checkBlock(L"SWITCH", true);
 
     // Decrementări
     checkBlock(L"ENDIF", false);  checkBlock(L"ENDWHILE", false);
@@ -192,7 +212,8 @@ void vOliEngine::executeInternal(const std::wstring& fullInput) {
     }
 
     // --- PRIORITATE 2: PROCEDURI UTILIZATOR ---
-    if (m_procedures.count(firstWord)) {
+    //if (m_procedures.count(firstWord)) {
+      if (m_procedures.count(upperFirst)) {
         std::wstring argsPart = (firstSpace != std::wstring::npos) ? input.substr(firstSpace + 1) : L"";
         std::vector<std::wstring> rawTokens = wexplodeQuoteSafe(argsPart, L' ');
         std::vector<std::wstring> cleanArgs;
@@ -200,7 +221,8 @@ void vOliEngine::executeInternal(const std::wstring& fullInput) {
             std::wstring t = trim(arg);
             if (!t.empty()) cleanArgs.push_back(t);
         }
-        callProcedure(m_procedures[firstWord], cleanArgs);
+        //callProcedure(m_procedures[firstWord], cleanArgs);
+        callProcedure(m_procedures[upperFirst], cleanArgs);
         return;
     }
 
@@ -269,9 +291,9 @@ void vOliEngine::executeCommand(const std::wstring& fullCommand) {
         it->second(fullCommand);
     }
     // 2. Căutăm în procedurile utilizatorului
-    else if (m_procedures.count(cmdName)) {
+    else if (m_procedures.count(cmdUpper)) {
         ShellCommand sc = vOliCommandParser::parse(fullCommand);
-        callProcedure(m_procedures[cmdName], sc.args);
+        callProcedure(m_procedures[cmdUpper], sc.args);
     }
     else {
         LOG_ERROR(L"Unknown command or procedure: " + cmdName);
@@ -471,11 +493,10 @@ void vOliEngine::addToHistory(const std::wstring& command) {
 
         m_commandHandlers[L"PLUGIN"] = wrap([this](const auto& sc) { handlePluginCommand(sc); });
 
-        m_commandHandlers[L"LIST_PROCS"] = wrap([this](const auto& sc) { handleListProcsCommand(sc); });
-        m_commandHandlers[L"LP"] = m_commandHandlers[L"LIST_PROCS"];
-        m_commandHandlers[L"PROC_DUMP"] = m_commandHandlers[L"LIST_PROCS"];
-
-        m_commandHandlers[L"LIST_FUNCS"] = wrap([this](const auto& sc) { handleListFuncsCommand(sc); });
+        m_commandHandlers[L"LIST"] = wrap([this](const auto& sc) { handleListCommand(sc); });
+        //m_commandHandlers[L"LP"] = m_commandHandlers[L"LIST_PROCS"];
+        //m_commandHandlers[L"PROC_DUMP"] = m_commandHandlers[L"LIST_PROCS"];
+        //m_commandHandlers[L"LIST_FUNCS"] = wrap([this](const auto& sc) { handleListFuncsCommand(sc); });
         
             
 
@@ -2731,7 +2752,7 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
 
     
 
-    
+    /*
     void vOliEngine::handleProcCommand(const ShellCommand& sc) {
         if (sc.args.empty()) {
             LOG_ERROR(L"Usage: proc name [param1, param2...]");
@@ -2790,6 +2811,62 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         LOG_INFO(L"Started recording procedure: " + m_activeProcName +
             L" with " + std::to_wstring(newProc.params.size()) + L" parameters.");
     }
+
+    */
+    void vOliEngine::handleProcCommand(const ShellCommand& sc) {
+        if (sc.args.empty()) {
+            LOG_ERROR(L"Usage: proc name [param1, param2...]");
+            return;
+        }
+
+        // 1. Extragere și curățare nume procedură
+        std::wstring procName = sc.args[0];
+        procName.erase(std::remove_if(procName.begin(), procName.end(), [](wchar_t c) {
+            return c == L',' || c == L'(' || c == L')';
+            }), procName.end());
+
+        // --- REPARAȚIA: Normalizăm numele imediat după curățare ---
+        std::transform(procName.begin(), procName.end(), procName.begin(), ::towupper);
+
+        if (vOliKeyWords::isInternalFixedCommand(procName)) {
+            LOG_ERROR(L"Cannot shadow INTERNAL system command: " + procName);
+            return;
+        }
+
+        if (m_procedures.count(procName)) {
+            LOG_INFO(L"Overwriting existing procedure: " + procName);
+        }
+
+        // Setează contextul activ (acum garantat UPPERCASE)
+        m_activeProcName = procName;
+
+        Procedure newProc;
+        newProc.name = m_activeProcName;
+        newProc.params.clear();
+        newProc.body.clear();
+
+        // 2. Extragem parametrii (aici pot rămâne case-sensitive pentru contextul intern)
+        for (size_t i = 1; i < sc.args.size(); ++i) {
+            std::wstring arg = sc.args[i];
+            arg.erase(std::remove_if(arg.begin(), arg.end(), [](wchar_t c) {
+                return c == L'[' || c == L']' || c == L',' || c == L'(' || c == L')';
+                }), arg.end());
+
+            if (!arg.empty()) {
+                newProc.params.push_back(arg);
+            }
+        }
+
+        // 3. Activăm starea de înregistrare folosind cheia normalizată
+        m_procedures[m_activeProcName] = newProc;
+        m_isRecording = true;
+        m_isRecordingFunc = false;
+
+        LOG_INFO(L"Started recording procedure: " + m_activeProcName +
+            L" with " + std::to_wstring(newProc.params.size()) + L" parameters.");
+    }
+
+
 
     // Returnează true dacă trebuie să dăm BREAK la bucla principală C++
     bool vOliEngine::executeCycleStep(const std::wstring& iterName, const vData& value, const std::vector<std::wstring>& instrs) {
@@ -3090,63 +3167,158 @@ void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
     }
 }
 
-    
+void vOliEngine::handleListProcsCommand(const ShellCommand& sc) {
+
+    if (m_procedures.empty()) {
+        ConsoleManager::getInstance().writeRaw(L"No user procedures defined.");
+        return;
+    }
+
+    ConsoleManager::getInstance().writeRaw(L"--- [User Defined Procedures] ---");
+    ConsoleManager::getInstance().writeRaw(L"NAME            PARAMETERS");
+    ConsoleManager::getInstance().writeRaw(L"---------------------------------");
+
+    for (auto const& [name, proc] : m_procedures) {
+        std::wstring paramsStr = L"[";
+        for (size_t i = 0; i < proc.params.size(); ++i) {
+            paramsStr += proc.params[i];
+            if (i < proc.params.size() - 1) paramsStr += L", ";
+        }
+        paramsStr += L"]";
+
+        // Formatare simplă pentru aliniere
+        std::wstring padding(std::max<int>(1, 15 - (int)name.length()), L' ');
+        ConsoleManager::getInstance().writeRaw(name + padding + paramsStr);
+    }
+    ConsoleManager::getInstance().writeRaw(L"---------------------------------");
+}
 
 
-  void vOliEngine::handleListProcsCommand(const ShellCommand& sc) {
-      
-      if (m_procedures.empty()) {
-          ConsoleManager::getInstance().writeRaw(L"No user procedures defined.");
-          return;
-      }
+void vOliEngine::handleListFuncsCommand(const ShellCommand& sc) {
+    if (m_userFunctions.empty() && m_functionsHandlers.empty()) {
+        ConsoleManager::getInstance().writeRaw(L"No functions defined.");
+        return;
+    }
 
-      ConsoleManager::getInstance().writeRaw(L"--- [User Defined Procedures] ---");
-      ConsoleManager::getInstance().writeRaw(L"NAME            PARAMETERS");
-      ConsoleManager::getInstance().writeRaw(L"---------------------------------");
+    ConsoleManager::getInstance().writeRaw(L"--- [Native Functions (C++)] ---");
+    for (auto const& [name, _] : m_functionsHandlers) {
+        ConsoleManager::getInstance().writeRaw(L"NATIVE: " + name);
+    }
 
-      for (auto const& [name, proc] : m_procedures) {
-          std::wstring paramsStr = L"[";
-          for (size_t i = 0; i < proc.params.size(); ++i) {
-              paramsStr += proc.params[i];
-              if (i < proc.params.size() - 1) paramsStr += L", ";
-          }
-          paramsStr += L"]";
+    ConsoleManager::getInstance().writeRaw(L"\n--- [User Defined Functions] ---");
+    ConsoleManager::getInstance().writeRaw(L"NAME            PARAMETERS");
+    ConsoleManager::getInstance().writeRaw(L"---------------------------------");
 
-          // Formatare simplă pentru aliniere
-          std::wstring padding(std::max<int>(1, 15 - (int)name.length()), L' ');
-          ConsoleManager::getInstance().writeRaw(name + padding + paramsStr);
-      }
-      ConsoleManager::getInstance().writeRaw(L"---------------------------------");
-  }
+    for (auto const& [name, func] : m_userFunctions) {
+        std::wstring paramsStr = L"[";
+        for (size_t i = 0; i < func.params.size(); ++i) {
+            paramsStr += func.params[i] + (i < func.params.size() - 1 ? L", " : L"");
+        }
+        paramsStr += L"]";
+
+        std::wstring padding(std::max<int>(1, 15 - (int)name.length()), L' ');
+        ConsoleManager::getInstance().writeRaw(name + padding + paramsStr);
+    }
+}
 
 
-  void vOliEngine::handleListFuncsCommand(const ShellCommand& sc) {
-      if (m_userFunctions.empty() && m_functionsHandlers.empty()) {
-          ConsoleManager::getInstance().writeRaw(L"No functions defined.");
-          return;
-      }
 
-      ConsoleManager::getInstance().writeRaw(L"--- [Native Functions (C++)] ---");
-      for (auto const& [name, _] : m_functionsHandlers) {
-          ConsoleManager::getInstance().writeRaw(L"NATIVE: " + name);
-      }
+void vOliEngine::handleListCommand(const ShellCommand& sc) {
+    if (sc.args.empty()) {
+        ConsoleManager::getInstance().writeRaw(L"Usage: LIST [FUNCS|PROCS|FUNC <name>|PROC <name>]");
+        return;
+    }
 
-      ConsoleManager::getInstance().writeRaw(L"\n--- [User Defined Functions] ---");
-      ConsoleManager::getInstance().writeRaw(L"NAME            PARAMETERS");
-      ConsoleManager::getInstance().writeRaw(L"---------------------------------");
+    // 1. Normalizăm sub-comanda (FUNCS, PROCS, FUNC, etc.)
+    std::wstring subCommand = sc.args[0];
+    std::transform(subCommand.begin(), subCommand.end(), subCommand.begin(), ::towupper);
 
-      for (auto const& [name, func] : m_userFunctions) {
-          std::wstring paramsStr = L"[";
-          for (size_t i = 0; i < func.params.size(); ++i) {
-              paramsStr += func.params[i] + (i < func.params.size() - 1 ? L", " : L"");
-          }
-          paramsStr += L"]";
+    if (subCommand == L"FUNCS") {
+        handleListFuncsCommand(sc);
+    }
+    else if (subCommand == L"PROCS") {
+        handleListProcsCommand(sc);
+    }
+    else if (subCommand == L"FUNC" || subCommand == L"PROC") {
+        if (sc.args.size() < 2) {
+            ConsoleManager::getInstance().writeRaw(L"Error: Please specify a name.");
+            return;
+        }
 
-          std::wstring padding(std::max<int>(1, 15 - (int)name.length()), L' ');
-          ConsoleManager::getInstance().writeRaw(name + padding + paramsStr);
-      }
-  }
+        // 2. IMPORTANT: Normalizăm și numele căutat (ex: "test" -> "TEST")
+        std::wstring targetName = sc.args[1];
+        std::transform(targetName.begin(), targetName.end(), targetName.begin(), ::towupper);
 
+        if (subCommand == L"FUNC") {
+            dumpFunctionDetails(targetName);
+        }
+        else {
+            dumpProcedureDetails(targetName);
+        }
+    }
+    else {
+        ConsoleManager::getInstance().writeRaw(L"Unknown sub-command: " + subCommand);
+    }
+}
+
+std::wstring formatParams(const std::vector<std::wstring>& params) {
+    std::wstring res = L"[";
+    for (size_t i = 0; i < params.size(); ++i) {
+        res += params[i] + (i < params.size() - 1 ? L", " : L"");
+    }
+    return res + L"]";
+}
+
+void vOliEngine::dumpFunctionDetails(const std::wstring& name) {
+    // Căutăm în funcțiile native
+    if (m_functionsHandlers.find(name) != m_functionsHandlers.end()) {
+        ConsoleManager::getInstance().writeRaw(L"Function '" + name + L"' is a NATIVE (C++) handler.");
+        return;
+    }
+
+    // Căutăm în funcțiile utilizator
+    auto it = m_userFunctions.find(name);
+    if (it != m_userFunctions.end()) {
+        const auto& func = it->second;
+        ConsoleManager::getInstance().writeRaw(L"--- [User Function: " + name + L"] ---");
+
+        // Afișăm parametrii
+        std::wstring p = L"Parameters: [";
+        for (size_t i = 0; i < func.params.size(); ++i)
+            p += func.params[i] + (i < func.params.size() - 1 ? L", " : L"");
+        ConsoleManager::getInstance().writeRaw(p + L"]");
+
+        // Afișăm corpul
+        ConsoleManager::getInstance().writeRaw(L"Body:");
+        if (func.body.empty()) {
+            ConsoleManager::getInstance().writeRaw(L"  (empty body)");
+        }
+        else {
+            for (const auto& line : func.body) {
+                ConsoleManager::getInstance().writeRaw(L"  " + line);
+            }
+        }
+    }
+    else {
+        ConsoleManager::getInstance().writeRaw(L"Error: Function '" + name + L"' not found.");
+    }
+}
+
+void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
+    if (m_procedures.count(name)) {
+        auto& proc = m_procedures[name];
+        ConsoleManager::getInstance().writeRaw(L"--- [User Procedure: " + name + L"] ---");
+        ConsoleManager::getInstance().writeRaw(L"Parameters: " + formatParams(proc.params));
+        ConsoleManager::getInstance().writeRaw(L"Body:");
+        for (const auto& line : proc.body) {
+            ConsoleManager::getInstance().writeRaw(L"  " + line);
+        }
+    }
+    else {
+        ConsoleManager::getInstance().writeRaw(L"Error: Procedure '" + name + L"' not found.");
+    }
+}
+  
   size_t vOliEngine::findTopLevelWhileKeyword(const std::wstring& line, const std::wstring& keyword) {
       int depth = 0;
       bool inQuotes = false;

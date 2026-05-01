@@ -342,8 +342,13 @@ private:
     void handleProcCommand(const ShellCommand& sc);
     void handleFuncCommand(const ShellCommand& sc);
     void handlePluginCommand(const ShellCommand& sc);
-    void handleListProcsCommand(const ShellCommand& sc);
+    void handleListCommand(const ShellCommand& sc);
     void handleListFuncsCommand(const ShellCommand& sc);
+    void handleListProcsCommand(const ShellCommand& sc);
+
+    void dumpFunctionDetails(const std::wstring& name);
+    void dumpProcedureDetails(const std::wstring& name);
+    
     void handleTraceCommand(const ShellCommand& sc);
 
     void handleBreakCommand(const ShellCommand& sc);

@@ -845,7 +845,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
 
         if (containsColon) {
             // 1. Inițializăm pointerul către un Map nou în HEAP
-            vDataMap mapResult = std::make_shared<std::map<std::wstring, vData>>();
+            vDataMap mapResult = std::make_shared<std::unordered_map<std::wstring, vData>>();
 
             auto pairs = splitByCommaIgnoringBrackets(content);
             for (const auto& p : pairs) {
@@ -987,7 +987,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             // 6. ACTUALIZARE VALOARE ÎN HEAP
             if (auto* pMapPtr = std::get_if<vDataMap>(&target->value)) {
                 // Dacă pointerul partajat este null (neinițializat), creăm obiectul acum
-                if (!(*pMapPtr)) *pMapPtr = std::make_shared<std::map<std::wstring, vData>>();
+                if (!(*pMapPtr)) *pMapPtr = std::make_shared<std::unordered_map<std::wstring, vData>>();
 
                 // (**pMapPtr) dereferențiază pointerul brut, apoi shared_ptr-ul pentru a scrie în Map
                 (**pMapPtr)[field] = newValue;
@@ -1041,7 +1041,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         // 1. Verificăm dacă nu e Map SAU dacă pointerul este null
         if (!std::holds_alternative<vDataMap>(container->value) || !std::get<vDataMap>(container->value)) {
             // Inițializăm pointerul cu un Map nou pe HEAP
-            container->value = std::make_shared<std::map<std::wstring, vData>>();
+            container->value = std::make_shared<std::unordered_map<std::wstring, vData>>();
         }
 
         // 2. Obținem referința la shared_ptr (telecomanda)
@@ -1103,7 +1103,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             if (current->isMap()) {
                 auto& mapPtr = std::get<vDataMap>(current->value);
                 // Dacă pointerul e null dintr-un motiv oarecare, îl creăm
-                if (!mapPtr) mapPtr = std::make_shared<std::map<std::wstring, vData>>();
+                if (!mapPtr) mapPtr = std::make_shared<std::unordered_map<std::wstring, vData>>();
 
                 // Returnăm adresa vData-ului din interiorul map-ului real (*mapPtr)
                 current = &((*mapPtr)[key]);
@@ -1177,7 +1177,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             if (!root->isMap()) root->value = vData::CreateMap().value;
 
             auto& mPtr = std::get<vDataMap>(root->value);
-            if (!mPtr) mPtr = std::make_shared<std::map<std::wstring, vData>>();
+            if (!mPtr) mPtr = std::make_shared<std::unordered_map<std::wstring, vData>>();
 
             std::wstring key = vDataToWString(indexValue);
 
@@ -1263,7 +1263,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
 
                 // --- CREARE MAP DIN COD: { "a": 1 } ---
                 if (node->value == L"MAP_OBJECT") {
-                    vDataMap myMap = std::make_shared<std::map<std::wstring, vData>>();
+                    vDataMap myMap = std::make_shared<std::unordered_map<std::wstring, vData>>();
                     for (size_t i = 0; i + 1 < node->children.size(); i += 2) {
                         vData keyData = executeAST(node->children[i]);
                         vData valData = executeAST(node->children[i + 1]);
@@ -1322,7 +1322,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                 // 2. CONSTRUCTORI (Blueprints)
                 auto itBlueprint = m_blueprints.find(funcName);
                 if (itBlueprint != m_blueprints.end()) {
-                    vDataMap instance = std::make_shared<std::map<std::wstring, vData>>();
+                    vDataMap instance = std::make_shared<std::unordered_map<std::wstring, vData>>();
                     (*instance)[L"__type__"] = vData(itBlueprint->second.name);
                     const auto& fields = itBlueprint->second.fields;
                     for (size_t i = 0; i < fields.size(); ++i) {
@@ -1687,7 +1687,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             auto& mapPtr = std::get<vDataMap>(pContainer->value);
 
             // Verificăm dacă map-ul există pe heap
-            if (!mapPtr) mapPtr = std::make_shared<std::map<std::wstring, vData>>();
+            if (!mapPtr) mapPtr = std::make_shared<std::unordered_map<std::wstring, vData>>();
 
             std::wstring k = vDataToWString(key);
             // Dereferențiem (*mapPtr) pentru a folosi operatorul []
@@ -3153,7 +3153,7 @@ void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
         return;
     }
 
-    typedef void (*RegisterFunc)(std::map<std::wstring, OliFunctionHandler>&);
+    typedef void (*RegisterFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&);
     RegisterFunc regFunc = (RegisterFunc)PortTools::getFunctionSymbol(hLib, "LoadOliPlugin");
 
     if (regFunc) {
@@ -4180,7 +4180,7 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
           auto& mPtr = std::get<vDataMap>(container.value);
 
           // Safety: Dacă pointerul e null, îl inițializăm
-          if (!mPtr) mPtr = std::make_shared<std::map<std::wstring, vData>>();
+          if (!mPtr) mPtr = std::make_shared<std::unordered_map<std::wstring, vData>>();
 
           // Dereferențiem (*mPtr) pentru a folosi operatorul [] pe map-ul real
           (*mPtr)[vDataToWString(key)] = newValue;
@@ -4267,7 +4267,7 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       if (auto* oldMapPtr = std::get_if<vDataMap>(&source.value)) {
           auto oldMap = *oldMapPtr;
           // Cream un shared_ptr NOU către un std::map NOU
-          auto newMap = std::make_shared<std::map<std::wstring, vData>>();
+          auto newMap = std::make_shared<std::unordered_map<std::wstring, vData>>();
 
           for (auto const& [key, val] : *oldMap) {
               // Copiem recursiv fiecare valoare din map

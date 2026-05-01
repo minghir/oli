@@ -24,7 +24,7 @@
 struct vTypeBlueprint {
     std::wstring name;
     std::vector<std::wstring> fields;             // x, y, hp, mana
-    std::map<std::wstring, std::wstring> methods; // attack -> "PLAYER_ATTACK_FUNC"
+    std::unordered_map<std::wstring, std::wstring> methods; // attack -> "PLAYER_ATTACK_FUNC"
     bool isClass = false;                         // Doar pentru validare semantică
 };
 
@@ -46,10 +46,10 @@ struct vData; // Forward declaration
 //using vDataMap = std::map<std::wstring, vData>;
 
 using vDataArray = std::shared_ptr<std::vector<vData>>;
-using vDataMap = std::shared_ptr<std::map<std::wstring, vData>>;
+using vDataMap = std::shared_ptr<std::unordered_map<std::wstring, vData>>;
+//using vDataMap = std::shared_ptr<std::map<std::wstring, vData>>;
 
 using OliCommandHandler = std::function<void(const ShellCommand&)>;
-//using OliFunctionHandler = std::function<vData(const std::vector<std::wstring>& args)>;
 using OliFunctionHandler = std::function<vData(const std::vector<vData>& args)>;
 
 using vDataValue = std::variant<
@@ -62,45 +62,7 @@ using vDataValue = std::variant<
     vDataMap,
     vData* // <--- Noul tip: Pointer către o altă vData
 >;
-/*
-struct vData {
-    vDataValue value;
 
-    // Helper: extrage vectorul brut dacă există, altfel nullptr
-    std::vector<vData>* rawArray() {
-        if (!isArray()) return nullptr;
-        return std::get<vDataArray>(value).get();
-    }
-
-    // Helper: extrage map-ul brut
-    std::map<std::wstring, vData>* rawMap() {
-        if (!isMap()) return nullptr;
-        return std::get<vDataMap>(value).get();
-    }
-
-    static vData CreateMap() {
-        return vData{ std::make_shared<std::map<std::wstring, vData>>() };
-    }
-
-    static vData CreateArray() {
-        return vData{ std::make_shared<std::vector<vData>>() };
-    }
-
-    // Utilitar pentru a verifica dacă este array sau string
-    bool isArray() const { return std::holds_alternative<vDataArray>(value); }
-    bool isMap() const { return std::holds_alternative<vDataMap>(value); }
-    bool isString() const { return std::holds_alternative<std::wstring>(value); }
-    bool isInt() const { return std::holds_alternative<long long>(value); }
-    bool isFloat() const { return std::holds_alternative<double>(value); }
-    bool isBool() const { return std::holds_alternative<bool>(value); }
-    bool isNull() const { return std::holds_alternative<std::monostate>(value); }
-
-    bool operator==(const vData& other) const {
-        if (this->value.index() != other.value.index()) return false;
-        return this->value == other.value;
-    }
-};
-*/
 struct vData {
     vDataValue value;
 
@@ -129,7 +91,7 @@ struct vData {
         return std::get<vDataArray>(trueData.value).get();
     }
 
-    std::map<std::wstring, vData>* rawMap() {
+    std::unordered_map<std::wstring, vData>* rawMap() {
         auto& trueData = getTrueData();
         if (!trueData.isMap()) return nullptr;
         return std::get<vDataMap>(trueData.value).get();
@@ -137,7 +99,8 @@ struct vData {
 
     // --- FACTORY METHODS ---
     static vData CreateMap() {
-        return vData{ std::make_shared<std::map<std::wstring, vData>>() };
+        //return vData{ std::make_shared<std::map<std::wstring, vData>>() };
+        return vData{ std::make_shared<std::unordered_map<std::wstring, vData>>() };
     }
 
     static vData CreateArray() {
@@ -190,7 +153,7 @@ private:
 
     //std::map<std::wstring, OliCommandHandler> m_commandHandlers;
     std::unordered_map<std::wstring, std::function<void(const std::wstring&)>> m_commandHandlers;
-    std::map<std::wstring, OliFunctionHandler> m_functionsHandlers;
+    std::unordered_map<std::wstring, OliFunctionHandler> m_functionsHandlers;
 
     //std::map<std::wstring, vData> m_globalVariables;
     std::unordered_map<std::wstring, vData> m_globalVariables;

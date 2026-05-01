@@ -16,7 +16,7 @@ inline double toDouble(const vData& v) {
     return 0.0;
 }
 
-void RegisterMathFunctions(std::map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
+void RegisterMathFunctions(std::unordered_map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
     // Definim constantele local. Folosind [=] în lambda, fiecare funcție 
     // va primi propria COPIE a acestor valori, evitând coruperea memoriei.
     const double PI_VAL = 3.14159265358979323846;

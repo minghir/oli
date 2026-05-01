@@ -18,7 +18,7 @@ inline long long toInt(const vData& v) {
     return 0;
 }
 
-void RegisterBitOpFunctions(std::map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
+void RegisterBitOpFunctions(std::unordered_map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
 
     // --- Operații Bitwise Binare ---
 

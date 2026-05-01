@@ -5,7 +5,7 @@
 #include <filesystem>
 
 
-void RegisterFileSystemFunctions(std::map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
+void RegisterFileSystemFunctions(std::unordered_map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
 
     registry[L"FS_LIST_DIR"] = [](const std::vector<vData>& args) -> vData {
         std::wstring path = std::get<std::wstring>(args[0].value);

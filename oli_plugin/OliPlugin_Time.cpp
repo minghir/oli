@@ -13,7 +13,7 @@ inline double toDouble(const vData& v) {
     return 0.0;
 }
 
-void RegisterTimeFunctions(std::map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
+void RegisterTimeFunctions(std::unordered_map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
 
     // Returnează timpul actual în milisecunde (Unix Epoch)
     // Util pentru: set t1 = TICKS()

@@ -855,7 +855,7 @@ vData vOliEngine::handleArrayFunc(const std::vector<vData>& args) {
 vData vOliEngine::handleMapFunc(const std::vector<vData>& args) {
     // 1. Alocăm Map-ul în Heap și obținem pointerul partajat
     // Folosim std::make_shared pentru eficiență
-    vDataMap newMap = std::make_shared<std::map<std::wstring, vData>>();
+    vDataMap newMap = std::make_shared<std::unordered_map<std::wstring, vData>>();
 
     // 2. Dacă nu avem argumente, returnăm shared_ptr-ul către map-ul gol
     if (args.empty()) {

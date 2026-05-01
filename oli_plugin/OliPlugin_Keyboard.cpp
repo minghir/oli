@@ -55,7 +55,7 @@ int getch() {
 #endif
 
 
-void RegisterKeyboardFunctions(std::map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
+void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
 
     // IS_KEY_PRESSED()
     registry[L"IS_KEY_PRESSED"] = [=](const std::vector<vData>& a) -> vData {

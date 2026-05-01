@@ -14,6 +14,7 @@
 
 #ifndef _WIN32
 
+
 static void kb_init() {
     static bool initialized = false;
     static struct termios oldt;
@@ -53,7 +54,14 @@ int getch() {
 }
 
 #endif
-
+// Helper pentru a extrage un intreg in siguranta
+long long asInt(const vData& data) {
+    if (std::holds_alternative<long long>(data.value))
+        return std::get<long long>(data.value);
+    if (std::holds_alternative<double>(data.value))
+        return static_cast<long long>(std::get<double>(data.value));
+    return 0;
+}
 
 void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
 
@@ -93,14 +101,14 @@ void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vD
     // KEY_STATE()
     registry[L"KEY_STATE"] = [=](const std::vector<vData>& a) -> vData {
         if (a.empty()) return vData{ 0LL };
-
 #ifdef _WIN32
-        int vk = (int)std::get<long long>(a[0].value);
+        // Folosim helper-ul asInt ca să nu crape dacă primește double
+        int vk = (int)asInt(a[0]);
         short state = GetAsyncKeyState(vk);
+
+        // 0x8000 verifică dacă tasta este apăsată în acest moment
         return vData{ (state & 0x8000) ? 1LL : 0LL };
 #else
-        // Linux does NOT support async key state polling
-        // Returnăm 0 ca fallback
         return vData{ 0LL };
 #endif
         };

@@ -1,0 +1,131 @@
+# --- CONFIGURARE HARDWARE ---
+plugin "x64/Release/oli_console.dll"
+plugin "x64/Release/oli_plugin.dll"
+
+set $SW = 80
+set $SH = 25
+# Folosim atribuirea pentru a opri output-ul initial
+set $v = CON_SCREEN($SW, $SH)
+set $v = DB_INIT($SW, $SH)
+set $v = CURSOR(0)
+
+# --- ENTITĂȚI ---
+set $stars = []
+for $i = 0 to 35 do
+    set $v = PUSH($stars, { "x": RANDOM(0, 79), "y": RANDOM(0, 24) })
+endfor
+
+set $enemies = []
+set $enemyCount = 10
+for $i = 0 to $enemyCount - 1 do
+    set $v = PUSH($enemies, { "x": RANDOM(10, 70), "y": RANDOM(2, 9), "d": 1, "alive": 1 })
+endfor
+
+set $bullets = []
+set $px = 40
+set $py = 22
+set $cooldown = 0
+set $run = true
+set $victory = false
+
+# --- GAME LOOP ---
+while $run do
+    # 1. LOGICĂ FUNDAL (STELE)
+    cycle $stars as $s do
+        set $s["y"] = $s["y"] + 1
+        if $s["y"] > 24 then 
+            set $s["y"] = 0 
+            set $s["x"] = RANDOM(0, 79)
+        endif
+        set $v = DB_PUT($s["x"], $s["y"], ".", 8) 
+    endcycle
+
+    # 2. INPUT ASINCRON (KEY_STATE)
+    # Mișcare (37=L, 38=U, 39=R, 40=D)
+    if KEY_STATE(37) == 1 then if $px > 1  then set $px = $px - 1 endif endif
+    if KEY_STATE(39) == 1 then if $px < 78 then set $px = $px + 1 endif endif
+    if KEY_STATE(38) == 1 then if $py > 0  then set $py = $py - 1 endif endif
+    if KEY_STATE(40) == 1 then if $py < 24 then set $py = $py + 1 endif endif
+
+    # Tragere (32 = SPACE)
+    if $cooldown > 0 then set $cooldown = $cooldown - 1 endif
+    if KEY_STATE(32) == 1 then
+        if $cooldown == 0 then
+            set $v = PUSH($bullets, { "x": $px, "y": $py - 1 })
+            set $cooldown = 4 
+        endif
+    endif
+
+    # Ieșire (81 = Q)
+    if KEY_STATE(81) == 1 then set $run = false endif
+
+    # 3. LOGICĂ GLOANȚE
+    cycle $bullets as $b do
+        if $b["y"] > -1 then
+            set $b["y"] = $b["y"] - 1
+            if $b["y"] > 0 then
+                set $v = DB_PUT($b["x"], $b["y"], "|", 11) 
+            endif
+        endif
+    endcycle
+
+    # 4. LOGICĂ INAMICI (MARI) & COLIZIUNI
+    set $enemiesLeft = 0
+    cycle $enemies as $en do
+        if $en["alive"] == 1 then
+            set $enemiesLeft = $enemies_Left + 1
+            
+            # Patrulare
+            set $en["x"] = $en["x"] + $en["d"]
+            if $en["x"] > 77 then set $en["d"] = -1 endif
+            if $en["x"] < 2  then set $en["d"] = 1  endif
+            
+            # Coliziune extinsă (verificăm x-1, x, x+1)
+            cycle $bullets as $b do
+                if $b["y"] == $en["y"] then
+                    set $isHit = 0
+                    if $b["x"] == $en["x"] then set $isHit = 1 endif
+                    if $b["x"] == $en["x"] - 1 then set $isHit = 1 endif
+                    if $b["x"] == $en["x"] + 1 then set $isHit = 1 endif
+                    
+                    if $isHit == 1 then
+                        set $en["alive"] = 0
+                        set $b["y"] = -1
+                    endif
+                endif
+            endcycle
+            
+            # Desenăm inamicul gras: <W>
+            if $en["alive"] == 1 then
+                set $v = DB_PUT($en["x"] - 1, $en["y"], "<", 12)
+                set $v = DB_PUT($en["x"],     $en["y"], "W", 12)
+                set $v = DB_PUT($en["x"] + 1, $en["y"], ">", 12)
+            endif
+        endif
+    endcycle
+
+    # Verificare Victorie
+    if $enemiesLeft == 0 then
+        set $run = false
+        set $victory = true
+    endif
+
+    # 5. RENDERING JUCĂTOR & UI
+    set $v = DB_PUT($px, $py, "A", 14)
+    set $v = DB_PUT(2, 1, "INAMICI RAMASI:", 7)
+    set $v = DB_PUT(17, 1, $enemiesLeft, 10)
+
+    # 6. FLIP & SYNC (Fără flickering!)
+    set $v = DB_PRESENT()
+    set $v = SLEEP(16)
+endwhile
+
+# --- FINAL ---
+set $v = CURSOR(1)
+set $v = CON_CLS()
+
+if $victory == true then
+    echo "FELICITARI! Galaxia este acum sigura datorita tie!"
+else
+    echo "Misiune abandonata..."
+endif

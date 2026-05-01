@@ -1,71 +1,139 @@
 #include "../../OliEngine.hpp"
-#include <unordered_map> // Schimbat din <map>
+#include <unordered_map>
 #include <string>
 #include <functional>
 #include <iostream>
-
+#include <vector>
+#include <variant>
 
 #if defined(_WIN32) || defined(_WIN64)
 #define OLI_EXPORT extern "C" __declspec(dllexport)
 #include <windows.h>
 #else
 #define OLI_EXPORT extern "C" __attribute__((visibility("default")))
+#include <unistd.h>
 #endif
 
-// Folosim alias-ul pentru a păstra codul curat (asigură-te că e identic cu cel din OliEngine.hpp)
+// --- HELPER SIGURANȚĂ DATE ---
+long long asInt(const vData& data) {
+    if (std::holds_alternative<long long>(data.value))
+        return std::get<long long>(data.value);
+    if (std::holds_alternative<double>(data.value))
+        return static_cast<long long>(std::get<double>(data.value));
+    return 0;
+}
+
+// --- LOGICĂ BUFFER (g_pizda) ---
+struct ConsoleBuffer {
+    int width = 0;
+    int height = 0;
+
+#if defined(_WIN32)
+    std::vector<CHAR_INFO> buffer;
+    HANDLE hOut = nullptr;
+#else
+    struct Cell { wchar_t c; int col; };
+    std::vector<Cell> buffer;
+#endif
+
+    void init(int w, int h) {
+        width = w;
+        height = h;
+#if defined(_WIN32)
+        hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+        buffer.assign(w * h, { 0 });
+#else
+        buffer.assign(w * h, { L' ', 7 });
+#endif
+        clear();
+    }
+
+    void clear() {
+#if defined(_WIN32)
+        for (auto& cell : buffer) {
+            cell.Char.UnicodeChar = L' ';
+            cell.Attributes = 7;
+        }
+#else
+        for (auto& cell : buffer) {
+            cell.c = L' ';
+            cell.col = 7;
+        }
+#endif
+    }
+
+    void put(int x, int y, wchar_t c, int color) {
+        if (x >= 0 && x < width && y >= 0 && y < height) {
+#if defined(_WIN32)
+            buffer[y * width + x].Char.UnicodeChar = c;
+            buffer[y * width + x].Attributes = (WORD)color;
+#else
+            buffer[y * width + x] = { c, color };
+#endif
+        }
+    }
+
+    void present() {
+#if defined(_WIN32)
+        COORD bufferSize = { (short)width, (short)height };
+        COORD bufferCoord = { 0, 0 };
+        SMALL_RECT writeRegion = { 0, 0, (short)(width - 1), (short)(height - 1) };
+        WriteConsoleOutputW(hOut, buffer.data(), bufferSize, bufferCoord, &writeRegion);
+#else
+        // Implementare ANSI pentru Linux
+        std::wstring out = L"\033[H"; // Cursor la Home (0,0)
+        int lastCol = -1;
+
+        for (int i = 0; i < (int)buffer.size(); ++i) {
+            if (buffer[i].col != lastCol) {
+                // Schimbare culoare ANSI
+                std::string ansi = "\033[0m"; // Default
+                switch (buffer[i].col) {
+                case 12: ansi = "\033[31m"; break; // Red
+                case 14: ansi = "\033[33m"; break; // Yellow
+                case 11: ansi = "\033[36m"; break; // Cyan
+                case 10: ansi = "\033[32m"; break; // Green
+                case 8:  ansi = "\033[90m"; break; // Dark Gray
+                }
+                for (char ch : ansi) out += (wchar_t)ch;
+                lastCol = buffer[i].col;
+            }
+            out += buffer[i].c;
+            if ((i + 1) % width == 0) out += L"\n";
+        }
+        std::wcout << out << std::flush;
+#endif
+        clear(); // Pregătim bufferul pentru frame-ul următor
+    }
+};
+
+static ConsoleBuffer g_pizda;
+
+// --- REGISTRE FUNCȚII ---
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
 
+void RegisterConsoleFunctions(PluginRegistry& registry) {
 
-
-
-
-
-void RegisterConsoleFunctions(std::unordered_map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
-
-    // CON_SCREEN(width, height) - Setează dimensiunea ferestrei (Windows only)
     registry[L"CON_SCREEN"] = [](const std::vector<vData>& a) -> vData {
         if (a.size() < 2) return vData{ false };
+        int w = (int)asInt(a[0]);
+        int h = (int)asInt(a[1]);
 #ifdef _WIN32
-        int w = (int)std::get<long long>(a[0].value);
-        int h = (int)std::get<long long>(a[1].value);
-
         HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
         COORD size = { (short)w, (short)h };
-
-        // Setăm fereastra la o dimensiune minimă înainte de a schimba buffer-ul
-        // (Windows nu te lasă să micșorezi buffer-ul sub dimensiunea ferestrei curente)
         SMALL_RECT tmpRect = { 0, 0, 1, 1 };
         SetConsoleWindowInfo(hOut, TRUE, &tmpRect);
-
-        // Setăm dimensiunea buffer-ului (memoria internă)
         SetConsoleScreenBufferSize(hOut, size);
-
-        // Setăm dimensiunea ferestrei vizibile la aceeași valoare
         SMALL_RECT finalRect = { 0, 0, (short)(w - 1), (short)(h - 1) };
         SetConsoleWindowInfo(hOut, TRUE, &finalRect);
-#endif
-        return vData{ false };
-        };
-
-    // PUT_AT(x, y, string) - Mută cursorul și scrie ceva
-    registry[L"PUT_AT"] = [](const std::vector<vData>& a) -> vData {
-        if (a.size() < 3) return vData{ false };
-        int x = (int)std::get<long long>(a[0].value);
-        int y = (int)std::get<long long>(a[1].value);
-        std::wstring text = std::get<std::wstring>(a[2].value);
-
-#ifdef _WIN32
-        COORD coord = { (short)x, (short)y };
-        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-        std::wcout << text;
-#else
-        // ANSI Escape: \033[y;xH (atenție, ANSI e 1-based, Oli e probabil 0-based)
-        std::wcout << L"\033[" << (y + 1) << L";" << (x + 1) << L"H" << text;
-#endif
         return vData{ true };
+#else
+        // Pe Linux trimitem un escape code pentru resize terminal (nu merge peste tot)
+        std::wcout << L"\033[8;" << h << L";" << w << L"t";
+        return vData{ true };
+#endif
         };
 
-    // CLS() - Șterge ecranul
     registry[L"CON_CLS"] = [](const std::vector<vData>&) -> vData {
 #ifdef _WIN32
         system("cls");
@@ -75,27 +143,50 @@ void RegisterConsoleFunctions(std::unordered_map<std::wstring, std::function<vDa
         return vData{ true };
         };
 
-    // CURSOR(visible) - Ascunde/arată cursorul (esențial pentru jocuri să nu pâlpâie)
     registry[L"CURSOR"] = [](const std::vector<vData>& a) -> vData {
         bool show = true;
         if (!a.empty()) {
-            // Dacă e 0, false sau null, ascundem
             if (std::holds_alternative<bool>(a[0].value)) show = std::get<bool>(a[0].value);
-            else if (std::holds_alternative<long long>(a[0].value)) show = std::get<long long>(a[0].value) != 0;
+            else show = asInt(a[0]) != 0;
         }
-
 #ifdef _WIN32
         HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
         CONSOLE_CURSOR_INFO ci;
         GetConsoleCursorInfo(hOut, &ci);
         ci.bVisible = show;
         SetConsoleCursorInfo(hOut, &ci);
-        return vData{ true };
+#else
+        std::wcout << (show ? L"\033[?25h" : L"\033[?25l");
 #endif
+        return vData{ true };
+        };
+
+    registry[L"DB_INIT"] = [](const std::vector<vData>& a) -> vData {
+        if (a.size() < 2) return vData{ false };
+        g_pizda.init((int)asInt(a[0]), (int)asInt(a[1]));
+        return vData{ true };
+        };
+
+    registry[L"DB_PUT"] = [](const std::vector<vData>& a) -> vData {
+        if (a.size() < 3) return vData{ false };
+        int x = (int)asInt(a[0]);
+        int y = (int)asInt(a[1]);
+        if (!std::holds_alternative<std::wstring>(a[2].value)) return vData{ false };
+        std::wstring s = std::get<std::wstring>(a[2].value);
+        int col = (a.size() > 3) ? (int)asInt(a[3]) : 7;
+
+        if (!s.empty()) {
+            g_pizda.put(x, y, s[0], col);
+            return vData{ true };
+        }
         return vData{ false };
         };
-}
 
+    registry[L"DB_PRESENT"] = [](const std::vector<vData>&) -> vData {
+        g_pizda.present();
+        return vData{ true };
+        };
+}
 
 OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
     RegisterConsoleFunctions(registry);

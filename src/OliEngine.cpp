@@ -256,7 +256,7 @@ void vOliEngine::executeInternal(const std::wstring& fullInput) {
         vData result = evaluateExpression(input);
         //bool silentMode = (m_blockDepth > 0 || !m_callStack.empty() || m_isRecording || m_isRecordingFunc);
         bool silentMode = (!m_callStack.empty() || m_blockDepth > 0);
-        if (!silentMode && !result.isNull()) {
+        if (m_echoEnabled && !silentMode && !result.isNull()) {
             // Doar în modul interactiv (prompt direct) afișăm rezultatul
             LOG_RAW(vDataToWString(result));
         }
@@ -4346,11 +4346,14 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
 
   
   void vOliEngine::handleConfigCommand(const ShellCommand& sc) {
-      // 1. Dacă nu avem argumente, listăm setările actuale (Stil DUMP)
+      // 1. DUMP: Listăm setările actuale
       if (sc.args.empty()) {
           LOG_RAW(L"\n--- Oli Engine Configuration ---");
           LOG_RAW(L"MAX_ITERATIONS: " + (m_maxIterations == 0 ? L"INFINITE" : std::to_wstring(m_maxIterations)));
-          // Aici poți adăuga și alte setări pe măsură ce le implementăm
+
+          // Adăugăm ECHO în listă
+          LOG_RAW(L"ECHO: " + std::wstring(m_echoEnabled ? L"ON" : L"OFF"));
+
           LOG_RAW(L"--------------------------------\n");
           LOG_RAW(L"Tip: Folosește 'CONFIG <PARAM> <VALOARE>' pentru a schimba.");
           return;
@@ -4358,11 +4361,9 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
 
       std::wstring target = to_upper(sc.args[0]);
 
-      // 2. Dacă avem exact 1 argument, căutăm documentația pentru acel config (Stil HELP)
+      // 2. HELP: Căutăm documentația (docs/config/echo.md)
       if (sc.args.size() == 1) {
-          std::wstring target = to_upper(sc.args[0]);
           std::wstring pathStr = L"docs/config/" + to_lower(target) + L".md";
-
           std::ifstream file{ std::filesystem::path(pathStr), std::ios::binary };
 
           if (file.is_open()) {
@@ -4386,7 +4387,7 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
           return;
       }
 
-      // 3. Dacă avem 2+ argumente, încercăm să schimbăm valoarea
+      // 3. UPDATE: Încercăm să schimbăm valoarea
       std::wstring valueStr = sc.args[1];
 
       if (target == L"MAX_ITERATIONS") {
@@ -4397,6 +4398,22 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
           catch (...) {
               LOG_ERROR(L"Invalid numeric value: " + valueStr);
           }
+      }
+      else if (target == L"ECHO") {
+          std::wstring valLower = to_lower(valueStr);
+
+          if (valLower == L"true" || valLower == L"on" || valLower == L"1") {
+              m_echoEnabled = true;
+          }
+          else if (valLower == L"false" || valLower == L"off" || valLower == L"0") {
+              m_echoEnabled = false;
+          }
+          else {
+              LOG_ERROR(L"Invalid boolean value: " + valueStr + L". Use ON/OFF, TRUE/FALSE or 1/0.");
+              return;
+          }
+
+          LOG_SUCCESS(L"ECHO updated to: " + std::wstring(m_echoEnabled ? L"ON" : L"OFF"));
       }
       else {
           LOG_ERROR(L"Unknown configuration parameter: " + target);

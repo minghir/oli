@@ -183,6 +183,7 @@ private:
 
     // 0 înseamnă "fără limită" (infinit), orice valoare > 0 este pragul de siguranță
     long long m_maxIterations = 10000;
+	bool m_echoEnabled = true;
 
 public:
 

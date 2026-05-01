@@ -1,3 +1,7 @@
+# --- CONFIGURARE MOTOR ---
+config echo off
+config max_iterations 0
+
 # --- SETUP PLUGINS ---
 plugin "x64/Release/oli_console"
 plugin "x64/Release/oli_plugin"
@@ -28,18 +32,21 @@ func BOSS_EXPLOSION($x, $y)
 endfunc
 
 # --- FUNCȚIE ANIMAȚIE FINAL ---
-func END_ANIMATION($win)
+func END_ANIMATION($win, $reason)
     set $v = CON_CLS()
-    for $t = 0 to 10 do
+    for $t = 0 to 12 do
         set $v = DB_INIT(80, 25)
         for $i = 0 to 40 do
             set $v = DB_PUT(RANDOM(1, 78), RANDOM(1, 23), "*", RANDOM(9, 15))
         endfor
+        
         if $win == true then
-            set $v = DB_PUT(30, 12, "!!! VICTORIE TOTALA !!!", 14)
+            set $v = DB_PUT(32, 11, "!!! VICTORIE !!!", 14)
         else
-            set $v = DB_PUT(30, 12, "--- NAVA DISTRUSA ---", 12)
+            set $v = DB_PUT(32, 11, "--- GAME OVER ---", 12)
+            set $v = DB_PUT(30, 13, $reason, 15)
         endif
+        
         set $v = DB_PRESENT()
         set $v = SLEEP(100)
     endfor
@@ -52,29 +59,35 @@ func START_GAME()
     set $v = CON_SCREEN($SW, $SH)
     set $v = CURSOR(0)
 
+
+
+
+    # Inițializare Stele
     set $stars = []
     for $i = 0 to 30 do 
         set $v = PUSH($stars, { "x": RANDOM(1, 78), "y": RANDOM(1, 23) }) 
     endfor
     
+    # Inamici (Spațiați corect)
     set $enemies = []
     for $i = 0 to 5 do 
         set $v = PUSH($enemies, { "x": 10 + $i * 12, "y": RANDOM(2, 5), "d": 1, "alive": 1 }) 
     endfor
     
-    set $boss = { "x": 40, "y": -2, "d": 1, "hp": 10, "active": 0 }
+    set $boss = { "x": 40, "y": -3, "d": 1, "hp": 12, "active": 0 }
     set $bullets = []
     set $px = 40
     set $py = 22
     set $cooldown = 0
     set $playing = true
     set $winStatus = false
+    set $deathReason = ""
 
     while $playing do
         set $v = DB_INIT($SW, $SH)
         set $v = DRAW_FRAME($SW, $SH, 8)
         
-        # 1. Fundal stele
+        # 1. Fundal Stele
         cycle $stars as $s do
             set $s["y"] = $s["y"] + 1
             if $s["y"] > 23 then 
@@ -105,7 +118,7 @@ func START_GAME()
             endif
         endif
 
-        # 3. Gloanțe
+        # 3. Mișcare Gloanțe
         cycle $bullets as $b do
             if $b["y"] > -1 then
                 set $b["y"] = $b["y"] - 1
@@ -115,7 +128,7 @@ func START_GAME()
             endif
         endcycle
 
-        # 4. Inamici Mici (Logică Space Invaders)
+        # 4. Logică Inamici Mici
         set $rem = 0
         cycle $enemies as $en do
             if $en["alive"] == 1 then
@@ -138,15 +151,21 @@ func START_GAME()
                 if $en["y"] >= $py then 
                     set $playing = false 
                     set $winStatus = false 
+                    set $deathReason = "INVAZIE REUSITA!"
                 endif
 
-                # Coliziune Strictă
+                # --- COLIZIUNE VERSIUNEA VECHE (HITBOX LARG) ---
                 cycle $bullets as $b do
+                    # Verificăm doar gloanțe active și inamici aflați în arenă
                     if $b["y"] > 0 then
-                        if $b["y"] == $en["y"] then
-                            if $b["x"] >= $en["x"] - 1 and $b["x"] <= $en["x"] + 1 then
-                                set $en["alive"] = 0
-                                set $b["y"] = -1
+                        if $en["y"] > 0 then
+                            if $b["y"] == $en["y"] then
+                                if $b["x"] >= $en["x"] - 1 then
+                                    if $b["x"] <= $en["x"] + 1 then
+                                        set $en["alive"] = 0
+                                        set $b["y"] = -1
+                                    endif
+                                endif
                             endif
                         endif
                     endif
@@ -154,15 +173,23 @@ func START_GAME()
                 
                 if $en["y"] > 0 and $en["y"] < 24 then 
                     set $v = DB_PUT($en["x"] - 1, $en["y"], "<W>", 12) 
+					#set $v = DB_PUT($en["x"] - 1, $en["y"], $charEnemy, 12) 
                 endif
             endif
         endcycle
 
-        # 5. Boss
+        # 5. Logică Boss
         if $rem == 0 then
             set $boss["active"] = 1
+            
+            # Intrare treptată
+            if $boss["y"] < 2 then
+                set $boss["y"] = $boss["y"] + 1
+            endif
+
             set $boss["x"] = $boss["x"] + $boss["d"]
             
+            # Rebound Boss
             if $boss["x"] >= 74 then 
                 set $boss["d"] = -1 
                 set $boss["y"] = $boss["y"] + 1 
@@ -177,15 +204,21 @@ func START_GAME()
             if $boss["y"] >= $py then 
                 set $playing = false 
                 set $winStatus = false 
+                set $deathReason = "BOSS-UL TE-A STRIVIT!"
             endif
 
-            # Coliziune Boss
+            # --- COLIZIUNE BOSS VERSIUNEA VECHE (HITBOX 5 PIXELI) ---
             cycle $bullets as $b do
                 if $b["y"] > 0 then
-                    if $b["y"] == $boss["y"] or $b["y"] == $boss["y"] + 1 then
-                        if $b["x"] >= $boss["x"] - 2 and $b["x"] <= $boss["x"] + 2 then
-                            set $boss["hp"] = $boss["hp"] - 1
-                            set $b["y"] = -1
+                    if $boss["y"] > 0 then
+                        # Verificăm corpul Boss-ului
+                        if $b["y"] == $boss["y"] or $b["y"] == $boss["y"] + 1 then
+                            if $b["x"] >= $boss["x"] - 2 then
+                                if $b["x"] <= $boss["x"] + 2 then
+                                    set $boss["hp"] = $boss["hp"] - 1
+                                    set $b["y"] = -1
+                                endif
+                            endif
                         endif
                     endif
                 endif
@@ -215,18 +248,19 @@ func START_GAME()
         set $v = SLEEP(16)
         if KEY_STATE(81) == 1 then 
             set $playing = false 
+            set $deathReason = "RETRAGERE!"
         endif
     endwhile
     
-    return $winStatus
+    return { "win": $winStatus, "reason": $deathReason }
 endfunc
 
 # --- LOGICĂ REPLAY ---
 set $wantsToPlay = true
 while $wantsToPlay do
     set $v = CON_CLS()
-    set $result = START_GAME()
-    set $v = END_ANIMATION($result)
+    set $resObj = START_GAME()
+    set $v = END_ANIMATION($resObj["win"], $resObj["reason"])
     
     set $trash = 1
     while $trash != 0 do 
@@ -234,7 +268,7 @@ while $wantsToPlay do
     endwhile
 
     set $v = DB_INIT(80, 25)
-    set $v = DB_PUT(25, 12, "Vrei sa mai joci? (Y / N)", 15)
+    set $v = DB_PUT(22, 12, "MAI JOCI O DATA? (Y / N)", 15)
     set $v = DB_PRESENT()
     
     set $waiting = true
@@ -244,7 +278,6 @@ while $wantsToPlay do
             if $choice == 121 or $choice == 89 then 
                 set $waiting = false 
                 set $wantsToPlay = true 
-                set $v = CON_CLS() 
             endif
             if $choice == 110 or $choice == 78 or $choice == 81 then 
                 set $waiting = false 

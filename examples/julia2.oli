@@ -1,0 +1,95 @@
+# --- OPTIMIZARE ---
+config echo off
+config max_iterations 0
+
+# --- SETUP ---
+plugin "x64/Release/oli_console"
+plugin "x64/Release/oli_plugin"
+
+func RENDER_JULIA_MEMO()
+    set $SW = 80
+    set $SH = 25
+    set $v = CON_SCREEN($SW, $SH)
+    set $v = CURSOR(0)
+    
+    # --- MEMOIZARE CARACTERE ---
+    # Cache-uim rezultatele funcției CHR la început pentru a economisi mii de apeluri de funcție per cadru
+    set $charCache = []
+    set $v = PUSH($charCache, CHR(9608)) # 0: Bloc plin
+    set $v = PUSH($charCache, CHR(178))  # 1: Dens
+    set $v = PUSH($charCache, CHR(177))  # 2: Mediu
+    set $v = PUSH($charCache, CHR(176))  # 3: Rar
+    set $v = PUSH($charCache, ".")       # 4: Punct
+    set $v = PUSH($charCache, " ")       # 5: Spațiu
+    
+    set $maxIter = 16
+
+    while true do
+        set $v = DB_INIT($SW, $SH)
+        set $t = TIME() * 40
+        
+        set $cX = 0.7885 * COS($t)
+        set $cY = 0.7885 * SIN($t * 0.6)
+        set $baseCol = 9 + (INT($t * 0.1) % 7)
+        
+        for $y = 0 to $SH - 1 do
+            # Pre-calculăm componenta Y pentru a economisi operații în bucla X
+            set $zy_init = 1.0 * (2.0 * $y / $SH - 1.0)
+            
+            for $x = 0 to $SW - 1 do
+                set $zx = 1.5 * (2.0 * $x / $SW - 1.0)
+                set $zy = $zy_init
+                
+                set $i = 0
+                while $i < $maxIter do
+                    # Algoritmul de bază Julia
+                    set $zx2 = $zx * $zx
+                    set $zy2 = $zy * $zy
+                    
+                    if ($zx2 + $zy2) > 4 then
+                        break
+                    endif
+                    
+                    set $zy = 2.0 * $zx * $zy + $cY
+                    set $zx = $zx2 - $zy2 + $cX
+                    set $i = $i + 1
+                endwhile
+                
+                # --- SELECTARE DIN CACHE ---
+                if $i < 4 then
+                    set $charIdx = 5
+                    set $color = 0
+                else
+                    if $i < 8 then
+                        set $charIdx = 4
+                        set $color = 8
+                    else
+                        if $i < 12 then
+                            set $charIdx = 3
+                            set $color = $baseCol
+                        else
+                            if $i < $maxIter then
+                                set $charIdx = 2
+                                set $color = 15
+                            else
+                                set $charIdx = 1
+                                set $color = $baseCol
+                            endif
+                        endif
+                    endif
+                endif
+                
+                # Folosim array-ul de memoizare $charCache în loc de CHR()
+                set $v = DB_PUT($x, $y, $charCache[$charIdx], $color)
+            endfor
+        endfor
+        
+        set $v = DB_PRESENT()
+        
+        if KEY_STATE(81) == 1 then
+            break
+        endif
+    endwhile
+endfunc
+
+set $v = RENDER_JULIA_MEMO()

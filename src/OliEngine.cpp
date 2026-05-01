@@ -254,7 +254,10 @@ void vOliEngine::executeInternal(const std::wstring& fullInput) {
     // --- PRIORITATE 4: EVALUARE EXPRESIE (FALLBACK) ---
     try {
         vData result = evaluateExpression(input);
-        if (!result.isNull()) {
+        //bool silentMode = (m_blockDepth > 0 || !m_callStack.empty() || m_isRecording || m_isRecordingFunc);
+        bool silentMode = (!m_callStack.empty() || m_blockDepth > 0);
+        if (!silentMode && !result.isNull()) {
+            // Doar în modul interactiv (prompt direct) afișăm rezultatul
             LOG_RAW(vDataToWString(result));
         }
     }

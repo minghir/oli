@@ -1,0 +1,40 @@
+# game.oli - Primul joc oficial în Oli Engine
+
+# 1. Încărcare resurse
+plugin "x64/Release/oli_console.dll"
+plugin "x64/Release/oli_plugin.dll"
+
+# 2. Configurare Hardware Virtual
+set $SW = 80
+set $SH = 25
+$v = CON_SCREEN($SW, $SH)
+$v = CURSOR(0)
+$v = CON_CLS()
+
+# 3. Stare inițială
+set $x = 40
+set $y = 12
+set $run = true
+
+# 4. Game Loop
+while $run do
+    $v = PUT_AT($x, $y, " ") # Ștergem frame-ul vechi
+    
+    set $k = GET_KEY()
+    
+    # Input & Logică
+    if $k == 1001 then if $y > 0 then set $y = $y - 1 endif endif
+    if $k == 1002 then if $y < 24 then set $y = $y + 1 endif endif
+    if $k == 1003 then if $x > 0 then set $x = $x - 1 endif endif
+    if $k == 1004 then if $x < 79 then set $x = $x + 1 endif endif
+    if $k == 113 then set $run = false endif
+    
+    # Render
+    $v = PUT_AT($x, $y, "X")
+    $v = SLEEP(16)
+endwhile
+
+# 5. Cleanup
+$v = CURSOR(1)
+$v = CON_CLS()
+echo "Mulțumim că ai jucat Oli Adventure!"

@@ -5,6 +5,8 @@
   </Configurations>
   <Project Path="oli.vcxproj" Id="2e51f6fe-b330-409c-9b8e-381b68ec44de">
     <BuildDependency Project="oli_plugin/oli_plugin.vcxproj" />
+    <BuildDependency Project="src/plugins/oli_console/oli_console.vcxproj" />
   </Project>
   <Project Path="oli_plugin/oli_plugin.vcxproj" Id="8dfb8d97-48be-4b42-9311-053336ef4f09" />
+  <Project Path="src/plugins/oli_console/oli_console.vcxproj" Id="667a2d5d-2b53-4297-88bd-97850201466c" />
 </Solution>

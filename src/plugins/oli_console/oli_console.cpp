@@ -169,14 +169,29 @@ void RegisterConsoleFunctions(PluginRegistry& registry) {
 
     registry[L"DB_PUT"] = [](const std::vector<vData>& a) -> vData {
         if (a.size() < 3) return vData{ false };
+
         int x = (int)asInt(a[0]);
         int y = (int)asInt(a[1]);
-        if (!std::holds_alternative<std::wstring>(a[2].value)) return vData{ false };
-        std::wstring s = std::get<std::wstring>(a[2].value);
         int col = (a.size() > 3) ? (int)asInt(a[3]) : 7;
 
-        if (!s.empty()) {
-            g_pizda.put(x, y, s[0], col);
+        std::wstring text;
+
+        // Convertim automat orice primim în text (String, Int sau Double)
+        if (std::holds_alternative<std::wstring>(a[2].value)) {
+            text = std::get<std::wstring>(a[2].value);
+        }
+        else if (std::holds_alternative<long long>(a[2].value)) {
+            text = std::to_wstring(std::get<long long>(a[2].value));
+        }
+        else if (std::holds_alternative<double>(a[2].value)) {
+            text = std::to_wstring((int)std::get<double>(a[2].value));
+        }
+
+        if (!text.empty()) {
+            // Punem tot string-ul în buffer, caracter cu caracter
+            for (int i = 0; i < (int)text.length(); ++i) {
+                g_pizda.put(x + i, y, text[i], col);
+            }
             return vData{ true };
         }
         return vData{ false };

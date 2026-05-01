@@ -100,17 +100,23 @@ void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vD
         int vk = (int)asInt(a[0]);
 
 #ifdef _WIN32
+        // Windows: Rămâne neschimbat, e perfect așa.
         short state = GetAsyncKeyState(vk);
         return vData{ (state & 0x8000) ? 1LL : 0LL };
 #else
+        // Linux: Sincronizăm starea din bufferul de intrare
         sync_linux_keys();
+
         auto it = g_linuxKeyMap.find(vk);
         if (it != g_linuxKeyMap.end()) {
             auto now = std::chrono::steady_clock::now();
             auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second).count();
-            // Dacă am văzut tasta în ultimele 100ms, o considerăm „apăsată”
-            // Terminalul trimite repeat-uri cam la 30-50ms
-            if (diff < 100) return vData{ 1LL };
+
+            // 250ms este „punctul dulce” pentru terminalele Linux.
+            // Permite apăsarea simultană fără ca nava să se oprească sacadat.
+            if (diff < 250) {
+                return vData{ 1LL };
+            }
         }
         return vData{ 0LL };
 #endif

@@ -140,7 +140,7 @@ enum class OliStatus {
 
 struct StackFrame {
     std::wstring functionName;
-    std::map<std::wstring, vData> localVariables;
+    std::unordered_map<std::wstring, vData> localVariables;
     int lineCalled; // Opțional, dacă ai un Line Counter
 };
 
@@ -158,12 +158,12 @@ private:
     //std::map<std::wstring, vData> m_globalVariables;
     std::unordered_map<std::wstring, vData> m_globalVariables;
 
-    std::map<std::wstring, Procedure> m_procedures;
+    std::unordered_map<std::wstring, Procedure> m_procedures;
     bool m_isRecording = false;
     std::wstring m_activeProcName;
     OliStatus m_executionStatus = OliStatus::RUNNING;
 
-    std::map<std::wstring, Procedure> m_userFunctions; // Refolosim structura Procedure
+    std::unordered_map<std::wstring, Procedure> m_userFunctions; // Refolosim structura Procedure
     bool m_isRecordingFunc = false;
     std::wstring m_activeFuncName;
     int m_bracketDepth = 0;
@@ -177,7 +177,7 @@ private:
     // Stiva de contexte (fiecare context este un map de variabile)
     std::vector<StackFrame> m_callStack;
 
-    std::map<std::wstring, vTypeBlueprint> m_blueprints;
+    std::unordered_map<std::wstring, vTypeBlueprint> m_blueprints;
 
     bool m_nextSetIsGlobal = false;
 

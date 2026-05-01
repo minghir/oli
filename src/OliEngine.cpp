@@ -3073,15 +3073,11 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
 void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wstring>& passedArgs) {
     // 1. EVALUĂM ARGUMENTELE ÎN CONTEXTUL APELANTULUI
     // Facem asta PRIMA DATĂ, cât timp m_callStack.back() este încă vechiul context.
-    std::map<std::wstring, vData> evaluatedParams;
+    std::unordered_map<std::wstring, vData> evaluatedParams;
 
     for (size_t i = 0; i < proc.params.size(); ++i) {
         std::wstring pName = cleanVariableName(proc.params[i]);
-        /*
-        if (i < passedArgs.size()) {
-            // Evaluarea se face în contextul de dinainte de apel
-            evaluatedParams[pName] = evaluateExpression(passedArgs[i]);
-        }*/
+        
         if (i < passedArgs.size()) {
             std::wstring arg = passedArgs[i];
             // Dacă utilizatorul a scris 'n' în loc de '$n', îl ajutăm noi:

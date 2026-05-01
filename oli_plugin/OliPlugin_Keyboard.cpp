@@ -1,7 +1,8 @@
 #include "../src/OliEngine.hpp"
-#include <map>
+#include <unordered_map>
 #include <functional>
 #include <vector>
+#include <chrono>
 
 #ifdef _WIN32
 #include <conio.h>
@@ -10,76 +11,66 @@
 #include <termios.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <map>
 #endif
 
 #ifndef _WIN32
-
+// --- LOGICĂ LINUX PENTRU SIMULARE ASYNC ---
+static std::map<int, std::chrono::steady_clock::time_point> g_linuxKeyMap;
 
 static void kb_init() {
     static bool initialized = false;
-    static struct termios oldt;
-
     if (initialized) return;
     initialized = true;
 
     struct termios newt;
-    tcgetattr(STDIN_FILENO, &oldt);
-    newt = oldt;
-
-    newt.c_lflag &= ~(ICANON | ECHO);  // no buffering, no echo
+    tcgetattr(STDIN_FILENO, &newt);
+    newt.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-
-    // non-blocking read
     fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
 }
 
-int kbhit() {
+// Citim tot ce e în buffer și actualizăm „tabela de stări”
+void sync_linux_keys() {
     kb_init();
     unsigned char ch;
-    int n = read(STDIN_FILENO, &ch, 1);
-    if (n > 0) {
-        ungetc(ch, stdin);
-        return 1;
+    while (read(STDIN_FILENO, &ch, 1) > 0) {
+        if (ch == 27) { // Start secvență ESC (săgeți)
+            unsigned char seq[2];
+            if (read(STDIN_FILENO, &seq[0], 1) > 0 && read(STDIN_FILENO, &seq[1], 1) > 0) {
+                if (seq[0] == '[') {
+                    int vk = 0;
+                    switch (seq[1]) {
+                    case 'A': vk = 38; break; // UP
+                    case 'B': vk = 40; break; // DOWN
+                    case 'C': vk = 39; break; // RIGHT
+                    case 'D': vk = 37; break; // LEFT
+                    }
+                    if (vk) g_linuxKeyMap[vk] = std::chrono::steady_clock::now();
+                }
+            }
+        }
+        else {
+            // Mapăm Space (32) sau litere
+            g_linuxKeyMap[(int)ch] = std::chrono::steady_clock::now();
+        }
     }
-    return 0;
 }
-
-int getch() {
-    kb_init();
-    unsigned char ch;
-    while (read(STDIN_FILENO, &ch, 1) <= 0) {
-        usleep(1000); // 1ms
-    }
-    return ch;
-}
-
 #endif
-// Helper pentru a extrage un intreg in siguranta
+
 long long asInt(const vData& data) {
-    if (std::holds_alternative<long long>(data.value))
-        return std::get<long long>(data.value);
-    if (std::holds_alternative<double>(data.value))
-        return static_cast<long long>(std::get<double>(data.value));
+    if (std::holds_alternative<long long>(data.value)) return std::get<long long>(data.value);
+    if (std::holds_alternative<double>(data.value)) return static_cast<long long>(std::get<double>(data.value));
     return 0;
 }
 
 void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
 
-    // IS_KEY_PRESSED()
-    registry[L"IS_KEY_PRESSED"] = [=](const std::vector<vData>& a) -> vData {
-#ifdef _WIN32
-        return vData{ _kbhit() ? 1LL : 0LL };
-#else
-        return vData{ kbhit() ? 1LL : 0LL };
-#endif
-        };
-
-    // GET_KEY()
+    // GET_KEY() - Rămâne pentru compatibilitate (event-based)
     registry[L"GET_KEY"] = [=](const std::vector<vData>& a) -> vData {
 #ifdef _WIN32
         if (!_kbhit()) return vData{ 0LL };
         int ch = _getch();
-
         if (ch == 0 || ch == 224) {
             ch = _getch();
             switch (ch) {
@@ -90,25 +81,32 @@ void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vD
             }
         }
         return vData{ (long long)ch };
-
 #else
-        if (!kbhit()) return vData{ 0LL };
-        int ch = getch();
-        return vData{ (long long)ch };
+        sync_linux_keys();
+        // Returnăm ultima tastă văzută (simplificat pentru Linux)
+        if (g_linuxKeyMap.empty()) return vData{ 0LL };
+        return vData{ (long long)g_linuxKeyMap.rbegin()->first };
 #endif
         };
 
-    // KEY_STATE()
+    // KEY_STATE(vk) - ACUM MERGE ȘI PE LINUX!
     registry[L"KEY_STATE"] = [=](const std::vector<vData>& a) -> vData {
         if (a.empty()) return vData{ 0LL };
-#ifdef _WIN32
-        // Folosim helper-ul asInt ca să nu crape dacă primește double
         int vk = (int)asInt(a[0]);
-        short state = GetAsyncKeyState(vk);
 
-        // 0x8000 verifică dacă tasta este apăsată în acest moment
+#ifdef _WIN32
+        short state = GetAsyncKeyState(vk);
         return vData{ (state & 0x8000) ? 1LL : 0LL };
 #else
+        sync_linux_keys();
+        auto it = g_linuxKeyMap.find(vk);
+        if (it != g_linuxKeyMap.end()) {
+            auto now = std::chrono::steady_clock::now();
+            auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second).count();
+            // Dacă am văzut tasta în ultimele 100ms, o considerăm „apăsată”
+            // Terminalul trimite repeat-uri cam la 30-50ms
+            if (diff < 100) return vData{ 1LL };
+        }
         return vData{ 0LL };
 #endif
         };

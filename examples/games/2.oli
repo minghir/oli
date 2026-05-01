@@ -1,6 +1,6 @@
 # --- CONFIGURARE HARDWARE ---
-plugin "x64/Release/oli_console.dll"
-plugin "x64/Release/oli_plugin.dll"
+plugin "x64/Release/oli_console"
+plugin "x64/Release/oli_plugin"
 
 set $SW = 80
 set $SH = 25

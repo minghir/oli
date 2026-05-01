@@ -18,18 +18,23 @@
 // --- LOGICĂ LINUX PENTRU SIMULARE ASYNC ---
 static std::map<int, std::chrono::steady_clock::time_point> g_linuxKeyMap;
 
+static struct termios oldt; // O mutăm aici pentru a fi accesibilă global în plugin
+
 static void kb_init() {
     static bool initialized = false;
     if (initialized) return;
     initialized = true;
 
-    struct termios newt;
-    tcgetattr(STDIN_FILENO, &newt);
+    tcgetattr(STDIN_FILENO, &oldt); // Salvăm setările originale
+    struct termios newt = oldt;
+
     newt.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
     fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
 }
-
+void kb_restore() {
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+}
 // Citim tot ce e în buffer și actualizăm „tabela de stări”
 void sync_linux_keys() {
     kb_init();
@@ -108,6 +113,15 @@ void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vD
             if (diff < 100) return vData{ 1LL };
         }
         return vData{ 0LL };
+#endif
+        };
+
+    registry[L"KBD_RESTORE"] = [=](const std::vector<vData>& a) -> vData {
+#ifndef _WIN32
+        kb_restore();
+        return vData{ true };
+#else
+        return vData{ true }; // Pe Windows nu e nevoie de asta
 #endif
         };
 }

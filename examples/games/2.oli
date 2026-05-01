@@ -119,10 +119,10 @@ while $run do
     set $v = DB_PRESENT()
     set $v = SLEEP(16)
 endwhile
-
-# --- FINAL ---
-set $v = CURSOR(1)
-set $v = CON_CLS()
+# --- CLEANUP (FOARTE IMPORTANT PE LINUX) ---
+set $v = KBD_RESTORE()  # Restaurăm terminalul să poți scrie din nou
+set $v = CURSOR(1)      # Arătăm cursorul înapoi
+set $v = CON_CLS()      # Ștergem ecranul
 
 if $victory == true then
     echo "FELICITARI! Galaxia este acum sigura datorita tie!"

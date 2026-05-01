@@ -134,6 +134,7 @@
     <ClCompile Include="src\oli.cpp" />
     <ClCompile Include="src\OliEngine.cpp" />
     <ClCompile Include="src\OliExpressionParser.cpp" />
+    <ClCompile Include="src\OliFuncHandlers.cpp" />
     <ClCompile Include="src\PortTools.cpp" />
     <ClCompile Include="src\StringUtils.cpp" />
     <ClCompile Include="src\App.cpp" />

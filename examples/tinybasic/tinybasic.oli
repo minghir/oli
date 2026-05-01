@@ -48,25 +48,42 @@ func tb_split $line
     return $result
 endfunc
 
+
+
 # --- HELPER: PARSER DE EXPRESII ---
 func tbasic_parse_expr $p_expr
     set $p_e = TRIM($p_expr)
     
+    # Gestionare șiruri de caractere (ghilimele)
     set $first_c = SUBSTR($p_e, 0, 1)
     if ASC($first_c) == 34 then
-        return REPLACE($p_e, CHAR(34), "")
+        return REPLACE($p_e, CHR(34), "")
     endif
     
     set $p_work = UPPER($p_e)
+
+    # --- 1. PROTECȚIE RND ---
+    # Înlocuim temporar "RND" cu un simbol care NU conține litere (ex: #1)
+    # Astfel, bucla A-Z nu va corupe numele funcției.
+    set $has_rnd = FIND($p_work, "RND")
+    if $has_rnd != -1 then
+        set $p_work = REPLACE($p_work, "RND", "#1")
+    endif
+
+    # --- 2. ÎNLOCUIRE VARIABILE ---
     for $idx = 0 to 25 do
-        #set $char_to_rep = CHR(65 + $idx)
-        #set $p_work = REPLACE($p_work, $char_to_rep, STR(@tb_vars[$idx]))
-		set $char = CHR(65 + $idx)
-		if FIND($p_work, $char) != -1 then
-			set $p_work = REPLACE($p_work, $char, STR(@tb_vars[$idx]))
-		endif
+        set $char = CHR(65 + $idx)
+        if FIND($p_work, $char) != -1 then
+            set $p_work = REPLACE($p_work, $char, STR(@tb_vars[$idx]))
+        endif
     endfor
     
+    # --- 3. RESTAURARE RND ---
+    # Punem "RND" înapoi pentru ca EVAL($p_work) să poată apela handleRandomFunc din C++
+    if $has_rnd != -1 then
+        set $p_work = REPLACE($p_work, "#1", "RND")
+    endif
+
     return EVAL($p_work)
 endfunc
 
@@ -231,29 +248,24 @@ func tbasic_exec_line $line_content
 		return 1
 	endif
 	
-	# --- DEFINIM VARIABILA DE VERIFICARE ---
 	if $p_cmd == "INPUT" then
-		set $c_pos = FIND($l_c, ",")
-		if $c_pos == -1 then return 0 endif
-
-		# Căutăm prima ghilimele
 		set $start_q = FIND($l_c, CHR(34))
-		
-		# Pentru a găsi a doua ghilimele fără FIND_LAST:
-		# Luăm restul string-ului de după prima ghilimele
 		set $rest_of_line = SUBSTR($l_c, $start_q + 1)
-		set $end_q_relative = FIND($rest_of_line, CHR(34))
+		set $end_q_rel = FIND($rest_of_line, CHR(34))
 		
-		# Extragem mesajul
-		set $msg = SUBSTR($rest_of_line, 0, $end_q_relative)
+		# Mesajul e corect
+		set $msg = SUBSTR($rest_of_line, 0, $end_q_rel)
 
-		# Variabila de după virgulă
-		set $var_raw = TRIM(SUBSTR($l_c, $c_pos + 1))
+		# --- REPARAȚIE: Căutăm virgula DUPĂ ghilimele ---
+		set $search_after_q = SUBSTR($rest_of_line, $end_q_rel + 1)
+		set $c_pos_rel = FIND($search_after_q, ",")
+		
+		# Variabila este după virgula găsită în restul string-ului
+		set $var_raw = TRIM(SUBSTR($search_after_q, $c_pos_rel + 1))
 		
 		set $res = INPUT($msg)
-		
 		set $v_idx = ASC(UPPER($var_raw)) - 65
-		set @tb_vars[INT($v_idx)] = INT($res)
+		set @tb_vars[INT($v_idx)] = $res # Scoate INT() dacă vrei și fractale
 		
 		return 1
 	endif

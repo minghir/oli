@@ -3375,7 +3375,7 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
 
 
 
- 
+ /*
 
   void vOliEngine::handleFuncCommand(const ShellCommand& sc) {
       if (sc.args.empty()) {
@@ -3415,8 +3415,63 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
       LOG_INFO(L"Started recording function: " + m_activeFuncName);
   }
 
+  */
+  void vOliEngine::handleFuncCommand(const ShellCommand& sc) {
+      if (sc.args.empty()) {
+          LOG_ERROR(L"Usage: func name(param1, param2, ...)");
+          return;
+      }
 
-  
+      // Reconstruim linia pentru a procesa parantezele corect, indiferent de spații
+      std::wstring fullLine;
+      for (const auto& arg : sc.args) fullLine += arg;
+
+      size_t openParen = fullLine.find(L'(');
+      size_t closeParen = fullLine.find(L')');
+
+      std::wstring funcName;
+      std::wstring paramsStr;
+
+      if (openParen != std::wstring::npos && closeParen != std::wstring::npos) {
+          funcName = fullLine.substr(0, openParen);
+          paramsStr = fullLine.substr(openParen + 1, closeParen - openParen - 1);
+      }
+      else {
+          // Fallback în cazul în care nu se folosesc paranteze
+          funcName = sc.args[0];
+      }
+
+      // Normalizăm numele funcției la majuscule
+      funcName = to_upper(trim(funcName));
+      m_activeFuncName = funcName;
+
+      Procedure newFunc;
+      newFunc.name = m_activeFuncName;
+      newFunc.isVariadic = false;
+
+      // Extragem parametrii folosind wexplode (echivalentul split din StringUtils)
+      std::vector<std::wstring> tokens = wexplode(paramsStr, L',');
+      for (auto& t : tokens) {
+          std::wstring p = trim(t);
+          if (p == L"...") {
+              newFunc.isVariadic = true;
+          }
+          else if (!p.empty()) {
+              // Curățăm numele parametrului de caractere speciale ($ sau paranteze)
+              newFunc.params.push_back(cleanVariableName(p));
+          }
+      }
+
+      // Salvăm definiția funcției și activăm modul de înregistrare
+      m_userFunctions[m_activeFuncName] = newFunc;
+      m_isRecordingFunc = true;
+
+      LOG_INFO(L"Started recording function: " + m_activeFuncName +
+          (newFunc.isVariadic ? L" (Variadic support enabled)" : L""));
+  }
+
+
+  /*
   vData vOliEngine::callUserFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context) {
       // 1. Găsirea definiției funcției
       auto it = m_userFunctions.find(funcName);
@@ -3480,6 +3535,77 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
       }
 
       // Restaurăm flag-ul de return al apelantului (esențial pentru funcții imbricate)
+      m_shouldReturn = previousShouldReturn;
+
+      return result;
+  }*/
+
+
+  vData vOliEngine::callUserFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context) {
+      // 1. Căutăm funcția în map-ul de funcții utilizator
+      auto it = m_userFunctions.find(funcName);
+      if (it == m_userFunctions.end()) {
+          LOG_ERROR(L"Runtime Error: Function '" + funcName + L"' not found.");
+          return { std::monostate{} };
+      }
+
+      const Procedure& func = it->second;
+
+      // 2. Pregătirea noului cadru de stivă (Stack Frame)
+      StackFrame frame;
+      frame.functionName = funcName;
+
+      // 3. Injectarea contextului 'this' (pentru metode de obiect)
+      frame.localVariables[L"this"] = context;
+
+      // 4. Maparea parametrilor ficși
+      for (size_t i = 0; i < func.params.size(); ++i) {
+          std::wstring pName = func.params[i];
+          // Atribuim valoarea primită sau NULL dacă argumentul lipsește
+          frame.localVariables[pName] = (i < args.size()) ? args[i] : vData{ std::monostate{} };
+      }
+
+      // 5. Gestionarea argumentelor variadice (...)
+      if (func.isVariadic) {
+          // Creăm un vDataArray (shared_ptr către std::vector<vData>)
+          vData extraParams = vData::CreateArray();
+          std::vector<vData>* vecPtr = extraParams.rawArray();
+
+          if (vecPtr && args.size() > func.params.size()) {
+              for (size_t i = func.params.size(); i < args.size(); ++i) {
+                  vecPtr->push_back(args[i]);
+              }
+          }
+          // Injectăm lista de argumente extra în variabila locală 'params'
+          frame.localVariables[L"params"] = extraParams;
+      }
+
+      // Inițializăm variabila de return implicită
+      frame.localVariables[L"return"] = { std::monostate{} };
+
+      // 6. Adăugăm cadrul în stivă și pregătim execuția
+      m_callStack.push_back(std::move(frame));
+      bool previousShouldReturn = m_shouldReturn;
+      m_shouldReturn = false;
+
+      // 7. Construirea și execuția corpului funcției
+      std::wstring fullBody;
+      for (const auto& line : func.body) {
+          std::wstring cleanLine = trim(line);
+          if (cleanLine.empty()) continue;
+          fullBody += cleanLine + (cleanLine.back() == L';' ? L"\n" : L";\n");
+      }
+
+      this->executeInternal(fullBody);
+
+      // 8. Preluarea rezultatului din 'return' înainte de a elimina cadrul
+      vData result = { std::monostate{} };
+      if (!m_callStack.empty()) {
+          result = m_callStack.back().localVariables[L"return"];
+          m_callStack.pop_back();
+      }
+
+      // Restaurăm starea flag-ului de return pentru apelant
       m_shouldReturn = previousShouldReturn;
 
       return result;

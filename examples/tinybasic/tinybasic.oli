@@ -12,7 +12,7 @@ set @tb_jump_to = -1
 set @tb_gosub_stack = ARRAY()  # <---  Stiva pentru GOSUB
 set @pc = -1
 
-func tb_split $line
+func tb_split($line)
     set $result = ARRAY()
     set $current_tok = ""
     set $in_quotes = false
@@ -51,7 +51,7 @@ endfunc
 
 
 # --- HELPER: PARSER DE EXPRESII ---
-func tbasic_parse_expr $p_expr
+func tbasic_parse_expr($p_expr)
     set $p_e = TRIM($p_expr)
     
     # Gestionare șiruri de caractere (ghilimele)
@@ -88,7 +88,7 @@ func tbasic_parse_expr $p_expr
 endfunc
 
 # --- FUNCȚIE: EXECUTĂ O LINIE ---
-func tbasic_exec_line $line_content
+func tbasic_exec_line($line_content)
 
 #echo "Execut:{"+$line_content+"}"
 
@@ -356,7 +356,7 @@ func tbasic_exec_line $line_content
 	
 endfunc
 
-func tbasic_run
+func tbasic_run()
     set $keys = KEYS(@tb_program)
 	#dm
 	#trace

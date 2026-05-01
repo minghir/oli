@@ -13,7 +13,7 @@ endif
 endfor
 
 unset all
-func fib n 
+func fib($n)
 	if $n <= 1 then
 		return $n
 	else
@@ -30,7 +30,7 @@ set $memo = array()
 set $memo[0] = 0
 set $memo[1] = 1
 
-func fib_memo n
+func fib_memo($n)
 	if @memo[$n] != null then
 		return @memo[$n]
 	endif

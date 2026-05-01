@@ -32,6 +32,7 @@ struct Procedure {
     std::wstring name;
     std::vector<std::wstring> params;
     std::vector<std::wstring> body; // Liniile de cod salvate
+    bool isVariadic = false;
 };
 
 struct VarPath {

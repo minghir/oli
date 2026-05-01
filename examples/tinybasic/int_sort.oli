@@ -1,4 +1,4 @@
-func SORT_NUMERIC_ARRAY $array
+func SORT_NUMERIC_ARRAY($array)
     set $arr = $array 
     set $i = 0 
     set $n = LEN($arr) 

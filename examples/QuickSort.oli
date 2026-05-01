@@ -2,7 +2,7 @@ cls; unset all
 
 # 1. FUNCTIA DE PARTITIONARE
 # Alege pivotul si rearanjeaza elementele
-func partition arr low high
+func partition(arr, low, high)
     set $pivot = $arr[$high]
     set $i = $low - 1
     set $j = $low
@@ -28,7 +28,7 @@ func partition arr low high
 endfunc
 
 # 2. FUNCTIA RECURSIVA QSORT
-func qsort arr  low  high
+func qsort(arr,  low,  high)
     if $low < $high then
         # Obtinem indexul pivotului
         set $p = partition($arr, $low, $high)

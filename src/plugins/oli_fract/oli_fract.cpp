@@ -1,14 +1,9 @@
 #include "../../OliEngine.hpp"
-
-#ifndef PI
-#define PI 3.14159265358979323846
-#endif
-
-
 #ifdef _WIN32
 #include <windows.h>
 #define OLI_EXPORT extern "C" __declspec(dllexport)
 #else
+#include <cmath>
 #include <string.h>
 #define OLI_EXPORT extern "C"
 #define RGB(r,g,b) ((unsigned int)((b) | ((g) << 8) | ((r) << 16)))
@@ -19,6 +14,10 @@
 #endif
 
 
+
+#ifndef PI
+#define PI 3.14159265358979323846
+#endif
 
 
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;

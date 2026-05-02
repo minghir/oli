@@ -4,8 +4,7 @@ config max_iterations 0
 
 # --- SETUP ---
 plugin "x64/Release/oli_plugin"
-plugin "x64/Release/oli_wcanvas"
-#plugin "x64/Release/oli_fract"
+plugin "x64/Release/oli_canvas"
 plugin "x64/Release/oli_sprites"
 
 set $SW = 640

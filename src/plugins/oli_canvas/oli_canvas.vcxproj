@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{b7c2c419-9984-41cf-aaf2-06604fc11193}</ProjectGuid>
-    <RootNamespace>oliwcanvas</RootNamespace>
+    <ProjectGuid>{586ac153-8b56-48b5-9953-e550df43d7e9}</ProjectGuid>
+    <RootNamespace>olicanvas</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -139,7 +139,7 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="oli_wcanvas.cpp" />
+    <ClCompile Include="oli_canvas.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

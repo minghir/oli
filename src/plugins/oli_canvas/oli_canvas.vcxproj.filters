@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="oli_wcanvas.cpp">
+    <ClCompile Include="oli_canvas.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

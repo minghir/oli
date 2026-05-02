@@ -1,75 +1,72 @@
 #include "../../OliEngine.hpp"
-#include <unordered_map>
-#include <string>
-#include <functional>
-#include <iostream>
 #include <vector>
-#include <variant>
+#include <string>
+#include <algorithm>
+#include <unordered_map>
+
+// --- MACRO DEFINIȚII ȘI INCLUDE-URI SPECIFICE ---
+#ifdef _WIN32
 #include <windows.h>
-
-// Helper pentru conversia variantului vData în double
-inline double toDouble(const vData& v) {
-    if (std::holds_alternative<double>(v.value))
-        return std::get<double>(v.value);
-
-    if (std::holds_alternative<long long>(v.value))
-        return static_cast<double>(std::get<long long>(v.value));
-
-    return 0.0;
-}
-
 #define OLI_EXPORT extern "C" __declspec(dllexport)
-
+#else
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <string.h> 
+#define OLI_EXPORT extern "C"
+#endif
 
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
 
-// Structură internă pentru a ține minte starea ferestrei
 struct CanvasState {
+    int width = 0;
+    int height = 0;
+    void* pBits = nullptr;
+#ifdef _WIN32
     HWND hwnd = nullptr;
     HDC hdcMem = nullptr;
     HBITMAP hbmMem = nullptr;
-    void* pBits = nullptr;
-    int width = 0;
-    int height = 0;
+#else
+    Display* display = nullptr;
+    Window window;
+    GC gc;
+    XImage* ximage = nullptr;
+#endif
 } g_Canvas;
 
-// Window Procedure - esențial pentru WinAPI
+inline double toDouble(const vData& v) {
+    if (std::holds_alternative<double>(v.value)) return std::get<double>(v.value);
+    if (std::holds_alternative<long long>(v.value)) return static_cast<double>(std::get<long long>(v.value));
+    return 0.0;
+}
+
+#ifdef _WIN32
 LRESULT CALLBACK CanvasWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
     case WM_CLOSE:
-        // În loc de ShowWindow(hwnd, SW_HIDE), acum o distrugem direct
         DestroyWindow(hwnd);
         return 0;
     case WM_DESTROY:
-        // Dacă fereastra a fost distrusă, resetăm manual pointerul în starea noastră
         if (hwnd == g_Canvas.hwnd) g_Canvas.hwnd = nullptr;
         return 0;
     }
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
+#endif
 
 OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
 
-    // CAN_SIZE(w, h) - Doar setează dimensiunile dacă e nevoie separat
-    registry[L"CAN_SIZE"] = [](const std::vector<vData>& args) -> vData {
-        if (args.size() >= 2) {
-            g_Canvas.width = static_cast<int>(toDouble(args[0]));
-            g_Canvas.height = static_cast<int>(toDouble(args[1]));
-        }
-        return vData{ 1LL };
-        };
-
-    // CAN_INIT(width, height, title)
     registry[L"CAN_INIT"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 3) return vData{ 0LL };
 
         int w = static_cast<int>(toDouble(args[0]));
         int h = static_cast<int>(toDouble(args[1]));
         std::wstring title = std::get<std::wstring>(args[2].value);
+        g_Canvas.width = w;
+        g_Canvas.height = h;
 
+#ifdef _WIN32
         HINSTANCE hInst = GetModuleHandle(NULL);
 
-        // Înregistrăm clasa doar o dată
         static bool classRegistered = false;
         if (!classRegistered) {
             WNDCLASSW wc = { 0 };
@@ -82,16 +79,15 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
             classRegistered = true;
         }
 
-        // Calculăm dimensiunea ferestrei astfel încât zona de desenat să fie exact W x H
         RECT rc = { 0, 0, w, h };
         DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE;
         AdjustWindowRect(&rc, dwStyle, FALSE);
-        
 
         g_Canvas.hwnd = CreateWindowExW(0, L"OliCanvasClass", title.c_str(),
-            (WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_VISIBLE),
-            CW_USEDEFAULT, CW_USEDEFAULT,
+            dwStyle, CW_USEDEFAULT, CW_USEDEFAULT,
             rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, hInst, NULL);
+
+        if (!g_Canvas.hwnd) return vData{ 0LL };
 
         HDC hdc = GetDC(g_Canvas.hwnd);
         g_Canvas.hdcMem = CreateCompatibleDC(hdc);
@@ -99,38 +95,52 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         BITMAPINFO bmi = { 0 };
         bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
         bmi.bmiHeader.biWidth = w;
-        bmi.bmiHeader.biHeight = -h; // Top-down
+        bmi.bmiHeader.biHeight = -h;
         bmi.bmiHeader.biPlanes = 1;
         bmi.bmiHeader.biBitCount = 32;
 
         g_Canvas.hbmMem = CreateDIBSection(g_Canvas.hdcMem, &bmi, DIB_RGB_COLORS, &g_Canvas.pBits, NULL, 0);
         SelectObject(g_Canvas.hdcMem, g_Canvas.hbmMem);
-
-        g_Canvas.width = w;
-        g_Canvas.height = h;
         ReleaseDC(g_Canvas.hwnd, hdc);
-
+#else
+        // Implementare Linux (X11) - neatinsă dacă ești pe Windows
+        g_Canvas.display = XOpenDisplay(NULL);
+        if (!g_Canvas.display) return vData{ 0LL };
+        int screen = DefaultScreen(g_Canvas.display);
+        g_Canvas.window = XCreateSimpleWindow(g_Canvas.display, RootWindow(g_Canvas.display, screen),
+            0, 0, w, h, 1, 0, 0);
+        XMapWindow(g_Canvas.display, g_Canvas.window);
+        g_Canvas.gc = DefaultGC(g_Canvas.display, screen);
+        g_Canvas.pBits = malloc(w * h * 4);
+        g_Canvas.ximage = XCreateImage(g_Canvas.display, DefaultVisual(g_Canvas.display, screen),
+            24, ZPixmap, 0, (char*)g_Canvas.pBits, w, h, 32, 0);
+#endif
         return vData{ 1LL };
         };
-        
+
+    // --- CAN_PRESENT ---
     registry[L"CAN_PRESENT"] = [](const std::vector<vData>&) -> vData {
+#ifdef _WIN32
         if (g_Canvas.hwnd && g_Canvas.hdcMem) {
-            // 1. Desenăm buffer-ul din memorie pe fereastra reală
             HDC hdc = GetDC(g_Canvas.hwnd);
             BitBlt(hdc, 0, 0, g_Canvas.width, g_Canvas.height, g_Canvas.hdcMem, 0, 0, SRCCOPY);
             ReleaseDC(g_Canvas.hwnd, hdc);
-
-            // 2. IMPORTANT: Procesăm toate mesajele de la Windows
-            // Această buclă permite ferestrei să fie mutată, închisă sau redimensionată
             MSG msg;
             while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-                TranslateMessage(&msg);
-                DispatchMessage(&msg);
+                TranslateMessage(&msg); DispatchMessage(&msg);
             }
         }
+#else
+        if (g_Canvas.display && g_Canvas.ximage) {
+            XPutImage(g_Canvas.display, g_Canvas.window, g_Canvas.gc, g_Canvas.ximage,
+                0, 0, 0, 0, g_Canvas.width, g_Canvas.height);
+            XFlush(g_Canvas.display);
+        }
+#endif
         return vData{ 1LL };
         };
 
+    // --- FUNCȚIILE DE DESENARE RĂMÂN IDENTICE! ---
     // CAN_PUT(x, y, color) - Color format: 0xRRGGBB
     registry[L"CAN_PUT"] = [](const std::vector<vData>& args) -> vData {
         // Verificăm dacă avem destule argumente și dacă buffer-ul de pixeli e gata
@@ -238,7 +248,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
 
         return vData{ 1LL };
         };
-    
+
 
     registry[L"CAN_CIRCLE_FILL"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 4 || !g_Canvas.pBits) return vData{ 0LL };
@@ -289,5 +299,4 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         }
         return vData{ 1LL };
         };
-    
 }

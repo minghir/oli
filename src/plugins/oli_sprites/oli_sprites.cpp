@@ -31,7 +31,6 @@ void StartGDIPlus() {
     }
 }
 #endif
-#define OLI_EXPORT extern "C" __declspec(dllexport)
 
 
 

@@ -68,8 +68,7 @@ void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vD
         int vk = (int)asInt(a[0]);
 
 #ifdef _WIN32
-        short state = GetAsyncKeyState(vk);
-        return vData{ (state & 0x8000) ? 1LL : 0LL };
+        return vData{ (GetAsyncKeyState(vk) & 0x8000) ? 1LL : 0LL };
 #else
         Display* d = XOpenDisplay(NULL);
         if (!d) return vData{ 0LL };
@@ -77,19 +76,21 @@ void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vD
         char keys[32];
         XQueryKeymap(d, keys);
 
-        int keysym = 0;
+        // KeyCodes fixe pentru Linux (evităm overhead-ul XKeysymToKeycode în buclă)
+        int kc = 0;
         switch (vk) {
-        case 37: keysym = XK_Left; break;
-        case 39: keysym = XK_Right; break;
-        case 38: keysym = XK_Up; break;
-        case 40: keysym = XK_Down; break;
-        case 32: keysym = XK_space; break;
-        case 81: keysym = XK_q; break;
-        default: keysym = vk; // Încearcă mapare directă pentru caractere
+        case 37: kc = 113; break; // Left
+        case 39: kc = 114; break; // Right
+        case 38: kc = 111; break; // Up
+        case 40: kc = 116; break; // Down
+        case 32: kc = 65;  break; // Space
+        case 81: kc = 24;  break; // Q
         }
 
-        KeyCode kc = XKeysymToKeycode(d, keysym);
-        bool isPressed = (kc != 0) && (keys[kc >> 3] & (1 << (kc & 7)));
+        bool isPressed = false;
+        if (kc > 0) {
+            isPressed = keys[kc >> 3] & (1 << (kc & 7));
+        }
 
         XCloseDisplay(d);
         return vData{ isPressed ? 1LL : 0LL };

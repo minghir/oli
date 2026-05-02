@@ -7,8 +7,10 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#define OLI_EXPORT extern "C" __declspec(dllexport)
 #else
 #include <string.h>
+#define OLI_EXPORT extern "C"
 #define RGB(r,g,b) ((unsigned int)((b) | ((g) << 8) | ((r) << 16)))
 // Dacă folosești GetRValue, GetGValue, etc în sprites:
 #define GetRValue(rgb) ((unsigned char)(((rgb) >> 16) & 0xff))
@@ -16,7 +18,7 @@
 #define GetBValue(rgb) ((unsigned char)((rgb) & 0xff))
 #endif
 
-#define OLI_EXPORT extern "C" __declspec(dllexport)
+
 
 
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;

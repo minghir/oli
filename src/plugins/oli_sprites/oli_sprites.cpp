@@ -85,15 +85,15 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
             }
         }
         delete bitmap;
-#else
-        // TODO: Pe Linux poți folosi stb_image.h pentru a încărca PNG/JPG
-        // Momentan returnăm eroare pentru a permite compilarea
-        return vData{ -1LL };
-#endif
 
+        // Înregistrăm sprite-ul DOAR dacă am reușit să îl încărcăm (Windows)
         int id = g_NextSpriteId++;
         g_SpriteLib[id] = s;
         return vData{ (long long)id };
+#else
+        // Pe Linux momentan nu avem încărcător, deci returnăm eroare imediat
+        return vData{ -1LL };
+#endif
         };
 
     // SPRITE_DRAW(ptr, canvasW, canvasH, spriteId, x, y, transparentColor)

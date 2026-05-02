@@ -13,7 +13,12 @@
 #include <X11/Xutil.h>
 #include <string.h> 
 #define OLI_EXPORT extern "C"
+
+#define RGB(r,g,b) ((unsigned int)((b) | ((g) << 8) | ((r) << 16)))
+
 #endif
+
+
 
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
 
@@ -283,20 +288,27 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
     registry[L"CAN_GET_HEIGHT"] = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_Canvas.height }; };
 
     registry[L"CAN_CLOSE"] = [](const std::vector<vData>&) -> vData {
+#ifdef _WIN32
         if (g_Canvas.hwnd) {
-            // Distrugem obiectele GDI
             if (g_Canvas.hbmMem) DeleteObject(g_Canvas.hbmMem);
             if (g_Canvas.hdcMem) DeleteDC(g_Canvas.hdcMem);
-
-            // Închidem fereastra
             DestroyWindow(g_Canvas.hwnd);
-
-            // Resetăm starea globală
             g_Canvas.hwnd = nullptr;
             g_Canvas.hdcMem = nullptr;
             g_Canvas.hbmMem = nullptr;
             g_Canvas.pBits = nullptr;
         }
+#else
+        if (g_Canvas.display) {
+            if (g_Canvas.ximage) {
+                // XDestroyImage eliberează și g_Canvas.pBits dacă a fost creat cu XCreateImage
+                XDestroyImage(g_Canvas.ximage);
+            }
+            XCloseDisplay(g_Canvas.display);
+            g_Canvas.display = nullptr;
+            g_Canvas.pBits = nullptr;
+        }
+#endif
         return vData{ 1LL };
         };
 }

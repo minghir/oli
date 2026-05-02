@@ -4,6 +4,18 @@
 #define PI 3.14159265358979323846
 #endif
 
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <string.h>
+#define RGB(r,g,b) ((unsigned int)((b) | ((g) << 8) | ((r) << 16)))
+// Dacă folosești GetRValue, GetGValue, etc în sprites:
+#define GetRValue(rgb) ((unsigned char)(((rgb) >> 16) & 0xff))
+#define GetGValue(rgb) ((unsigned char)(((rgb) >> 8) & 0xff))
+#define GetBValue(rgb) ((unsigned char)((rgb) & 0xff))
+#endif
+
 #define OLI_EXPORT extern "C" __declspec(dllexport)
 
 

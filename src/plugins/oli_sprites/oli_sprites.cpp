@@ -1,12 +1,25 @@
 #include "../../OliEngine.hpp"
-#include <windows.h>
 #include <vector>
 #include <map>
+#include <string>
+#include <algorithm>
+
+#ifdef _WIN32
+#include <windows.h>
 #include <gdiplus.h>
 #pragma comment(lib, "gdiplus.lib")
 using namespace Gdiplus;
+#define OLI_EXPORT extern "C" __declspec(dllexport)
+#else
+#include <string.h>
+#define OLI_EXPORT extern "C"
+// Macro-uri pentru compatibilitate culori
+#define RGB(r,g,b) ((unsigned int)((b) | ((g) << 8) | ((r) << 16)))
+#endif
 
-// Trebuie să inițializăm GDI+ o singură dată
+
+// --- LOGICĂ GDI+ (DOAR PENTRU WINDOWS) ---
+#ifdef _WIN32
 bool g_GdiPlusStarted = false;
 ULONG_PTR g_GdiPlusToken;
 
@@ -17,8 +30,9 @@ void StartGDIPlus() {
         g_GdiPlusStarted = true;
     }
 }
-
+#endif
 #define OLI_EXPORT extern "C" __declspec(dllexport)
+
 
 
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
@@ -49,10 +63,10 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
     // SPRITE_LOAD("cale/catre/imagine.bmp") -> returnează ID-ul sprite-ului
     registry[L"SPRITE_LOAD"] = [](const std::vector<vData>& args) -> vData {
         if (args.empty() || !std::holds_alternative<std::wstring>(args[0].value)) return vData{ -1LL };
-
-        StartGDIPlus(); // Ne asigurăm că GDI+ e pornit
         std::wstring path = std::get<std::wstring>(args[0].value);
 
+#ifdef _WIN32
+        StartGDIPlus();
         Bitmap* bitmap = Bitmap::FromFile(path.c_str());
         if (!bitmap || bitmap->GetLastStatus() != Ok) {
             delete bitmap;
@@ -64,19 +78,20 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         s.height = bitmap->GetHeight();
         s.pixels.resize(s.width * s.height);
 
-        // Citim pixelii direct
         for (int y = 0; y < s.height; y++) {
             for (int x = 0; x < s.width; x++) {
                 Color pixelColor;
                 bitmap->GetPixel(x, y, &pixelColor);
-
-                // Stocăm formatul ARGB (A = Alpha, R = Red, G = Green, B = Blue)
-                // GDI+ returnează culorile foarte comod
                 s.pixels[y * s.width + x] = pixelColor.GetValue();
             }
         }
-
         delete bitmap;
+#else
+        // TODO: Pe Linux poți folosi stb_image.h pentru a încărca PNG/JPG
+        // Momentan returnăm eroare pentru a permite compilarea
+        return vData{ -1LL };
+#endif
+
         int id = g_NextSpriteId++;
         g_SpriteLib[id] = s;
         return vData{ (long long)id };

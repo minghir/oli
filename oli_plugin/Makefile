@@ -5,7 +5,7 @@ CXXFLAGS = -std=c++20 -Wall -Wextra -O2
 ifeq ($(OS),Windows_NT)
     # Setări pentru Windows (MSYS2/MinGW)
     TARGET = oli_plugin.dll
-    LDFLAGS = -shared
+    LDFLAGS = -shared -lX11
     CLEAN_CMD = rm -f *.o $(TARGET) *.a
 else
     # Setări pentru Linux

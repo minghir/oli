@@ -7,9 +7,9 @@ plugin "x64/Release/oli_plugin"
 plugin "x64/Release/oli_canvas"
 plugin "x64/Release/oli_sprites"
 
-plugin "oli_plugin"
-plugin "oli_canvas"
-plugin "oli_sprites"
+plugin "./oli_plugin"
+plugin "./oli_canvas"
+plugin "./oli_sprites"
 
 set $SW = 640
 set $SH = 480

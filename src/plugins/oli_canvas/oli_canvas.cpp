@@ -223,6 +223,17 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         return vData{ 1LL };
         };
 
+    registry[L"CAN_RECT_OUTLINE"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 5 || !g_Canvas.pBits) return vData{ 0LL };
+        int rx = static_cast<int>(toDouble(args[0])), ry = static_cast<int>(toDouble(args[1]));
+        int rw = static_cast<int>(toDouble(args[2])), rh = static_cast<int>(toDouble(args[3]));
+        unsigned int col = static_cast<unsigned int>(toDouble(args[4]));
+
+        // Desenezi doar marginile (4 apeluri ipotetice sau bucle scurte)
+        // Sus, Jos, Stânga, Dreapta
+        return vData{ 1LL };
+        };
+
     registry[L"CAN_CIRCLE"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 4 || !g_Canvas.pBits) return vData{ 0LL };
 

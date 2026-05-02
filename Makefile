@@ -16,8 +16,14 @@ OBJS = $(SRCS:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 # Fișierele de dependență
 DEPS = $(OBJS:.o=.d)
 
+
+# Definim unde sunt pluginurile
+PLUGIN_ROOT = src/plugins
+# Găsește toate directoarele care conțin un Makefile în src/plugins/
+PLUGINS = $(wildcard $(PLUGIN_ROOT)/*/. )
+
 # Regula implicită
-all: plugin $(TARGET)
+all: plugin plugins $(TARGET)
 
 # Compilează executabilul
 $(TARGET): $(OBJS)
@@ -31,6 +37,13 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 # Include fișierele .d generate (dacă există)
 -include $(DEPS)
 
+
+# Regula care compilează toate pluginurile gasite
+plugins:
+	@for dir in $(PLUGINS); do \
+		echo "Building plugin in $$dir..."; \
+		$(MAKE) -C $$dir; \
+	done
 # Regula pentru plugin
 # Folosim @ ca să nu aglomerăm consola dacă nu e cazul
 plugin:
@@ -41,5 +54,8 @@ clean:
 	@echo "Cleaning up..."
 	rm -rf $(BUILD_DIR) $(TARGET)
 	$(MAKE) -C oli_plugin clean
-
-.PHONY: all clean plugin
+	@for dir in $(PLUGINS); do \
+		$(MAKE) -C $$dir clean; \
+	done
+	
+.PHONY: all clean plugins $(TARGET)

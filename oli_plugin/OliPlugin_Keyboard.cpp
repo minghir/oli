@@ -15,6 +15,44 @@
 #endif
 
 #ifndef _WIN32
+#include <X11/Xlib.h>
+#include <X11/keysym.h>
+
+// Avem nevoie de display-ul deschis în oli_canvas. 
+// Dacă nu îl avem global, îl deschidem local pentru interogare.
+void sync_linux_keys_x11() {
+    Display* d = XOpenDisplay(NULL);
+    if (!d) return;
+
+    char keys_return[32];
+    XQueryKeymap(d, keys_return);
+
+    // Mapare coduri Virtual Key (Windows) -> KeyCodes (X11)
+    // Săgețile în X11 sunt de obicei:
+    // Left: 113, Up: 111, Right: 114, Down: 116, Space: 65, Q: 24
+
+    auto check_key = [&](int x11_keycode, int win_vk) {
+        bool pressed = keys_return[x11_keycode >> 3] & (1 << (x11_keycode & 7));
+        if (pressed) {
+            g_linuxKeyMap[win_vk] = std::chrono::steady_clock::now();
+        }
+        };
+
+    // Interogăm tastele specifice
+    check_key(113, 37); // Left
+    check_key(114, 39); // Right
+    check_key(111, 38); // Up
+    check_key(116, 40); // Down
+    check_key(65, 32);  // Space
+    check_key(24, 81);  // Q (pentru ieșire)
+
+    XCloseDisplay(d);
+}
+#endif
+
+
+
+#ifndef _WIN32
 // --- LOGICĂ LINUX PENTRU SIMULARE ASYNC ---
 static std::map<int, std::chrono::steady_clock::time_point> g_linuxKeyMap;
 
@@ -100,25 +138,29 @@ void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vD
         int vk = (int)asInt(a[0]);
 
 #ifdef _WIN32
-        // Windows: Rămâne neschimbat, e perfect așa.
         short state = GetAsyncKeyState(vk);
         return vData{ (state & 0x8000) ? 1LL : 0LL };
 #else
-        // Linux: Sincronizăm starea din bufferul de intrare
-        sync_linux_keys();
+        // Metoda sigură pentru X11 (fără delay de terminal)
+        Display* d = XOpenDisplay(NULL);
+        if (!d) return vData{ 0LL };
 
-        auto it = g_linuxKeyMap.find(vk);
-        if (it != g_linuxKeyMap.end()) {
-            auto now = std::chrono::steady_clock::now();
-            auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second).count();
+        char keys[32];
+        XQueryKeymap(d, keys);
 
-            // 250ms este „punctul dulce” pentru terminalele Linux.
-            // Permite apăsarea simultană fără ca nava să se oprească sacadat.
-            if (diff < 250) {
-                return vData{ 1LL };
-            }
-        }
-        return vData{ 0LL };
+        // Convertim VK în KeyCode X11 (simplificat pentru test)
+        int kc = 0;
+        if (vk == 37) kc = XKeysymToKeycode(d, XK_Left);
+        if (vk == 39) kc = XKeysymToKeycode(d, XK_Right);
+        if (vk == 38) kc = XKeysymToKeycode(d, XK_Up);
+        if (vk == 40) kc = XKeysymToKeycode(d, XK_Down);
+        if (vk == 32) kc = XKeysymToKeycode(d, XK_space);
+        if (vk == 81) kc = XKeysymToKeycode(d, XK_q);
+
+        bool isPressed = keys[kc >> 3] & (1 << (kc & 7));
+        XCloseDisplay(d);
+
+        return vData{ isPressed ? 1LL : 0LL };
 #endif
         };
 

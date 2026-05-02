@@ -17,6 +17,9 @@ using namespace Gdiplus;
 #define RGB(r,g,b) ((unsigned int)((b) | ((g) << 8) | ((r) << 16)))
 #endif
 
+// --- STB_IMAGE SETUP ---
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 // --- LOGICĂ GDI+ (DOAR PENTRU WINDOWS) ---
 #ifdef _WIN32
@@ -61,39 +64,38 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
 
     // SPRITE_LOAD("cale/catre/imagine.bmp") -> returnează ID-ul sprite-ului
     registry[L"SPRITE_LOAD"] = [](const std::vector<vData>& args) -> vData {
-        if (args.empty() || !std::holds_alternative<std::wstring>(args[0].value)) return vData{ -1LL };
-        std::wstring path = std::get<std::wstring>(args[0].value);
-
-#ifdef _WIN32
-        StartGDIPlus();
-        Bitmap* bitmap = Bitmap::FromFile(path.c_str());
-        if (!bitmap || bitmap->GetLastStatus() != Ok) {
-            delete bitmap;
+        if (args.empty() || !std::holds_alternative<std::wstring>(args[0].value))
             return vData{ -1LL };
-        }
+
+        std::wstring wpath = std::get<std::wstring>(args[0].value);
+        // Convertim calea din wide string în string normal pentru stb
+        std::string path(wpath.begin(), wpath.end());
+
+        int w, h, channels;
+        // Încărcăm imaginea forțând 4 canale (RGBA)
+        unsigned char* data = stbi_load(path.c_str(), &w, &h, &channels, 4);
+
+        if (!data) return vData{ -1LL };
 
         Sprite s;
-        s.width = bitmap->GetWidth();
-        s.height = bitmap->GetHeight();
-        s.pixels.resize(s.width * s.height);
+        s.width = w;
+        s.height = h;
+        s.pixels.resize(w * h);
 
-        for (int y = 0; y < s.height; y++) {
-            for (int x = 0; x < s.width; x++) {
-                Color pixelColor;
-                bitmap->GetPixel(x, y, &pixelColor);
-                s.pixels[y * s.width + x] = pixelColor.GetValue();
-            }
+        for (int i = 0; i < w * h; i++) {
+            unsigned char r = data[i * 4 + 0];
+            unsigned char g = data[i * 4 + 1];
+            unsigned char b = data[i * 4 + 2];
+            unsigned char a = data[i * 4 + 3];
+            // Formatul tău intern: 0xAARRGGBB
+            s.pixels[i] = (a << 24) | (r << 16) | (g << 8) | b;
         }
-        delete bitmap;
 
-        // Înregistrăm sprite-ul DOAR dacă am reușit să îl încărcăm (Windows)
+        stbi_image_free(data); // Eliberăm memoria alocată de stb
+
         int id = g_NextSpriteId++;
         g_SpriteLib[id] = s;
         return vData{ (long long)id };
-#else
-        // Pe Linux momentan nu avem încărcător, deci returnăm eroare imediat
-        return vData{ -1LL };
-#endif
         };
 
     // SPRITE_DRAW(ptr, canvasW, canvasH, spriteId, x, y, transparentColor)

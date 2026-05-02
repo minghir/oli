@@ -20,7 +20,7 @@ set $VPW = $SW - $ship_size
 set $VPH = $SH - $ship_size
 
 # 1. Pregătire Navă
-set $myShip = SPRITE_LOAD("examples/games/winvaders/ship.png") 
+set $myShip = SPRITE_LOAD("./examples/games/winvaders/ship.png") 
 SPRITE_SIZE($myShip, $ship_size, $ship_size)
 
 # 2. Inițializare Sistem Stele (Parallax)

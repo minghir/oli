@@ -92,4 +92,4 @@ func RENDER_JULIA_MEMO()
     endwhile
 endfunc
 
-set $v = RENDER_JULIA_MEMO()
+RENDER_JULIA_MEMO()

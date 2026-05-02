@@ -1,0 +1,72 @@
+# --- OPTIMIZARE ---
+config echo off
+config max_iterations 0
+
+# --- SETUP ---
+plugin "x64/Release/oli_wcanvas"
+plugin "x64/Release/oli_plugin"
+
+set $SW = 640
+set $SH = 480
+set $v = CAN_INIT($SW, $SH, "Oli Engine - Circle Dodge")
+
+# Jucătorul
+set $pX = 300
+set $pY = 400
+set $pSize = 30
+
+# Inamici (Array-uri pentru 10 cercuri)
+set $circX = [100, 200, 300, 400, 500, 50, 150, 250, 350, 450]
+set $circY = [0, -50, -100, -150, -200, -250, -300, -350, -400, -450]
+set $circSpeed = [3, 4, 2, 5, 3, 4, 2, 6, 3, 4]
+set $numCirc = 10
+
+while true do
+    set $v = CAN_CLS(0)
+
+    # 1. Control Jucător (A/D sau Săgeți)
+    if KEY_STATE(65) == 1 then # Tasta A
+        set $pX = $pX - 7
+    endif
+    if KEY_STATE(68) == 1 then # Tasta D
+        set $pX = $pX + 7
+    endif
+
+    # 2. Update și desenare Cercuri
+    for $i = 0 to $numCirc - 1 do
+        # Mișcare
+        set $circY[$i] = $circY[$i] + $circSpeed[$i]
+        
+        # Resetare când ies din ecran
+        if $circY[$i] > $SH then
+            set $circY[$i] = -20
+            set $circX[$i] = RANDOM(20, 620)
+        endif
+
+        # Desenare Cerc (Roșu: 0xFF0000 -> 16711680 în zecimal)
+        set $v = CAN_CIRCLE_FILL($circX[$i], $circY[$i], 15, 16711680)
+
+        # 3. Detecție Coliziune Simplă (Distanța între centre)
+        # Verificăm dacă pătratul verde atinge cercul
+        if $pX < $circX[$i] + 15 then
+            if $pX + $pSize > $circX[$i] - 15 then
+                if $pY < $circY[$i] + 15 then
+                    if $pY + $pSize > $circY[$i] - 15 then
+                        # Coliziune! Îl facem roșu o clipă
+                        set $v = CAN_RECT($pX, $pY, $pSize, $pSize, 16711680)
+                    endif
+                endif
+            endif
+        endif
+    endfor
+
+    # 4. Desenare Jucător (Verde: 0x00FF00 -> 65280)
+    set $v = CAN_RECT($pX, $pY, $pSize, $pSize, 65280)
+
+    set $v = CAN_PRESENT()
+    set $v = SLEEP(10)
+
+    if KEY_STATE(81) == 1 then
+        break
+    endif
+endwhile

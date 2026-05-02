@@ -1,0 +1,29 @@
+# --- OPTIMIZARE ---
+config echo off
+config max_iterations 0
+
+# --- SETUP ---
+plugin "x64/Release/oli_plugin"
+
+plugin "x64/Release/oli_wcanvas"
+plugin "x64/Release/oli_fract"
+
+set $v = CAN_INIT(640, 480, "Oli Modular Engine")
+set $ptr = CAN_GET_PTR()
+set $w = CAN_GET_WIDTH()
+set $h = CAN_GET_HEIGHT()
+
+while true do
+    set $cX = 0.7 * COS(TIME() * 30)
+    set $cY = 0.27 * SIN(TIME() * 15)
+
+    # Plugin-ul de fractali scrie direct în memoria canvas-ului
+    set $v = FRACT_JULIA($ptr, $w, $h, $cX, $cY, 32)
+    
+    set $v = CAN_PRESENT()
+    
+    if KEY_STATE(81) == 1 then break endif
+endwhile
+
+CAN_CLOSE()
+echo "Fereastra a fost inchisa. Revenire in consola Oli."

@@ -1,0 +1,34 @@
+<NotepadPlus>
+    <UserLang name="Oli" ext="oli" udlVersion="2.1">
+        <Settings>
+            <Global caseIgnored="no" allowFoldOfComments="no" foldCompact="no" forcePureLC="0" decimalSeparator="0" />
+            <Prefix Keywords1="no" Keywords2="no" Keywords3="no" Keywords4="no" Keywords5="no" Keywords6="no" Keywords7="no" Keywords8="no" />
+        </Settings>
+        <KeywordLists>
+            <Keywords name="Comments">00#</Keywords>
+            <Keywords name="Operators1">- ! ( ) * , / : ; ? [ ] { } + &lt; = &gt;</Keywords>
+            <Keywords name="Operators2">== != &lt;= &gt;= &amp;&amp; ||</Keywords>
+            <Keywords name="Folders in code1, open">func if while for cycle</Keywords>
+            <Keywords name="Folders in code1, middle">else</Keywords>
+            <Keywords name="Folders in code1, close">endfunc endif endwhile endfor endcycle</Keywords>
+            <Keywords name="Keywords1">then do as to return break continue</Keywords>
+            <Keywords name="Keywords2">set plugin config echo max_iterations</Keywords>
+            <Keywords name="Keywords3">RANDOM SIN COS TAN SQRT POW ABS MIN MAX ROUND PI E TIME TICKS SLEEP CHR CHAR ASC INT STR</Keywords>
+            <Keywords name="Keywords4">CON_SCREEN CON_CLS CURSOR DB_INIT DB_PUT DB_PRESENT KEY_STATE GET_KEY PUSH</Keywords>
+            <Keywords name="Numbers, prefix1">$</Keywords>
+        </KeywordLists>
+        <Styles>
+            <!-- Am setat bgColor pe o culoare închisă standard (Dracula) pentru siguranță -->
+            <WordsStyle name="DEFAULT" fgColor="F8F8F2" bgColor="282A36" fontStyle="0" nesting="0" />
+            <WordsStyle name="LINE COMMENTS" fgColor="6272A4" bgColor="282A36" fontStyle="2" nesting="0" />
+            <WordsStyle name="NUMBERS" fgColor="BD93F9" bgColor="282A36" fontStyle="0" nesting="0" />
+            <WordsStyle name="KEYWORDS1" fgColor="FF79C6" bgColor="282A36" fontStyle="1" nesting="0" />
+            <WordsStyle name="KEYWORDS2" fgColor="50FA7B" bgColor="282A36" fontStyle="1" nesting="0" />
+            <WordsStyle name="KEYWORDS3" fgColor="8BE9FD" bgColor="282A36" fontStyle="0" nesting="0" />
+            <WordsStyle name="KEYWORDS4" fgColor="FFB86C" bgColor="282A36" fontStyle="0" nesting="0" />
+            <WordsStyle name="OPERATORS" fgColor="F8F8F2" bgColor="282A36" fontStyle="1" nesting="0" />
+            <WordsStyle name="FOLDER IN CODE1" fgColor="FF79C6" bgColor="282A36" fontStyle="1" nesting="0" />
+            <WordsStyle name="DELIMITERS1" fgColor="F8F8F2" bgColor="282A36" fontStyle="0" nesting="0" />
+        </Styles>
+    </UserLang>
+</NotepadPlus>

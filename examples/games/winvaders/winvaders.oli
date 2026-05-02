@@ -1,0 +1,143 @@
+# --- OPTIMIZARE ---
+config echo off
+config max_iterations 0
+
+# --- SETUP ---
+plugin "x64/Release/oli_plugin"
+plugin "x64/Release/oli_wcanvas"
+#plugin "x64/Release/oli_fract"
+plugin "x64/Release/oli_sprites"
+
+set $SW = 640
+set $SH = 480
+set $v = CAN_INIT($SW, $SH, "Oli Engine - Starfield Invaders")
+set $ptr = CAN_GET_PTR()
+set $ship_size = 64
+set $VPW = $SW - $ship_size
+set $VPH = $SH - $ship_size
+
+# 1. Pregătire Navă
+set $myShip = SPRITE_LOAD("examples/games/winvaders/ship.png") 
+SPRITE_SIZE($myShip, $ship_size, $ship_size)
+
+# 2. Inițializare Sistem Stele (Parallax)
+set $numStars = 160
+set $starX = []
+set $starY = []
+set $starSpeed = []
+
+for $i = 0 to $numStars - 1 do
+    set $starX[$i] = RANDOM(0, $SW)
+    set $starY[$i] = RANDOM(0, $SH)
+    set $starSpeed[$i] = RANDOM(1, 4) # Viteze diferite pentru adâncime
+endfor
+
+set $x = 300
+set $y = 350
+
+# 2.5 Inițializare Gloanțe (Max 10 pe ecran simultan)
+set $maxBullets = 10
+set $bX = []
+set $bY = []
+set $bActive = []
+set $bulletSpeed = 10
+
+for $i = 0 to $maxBullets - 1 do
+    set $bActive[$i] = 0
+endfor
+
+# Timer pentru a nu trage prea repede (cooldown)
+set $lastShot = 0
+
+while true do
+    # Ștergem buffer-ul
+    CAN_CLS(0)
+
+    # --- 3. LOGICĂ ȘI DESENARE STELE ---
+    for $i = 0 to $numStars - 1 do
+        # Mișcare picătură/stea
+        set $starY[$i] = $starY[$i] + $starSpeed[$i]
+
+        # Resetare dacă a ieșit din ecran
+        if $starY[$i] > $SH then
+            set $starY[$i] = 0
+            set $starX[$i] = RANDOM(0, $SW)
+        endif
+
+        # Calcul culoare bazat pe viteză (gri închis -> alb)
+        # Formula: (R << 16) + (G << 8) + B
+        set $bright = $starSpeed[$i] * 63
+        set $color = ($bright * 65536) + ($bright * 256) + $bright
+        
+        CAN_PUT($starX[$i], $starY[$i], $color)
+    endfor
+
+    # --- 4. LOGICĂ ȘI DESENARE GLOANȚE (Neon Glow Edition) ---
+    for $i = 0 to $maxBullets - 1 do
+        if $bActive[$i] == 1 then
+            set $bY[$i] = $bY[$i] - $bulletSpeed
+            
+            # Parametrii glonțului
+            set $bx_pos = $bX[$i]
+            set $by_pos = $bY[$i]
+
+            # 1. Aura Exterioară (Portocaliu stins/Glow)
+            # Desenăm un dreptunghi ceva mai lat și mai înalt
+            CAN_RECT($bx_pos - 2, $by_pos - 2, 6, 12, 8421376) # Gri-Portocaliu stins
+
+            # 2. Corpul Laserului (Galben intens)
+            # 16776960 (0xFFFF00)
+            CAN_RECT($bx_pos - 1, $by_pos, 4, 10, 16776960)
+
+            # 3. Miezul de Energie (Alb/Galben foarte deschis)
+            # 16777165 (0xFFFFCD) - Sugerează că e atât de fierbinte încât e alb
+            CAN_RECT($bx_pos, $by_pos + 1, 2, 8, 16777165)
+
+            # Dezactivăm dacă iese din ecran
+            if $bY[$i] < -20 then
+                set $bActive[$i] = 0
+            endif
+        endif
+    endfor
+
+    # --- 5. DESENARE NAVĂ ---
+    SPRITE_DRAW($ptr, $SW, $SH, $myShip, $x, $y)
+
+    CAN_PRESENT()
+    
+    # --- 6. LOGICĂ DE MIȘCARE ȘI TRAGERE ---
+    if KEY_STATE(37) == 1 then set $x = $x - 5 endif
+    if KEY_STATE(39) == 1 then set $x = $x + 5 endif
+    if KEY_STATE(38) == 1 then set $y = $y - 5 endif
+    if KEY_STATE(40) == 1 then set $y = $y + 5 endif
+	
+    # Tragere cu SPACE (32)
+    if KEY_STATE(32) == 1 then
+        # Verificăm cooldown-ul folosind TIME() (ex: un glonț la 200ms)
+        set $now = TIME() * 1000
+        if ($now - $lastShot) > 200 then
+            # Căutăm un slot de glonț liber
+            for $i = 0 to $maxBullets - 1 do
+                if $bActive[$i] == 0 then
+                    set $bActive[$i] = 1
+                    # Poziționăm glonțul în centrul navei
+                    set $bX[$i] = $x + ($ship_size / 2)
+                    set $bY[$i] = $y
+                    set $lastShot = $now
+                    break # Ieșim din for după ce am tras un glonț
+                endif
+            endfor
+        endif
+    endif
+
+    # Limite ecran (neschimbat)
+    if $x < 0 then set $x = 0 endif
+    if $x > $VPW then set $x = $VPW endif
+    if $y < 0 then set $y = 0 endif
+    if $y > $VPH then set $y = $VPH endif
+
+    SLEEP(16)
+    if KEY_STATE(81) == 1 then break endif
+endwhile
+
+CAN_CLOSE()

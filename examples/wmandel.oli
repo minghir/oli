@@ -1,0 +1,45 @@
+# --- OPTIMIZARE ---
+config echo off
+config max_iterations 0
+
+# --- SETUP ---
+plugin "x64/Release/oli_plugin"
+
+plugin "x64/Release/oli_wcanvas"
+plugin "x64/Release/oli_fract"
+set $SW = 640
+set $SH = 480
+set $v = CAN_INIT($SW, $SH, "Oli Mandelbrot Explorer:arrows to use")
+set $ptr = CAN_GET_PTR()
+
+set $zoom = 1.0
+set $mX = -0.5
+set $mY = 0
+
+while true do
+    # 1. Desenăm fractalul (Foc: Red/Yellow gradient)
+    set $v = FRACT_MANDEL($ptr, $SW, $SH, $zoom, $mX, $mY)
+
+    # 2. Control Zoom & Mișcare
+    if KEY_STATE(38) == 1 then # Săgeată SUS (Zoom In)
+        set $zoom = $zoom * 1.1
+    endif
+    if KEY_STATE(40) == 1 then # Săgeată JOS (Zoom Out)
+        set $zoom = $zoom * 0.9
+    endif
+    if KEY_STATE(37) == 1 then # STÂNGA
+        set $mX = $mX - (0.05 / $zoom)
+    endif
+    if KEY_STATE(39) == 1 then # DREAPTA
+        set $mX = $mX + (0.05 / $zoom)
+    endif
+
+    # 3. Afișare
+    set $v = CAN_PRESENT()
+
+    if KEY_STATE(81) == 1 then # Q
+        break
+    endif
+endwhile
+
+set $v = CAN_CLOSE()

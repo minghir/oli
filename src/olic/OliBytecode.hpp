@@ -119,8 +119,8 @@ inline std::wstring disassembleChunk(const OliChunk& chunk) {
             ss << L"OP_SET_INDIRECT\n";
             break;
         case OpCode::OP_JUMP_IF_TRUE: {
-            // Folosim variabila 'ip' existentă în loop, nu 'offset_internal'
-            uint16_t offset = (chunk.code[ip] << 8) | chunk.code[ip + 1];
+            // Folosim ip-ul global din loop-ul de dezasamblare
+            uint16_t offset = (uint16_t)(chunk.code[ip] << 8) | chunk.code[ip + 1];
             ip += 2;
             ss << L"OP_JUMP_IF_TRUE   " << std::setw(4) << std::setfill(L'0') << offset
                 << L" (Sari la adresa: " << (ip + offset) << L")\n";

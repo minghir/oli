@@ -17,11 +17,14 @@ OliChunk OliCompiler::compile(const std::wstring& source) {
 
         std::wstring upperLine = to_upper(line);
 
-        // IMPORTANT: Detectăm începutul și sfârșitul buclei pentru a nu tăia buffer-ul
-        if (upperLine.find(L"IF ") == 0 || upperLine.find(L"WHILE ") == 0) {
+        if (upperLine.find(L"IF ") == 0 || upperLine.find(L"WHILE ") == 0 ||
+            upperLine.find(L"REPEAT") == 0 || upperLine.find(L"FOR ") == 0) {
             nestingLevel++;
         }
-        if (upperLine.find(L"ENDIF") != std::wstring::npos || upperLine.find(L"ENDWHILE") != std::wstring::npos) {
+        if (upperLine.find(L"ENDIF") != std::wstring::npos ||
+            upperLine.find(L"ENDWHILE") != std::wstring::npos ||
+            upperLine.find(L"ENDREPEAT") != std::wstring::npos ||
+            upperLine.find(L"ENDFOR") != std::wstring::npos) {
             nestingLevel--;
         }
 
@@ -354,33 +357,129 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
         }
 
         // 4. COMPILAREA CONDIȚIEI (Evaluarea are loc DUPĂ corp)
-        // Format așteptat: UNTIL $a == 10
-        if (untilIdx + 3 < (int)sc.args.size()) {
-            emitLoadOrConstant(sc.args[untilIdx + 1], chunk); // LHS ($counter)
-            emitLoadOrConstant(sc.args[untilIdx + 3], chunk); // RHS ($limit)
+    // Ne asigurăm că avem cel puțin 3 token-uri după UNTIL ($a == $b)
+            if (untilIdx != -1 && untilIdx + 3 < (int)sc.args.size()) {
+                emitLoadOrConstant(sc.args[untilIdx + 1], chunk); // LHS
+                emitLoadOrConstant(sc.args[untilIdx + 3], chunk); // RHS
 
-            std::wstring op = sc.args[untilIdx + 2];
-            if (op == L">")       chunk.addByte((uint8_t)OpCode::OP_GREATER, 0);
-            else if (op == L"<")  chunk.addByte((uint8_t)OpCode::OP_LESS, 0);
-            else if (op == L"==") chunk.addByte((uint8_t)OpCode::OP_EQUAL, 0);
+                std::wstring op = sc.args[untilIdx + 2];
+                if (op == L">")       chunk.addByte((uint8_t)OpCode::OP_GREATER, 0);
+                else if (op == L"<")  chunk.addByte((uint8_t)OpCode::OP_LESS, 0);
+                else if (op == L"==") chunk.addByte((uint8_t)OpCode::OP_EQUAL, 0);
 
-            // 5. LOGICA DE JUMP (REPEAT repetă dacă condiția este FALSE)
-            // Dacă e TRUE (condiția UNTIL e îndeplinită), sărim peste OP_LOOP
-            chunk.addByte((uint8_t)OpCode::OP_JUMP_IF_TRUE, 0);
-            size_t patchAddr = chunk.code.size();
-            chunk.addByte(0, 0); chunk.addByte(0, 0); // Placeholder offset
+                // 5. LOGICA DE JUMP
+                // Dacă e TRUE (condiția UNTIL e gata), sărim peste OP_LOOP
+                chunk.addByte((uint8_t)OpCode::OP_JUMP_IF_TRUE, 0);
+                size_t patchAddr = chunk.code.size();
+                chunk.addByte(0, 0); chunk.addByte(0, 0);
 
-            // Dacă JUMP_IF_TRUE nu s-a executat (e False), facem LOOP înapoi
-            chunk.addByte((uint8_t)OpCode::OP_LOOP, 0);
-            uint16_t loopOffset = (uint16_t)(chunk.code.size() + 2 - loopStart);
-            chunk.addByte((uint8_t)(loopOffset >> 8), 0);
-            chunk.addByte((uint8_t)(loopOffset & 0xFF), 0);
+                // Dacă e FALSE, facem LOOP înapoi la loopStart
+                chunk.addByte((uint8_t)OpCode::OP_LOOP, 0);
+                uint16_t loopOffset = (uint16_t)(chunk.code.size() + 2 - loopStart);
+                chunk.addByte((uint8_t)(loopOffset >> 8), 0);
+                chunk.addByte((uint8_t)(loopOffset & 0xFF), 0);
 
-            // Backpatching: Scriem adresa de ieșire în JUMP_IF_TRUE
-            uint16_t exitOffset = (uint16_t)(chunk.code.size() - (patchAddr + 2));
-            chunk.code[patchAddr] = (uint8_t)(exitOffset >> 8);
-            chunk.code[patchAddr + 1] = (uint8_t)(exitOffset & 0xFF);
+                // Backpatching: Scriem adresa de ieșire
+                uint16_t exitOffset = (uint16_t)(chunk.code.size() - (patchAddr + 2));
+                chunk.code[patchAddr] = (uint8_t)(exitOffset >> 8);
+                chunk.code[patchAddr + 1] = (uint8_t)(exitOffset & 0xFF);
+            }
+            else {
+                std::wcout << L"[DEBUG] REPEAT condition skipped! Size check failed." << std::endl;
+            }
         }
+
+    else if (cmdName == L"FOR") {
+        int toIdx = -1, byIdx = -1, doIdx = -1, endForIdx = -1;
+        int counter = 1;
+
+        // 1. Identificăm pozițiile cuvintelor cheie (balansat)
+        for (int i = 0; i < (int)sc.args.size(); ++i) {
+            std::wstring argU = to_upper(sc.args[i]);
+            if (argU == L"FOR") counter++;
+            if (argU == L"ENDFOR") {
+                counter--;
+                if (counter == 0) { endForIdx = i; break; }
+            }
+            if (counter == 1) {
+                if (argU == L"TO") toIdx = i;
+                else if (argU == L"BY") byIdx = i;
+                else if (argU == L"DO") doIdx = i;
+            }
+        }
+
+        if (toIdx == -1 || doIdx == -1 || endForIdx == -1) return;
+
+        std::wstring varName = sc.args[0]; // $i
+        std::wstring startVal = sc.args[2]; // Valoarea de după '='
+        std::wstring limitVal = sc.args[toIdx + 1];
+        std::wstring stepVal = (byIdx != -1) ? sc.args[byIdx + 1] : L"1";
+
+        // 2. INIȚIALIZARE: SET $i = startVal
+        emitLoadOrConstant(startVal, chunk);
+        chunk.addByte((uint8_t)OpCode::OP_SET_GLOBAL, 0);
+        uint16_t nameIdx = chunk.addConstant(vData(varName));
+        chunk.addByte((uint8_t)(nameIdx >> 8), 0);
+        chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
+
+        // 3. LOOP START (Punctul unde verificăm condiția)
+        size_t loopStart = chunk.code.size();
+
+        // 4. CONDIȚIA: $i <= limitVal
+        // Deoarece nu avem OP_LE, folosim: EXIT dacă $i > limitVal
+        emitLoadOrConstant(varName, chunk);
+        emitLoadOrConstant(limitVal, chunk);
+        chunk.addByte((uint8_t)OpCode::OP_GREATER, 0);
+
+        chunk.addByte((uint8_t)OpCode::OP_JUMP_IF_TRUE, 0);
+        size_t exitJumpAddr = chunk.code.size();
+        chunk.addByte(0, 0); chunk.addByte(0, 0); // Placeholder offset ieșire
+
+        // 5. COMPILARE CORP (Între DO și ENDFOR)
+        int i = doIdx + 1;
+        while (i < endForIdx) {
+            ShellCommand bCmd;
+            bCmd.name = sc.args[i++];
+            std::wstring uName = to_upper(bCmd.name);
+
+            if (uName == L"WHILE" || uName == L"IF" || uName == L"FOR" || uName == L"REPEAT") {
+                int subCounter = 1;
+                std::wstring endTag = (uName == L"WHILE") ? L"ENDWHILE" : (uName == L"IF" ? L"ENDIF" : (uName == L"FOR" ? L"ENDFOR" : L"ENDREPEAT"));
+                while (i < endForIdx && subCounter > 0) {
+                    std::wstring uArg = to_upper(sc.args[i]);
+                    if (uArg == uName) subCounter++;
+                    if (uArg == endTag) subCounter--;
+                    bCmd.args.push_back(sc.args[i++]);
+                }
+            }
+            else {
+                while (i < endForIdx) {
+                    std::wstring uArg = to_upper(sc.args[i]);
+                    if (uArg == L"SET" || uArg == L"ECHO" || uArg == L"IF" || uArg == L"WHILE" || uArg == L"FOR" || uArg == L"REPEAT") break;
+                    bCmd.args.push_back(sc.args[i++]);
+                }
+            }
+            if (!bCmd.name.empty()) compileStatement(bCmd, chunk);
+        }
+
+        // 6. INCREMENTARE (Pasul): SET $i = $i + stepVal
+        emitLoadOrConstant(varName, chunk);
+        emitLoadOrConstant(stepVal, chunk);
+        chunk.addByte((uint8_t)OpCode::OP_ADD, 0);
+        chunk.addByte((uint8_t)OpCode::OP_SET_GLOBAL, 0);
+        chunk.addByte((uint8_t)(nameIdx >> 8), 0);
+        chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
+
+        // 7. JUMP ÎNAPOI la loopStart
+        chunk.addByte((uint8_t)OpCode::OP_LOOP, 0);
+        uint16_t loopOffset = (uint16_t)(chunk.code.size() + 2 - loopStart);
+        chunk.addByte((uint8_t)(loopOffset >> 8), 0);
+        chunk.addByte((uint8_t)(loopOffset & 0xFF), 0);
+
+        // 8. BACKPATCHING (Sărim aici când condiția de la pct 4 e True)
+        uint16_t exitOffset = (uint16_t)(chunk.code.size() - (exitJumpAddr + 2));
+        chunk.code[exitJumpAddr] = (uint8_t)(exitOffset >> 8);
+        chunk.code[exitJumpAddr + 1] = (uint8_t)(exitOffset & 0xFF);
         }
 }
 

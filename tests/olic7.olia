@@ -1,0 +1,18 @@
+﻿[2026-05-03 19:02:19] [SUCCESS] Logarea în fișier a fost activată (UTF-8)
+--- OLI ASSEMBLY LISTING ---
+
+0000: OP_CONSTANT     0000 (Value: 0)
+0003: OP_DUP
+0004: OP_SET_GLOBAL   0001 (Name: $i)
+0007: OP_CONSTANT     0002 (Value: 10)
+0010: OP_GREATER
+0011: OP_JUMP_IF_TRUE   0017 (Sari la adresa: 31)
+0014: OP_GET_GLOBAL   0001 (Name: $i)
+0017: OP_ECHO
+0018: OP_GET_GLOBAL   0001 (Name: $i)
+0021: OP_CONSTANT     0003 (Value: 2)
+0024: OP_ADD
+0025: OP_SET_GLOBAL   0001 (Name: $i)
+0028: OP_LOOP          0027 (Sari inapoi la: 4)
+0031: OP_RETURN
+

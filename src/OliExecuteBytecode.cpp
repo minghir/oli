@@ -233,20 +233,16 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
         }
         case OpCode::OP_JUMP_IF_TRUE: {
             // 1. Citim offset-ul (2 bytes)
-            uint16_t offset = (uint16_t)(chunk.code[ip] << 8);
-            offset |= chunk.code[ip + 1];
+            uint16_t offset = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
+            ip += 2;
 
-            // 2. Evaluăm vârful stivei
+            // 2. Evaluăm condiția de pe stivă
             vData condition = stack.back();
             stack.pop_back();
 
+            // 3. Dacă e TRUE, aplicăm saltul (ieșim din REPEAT)
             if (vDataToBool(condition)) {
-                // Dacă e TRUE, sărim
                 ip += offset;
-            }
-            else {
-                // Dacă e FALSE, doar sărim peste cei 2 bytes ai offset-ului
-                ip += 2;
             }
             break;
         }

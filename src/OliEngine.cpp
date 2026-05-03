@@ -3651,7 +3651,7 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
       // Acest flag va face ca loop-urile din callUserFunction sau callProcedure să se oprească
       m_shouldReturn = true;
   }
-
+  /*
   void vOliEngine::handleForCommand(const std::wstring& fullLine) {
       std::wstring upperLine = fullLine;
       std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
@@ -3754,6 +3754,124 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
           if (++safetyBreak > MAX_ITER) {
               LOG_ERROR(L"FOR Infinite loop safety trigger!");
               break;
+          }
+      }
+  }
+  */
+  void vOliEngine::handleForCommand(const std::wstring& fullLine) {
+      std::wstring upperLine = fullLine;
+      std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
+
+      // 1. Identificare FOR
+      size_t forPos = upperLine.find(L"FOR");
+      if (forPos == std::wstring::npos) return;
+
+      // 2. Delimitatori (findTopLevelKeyword previne coliziunile în FOR-uri imbricate)
+      size_t posTo = findTopLevelKeyword(fullLine, L"TO", L"FOR");
+      size_t posDo = findTopLevelKeyword(fullLine, L"DO", L"FOR");
+      size_t posEnd = findTopLevelKeyword(fullLine, L"ENDFOR", L"FOR");
+
+      if (posTo == std::wstring::npos || posDo == std::wstring::npos || posEnd == std::wstring::npos) {
+          LOG_ERROR(L"Malformed FOR statement: TO, DO or ENDFOR keyword missing.");
+          return;
+      }
+
+      size_t posBy = findTopLevelKeyword(fullLine, L"BY", L"FOR");
+
+      // 3. Extragere segmente
+      size_t initStart = forPos + 3;
+      std::wstring initPart = trim(fullLine.substr(initStart, posTo - initStart));
+
+      size_t limitStart = posTo + 2;
+      size_t limitEnd = (posBy != std::wstring::npos) ? posBy : posDo;
+      std::wstring limitExpr = trim(fullLine.substr(limitStart, limitEnd - limitStart));
+
+      std::wstring stepExpr = L"1";
+      if (posBy != std::wstring::npos) {
+          size_t stepStart = posBy + 2;
+          stepExpr = trim(fullLine.substr(stepStart, posDo - stepStart));
+      }
+
+      size_t bodyStart = posDo + 2;
+      std::wstring bodyCommand = trim(fullLine.substr(bodyStart, posEnd - bodyStart));
+      std::vector<std::wstring> instructions = preParse(bodyCommand);
+
+      // 4. Extragere nume variabilă și valoare inițială
+      size_t eqPos = initPart.find(L'=');
+      if (eqPos == std::wstring::npos) {
+          LOG_ERROR(L"Invalid FOR init format. Expected: FOR $i = 1 TO ...");
+          return;
+      }
+
+      std::wstring varName = trim(initPart.substr(0, eqPos));
+      if (!varName.empty() && varName[0] == L'$') varName.erase(0, 1);
+
+      std::wstring initValueExpr = trim(initPart.substr(eqPos + 1));
+
+      // --- 5. EXECUȚIA ---
+
+      // A. Inițializare (evaluăm valoarea de start și o setăm direct)
+      vData startVal = evaluateExpression(initValueExpr);
+      setVariable(varName, startVal);
+
+      int safetyBreak = 0;
+      
+
+      while (true) {
+
+          
+
+          // B. Evaluăm condițiile de control
+          vData currentVal = resolveVariable(varName);
+          vData limitVal = evaluateExpression(limitExpr);
+          vData stepData = evaluateExpression(stepExpr);
+
+          double current = vDataToDouble(currentVal);
+          double limit = vDataToDouble(limitVal);
+          double step = vDataToDouble(stepData);
+
+          // C. Verificăm ieșirea
+          if (step >= 0 && current > limit) break;
+          if (step < 0 && current < limit) break;
+
+          // D. Executăm corpul buclei
+          bool breakFromLoop = false;
+          for (const auto& instr : instructions) {
+              if (instr.empty()) continue;
+
+              //this->execute(instr);
+              this->executeInternal(instr);
+
+              if (m_executionStatus == OliStatus::BREAK_REQUESTED) {
+                  m_executionStatus = OliStatus::RUNNING;
+                  breakFromLoop = true;
+                  break;
+              }
+              if (m_executionStatus == OliStatus::CONTINUE_REQUESTED) {
+                  m_executionStatus = OliStatus::RUNNING;
+                  goto perform_step; // Sarim direct la incrementare
+              }
+              if (m_executionStatus == OliStatus::RETURN_REQUESTED) return;
+          }
+
+          if (breakFromLoop) break;
+
+      perform_step:
+          vData latestVal = resolveVariable(varName);
+          double latest = vDataToDouble(latestVal);
+
+          // 2. Incrementăm valoarea proaspăt citită
+          latest += step;
+
+          // 3. Salvăm rezultatul în motor
+          setVariable(varName, vData(latest));
+
+          // --- SAFETY CHECK ---
+          if (m_maxIterations > 0) {
+              if (++safetyBreak > m_maxIterations) {
+                  LOG_ERROR(L"Safety limit reached in FOR loop...");
+                  break;
+              }
           }
       }
   }

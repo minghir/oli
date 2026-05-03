@@ -3121,7 +3121,7 @@ void vOliEngine::callProcedure(const Procedure& proc, const std::vector<std::wst
 }
 
    
-
+/*
 void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
     if (sc.args.empty()) {
         LOG_ERROR(L"Usage: plugin \"path/to/plugin\"");
@@ -3164,7 +3164,146 @@ void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
         LOG_ERROR(L"Invalid Plugin: Export 'LoadOliPlugin' not found in " + dllPath);
         PortTools::freeDynamicLibrary(hLib);
     }
+}*/
+/*
+void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
+    if (sc.args.empty()) {
+        LOG_ERROR(L"Usage: plugin \"path/to/plugin\"");
+        return;
+    }
+
+    std::wstring pluginName = sc.args[0];
+
+    // 1. Curățăm ghilimelele
+    if (pluginName.size() >= 2 && pluginName.front() == L'"' && pluginName.back() == L'"') {
+        pluginName = pluginName.substr(1, pluginName.size() - 2);
+    }
+
+    // 2. Determinăm calea finală (Logica de Default Path)
+    std::wstring dllPath;
+
+    // Dacă numele pluginului NU conține separatoare de directoare (/ sau \), 
+    // înseamnă că e doar un nume simplu și îl căutăm în folderul de plugin-uri setat.
+    if (pluginName.find(L'/') == std::wstring::npos && pluginName.find(L'\\') == std::wstring::npos) {
+        dllPath = m_pluginsPath + pluginName;
+    }
+    else {
+        dllPath = pluginName; // Este o cale specifică (relativă sau absolută)
+    }
+
+    // 3. Adăugăm extensia corectă (.dll sau .so)
+    std::wstring ext = PortTools::getPluginExtension();
+    if (dllPath.size() < ext.size() ||
+        dllPath.substr(dllPath.size() - ext.size()) != ext)
+    {
+        dllPath += ext;
+    }
+
+    // --- 4. Încărcăm biblioteca (Restul rămâne la fel) ---
+    PortTools::LibHandle hLib = PortTools::loadDynamicLibrary(dllPath);
+
+    if (!hLib) {
+        LOG_ERROR(L"Could not load plugin: " + dllPath +
+            L" (Error: " + PortTools::getLastErrorString() + L")");
+        return;
+    }
+
+    typedef void (*RegisterFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&);
+    RegisterFunc regFunc = (RegisterFunc)PortTools::getFunctionSymbol(hLib, "LoadOliPlugin");
+
+    if (regFunc) {
+        regFunc(this->m_functionsHandlers);
+        LOG_SUCCESS(L"Plugin loaded: " + dllPath);
+    }
+    else {
+        LOG_ERROR(L"Invalid Plugin: Export 'LoadOliPlugin' not found in " + dllPath);
+        PortTools::freeDynamicLibrary(hLib);
+    }
 }
+*/
+
+void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
+    if (sc.args.empty()) {
+        LOG_ERROR(L"Usage: plugin \"path/to/plugin\"");
+        return;
+    }
+
+    std::wstring pluginName = sc.args[0];
+
+    // 1. Curățăm ghilimelele
+    if (pluginName.size() >= 2 && pluginName.front() == L'"' && pluginName.back() == L'"') {
+        pluginName = pluginName.substr(1, pluginName.size() - 2);
+    }
+
+    // 2. Determinăm calea finală
+    std::wstring dllPath;
+    if (pluginName.find(L'/') == std::wstring::npos && pluginName.find(L'\\') == std::wstring::npos) {
+        dllPath = m_pluginsPath + pluginName;
+    }
+    else {
+        dllPath = pluginName;
+    }
+
+    // 3. Adăugăm extensia corectă (.dll / .so)
+    std::wstring ext = PortTools::getPluginExtension();
+    if (dllPath.size() < ext.size() ||
+        dllPath.substr(dllPath.size() - ext.size()) != ext)
+    {
+        dllPath += ext;
+    }
+
+    // 4. Încărcăm biblioteca
+    PortTools::LibHandle hLib = PortTools::loadDynamicLibrary(dllPath);
+
+    if (!hLib) {
+        LOG_ERROR(L"Could not load plugin: " + dllPath +
+            L" (Error: " + PortTools::getLastErrorString() + L")");
+        return;
+    }
+
+    bool loadedAnything = false;
+
+    // --- A. Încărcare FUNCȚII (Sistemul Vechi) ---
+    typedef void (*RegisterFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&);
+    RegisterFunc regFunc = (RegisterFunc)PortTools::getFunctionSymbol(hLib, "LoadOliPlugin");
+
+    if (regFunc) {
+        regFunc(this->m_functionsHandlers);
+        LOG_SUCCESS(L"Functions injected from: " + dllPath);
+        loadedAnything = true;
+    }
+
+    // --- B. Încărcare COMENZI (Sistemul Nou prin Interfață) ---
+    // Folosim typedef-ul definit în IOliEngine.hpp
+    LoadCommandsFunc regCmds = (LoadCommandsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliCommandPlugin");
+
+    if (regCmds) {
+        // Păstrăm o listă cu ce era înainte în map pentru a vedea ce s-a adăugat
+    // Sau, mai simplu, iterăm prin map-ul de handlere după înregistrare
+        size_t countBefore = this->m_commandHandlers.size();
+
+        regCmds(this->m_commandHandlers, this);
+
+        // Înregistrăm noile chei în vOliKeyWords pentru a fi recunoscute ca instrucțiuni valide
+        for (auto const& [name, handler] : this->m_commandHandlers) {
+            // Înregistrăm tot ce e în map în lista de comenzi dinamice
+            vOliKeyWords::registerDynamicCommand(name);
+        }
+
+        LOG_SUCCESS(L"Commands injected and registered in KeyWords: " + dllPath);
+        loadedAnything = true;
+    }
+
+    // 5. Verificare validitate plugin
+    if (loadedAnything) {
+        LOG_SUCCESS(L"Plugin '" + pluginName + L"' is fully operational.");
+    }
+    else {
+        LOG_ERROR(L"Invalid Plugin: No 'LoadOliPlugin' or 'LoadOliCommandPlugin' found in " + dllPath);
+        PortTools::freeDynamicLibrary(hLib);
+    }
+}
+
 
 void vOliEngine::handleListProcsCommand(const ShellCommand& sc) {
     if (m_procedures.empty()) {
@@ -4533,6 +4672,7 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
 
           // Adăugăm ECHO în listă
           LOG_RAW(L"ECHO: " + std::wstring(m_echoEnabled ? L"ON" : L"OFF"));
+          LOG_RAW(L"PLUGINS_PATH: " + m_pluginsPath);
 
           LOG_RAW(L"--------------------------------\n");
           LOG_RAW(L"Tip: Folosește 'CONFIG <PARAM> <VALOARE>' pentru a schimba.");
@@ -4595,7 +4735,23 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
 
           LOG_SUCCESS(L"ECHO updated to: " + std::wstring(m_echoEnabled ? L"ON" : L"OFF"));
       }
+      else if (target == L"PLUGINS_PATH") {
+          // Curățăm ghilimelele dacă utilizatorul a scris CONFIG PLUGINS_PATH "folder/"
+          if (valueStr.size() >= 2 && valueStr.front() == L'"' && valueStr.back() == L'"') {
+              valueStr = valueStr.substr(1, valueStr.size() - 2);
+          }
+
+          m_pluginsPath = valueStr;
+
+          // Validare: Ne asigurăm că path-ul se termină cu separator pentru concatenare sigură
+          if (!m_pluginsPath.empty() && m_pluginsPath.back() != L'/' && m_pluginsPath.back() != L'\\') {
+              m_pluginsPath += L"/";
+          }
+
+          LOG_SUCCESS(L"PLUGINS_PATH updated to: " + m_pluginsPath);
+      }
       else {
           LOG_ERROR(L"Unknown configuration parameter: " + target);
       }
+      
   }

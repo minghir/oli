@@ -14,5 +14,6 @@
   <Project Path="src/plugins/oli_canvas/oli_canvas.vcxproj" Id="586ac153-8b56-48b5-9953-e550df43d7e9" />
   <Project Path="src/plugins/oli_console/oli_console.vcxproj" Id="667a2d5d-2b53-4297-88bd-97850201466c" />
   <Project Path="src/plugins/oli_fract/oli_fract.vcxproj" Id="14b154fd-4712-447d-8939-a493f24879f5" />
+  <Project Path="src/plugins/oli_power/oli_power.vcxproj" Id="b69af423-a4fa-4c89-8926-baff02140893" />
   <Project Path="src/plugins/oli_sprites/oli_sprites.vcxproj" Id="5261e6c7-1fa5-4f3b-ba0e-8aa359d2cfdb" />
 </Solution>

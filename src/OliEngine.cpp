@@ -3758,7 +3758,7 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
       }
   }
 
-
+  /*
   void vOliEngine::handleRepeatCommand(const std::wstring& fullLine) {
       std::wstring upperLine = fullLine;
       std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
@@ -3825,7 +3825,72 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
           }
       }
   }
+  */
 
+  void vOliEngine::handleRepeatCommand(const std::wstring& fullLine) {
+      std::wstring upperLine = fullLine;
+      std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
+
+      size_t repeatPos = upperLine.find(L"REPEAT");
+      // Folosim findTopLevelKeyword pentru a evita confuzia cu UNTIL-uri din sub-bucle
+      size_t posUntil = findTopLevelKeyword(upperLine, L"UNTIL", L"REPEAT");
+      size_t posEnd = upperLine.rfind(L"ENDREPEAT"); // De obicei ENDREPEAT e la finalul liniei/blocului
+
+      if (posUntil == std::wstring::npos || posEnd == std::wstring::npos) {
+          LOG_ERROR(L"Malformed REPEAT: Missing UNTIL or ENDREPEAT keywords.");
+          return;
+      }
+
+      // 1. Extragem corpul și condiția
+      size_t bodyStart = repeatPos + 6;
+      std::wstring bodyCommand = fullLine.substr(bodyStart, posUntil - bodyStart);
+
+      size_t condStart = posUntil + 5;
+      std::wstring conditionPart = trim(fullLine.substr(condStart, posEnd - condStart));
+
+      // 2. Parsăm corpul în instrucțiuni individuale
+      std::vector<std::wstring> instructions = preParse(bodyCommand);
+      if (instructions.empty()) return;
+
+      // 3. Bucla de execuție
+      int safetyBreak = 0;
+      while (true) {
+          // --- SAFETY CHECK (Loop Infinit sau Limitat) ---
+          if (m_maxIterations > 0) {
+              if (++safetyBreak > m_maxIterations) {
+                  LOG_ERROR(L"Safety limit reached in REPEAT loop (" + std::to_wstring(m_maxIterations) + L" iterations).");
+                  break;
+              }
+          }
+
+          // Executăm corpul buclei
+          for (const auto& instr : instructions) {
+              this->executeInternal(instr);
+
+              // GESTIONARE STATUS (BREAK / CONTINUE / RETURN)
+              if (m_executionStatus != OliStatus::RUNNING) {
+                  if (m_executionStatus == OliStatus::CONTINUE_REQUESTED) {
+                      m_executionStatus = OliStatus::RUNNING;
+                      goto evaluate_repeat_condition; // Sărim direct la verificarea UNTIL
+                  }
+                  if (m_executionStatus == OliStatus::BREAK_REQUESTED) {
+                      m_executionStatus = OliStatus::RUNNING;
+                      return; // Ieșim din funcție, deci terminăm REPEAT-ul
+                  }
+                  if (m_executionStatus == OliStatus::RETURN_REQUESTED) {
+                      return; // Propagăm return-ul spre funcția părinte
+                  }
+              }
+          }
+
+      evaluate_repeat_condition:
+          // 4. Evaluăm condiția (În REPEAT...UNTIL se iese când e TRUE)
+          vData condRes = evaluateExpression(conditionPart);
+          if (vDataToBool(condRes)) {
+              break; // Condiția a fost îndeplinită, ieșim din loop
+          }
+      }
+  }
 
 
   std::wstring toUpper(std::wstring str) {

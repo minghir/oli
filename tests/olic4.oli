@@ -1,0 +1,19 @@
+SET $i = 1
+SET $limitI = 4
+SET $limitJ = 3
+
+WHILE $i < $limitI DO
+    SET $j = 1
+    ECHO "--- Randul:"
+    ECHO $i
+    
+    WHILE $j < $limitJ DO
+        ECHO "Element:"
+        ECHO $j
+        SET $j = $j + 1
+    ENDWHILE
+    
+    SET $i = $i + 1
+ENDWHILE
+
+ECHO "Gata!"

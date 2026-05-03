@@ -50,19 +50,28 @@ int main(int argc, char* argv[]) {
         }
 
         vOliEngine engine;
+        std::filesystem::path p(scriptPath);
+        std::string extension = p.extension().string();
 
-        // Citim fișierul linie cu linie
-        std::wifstream file(scriptPath);
-        try {
-            file.imbue(std::locale("en_US.UTF-8"));
+        // --- LOGICA NOUĂ PENTRU BYTECODE ---
+        if (extension == ".olic") {
+            // Dacă extensia este .olic, apelăm direct VM-ul
+            engine.loadAndRunBytecode(scriptPath);
         }
-        catch (...) {
-            file.imbue(std::locale::classic());
-        }
+        else {
+            // Altfel, rămânem pe interpretarea clasică (linie cu linie)
+            std::wifstream file(scriptPath);
+            try {
+                file.imbue(std::locale("en_US.UTF-8"));
+            }
+            catch (...) {
+                file.imbue(std::locale::classic());
+            }
 
-        std::wstring line;
-        while (std::getline(file, line)) {
-            engine.execute(line);
+            std::wstring line;
+            while (std::getline(file, line)) {
+                engine.execute(line);
+            }
         }
 
         return 0;

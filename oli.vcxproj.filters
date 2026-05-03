@@ -49,6 +49,9 @@
     <ClCompile Include="src\OliFuncHandlers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\OliExecuteBytecode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ASTNode.hpp">
@@ -88,6 +91,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\vData.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\vDataSerialize.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

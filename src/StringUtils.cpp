@@ -1362,3 +1362,17 @@ std::wstring unescape(const std::wstring& s) {
 
     return out;
 }
+
+std::vector<std::wstring> splitWBySemicolon(const std::wstring& s) {
+    std::vector<std::wstring> elems;
+    std::wstringstream ss(s);
+    std::wstring item;
+    while (std::getline(ss, item, L';')) {
+        // Ștergem spațiile de la începutul și sfârșitul comenzii
+        item = trim(item);
+        if (!item.empty()) {
+            elems.push_back(item);
+        }
+    }
+    return elems;
+}

@@ -1,0 +1,6 @@
+set $a = 10
+set $b = "a"
+set $c = "b"
+echo $$$c
+set $$$c=100
+echo $a

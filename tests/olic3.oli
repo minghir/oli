@@ -1,0 +1,28 @@
+SET $n = 1
+SET $suma = 0
+SET $maxim = 11
+
+WHILE $n < $maxim DO
+    SET $suma = $suma + $n
+    SET $n = $n + 1
+    ECHO "Suma partiala este:"
+    ECHO $suma
+ENDWHILE
+
+ECHO "REZULTAT FINAL:"
+ECHO $suma
+
+
+SET $i = 5
+WHILE $i > 0 DO
+    ECHO "T-minus..."
+    ECHO $i
+    
+    IF $i == 3 THEN 
+        ECHO "Suntem la jumatate!" 
+    ENDIF
+    
+    SET $i = $i - 1
+ENDWHILE
+
+ECHO "BOOM! Racheta a decolat."

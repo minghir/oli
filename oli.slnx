@@ -8,9 +8,19 @@
     <BuildDependency Project="src/plugins/oli_canvas/oli_canvas.vcxproj" />
     <BuildDependency Project="src/plugins/oli_console/oli_console.vcxproj" />
     <BuildDependency Project="src/plugins/oli_fract/oli_fract.vcxproj" />
+    <BuildDependency Project="src/plugins/oli_power/oli_power.vcxproj" />
     <BuildDependency Project="src/plugins/oli_sprites/oli_sprites.vcxproj" />
   </Project>
   <Project Path="oli_plugin/oli_plugin.vcxproj" Id="8dfb8d97-48be-4b42-9311-053336ef4f09" />
+  <Project Path="src/olic/olic.vcxproj" Id="419510f3-a531-4010-be0c-afe1ced2fba1">
+    <BuildDependency Project="oli.vcxproj" />
+    <BuildDependency Project="oli_plugin/oli_plugin.vcxproj" />
+    <BuildDependency Project="src/plugins/oli_canvas/oli_canvas.vcxproj" />
+    <BuildDependency Project="src/plugins/oli_console/oli_console.vcxproj" />
+    <BuildDependency Project="src/plugins/oli_fract/oli_fract.vcxproj" />
+    <BuildDependency Project="src/plugins/oli_power/oli_power.vcxproj" />
+    <BuildDependency Project="src/plugins/oli_sprites/oli_sprites.vcxproj" />
+  </Project>
   <Project Path="src/plugins/oli_canvas/oli_canvas.vcxproj" Id="586ac153-8b56-48b5-9953-e550df43d7e9" />
   <Project Path="src/plugins/oli_console/oli_console.vcxproj" Id="667a2d5d-2b53-4297-88bd-97850201466c" />
   <Project Path="src/plugins/oli_fract/oli_fract.vcxproj" Id="14b154fd-4712-447d-8939-a493f24879f5" />

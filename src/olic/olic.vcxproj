@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{2e51f6fe-b330-409c-9b8e-381b68ec44de}</ProjectGuid>
-    <RootNamespace>oli</RootNamespace>
+    <ProjectGuid>{419510f3-a531-4010-be0c-afe1ced2fba1}</ProjectGuid>
+    <RootNamespace>olic</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -82,6 +82,9 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Manifest>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -97,6 +100,9 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Manifest>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -109,10 +115,12 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <StackReserveSize>8388608</StackReserveSize>
     </Link>
+    <Manifest>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
+    </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(TargetPath)" "$(SolutionDir)oli.exe"</Command>
+      <Command>copy /Y "$(TargetPath)" "$(SolutionDir)olic.exe"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -124,79 +132,28 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <Manifest>
+      <EnableSegmentHeap>true</EnableSegmentHeap>
+    </Manifest>
     <PostBuildEvent>
-      <Command>copy /Y "$(TargetPath)" "$(SolutionDir)oli.exe"</Command>
+      <Command>copy /Y "$(TargetPath)" "$(SolutionDir)olic.exe"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\ASTNode.cpp" />
-    <ClCompile Include="src\ConsoleManager.cpp" />
-    <ClCompile Include="src\oli.cpp" />
-    <ClCompile Include="src\OliEngine.cpp" />
-    <ClCompile Include="src\OliExecuteBytecode.cpp" />
-    <ClCompile Include="src\OliExpressionParser.cpp" />
-    <ClCompile Include="src\OliFuncHandlers.cpp" />
-    <ClCompile Include="src\PortTools.cpp" />
-    <ClCompile Include="src\StringUtils.cpp" />
-    <ClCompile Include="src\App.cpp" />
-    <ClCompile Include="src\Shell.cpp" />
+    <ClInclude Include="..\StringUtils.hpp" />
+    <ClInclude Include="OliBytecode.hpp" />
+    <ClInclude Include="OliCompiler.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\ASTNode.hpp" />
-    <ClInclude Include="src\ConsoleManager.hpp" />
-    <ClInclude Include="src\IOliEngine.hpp" />
-    <ClInclude Include="src\IShellEngine.hpp" />
-    <ClInclude Include="src\OliCommandParser.hpp" />
-    <ClInclude Include="src\OliEngine.hpp" />
-    <ClInclude Include="src\OliExpressionParser.hpp" />
-    <ClInclude Include="src\OliKeyWords.hpp" />
-    <ClInclude Include="src\PortTools.hpp" />
-    <ClInclude Include="src\StringUtils.hpp" />
-    <ClInclude Include="src\App.hpp" />
-    <ClInclude Include="src\Shell.hpp" />
-    <ClInclude Include="src\vData.hpp" />
-    <ClInclude Include="src\vDataSerialize.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="clone.md" />
-    <None Include="docs\commands\cycle.md" />
-    <None Include="docs\commands\def.md" />
-    <None Include="docs\commands\for.md" />
-    <None Include="docs\commands\func.md" />
-    <None Include="docs\commands\if.md" />
-    <None Include="docs\commands\proc.md" />
-    <None Include="docs\commands\repeat.md" />
-    <None Include="docs\commands\set.md" />
-    <None Include="docs\commands\switch.md" />
-    <None Include="docs\commands\unset.md" />
-    <None Include="docs\commands\while.md" />
-    <None Include="docs\functions\ref.md" />
-    <None Include="docs\manual.md" />
-    <None Include="docs\memory.md" />
-    <None Include="Makefile" />
-    <None Include="README.md" />
-    <None Include="tests\atac_test.oli" />
-    <None Include="tests\factorial.oli" />
-    <None Include="tests\fibonaci.oli" />
-    <None Include="tests\ghici.oli" />
-    <None Include="tests\ghicitoare.oli" />
-    <None Include="tests\pascal.oli" />
-    <None Include="tests\sortare.oli" />
-    <None Include="tests\sort_string.oli" />
-    <None Include="tests\test_bit_op.oli" />
-    <None Include="tests\test_db.oli" />
-    <None Include="tests\test_fact.oli" />
-    <None Include="tests\test_for.oli" />
-    <None Include="tests\test_fs.oli" />
-    <None Include="tests\test_func.oli" />
-    <None Include="tests\test_math.oli" />
-    <None Include="tests\test_while.oli" />
+    <ClCompile Include="..\ConsoleManager.cpp" />
+    <ClCompile Include="..\StringUtils.cpp" />
+    <ClCompile Include="olic.cpp" />
+    <ClCompile Include="OliCompiler.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

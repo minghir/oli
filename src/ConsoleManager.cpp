@@ -214,7 +214,7 @@ void ConsoleManager::clear() {
 }
 
 
-bool ConsoleManager::enableFileLogging(const std::wstring& filePath) {
+bool ConsoleManager::enableFileLogging(const std::wstring& filePath, bool append) {
     std::lock_guard<std::recursive_mutex> lock(mtxLog);
 
 
@@ -222,7 +222,13 @@ bool ConsoleManager::enableFileLogging(const std::wstring& filePath) {
     // Deschidem ca ofstream normal (fără imbue)
     // Convertim calea la string dacă e nevoie, sau folosim varianta wide pentru Windows
     std::string utf8Path = wstring_to_utf8(filePath);
-    logFile.open(utf8Path, std::ios::out | std::ios::app);
+
+    std::ios_base::openmode mode = std::ios::out | std::ios::binary;
+    if (append) mode |= std::ios::app;
+    else mode |= std::ios::trunc;
+
+    //logFile.open(utf8Path, std::ios::out | std::ios::app);
+    logFile.open(filePath, mode);
 
     if (logFile.is_open() && logFile.tellp() == 0) {
         // Scrie BOM-ul pentru UTF-8: EF BB BF

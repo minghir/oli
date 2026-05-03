@@ -1,0 +1,5 @@
+SET $a = 1
+WHILE $a < 10 DO
+	echo $a
+	set $a = $a + 1
+endwhile

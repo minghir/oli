@@ -57,7 +57,7 @@ struct vData {
         }
         return *this;
     }
-
+    /*
     // --- HELPERI PENTRU ACCES RAW ---
     std::vector<vData>* rawArray() {
         auto& trueData = getTrueData();
@@ -70,7 +70,7 @@ struct vData {
         if (!trueData.isMap()) return nullptr;
         return std::get<vDataMap>(trueData.value).get();
     }
-
+    */
     // --- FACTORY METHODS ---
     static vData CreateMap() {
         //return vData{ std::make_shared<std::map<std::wstring, vData>>() };
@@ -101,6 +101,88 @@ struct vData {
 
         // Comparăm valorile reale
         return t1.value == t2.value;
+    }
+
+    std::wstring toWString() const {
+        const vData& actual = getTrueData();
+
+        if (std::holds_alternative<std::monostate>(actual.value)) return L"null";
+
+        if (actual.isString()) return std::get<std::wstring>(actual.value);
+
+        if (actual.isInt()) return std::to_wstring(std::get<long long>(actual.value));
+
+        if (actual.isFloat()) {
+            std::wstringstream wss;
+            wss << std::get<double>(actual.value);
+            return wss.str();
+        }
+
+        if (actual.isBool()) return std::get<bool>(actual.value) ? L"true" : L"false";
+
+        if (actual.isArray()) {
+            auto arr = actual.getTrueData().value; // Obținem shared_ptr-ul
+            return L"[Array(" + std::to_wstring(std::get<vDataArray>(arr)->size()) + L")]";
+        }
+
+        if (actual.isMap()) {
+            auto m = actual.getTrueData().value;
+            return L"{Map(" + std::to_wstring(std::get<vDataMap>(m)->size()) + L")}";
+        }
+
+        return L"unknown";
+    }
+
+    std::vector<vData>* rawArray() {
+        auto& trueData = getTrueData();
+        if (!trueData.isArray()) return nullptr;
+        return std::get<vDataArray>(trueData.value).get();
+    }
+
+    std::unordered_map<std::wstring, vData>* rawMap() {
+        auto& trueData = getTrueData();
+        if (!trueData.isMap()) return nullptr;
+        return std::get<vDataMap>(trueData.value).get();
+    }
+
+    // --- Variantele noi (CONST) ---
+    // Atenție la "const" de la finalul liniei!
+    const std::vector<vData>* rawArray() const {
+        const auto& trueData = getTrueData();
+        if (!trueData.isArray()) return nullptr;
+        return std::get<vDataArray>(trueData.value).get();
+    }
+
+    const std::unordered_map<std::wstring, vData>* rawMap() const {
+        const auto& trueData = getTrueData();
+        if (!trueData.isMap()) return nullptr;
+        return std::get<vDataMap>(trueData.value).get();
+    }
+
+    std::wstring toPlainString() const {
+        const vData& actual = getTrueData();
+        if (actual.isMap()) {
+            auto* m = actual.getTrueData().rawMap();
+            // Dacă map-ul are un singur element, probabil e valoarea variabilei
+            if (m && m->size() == 1) return m->begin()->second.getTrueData().toWString();
+        }
+        return actual.toWString();
+    }
+
+    vData getScalarValue() const {
+        const vData& actual = getTrueData();
+
+        // Dacă este un Map (ierarhie) și are elemente, încercăm să extragem 
+        // valoarea "frunză" (ultima valoare din ierarhie)
+        if (actual.isMap()) {
+            auto* m = actual.rawMap();
+
+            if (m && m->size() == 1) {
+                // Returnăm valoarea primului (și singurului) element din ierarhie
+                return m->begin()->second.getScalarValue();
+            }
+        }
+        return actual;
     }
 };
 

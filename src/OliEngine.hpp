@@ -21,6 +21,7 @@
 #include "ConsoleManager.hpp"
 #include "OliCommandParser.hpp"
 #include "OliExpressionParser.hpp"
+#include "olic/OliBytecode.hpp"
 
 struct vTypeBlueprint {
     std::wstring name;
@@ -267,7 +268,8 @@ private:
     //vData handleKeysFunc(const std::vector<vData>& args);
     
     public:
-        
+
+///command plugin interface
         void setVar(const std::wstring& name, const vData& value) override {
             // Aici apelezi logica ta existentă de setare (ex: assignToVariable sau varianta ta de setVariable)
             this->assignToVariable(name, value);
@@ -291,6 +293,8 @@ private:
             LOG_ERROR(msg);
         }
     
-    
+        ///bitecode
+        void executeBytecode(const OliChunk& chunk);
+        void loadAndRunBytecode(const std::string& path);
 };
 #endif

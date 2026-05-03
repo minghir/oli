@@ -93,7 +93,7 @@ public:
     void clear();
     void writeRaw(const std::wstring& message, WORD color = 0);
 
-    bool enableFileLogging(const std::wstring& filePath);
+    bool enableFileLogging(const std::wstring& filePath, bool append = true);
     void closeLogFile();
     std::wstring getTimestamp(); // Funcție utilă pentru loguri
     void suspendFileLogging() { fileLoggingMuted = true; }

@@ -1,0 +1,10 @@
+SET $a = 20
+SET $b = 10
+IF $a > $b THEN
+	IF $a > 28 THEN  
+		ECHO "Adevarat"  
+	ELSE 
+			ECHO "NeAdevarat"  
+	ENDIF
+    ELSE ECHO "Sfarsit program" 
+ENDIF

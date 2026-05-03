@@ -7,7 +7,7 @@
 #include <sstream>
 #include <iomanip>
 #include "../vData.hpp"
-
+/*
 enum class OpCode : uint8_t {
     OP_RETURN,          // 0x00
     OP_CONSTANT,        // 0x01
@@ -30,6 +30,70 @@ enum class OpCode : uint8_t {
     OP_SET_INDIRECT,    // 0x12
     OP_JUMP_IF_TRUE     // 0x13
 };
+*/
+
+enum class OpCode : uint8_t {
+    // --- MEMORIE & STIVĂ ---
+    OP_CONSTANT, 
+    OP_SET_GLOBAL, 
+    OP_GET_GLOBAL,
+    OP_SET_INDIRECT, 
+    OP_GET_INDIRECT,
+    OP_DUP, 
+    OP_POP,
+
+    // --- ARITMETICĂ BINARĂ ---
+    OP_ADD, 
+    OP_SUB, 
+    OP_MUL, 
+    OP_DIV, 
+    OP_MOD,
+    OP_POW,             // ** (Putere/Exponentiere)
+
+    // --- ARITMETICĂ UNARĂ ---
+    OP_INC,             // ++
+    OP_DEC,             // --
+    OP_NEGATE,          // - (Minus unar)
+
+    // --- BITWISE (Nivel Jos) ---
+    OP_BAND, 
+    OP_BOR, 
+    OP_BXOR, 
+    OP_BNOT,
+    OP_SHL, 
+    OP_SHR,
+
+    // --- LOGICĂ (Scurtcircuitare) ---
+    OP_LOGICAL_AND,     // &&
+    OP_LOGICAL_OR,      // ||
+    OP_LOGICAL_NOT,     // !
+
+    // --- COMPARAȚIE ---
+    OP_EQUAL, 
+    OP_NOT_EQUAL,
+    OP_GREATER, 
+    OP_GREATER_EQUAL,
+    OP_LESS, 
+    OP_LESS_EQUAL,
+
+    // --- OPERATORI SPECIALI (Pentru "Super" Oli) ---
+    OP_NULL_COALESCE,   // ?? (Dacă e null, ia valoarea de rezervă)
+    OP_TYPEOF,          // TYPE() - Returnează tipul variabilei
+    OP_CONCAT,          // .. sau + pentru concatenare string-uri
+
+    // --- CONTROL FLOW ---
+    OP_JUMP, 
+    OP_JUMP_IF_TRUE, 
+    OP_JUMP_IF_FALSE,
+    OP_LOOP, 
+    OP_CALL, 
+    OP_RETURN,
+
+    // --- SYSTEM ---
+    OP_ECHO, 
+    OP_HALT
+};
+
 
 struct OliChunk {
     std::vector<uint8_t> code;
@@ -86,6 +150,7 @@ inline std::wstring disassembleChunk(const OliChunk& chunk) {
         case OpCode::OP_SUB:     ss << L"OP_SUB\n"; break;
         case OpCode::OP_MUL:     ss << L"OP_MUL\n"; break;
         case OpCode::OP_DIV:     ss << L"OP_DIV\n"; break;
+        case OpCode::OP_POW:     ss << L"OP_POW\n"; break;
         case OpCode::OP_RETURN:  ss << L"OP_RETURN\n"; break;
         case OpCode::OP_GREATER: ss << L"OP_GREATER\n"; break;
         case OpCode::OP_LESS:    ss << L"OP_LESS\n"; break;    // <-- FIX

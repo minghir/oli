@@ -437,19 +437,17 @@ while true do
 		endfor
 			continue
 	endif
+	# În Monitorul Interactiv
 	set $parts = TB_SPLIT($input)
-	# Verificare robustă pentru numărul liniei (verificăm prima cifră)
 	set $first_token = $parts[0]
 	set $first_char_code = ASC(SUBSTR($first_token, 0, 1))
-	
-	# Dacă primul caracter este cifră (ASCII 48-57)
+
+	# ASCII 48-57 sunt cifrele 0-9
 	if $first_char_code >= 48 && $first_char_code <= 57 then
 		set $line_no = INT($first_token)
-		# Extragem conținutul liniei eliminând numărul de la început
-		set $content = TRIM(SUBSTR($input, LEN($first_token)))
-		set @tb_program[$line_no] = $content
+		set @tb_program[$line_no] = TRIM(SUBSTR($input, LEN($first_token)))
 	else
-		# Execuție imediată (Direct Mode)
+		# Mod Direct: Executăm imediat
 		set $void = tbasic_exec_line($input)
 	endif
 endwhile

@@ -23,6 +23,7 @@ inline double toDouble(const vData& v) {
 }
 
 
+
 void RegisterTimeFunctions(std::unordered_map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
 
     // Returnează timpul actual în milisecunde (Unix Epoch)

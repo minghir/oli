@@ -13,7 +13,7 @@
 #define GetBValue(rgb) ((unsigned char)((rgb) & 0xff))
 #endif
 
-
+#include <cmath>
 
 #ifndef PI
 #define PI 3.14159265358979323846

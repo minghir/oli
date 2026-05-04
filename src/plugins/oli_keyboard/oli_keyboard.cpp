@@ -51,6 +51,9 @@ void sync_linux_keys_x11() {
 }
 #endif
 
+
+using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
+
 long long asInt(const vData& data) {
     if (std::holds_alternative<long long>(data.value)) return std::get<long long>(data.value);
     if (std::holds_alternative<double>(data.value)) return static_cast<long long>(std::get<double>(data.value));

@@ -689,21 +689,19 @@ void vOliEngine::initializeFunctionsHandlers() {
 
 
 vData vOliEngine::handleInputFunc(const std::vector<vData>& args) {
-    // 1. Afișăm prompt-ul (dacă există)
+    // 1. Afișăm prompt-ul și forțăm apariția lui pe ecran
     if (!args.empty()) {
         std::wcout << vDataToWString(args[0]);
+        std::wcout.flush(); // <--- ADAUGĂ ASTA: Esențial pentru ca utilizatorul să vadă prompt-ul!
     }
 
     // 2. Citim linia de la utilizator
     std::wstring userInput;
-    // Folosim getline pentru a permite spații în input
     if (!std::getline(std::wcin, userInput)) {
-        return { L"" }; // Returnăm string gol în caz de EOF sau eroare
+        return { L"" };
     }
 
-    // 3. (Opțional) Putem încerca să detectăm dacă input-ul este număr
-    // Pentru simplitate, momentan îl returnăm ca String. 
-    // Utilizatorul poate face operații matematice oricum datorită vDataToDouble-ului tău.
+    // 3. Curățăm eventualele caractere rămase (opțional, dar bun pentru stabilitate)
     return { userInput };
 }
 

@@ -24,7 +24,7 @@ PLUGIN_ROOT = src/plugins
 PLUGINS = $(wildcard $(PLUGIN_ROOT)/*/. )
 
 # Regula implicită
-all: plugins olic $(TARGET)
+all: plugins $(TARGET) olic
 
 # Compilează executabilul
 $(TARGET): $(OBJS)

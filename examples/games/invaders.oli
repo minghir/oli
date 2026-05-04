@@ -3,8 +3,8 @@ config echo off
 config max_iterations 0
 
 # --- SETUP PLUGINS ---
-plugin "x64/Release/oli_console"
-plugin "x64/Release/oli_plugin"
+plugin "oli_console"
+plugin "oli_keyboard"
 
 # --- FUNCȚIE DESENARE CHENAR ---
 func DRAW_FRAME($w, $h, $color)

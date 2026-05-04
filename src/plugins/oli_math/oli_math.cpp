@@ -1,11 +1,13 @@
 #include "../../OliEngine.hpp" 
 
-#ifdef _WIN32
-
+#if defined(_WIN32) || defined(_WIN64)
 #define OLI_EXPORT extern "C" __declspec(dllexport)
+#include <windows.h>
 #else
-#define OLI_EXPORT extern "C"
+#define OLI_EXPORT extern "C" __attribute__((visibility("default")))
+#include <unistd.h>
 #endif
+
 #include <vector>
 #include <map>
 #include <functional>
@@ -119,4 +121,9 @@ void RegisterMathFunctions(std::unordered_map<std::wstring, std::function<vData(
     registry[L"E"] = [=](const std::vector<vData>&) -> vData {
         return vData{ E_VAL };
         };
+}
+
+
+OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
+    RegisterMathFunctions(registry);
 }

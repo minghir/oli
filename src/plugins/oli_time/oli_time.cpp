@@ -1,17 +1,18 @@
 #include "../../OliEngine.hpp" 
 
-#ifdef _WIN32
-
+#if defined(_WIN32) || defined(_WIN64)
 #define OLI_EXPORT extern "C" __declspec(dllexport)
+#include <windows.h>
 #else
-#define OLI_EXPORT extern "C"
+#define OLI_EXPORT extern "C" __attribute__((visibility("default")))
+#include <unistd.h>
 #endif
 
 #include <chrono>
 #include <string>
 
 #include <thread>
-
+using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
 // Adaugă asta aici:
 inline double toDouble(const vData& v) {
     if (std::holds_alternative<double>(v.value))
@@ -49,4 +50,8 @@ void RegisterTimeFunctions(std::unordered_map<std::wstring, std::function<vData(
         }
         return vData{ std::monostate{} };
         };
+}
+
+OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
+    RegisterTimeFunctions(registry);
 }

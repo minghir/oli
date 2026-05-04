@@ -114,3 +114,8 @@ void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vD
         return vData{ true };
         };
 }
+
+
+OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
+    RegisterKeyboardFunctions(registry);
+}

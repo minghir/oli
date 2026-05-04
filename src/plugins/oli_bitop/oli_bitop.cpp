@@ -1,10 +1,11 @@
 #include "../../OliEngine.hpp" 
 
-#ifdef _WIN32
-
+#if defined(_WIN32) || defined(_WIN64)
 #define OLI_EXPORT extern "C" __declspec(dllexport)
+#include <windows.h>
 #else
-#define OLI_EXPORT extern "C"
+#define OLI_EXPORT extern "C" __attribute__((visibility("default")))
+#include <unistd.h>
 #endif
 
 
@@ -15,7 +16,7 @@
 #include <variant>
 #include <bit> // Pentru std::popcount în C++20
 
-
+using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
 // Helper: Conversie sigură vData -> long long pentru operații pe biți
 inline long long toInt(const vData& v) {
     if (std::holds_alternative<long long>(v.value))
@@ -144,4 +145,9 @@ void RegisterBitOpFunctions(std::unordered_map<std::wstring, std::function<vData
         // înseamnă că există cel puțin un bit de '1' comun.
         return vData{ ((val & mask) > 0) ? 1LL : 0LL };
         };
+}
+
+
+OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
+    RegisterBitOpFunctions(registry);
 }

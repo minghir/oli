@@ -1,17 +1,18 @@
 #include "../../OliEngine.hpp" 
 
-#ifdef _WIN32
-
+#if defined(_WIN32) || defined(_WIN64)
 #define OLI_EXPORT extern "C" __declspec(dllexport)
+#include <windows.h>
 #else
-#define OLI_EXPORT extern "C"
+#define OLI_EXPORT extern "C" __attribute__((visibility("default")))
+#include <unistd.h>
 #endif
 
 
 #include <memory>
 #include <mutex>
 #include <filesystem>
-
+using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
 
 void RegisterFileSystemFunctions(std::unordered_map<std::wstring, std::function<vData(const std::vector<vData>&)>>& registry) {
 
@@ -130,4 +131,8 @@ void RegisterFileSystemFunctions(std::unordered_map<std::wstring, std::function<
         return result;
         };
 
+}
+
+OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
+    RegisterFileSystemFunctions(registry);
 }

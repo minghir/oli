@@ -1,11 +1,19 @@
 # Makefile.plugin.common
 CXX = g++
 CXXFLAGS = -std=c++20 -Wall -Wextra -O3 -fPIC -I../../../include
+
+ifeq ($(OS),Windows_NT)
+LDFLAGS = -shared
+TARGET = ../../../$(PLUGIN_NAME).dll
+else
+TARGET = ../../../$(PLUGIN_NAME).so
+endif
+
 LDFLAGS = -shared
 
 # Numele pluginului este determinat de numele directorului curent
 PLUGIN_NAME = $(notdir $(CURDIR))
-TARGET = ../../../$(PLUGIN_NAME).so
+
 
 SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)

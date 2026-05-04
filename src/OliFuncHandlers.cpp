@@ -25,6 +25,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         return vData(1LL);
         };
 
+    /*
     m_functionsHandlers[L"REF"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return { std::monostate{} };
 
@@ -46,6 +47,45 @@ void vOliEngine::initializeFunctionsHandlers() {
         if (targetPtr) {
             vData refResult;
             refResult.value = targetPtr; // Stocăm adresa brută
+            return refResult;
+        }
+
+        return { std::monostate{} };
+        };
+        */
+
+    m_functionsHandlers[L"REF"] = [this](const std::vector<vData>& args) -> vData {
+        if (args.empty()) return { std::monostate{} };
+
+        std::wstring varName = vDataToWString(args[0]);
+
+        // --- FIX: Eliminăm prefixul '$' pentru a găsi cheia reală din map ---
+        if (!varName.empty() && varName[0] == L'$') {
+            varName.erase(0, 1);
+        }
+        // Dacă ai și variabile cu '@', elimină-l și pe acela pentru consistență
+        else if (!varName.empty() && varName[0] == L'@') {
+            varName.erase(0, 1);
+        }
+
+        vData* targetPtr = nullptr;
+
+        // 1. Căutăm în Stack-ul local (Frame-ul curent)
+        if (!m_callStack.empty()) {
+            auto& locals = m_callStack.back().localVariables;
+            auto it = locals.find(varName);
+            if (it != locals.end()) targetPtr = &(it->second);
+        }
+
+        // 2. Căutăm în Globale
+        if (!targetPtr) {
+            auto it = m_globalVariables.find(varName);
+            if (it != m_globalVariables.end()) targetPtr = &(it->second);
+        }
+
+        if (targetPtr) {
+            vData refResult;
+            refResult.value = targetPtr; // Stocăm adresa vData*
             return refResult;
         }
 

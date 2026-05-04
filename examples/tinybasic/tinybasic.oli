@@ -1,7 +1,7 @@
 # --- CONFIGURARE ENGINE ---
-plugin "oli_plugin/oli_plugin"
+plugin "oli_keyboard"
 config max_iterations 0
-include("examples/tinybasic/int_sort.oli")
+include("./examples/tinybasic/int_sort.oli")
 cls; unset all
 
 # --- INIȚIALIZARE MEMORIE ---
@@ -192,41 +192,29 @@ func tbasic_exec_line($line_content)
 	if $p_cmd == "PRINT" then
 		set $p_args = TRIM(SUBSTR($l_c, 6))
 		
-		# Cazul PRINT simplu (doar newline)
 		if $p_args == "" then
 			echo ""
 			return 1
 		endif
 
-		# Detectăm dacă avem separator la final (; sau ,)
 		set $last_char = SUBSTR($p_args, LEN($p_args) - 1, 1)
-		set $has_trailing = false
-		if $last_char == ";" || $last_char == "," then
-			set $has_trailing = true
-		endif
+		set $has_trailing = ($last_char == ";" || $last_char == ",")
 
 		set $current_part = ""
 		set $in_q = false
 		
 		for $i = 0 to LEN($p_args) - 1 do
 			set $char = SUBSTR($p_args, $i, 1)
-			
-			if ASC($char) == 34 then # Ghilimele (ASCII 34)
+			if ASC($char) == 34 then 
 				set $in_q = NOT($in_q)
 				set $current_part = $current_part + $char
 			else 
 				if ($char == "," || $char == ";") && $in_q == false then
-				# Am ajuns la un separator, scriem ce am adunat
 					if TRIM($current_part) != "" then
 						set $val = tbasic_parse_expr($current_part)
-						set $void = WRITE(STR($val)) # Folosim WRITE nativ
+						$void = WRITE(STR($val))
 					endif
-				
-					# Gestionăm spațierea (virgula adaugă tab/spații)
-					if $char == "," then 
-						set $void = WRITE("    ") 
-					endif
-				
+					if $char == "," then $void = WRITE("    ") endif
 					set $current_part = ""
 				else
 					set $current_part = $current_part + $char
@@ -234,17 +222,15 @@ func tbasic_exec_line($line_content)
 			endif
 		endfor
 
-		# Scriem și ultima parte rămasă
+		# Scriem restul DOAR dacă a mai rămas ceva neprocesat de separator
 		if TRIM($current_part) != "" then
 			set $val = tbasic_parse_expr($current_part)
-			set $void = WRITE(STR($val))
+			$void = WRITE(STR($val))
 		endif
 
-		# DACĂ nu avem separator la final, dăm un rând nou
 		if $has_trailing == false then
 			echo "" 
 		endif
-		
 		return 1
 	endif
 	
@@ -452,10 +438,18 @@ while true do
 			continue
 	endif
 	set $parts = TB_SPLIT($input)
-	set $line_no = INT($parts[0])
-	if $line_no > 0 then
-		set @tb_program[INT($line_no)] = TRIM(SUBSTR($input, LEN($parts[0])))
+	# Verificare robustă pentru numărul liniei (verificăm prima cifră)
+	set $first_token = $parts[0]
+	set $first_char_code = ASC(SUBSTR($first_token, 0, 1))
+	
+	# Dacă primul caracter este cifră (ASCII 48-57)
+	if $first_char_code >= 48 && $first_char_code <= 57 then
+		set $line_no = INT($first_token)
+		# Extragem conținutul liniei eliminând numărul de la început
+		set $content = TRIM(SUBSTR($input, LEN($first_token)))
+		set @tb_program[$line_no] = $content
 	else
+		# Execuție imediată (Direct Mode)
 		set $void = tbasic_exec_line($input)
 	endif
 endwhile

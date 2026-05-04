@@ -3,10 +3,12 @@ config echo off
 config max_iterations 0
 
 # --- SETUP ---
-plugin "x64/Release/oli_plugin"
+plugin oli_canvas
+plugin oli_math
+plugin oli_keyboard
+plugin oli_fract
+plugin oli_time
 
-plugin "x64/Release/oli_wcanvas"
-plugin "x64/Release/oli_fract"
 set $SW = 640
 set $SH = 480
 set $v = CAN_INIT($SW, $SH, "Oli Mandelbrot Explorer:arrows to use")

@@ -3,10 +3,11 @@ config echo off
 config max_iterations 0
 
 # --- SETUP ---
-plugin "x64/Release/oli_plugin"
-
-plugin "x64/Release/oli_wcanvas"
-plugin "x64/Release/oli_fract"
+plugin oli_canvas
+plugin oli_math
+plugin oli_keyboard
+plugin oli_fract
+plugin oli_time
 
 set $v = CAN_INIT(640, 480, "Oli Modular Engine")
 set $ptr = CAN_GET_PTR()
@@ -18,7 +19,8 @@ while true do
     set $cY = 0.27 * SIN(TIME() * 15)
 
     # Plugin-ul de fractali scrie direct în memoria canvas-ului
-    set $v = FRACT_JULIA($ptr, $w, $h, $cX, $cY, 32)
+    #set $v = FRACT_JULIA($ptr, $w, $h, $cX, $cY, 32)
+	set $v = FRACT_PLASMA($ptr, $w, $h, $cX, $cY, 32)
     
     set $v = CAN_PRESENT()
     

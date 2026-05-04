@@ -1,0 +1,69 @@
+# --- TEST OPERATORI PE BIȚI ---
+ECHO "--- Test Bitwise ---"
+
+SET $a = 5                # 0101 în binar
+SET $b = 3                # 0011 în binar
+
+SET $and = $a & $b        # Rezultat așteptat: 1 (0001)
+ECHO "5 & 3 = " .. $and
+
+SET $or = $a | $b         # Rezultat așteptat: 7 (0111)
+ECHO "5 | 3 = " .. $or
+
+SET $xor = $a ^ $b        # Rezultat așteptat: 6 (0110)
+ECHO "5 ^ 3 = " .. $xor
+
+SET $not = ~ $a           # Rezultat așteptat: -6 (în complement de 2)
+ECHO "~5 = " .. $not
+
+# --- TEST SHIFTING ---
+ECHO ""
+ECHO "--- Test Shifting ---"
+
+SET $val = 1
+SET $shl = $val << 3      # Rezultat așteptat: 8 (1 * 2^3)
+ECHO "1 << 3 = " .. $shl
+
+SET $shr = 16 >> 2        # Rezultat așteptat: 4 (16 / 2^2)
+ECHO "16 >> 2 = " .. $shr
+
+# --- TEST CONCATENARE ȘI COALESCENCE ---
+ECHO ""
+ECHO "--- Test String & Coalesce ---"
+
+SET $nume = "Daneel"
+SET $mesaj = "Salut, " .. $nume .. "!"
+ECHO $mesaj
+
+SET $input = NULL
+SET $default = "Valoare de rezerva"
+SET $final = $input ?? $default
+ECHO "Coalesce NULL: " .. $final
+
+# --- TEST COMPLEX (MIXED) ---
+ECHO ""
+ECHO "--- Test Expresie Complexa ---"
+
+# (1 << 2) este 4. (15 & 7) este 7. 4 | 7 este 7.
+SET $complex = (1 << 2) | (15 & 7)
+ECHO "Complex (1<<2 | 15&7) = " .. $complex
+
+# --- TEST POINTERI ȘI INDIRAȚIE (L-Value) ---
+ECHO ""
+ECHO "--- Test Pointeri (L-Value) ---"
+
+SET $realVar = 100
+SET $ptr = "$realVar"
+SET $ptrToPtr = "$ptr"
+
+ECHO "Valoare initiala: " .. $realVar
+
+# Scriem prin indirație dublă ($$$ptrToPtr)
+# Asta ar trebui să modifice $realVar
+SET $$$ptrToPtr = 200
+
+ECHO "Dupa indirație $$$: " .. $realVar
+
+# Test postfix pe pointer
+SET $$$ptrToPtr ++
+ECHO "Dupa postfix ++ pe pointer: " .. $realVar

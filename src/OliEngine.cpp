@@ -631,6 +631,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         std::wstring varName = trim(rawVar);
         if (varName.empty()) return { std::monostate{} };
 
+        /*
         // --- STRATUL 1: DEREFERENȚIERE (*) ---
         if (varName[0] == L'*') {
             // 1. Rezolvăm recursiv ce se află după '*'
@@ -656,7 +657,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
 
             return { std::monostate{} };
         }
-
+        */
         // --- STRATUL 2: ACCES GLOBAL (@) ---
         if (varName[0] == L'@') {
             std::wstring content = varName.substr(1);
@@ -1350,6 +1351,44 @@ void vOliEngine::addToHistory(const std::wstring& command) {
 
             case ASTNodeType::Operator: {
                 std::wstring op = node->value;
+                // --- 1. OPERATORI DE CITIRE (Evaluare R-Value) ---
+
+                // Handler pentru ADDRESS_OF (&) - TREBUIE să fie aici, în afara blocului de assignment
+                if (op == L"ADDRESS_OF" || op == L"&") {
+                    ASTPtr child = node->children[0];
+                    if (child->type == ASTNodeType::Variable) {
+                        std::wstring varName = child->value;
+                        if (!varName.empty() && (varName[0] == L'$' || varName[0] == L'@')) varName.erase(0, 1);
+
+                        vData* targetPtr = nullptr;
+                        if (!m_callStack.empty()) {
+                            auto& locals = m_callStack.back().localVariables;
+                            if (locals.count(varName)) targetPtr = &locals[varName];
+                        }
+                        if (!targetPtr && m_globalVariables.count(varName)) targetPtr = &m_globalVariables[varName];
+
+                        if (targetPtr) {
+                            vData res; res.value = targetPtr;
+                            return res;
+                        }
+                    }
+                    LOG_ERROR(L"Runtime Error: Operator '&' requires a variable.");
+                    return { std::monostate{} };
+                }
+
+                // Handler pentru DEREFERENCE (*) în modul citire (ECHO *ptr)
+                if (op == L"DEREFERENCE") {
+                    vData ptrContainer = executeAST(node->children[0]);
+                    if (vData** addrPtr = std::get_if<vData*>(&ptrContainer.value)) {
+                        if (*addrPtr) {
+                            // IMPORTANT: Returnăm valoarea brută de la adresă, FĂRĂ getTrueData()!
+                            // toWString() se va ocupa de afișare mai târziu oricum.
+                            return **addrPtr;
+                        }
+                    }
+                    LOG_ERROR(L"Runtime Error: Cannot dereference a non-pointer value.");
+                    return { std::monostate{} };
+                }
 
                 // 1. Identificăm dacă este o formă de atribuire sau incrementare
                 bool isCompound = (op == L"+=" || op == L"-=" || op == L"*=" || op == L"/=");
@@ -1360,10 +1399,35 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                     if (node->children.empty()) return { std::monostate{} };
 
                     ASTPtr leftNode = node->children[0];
+                    vData newValue = isSimpleAssign ? executeAST(node->children[1]) : vData{}; // (simplificat)
+                    if (leftNode->value == L"DEREFERENCE") {
+                        /*
+                        vData ptrVal = executeAST(leftNode->children[0]);
+                        if (vData** addrPtr = std::get_if<vData*>(&ptrVal.value)) {
+                            if (*addrPtr) {
+                                return (**addrPtr).getTrueData();
+                                //**addrPtr = newValue;
+                                //return isPostfix ? currentVal : newValue;
+                            }
+                        }
+                        */
+                        vData ptrContainer = executeAST(leftNode->children[0]);
+
+                        if (vData** addrPtr = std::get_if<vData*>(&ptrContainer.value)) {
+                            if (*addrPtr) {
+                                // 2. SCRII DIRECT la adresa de memorie stocată
+                                **addrPtr = newValue;
+                                return newValue;
+                            }
+                        }
+
+                        LOG_ERROR(L"Runtime Error: Cannot dereference '" + node->children[0]->value + L"'. Not a valid pointer.");
+                        return { std::monostate{} };
+                    }
 
                     // Pasul A: Obținem valoarea curentă (necesară pentru Compound și Postfix)
                     vData currentVal = (isSimpleAssign) ? vData{} : executeAST(leftNode);
-                    vData newValue;
+                    //vData newValue;
 
                     // Pasul B: Calculăm noua valoare care va fi scrisă în memorie
                     if (isSimpleAssign) {
@@ -1380,18 +1444,11 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                         newValue = executeBinaryOperator(baseOp, currentVal, vData(1LL)); // Pas de 1
                     }
 
+
+
                     // Aceasta rezolvă eroarea "L-value required" când ai * în stânga
-                    if (leftNode->value == L"DEREFERENCE") {
-                        vData ptrVal = executeAST(leftNode->children[0]);
-                        if (vData** addrPtr = std::get_if<vData*>(&ptrVal.value)) {
-                            if (*addrPtr) {
-                                **addrPtr = newValue;
-                                return isPostfix ? currentVal : newValue;
-                            }
-                        }
-                        LOG_ERROR(L"Runtime Error: Invalid pointer assignment.");
-                        return { std::monostate{} };
-                    }
+                    
+                    
 
                     if (leftNode->type == ASTNodeType::Variable) {
                         std::wstring rawName = leftNode->value;
@@ -1619,6 +1676,9 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                     vData operand = executeAST(node->children[0]);
                     if (node->value == L"UNARY_MINUS") return { -vDataToDouble(operand) };
                     if (node->value == L"NOT") return { !vDataToBool(operand) };
+                    if (node->value == L"BITWISE_NOT" || node->value == L"~") {
+                        return { ~vDataToLong(operand) }; // Presupunem că ai un helper vDataToLong
+                    }
                 }
                 break;
             }
@@ -1747,7 +1807,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
     }
 
     
-
+/*
 vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& left, const vData& right) {
     // --- 1. OPERATORI DE COALESCENCE ---
     if (op == L"??") {
@@ -1866,7 +1926,137 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
 
     return vData();
 }
-  
+  */
+
+vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& left, const vData& right) {
+    // --- 1. OPERATORI DE COALESCENCE ---
+    if (op == L"??") {
+        return left.isNull() ? right : left;
+    }
+
+    // --- 2. LOGICĂ DE EGALITATE ---
+    if (op == L"==") {
+        if (left.isNull() && right.isNull()) return { true };
+
+        bool leftIsPtr = std::holds_alternative<vData*>(left.value);
+        bool rightIsPtr = std::holds_alternative<vData*>(right.value);
+
+        if (leftIsPtr || rightIsPtr) {
+            if (leftIsPtr && rightIsPtr) {
+                return { std::get<vData*>(left.value) == std::get<vData*>(right.value) };
+            }
+            if (leftIsPtr && right.isNull()) return { std::get<vData*>(left.value) == nullptr };
+            if (rightIsPtr && left.isNull()) return { std::get<vData*>(right.value) == nullptr };
+            return { false };
+        }
+
+        if (left.isNull() || right.isNull()) return { false };
+
+        if (canBeNumeric(left) && canBeNumeric(right)) {
+            return { std::abs(vDataToDouble(left) - vDataToDouble(right)) < 1e-9 };
+        }
+
+        return { vDataToWString(left) == vDataToWString(right) };
+    }
+
+    if (op == L"!=") {
+        vData res = executeBinaryOperator(L"==", left, right);
+        return vData(!vDataToBool(res));
+    }
+
+    // --- 3. CONCATENARE EXPLICITĂ (..) ---
+    // Aceasta forțează transformarea ambelor părți în string
+    if (op == L".." || op == L"CONCAT") {
+        return { vDataToWString(left) + vDataToWString(right) };
+    }
+
+    // --- 4. ADUNAREA / CONCATENAREA IMPLICITĂ (+) ---
+    if (op == L"+") {
+        if (left.isString() || right.isString()) {
+            return { vDataToWString(left) + vDataToWString(right) };
+        }
+
+        if (left.isInt() && right.isInt()) {
+            return { std::get<long long>(left.value) + std::get<long long>(right.value) };
+        }
+
+        if (canBeNumeric(left) || left.isNull() || canBeNumeric(right) || right.isNull()) {
+            double valL = left.isNull() ? 0.0 : vDataToDouble(left);
+            double valR = right.isNull() ? 0.0 : vDataToDouble(right);
+            return { valL + valR };
+        }
+        return { vDataToWString(left) + vDataToWString(right) };
+    }
+
+    // --- 5. BARIERĂ PENTRU OPERAȚII STRICTE ---
+    if (left.isNull() || right.isNull() ||
+        std::holds_alternative<vData*>(left.value) ||
+        std::holds_alternative<vData*>(right.value)) {
+        return vData();
+    }
+
+    // --- 6. OPERAȚII NUMERICE ȘI BITWISE ---
+    if (canBeNumeric(left) && canBeNumeric(right)) {
+
+        // Exponentiere (Prioritate mare)
+        //if (op == L"^" || op == L"**") {
+        if (op == L"**") {
+            return { std::pow(vDataToDouble(left), vDataToDouble(right)) };
+        }
+
+        // --- ADĂUGAT: OPERATORI PE BIȚI ---
+        // Operăm pe long long pentru precizie binară
+        // --- OPERATORI PE BIȚI (Am adăugat L"^" aici) ---
+        if (op == L"&" || op == L"|" || op == L"BXOR" || op == L"^" || op == L"<<" || op == L">>") {
+            long long iL = (left.isInt()) ? std::get<long long>(left.value) : (long long)vDataToDouble(left);
+            long long iR = (right.isInt()) ? std::get<long long>(right.value) : (long long)vDataToDouble(right);
+
+            if (op == L"&")    return { iL & iR };
+            if (op == L"|")    return { iL | iR };
+            if (op == L"BXOR" || op == L"^") return { iL ^ iR }; // XOR binar
+            if (op == L"<<")   return { iL << iR };
+            if (op == L">>")   return { iL >> iR };
+        }
+
+        if (left.isInt() && right.isInt()) {
+            long long iL = std::get<long long>(left.value);
+            long long iR = std::get<long long>(right.value);
+
+            if (op == L"-") return { iL - iR };
+            if (op == L"*") return { iL * iR };
+            if (op == L"%") return iR != 0 ? vData(iL % iR) : vData();
+            if (op == L"/") {
+                if (iR == 0) return vData();
+                return (iL % iR == 0) ? vData(iL / iR) : vData((double)iL / (double)iR);
+            }
+        }
+
+        double dL = vDataToDouble(left);
+        double dR = vDataToDouble(right);
+        if (op == L"-") return { dL - dR };
+        if (op == L"*") return { dL * dR };
+        if (op == L"/") return std::abs(dR) > 1e-12 ? vData(dL / dR) : vData();
+
+        if (op == L"<")  return { dL < dR };
+        if (op == L">")  return { dL > dR };
+        if (op == L"<=") return { dL <= dR };
+        if (op == L">=") return { dL >= dR };
+    }
+
+    // --- 7. OPERATORI LOGICI ---
+    if (op == L"&&") return { vDataToBool(left) && vDataToBool(right) };
+    if (op == L"||") return { vDataToBool(left) || vDataToBool(right) };
+
+    // --- 8. STRING COMPARISON ---
+    if (left.isString() || right.isString()) {
+        std::wstring sL = vDataToWString(left);
+        std::wstring sR = vDataToWString(right);
+        if (op == L"<")  return { sL < sR };
+        if (op == L">")  return { sL > sR };
+    }
+
+    return vData();
+}
 
 
 

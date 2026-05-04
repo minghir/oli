@@ -7,6 +7,10 @@
 #include <string>
 
 
+//Ordinea corectă a apelurilor, de la cea mai mică prioritate la cea mai mare, ar trebui să fie :
+//parseAssignment $\rightarrow$ parseCoalescing $\rightarrow$ parseLogical $\rightarrow$ parseBitwiseOR $\rightarrow$ parseBitwiseXOR $\rightarrow$ parseBitwiseAND $\rightarrow$ parseComparison $\rightarrow$ parseShift $\rightarrow$ parseAddition $\rightarrow$ parseMultiplication $\rightarrow$ parsePower $\rightarrow$ parseUnary $\rightarrow$ parsePostfix $\rightarrow$ parsePrimary.
+
+
 class OliExpressionParser {
     std::vector<std::wstring> m_tokens;
     size_t m_pos = 0;
@@ -37,12 +41,12 @@ public:
 
     // --- Nivelul 0: logic ---
     ASTPtr parseLogical() {
-        ASTPtr left = parseComparison();
+        ASTPtr left = parseBitwiseOR(); // Acum apelează Bitwise OR
         while (match({ L"&&", L"||" })) {
             std::wstring op = m_tokens[m_pos - 1];
             ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, op);
             node->addChild(left);
-            node->addChild(parseComparison());
+            node->addChild(parseBitwiseOR());
             left = node;
         }
         return left;
@@ -50,12 +54,12 @@ public:
 
     // --- Nivelul 0.5: Comparații (==, !=, <, >) ---
     ASTPtr parseComparison() {
-        ASTPtr left = parseAddition(); // Comparația apelează Adunarea
+        ASTPtr left = parseShift(); // Acum apelează Shift
         while (match({ L"==", L"!=", L"<", L">", L"<=", L">=" })) {
             std::wstring op = m_tokens[m_pos - 1];
             ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, op);
             node->addChild(left);
-            node->addChild(parseAddition());
+            node->addChild(parseShift());
             left = node;
         }
         return left;
@@ -64,9 +68,10 @@ public:
     // --- Nivelul 1: Adunare și Scădere ---
     ASTPtr parseAddition() {
         ASTPtr left = parseMultiplication();
-        while (match({ L"+", L"-" })) {
+        while (match({ L"+", L"-", L".." })) { // Suport pentru concatenare
             std::wstring op = m_tokens[m_pos - 1];
-            ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, op);
+            std::wstring internalOp = (op == L"..") ? L"CONCAT" : op;
+            ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, internalOp);
             node->addChild(left);
             node->addChild(parseMultiplication());
             left = node;
@@ -89,18 +94,7 @@ public:
     }
 
    
-    /*
-    ASTPtr parseUnary() {
-        if (match({ L"-", L"!", L"NOT" })) {
-            std::wstring op = m_tokens[m_pos - 1];
-            std::wstring internalOp = (op == L"-") ? L"UNARY_MINUS" : L"NOT";
-            ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, internalOp);
-            node->addChild(parseUnary());
-            return node;
-        }
-        return parsePostfix(); // Unary depinde de Postfix
-    }
-    */
+   /*
     ASTPtr parseUnary() {
         // Adăugăm L"*" în lista de operatori unari
         if (match({ L"-", L"!", L"NOT", L"*" })) {
@@ -130,48 +124,66 @@ public:
         }
         return parsePostfix();
     }
+    */
+    ASTPtr parseUnary() {
+        // Adăugăm L"~" pentru Bitwise NOT
+        if (match({ L"-", L"!", L"NOT", L"~", L"*", L"**", L"&" })) {
+            std::wstring op = m_tokens[m_pos - 1];
 
+            if (op == L"**") {
+                // Desfacem ** în două operații de DEREFERENCE separate
+                ASTPtr inner = std::make_shared<ASTNode>(ASTNodeType::Operator, L"DEREFERENCE");
+                inner->addChild(parseUnary());
+
+                ASTPtr outer = std::make_shared<ASTNode>(ASTNodeType::Operator, L"DEREFERENCE");
+                outer->addChild(inner);
+                return outer;
+            }
+
+            // --- GESTIONARE ADRESĂ (&) ---
+            if (op == L"&") {
+                ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, L"ADDRESS_OF");
+                node->addChild(parseUnary());
+                return node;
+            }
+
+            ASTPtr child = parseUnary();
+
+			//pointer dereference: *$ptr sau *(getPtr())
+            if (op == L"*") { 
+                ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, L"DEREFERENCE");
+                node->addChild(child);
+                return node;
+            }
+
+            std::wstring internalOp = op;
+            if (op == L"-") internalOp = L"UNARY_MINUS";
+            else if (op == L"~") internalOp = L"BITWISE_NOT";
+            else if (op == L"!" || op == L"NOT") internalOp = L"NOT";
+
+            ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, internalOp);
+            node->addChild(child);
+            return node;
+        }
+        return parsePostfix();
+    }
+
+    // --- Nivel: Putere ---
     ASTPtr parsePower() {
-        ASTPtr left = parseUnary(); // Power depinde de Unary (care duce la Postfix -> Primary)
-        while (match({ L"^", L"**" })) {
+        ASTPtr left = parseUnary();
+        //while (match({ L"^", L"**" })) { // Aici "^" funcționează ca ridicare la putere
+        while (match({ L"**" })) { // Aici "^" funcționează ca ridicare la putere
             std::wstring op = m_tokens[m_pos - 1];
             ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, op);
             node->addChild(left);
-            // Puterea este de obicei asociativă la dreapta: 2^3^2 este 2^(3^2)
-            node->addChild(parsePower());
+            node->addChild(parsePower()); // Recursivitate la dreapta
             left = node;
         }
         return left;
     }
     
   
-/*
-ASTPtr parsePrimary() {
-    std::wstring current = peek();
-    if (current.empty()) return nullptr;
 
-    // --- Identificăm dacă e variabilă (ORICÂTE SEMNE $ ARE) ---
-    if (current[0] == L'$' || current[0] == L'@') {
-        m_pos++;
-
-        // Trimitem string-ul EXACT așa cum este (ex: "$$b" sau "$a")
-        // NU mai facem .substr(1) aici, pentru că resolveVariable se ocupă de curățare
-        return std::make_shared<ASTNode>(ASTNodeType::Variable, current);
-    }
-
-    // --- Restul (Literale, Paranteze, etc.) ---
-    if (match({ L"[" })) return parseArray();
-    if (match({ L"{" })) return parseMap();
-    if (match({ L"(" })) {
-        ASTPtr node = parseCoalescing();
-        consume(L")", "Lipseste )");
-        return node;
-    }
-
-    m_pos++;
-    return std::make_shared<ASTNode>(ASTNodeType::Literal, current);
-}
-*/
 
     ASTPtr parsePrimary() {
         std::wstring current = peek();
@@ -224,16 +236,7 @@ ASTPtr parsePrimary() {
 
     std::wstring peek() { return m_pos < m_tokens.size() ? m_tokens[m_pos] : L""; }
 
-    /*
-    void consume(std::wstring token, std::string error) {
-        if (!check(token)) {
-            std::wstring found = (m_pos < m_tokens.size()) ? m_tokens[m_pos] : L"EOF";
-            std::string fullError = error + " (Gasit: '" + std::string(found.begin(), found.end()) + "' in loc de '" + std::string(token.begin(), token.end()) + "')";
-            throw std::runtime_error(fullError);
-        }
-        m_pos++;
-    }
-    */
+    
 
     void consume(std::wstring token, std::string error) {
         if (!check(token)) {
@@ -253,52 +256,7 @@ ASTPtr parsePrimary() {
     }
 
 
-    /*
-    ASTPtr parseMap() {
-        // Presupunem că '{' a fost deja consumat de match() în parsePrimary
-        ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Literal, L"MAP_OBJECT");
-
-        // Gestionăm cazul map-ului gol: {}
-        if (check(L"}")) {
-            m_pos++; // Consumăm '}'
-            return node;
-        }
-
-        while (m_pos < m_tokens.size()) {
-            // 1. Citim cheia. Folosim parsePrimary pentru că o cheie de map 
-            // este de obicei un literal (string/număr) sau o variabilă.
-            ASTPtr key = parsePrimary();
-            if (!key) break;
-
-            // 2. Consumăm neapărat ":"
-            if (!match({ L":" })) {
-                throw std::runtime_error("Eroare Map: Se astepta ':' dupa cheie la pozitia " + std::to_string(m_pos));
-            }
-
-            // 3. Citim valoarea. Folosim parseCoalescing pentru a permite 
-            // orice expresie complexă ca valoare (inclusiv alte map-uri sau array-uri).
-            ASTPtr value = parseCoalescing();
-            if (!value) throw std::runtime_error("Eroare Map: Lipseste valoarea dupa ':'");
-
-            node->addChild(key);
-            node->addChild(value);
-
-            // 4. Gestionare virgulă sau închidere
-            if (match({ L"," })) {
-                // Permitem "trailing comma" (virgulă după ultimul element, ex: {a:1,})
-                if (check(L"}")) break;
-                continue;
-            }
-            else {
-                // Dacă nu e virgulă, TREBUIE să fie sfarsitul map-ului
-                break;
-            }
-        }
-
-        consume(L"}", "Asteptam '}' la finalul obiectului Map");
-        return node;
-    }
-    */
+    
     ASTPtr parseMap() {
         // În acest punct, '{' a fost deja consumat de parsePrimary()
         ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Literal, L"MAP_OBJECT");
@@ -455,6 +413,58 @@ ASTPtr parsePostfix() {
             ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, L"??");
             node->addChild(left);
             node->addChild(parseLogical());
+            left = node;
+        }
+        return left;
+    }
+
+
+    // --- Nivel: Bitwise OR (|) ---
+    ASTPtr parseBitwiseOR() {
+        ASTPtr left = parseBitwiseXOR();
+        while (match({ L"|" })) {
+            ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, L"|");
+            node->addChild(left);
+            node->addChild(parseBitwiseXOR());
+            left = node;
+        }
+        return left;
+    }
+
+    // --- Nivel: Bitwise XOR (BXOR) ---
+    // Notă: Folosim "BXOR" sau un alt token dacă "^" este deja rezervat pentru Putere
+    ASTPtr parseBitwiseXOR() {
+        ASTPtr left = parseBitwiseAND();
+        while (match({ L"BXOR" })) { // Am scos "^" de aici pentru a-l lăsa la Power
+            std::wstring op = m_tokens[m_pos - 1];
+            ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, op);
+            node->addChild(left);
+            node->addChild(parseBitwiseAND());
+            left = node;
+        }
+        return left;
+    }
+
+    // --- Nivel: Bitwise AND (&) ---
+    ASTPtr parseBitwiseAND() {
+        ASTPtr left = parseComparison();
+        while (match({ L"&" })) {
+            ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, L"&");
+            node->addChild(left);
+            node->addChild(parseComparison());
+            left = node;
+        }
+        return left;
+    }
+
+    // --- Nivel: Shift (<<, >>) ---
+    ASTPtr parseShift() {
+        ASTPtr left = parseAddition();
+        while (match({ L"<<" , L">>" })) {
+            std::wstring op = m_tokens[m_pos - 1];
+            ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, op);
+            node->addChild(left);
+            node->addChild(parseAddition());
             left = node;
         }
         return left;

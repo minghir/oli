@@ -154,7 +154,6 @@
     <None Include="docs\functions\ref.md">
       <Filter>docs\functions</Filter>
     </None>
-    <None Include="clone.md" />
     <None Include="docs\manual.md">
       <Filter>docs</Filter>
     </None>
@@ -190,6 +189,9 @@
     </None>
     <None Include="docs\memory.md">
       <Filter>docs</Filter>
+    </None>
+    <None Include="clone.md">
+      <Filter>docs\functions</Filter>
     </None>
   </ItemGroup>
 </Project>

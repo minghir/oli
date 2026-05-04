@@ -228,8 +228,8 @@ bool ConsoleManager::enableFileLogging(const std::wstring& filePath, bool append
     else mode |= std::ios::trunc;
 
     //logFile.open(utf8Path, std::ios::out | std::ios::app);
-    logFile.open(filePath, mode);
-
+    //logFile.open(filePath, mode);
+    logFile.open(utf8Path, mode);
     if (logFile.is_open() && logFile.tellp() == 0) {
         // Scrie BOM-ul pentru UTF-8: EF BB BF
         logFile << "\xEF\xBB\xBF";

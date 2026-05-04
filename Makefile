@@ -23,7 +23,7 @@ PLUGIN_ROOT = src/plugins
 PLUGINS = $(wildcard $(PLUGIN_ROOT)/*/. )
 
 # Regula implicită
-all: plugin plugins $(TARGET)
+all: plugins $(TARGET)
 
 # Compilează executabilul
 $(TARGET): $(OBJS)
@@ -46,14 +46,10 @@ plugins:
 	done
 # Regula pentru plugin
 # Folosim @ ca să nu aglomerăm consola dacă nu e cazul
-plugin:
-	@echo "Building plugin..."
-	$(MAKE) -C oli_plugin
 
 clean:
 	@echo "Cleaning up..."
 	rm -rf $(BUILD_DIR) $(TARGET)
-	$(MAKE) -C oli_plugin clean
 	@for dir in $(PLUGINS); do \
 		$(MAKE) -C $$dir clean; \
 	done

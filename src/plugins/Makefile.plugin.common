@@ -22,7 +22,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
-
+	cp $(TARGET) ../../plugins
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 

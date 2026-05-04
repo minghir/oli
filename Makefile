@@ -49,8 +49,8 @@ plugins:
 # Folosim @ ca să nu aglomerăm consola dacă nu e cazul
 
 olic:
-    @echo "Building olic..."
-    $(MAKE) -C $(OLIC_DIR)
+	@echo "Building olic..."
+	$(MAKE) -C $(OLIC_DIR)
 
 clean:
 	@echo "Cleaning up..."

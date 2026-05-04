@@ -1,8 +1,8 @@
 # src/plugins/oli_canvas/Makefile
 ifeq ($(OS),Windows_NT)
-LIBS = -lX11
+LIBS = -lgdi32
 else
-TARGET = ../../../$(PLUGIN_NAME).so
+LIBS = -lX11
 endif
 
 include ../Makefile.plugin.common

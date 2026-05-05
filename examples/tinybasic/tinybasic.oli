@@ -333,31 +333,28 @@ func tbasic_exec_line($line_content)
 		if $raw_content == null then
 			echo "Eroare: Fisierul " + $filename + " nu exista!"
 			return 1
-		endif
-		
-		# Resetăm programul curent
-		set @tb_program = MAP()
-		
-		# Spargem conținutul în linii (presupunând că ai un SPLIT după \n)
-		set $lines = SPLIT($raw_content, CHR(10))
-		
-		cycle $lines as $single_line do
-			set $trimmed = TRIM($single_line)
-			if $trimmed != "" then
-				set $parts = TB_SPLIT($trimmed)
-				set $ln = INT($parts[0])
-				if $ln > 0 then
-					# Extragem restul liniei de după numărul liniei
-					set $content = TRIM(SUBSTR($trimmed, LEN($parts[0])))
-					set @tb_program[$ln] = $content
+		else
+			# Resetăm programul curent
+			set @tb_program = MAP()
+			
+			# Spargem conținutul în linii (presupunând că ai un SPLIT după \n)
+			set $lines = SPLIT($raw_content, CHR(10))
+			
+			cycle $lines as $single_line do
+				set $trimmed = TRIM($single_line)
+				if $trimmed != "" then
+					set $parts = TB_SPLIT($trimmed)
+					set $ln = INT($parts[0])
+					if $ln > 0 then
+						# Extragem restul liniei de după numărul liniei
+						set $content = TRIM(SUBSTR($trimmed, LEN($parts[0])))
+						set @tb_program[$ln] = $content
+					endif
 				endif
-			endif
-		endcycle
-		
-		echo "Incarcat " + LEN(@tb_program) + " linii din " + $filename
-		continue
+			endcycle
+			echo "Incarcat " + LEN(@tb_program) + " linii din " + $filename
+		endif
 	endif
-	
 endfunc
 
 func tbasic_run()
@@ -416,7 +413,8 @@ endfunc
 
 # --- MONITORUL INTERACTIV ---
 #set $running = 1
-#echo "Oli-BASIC v1.9 - Ready (Stable IF)"
+cls
+echo "Oli-BASIC v1.9 - Ready"
 #while $running == 1 do
 while true do
 	set $input = TRIM(INPUT("BASIC> "))

@@ -55,48 +55,55 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
     if (cmdName == L"SET") {
         if (sc.args.size() < 2) return;
 
-        std::wstring varName = sc.args[0]; // Destinația: $a, $$b, etc.
+        // 1. Detectăm corect destinația (LHS), chiar dacă '*' este token separat
+        size_t targetTokenCount = 1;
+        std::wstring varName = sc.args[0];
 
-        // 1. Identificăm unde începe expresia (sărim peste '=' dacă există)
-        size_t startIdx = (sc.args.size() > 1 && sc.args[1] == L"=") ? 2 : 1;
+        if (varName == L"*" && sc.args.size() > 1) {
+            varName += sc.args[1]; // Reconstituim *$ptr
+            targetTokenCount = 2;
+        }
 
-        // Colectăm restul argumentelor într-un vector pentru parser
+        // 2. Identificăm unde începe expresia (RHS), sărind peste '='
+        size_t startIdx = targetTokenCount;
+        if (startIdx < sc.args.size() && sc.args[startIdx] == L"=") {
+            startIdx++;
+        }
+
+        // 3. Colectăm restul argumentelor într-un vector curat pentru parser
+        // Este CRITIC ca rhsTokens să NU conțină variabila destinație sau '='
         std::vector<std::wstring> rhsTokens;
         for (size_t i = startIdx; i < sc.args.size(); ++i) {
             rhsTokens.push_back(sc.args[i]);
         }
 
-        // 2. Parsăm Right-Hand Side (RHS) și generăm bytecode
-        // Rezultatul calculului (ex: 2+2*2) va rămâne pe vârful stivei
+        // 4. Parsăm Right-Hand Side (RHS) și generăm bytecode
         OliExpressionParser exprParser(rhsTokens);
         ASTPtr exprAST = exprParser.parse();
 
         if (exprAST) {
-            generateFromAST(exprAST, chunk);
-        }
-        else {
-            return; // Expresie invalidă
-        }
+            generateFromAST(exprAST, chunk); // Rezultatul calculului ajunge pe stivă
 
-        // 3. Salvăm valoarea de pe stivă în variabilă (LHS)
-        // Folosim emitStore care știe să gestioneze indirectarea ($$a)
-        emitStore(varName, chunk);
+            // 5. Salvăm valoarea de pe stivă în destinație (LHS)
+            // emitStore va genera OP_GET_GLOBAL + OP_SET_INDIRECT pentru pointeri
+            emitStore(varName, chunk);
+        }
     }
     // Exemplu: ECHO x
     else if (cmdName == L"ECHO") {
-        //ECHO gol să dea un rând nou
         if (sc.args.empty()) {
             emitConstant(vData(L""), chunk, 0);
             chunk.addByte((uint8_t)OpCode::OP_ECHO, 0);
         }
-        // Colectăm toate argumentele într-o singură expresie
-        std::vector<std::wstring> rhsTokens = sc.args;
-        OliExpressionParser exprParser(rhsTokens);
-        ASTPtr exprAST = exprParser.parse();
+        else {
+            // Parsăm toate argumentele ca o singură expresie (suportă concatenări)
+            OliExpressionParser exprParser(sc.args);
+            ASTPtr exprAST = exprParser.parse();
 
-        if (exprAST) {
-            generateFromAST(exprAST, chunk); // Rezultatul ajunge pe stivă
-            chunk.addByte((uint8_t)OpCode::OP_ECHO, 0); // Instrucțiunea ECHO consumă de pe stivă
+            if (exprAST) {
+                generateFromAST(exprAST, chunk);
+                chunk.addByte((uint8_t)OpCode::OP_ECHO, 0);
+            }
         }
     }
 
@@ -692,18 +699,18 @@ void OliCompiler::emitStore(const std::wstring& varName, OliChunk& chunk) {
     if (varName.empty()) return;
 
     // --- 1. DEREFERENȚIERE POINTER (*$ptr = valoare) ---
-    // Această ramură trebuie să fie complet izolată.
-    if(!varName.empty() && varName[0] == L'*') {
-        LOG_SUCCESS(L"olicDEBUG: Compilăm scriere prin pointer pentru " + varName);
-        // Valoarea calculată este deja pe stivă.
-        // Încărcăm pe stivă adresa (valoarea pointerului, ex: conținutul lui $ptr).
-        emitLoadOrConstant(varName.substr(1), chunk);
+    if (!varName.empty() && varName[0] == L'*') {
+        std::wstring targetVar = varName.substr(1); // Extragem "$ptr"
 
-        // Stiva acum: [Valoare_Nouă, Adresă_Țintă]
-        // OP_SET_INDIRECT consumă ambele elemente și scrie direct în memorie.
+        // Punem ADRESA pe stivă. Trebuie să fie OP_GET_GLOBAL (index 2).
+        uint16_t nameIdx = chunk.addConstant(vData(targetVar));
+        chunk.addByte((uint8_t)OpCode::OP_GET_GLOBAL, 0); // <--- FORȚĂM GET
+        chunk.addByte((uint8_t)(nameIdx >> 8), 0);
+        chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
+
+        // Scriem la adresa de pe stivă
         chunk.addByte((uint8_t)OpCode::OP_SET_INDIRECT, 0);
-
-        return; // ESENȚIAL: Oprim execuția pentru a preveni OP_SET_GLOBAL redundant.
+        return;
     }
 
     // --- 2. CALCULARE INDIRAȚIE ($$a, $$$b) ---

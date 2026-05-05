@@ -7,30 +7,7 @@
 #include <sstream>
 #include <iomanip>
 #include "../vData.hpp"
-/*
-enum class OpCode : uint8_t {
-    OP_RETURN,          // 0x00
-    OP_CONSTANT,        // 0x01
-    OP_SET_GLOBAL,      // 0x02
-    OP_GET_GLOBAL,      // 0x03
-    OP_ADD,             // 0x04
-    OP_SUB,             // 0x05
-    OP_MUL,             // 0x06
-    OP_DIV,             // 0x07
-    OP_ECHO,            // 0x08
-    OP_CALL_PLUGIN_CMD, // 0x09
-    OP_JUMP_IF_FALSE,   // 0x0A
-    OP_JUMP,            // 0x0B
-    OP_GREATER,         // 0x0C
-    OP_LESS,            // 0x0D
-    OP_EQUAL,           // 0x0E
-    OP_LOOP,            // 0x0F
-    OP_DUP,             // 0x10
-    OP_GET_INDIRECT,    // 0x11
-    OP_SET_INDIRECT,    // 0x12
-    OP_JUMP_IF_TRUE     // 0x13
-};
-*/
+
 
 enum class OpCode : uint8_t {
     // --- MEMORIE & STIVĂ ---

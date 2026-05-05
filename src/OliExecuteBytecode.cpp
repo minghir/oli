@@ -251,24 +251,12 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
 
             std::wstring varName = chunk.constants[nameIdx].toWString();
 
-            // Obținem valoarea BRUTĂ (Raw). 
-            // Dacă variabila conține un pointer (vData*), vrem să punem pointerul pe stivă, 
-            // nu valoarea de la adresa lui (încă).
+            // Obținem variabila (care în proiectul 'olish' poate fi un Map/Ierarhie)
             vData val = this->getVar(varName);
 
-            // Păstrăm logica ta de ierarhie/Map dacă getVar returnează containerul
-            if (val.isMap()) {
-                auto* rawMap = val.rawMap();
-                std::wstring cleanName = varName;
-                if (!cleanName.empty() && cleanName[0] == L'$') cleanName.erase(0, 1);
-
-                if (rawMap && rawMap->count(cleanName)) {
-                    val = (*rawMap)[cleanName];
-                }
-            }
-
-            // IMPORTANT: Împingem valoarea așa cum este ea în memorie.
-            stack.push_back(val);
+            // FIX: Folosim getScalarValue() pentru a trece de Map-ul ierarhiei 
+            // și a pune pe stivă valoarea reală (sau pointerul real).
+            stack.push_back(val.getFlattenedValue());
             break;
         }
 
@@ -303,20 +291,21 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
             vData container = stack.back();
             stack.pop_back();
 
-            // Verificăm dacă pe stivă avem un pointer real (vData*)
+            // 1. Încercăm să vedem dacă avem un pointer direct (vData*)
             if (vData** ptrPtr = std::get_if<vData*>(&container.value)) {
                 if (*ptrPtr) {
-                    // Săpăm prin pointeri până la valoarea finală
-                    stack.push_back((*ptrPtr)->getTrueData());
+                    // Săpăm prin pointer până la date, apoi extragem scalarul din ierarhie
+                    stack.push_back((*ptrPtr)->getTrueData().getScalarValue());
                 }
                 else {
                     stack.push_back({ std::monostate{} });
                 }
             }
+            // 2. Altfel, tratăm ca indirație prin nume (string) tip $$nume
             else {
-                // Suport pentru $$nume (indirație prin string)
                 std::wstring varName = container.getScalarValue().toWString();
-                stack.push_back(this->getVar(varName));
+                // Căutăm variabila și îi extragem valoarea scalară
+                stack.push_back(this->getVar(varName).getScalarValue());
             }
             break;
         }
@@ -344,6 +333,66 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
             }
             break;
         }
+
+                                    // --- OPERAȚII DE STIVĂ ---
+        case OpCode::OP_POP: {
+            if (!stack.empty()) stack.pop_back();
+            break;
+        }
+
+                           // --- ARITMETICĂ ---
+        case OpCode::OP_MOD: {
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
+
+            // Modulo funcționează de regulă pe întregi
+            long long valA = a.getTrueData().toInt();
+            long long valB = b.getTrueData().toInt();
+
+            if (valB == 0) {
+                this->logError(L"Runtime Error: Modulo by zero!");
+                return;
+            }
+            stack.push_back(vData(valA % valB));
+            break;
+        }
+
+        case OpCode::OP_NEGATE: {
+            vData val = stack.back();
+            stack.pop_back();
+
+            if (val.isInt()) {
+                stack.push_back(vData(-std::get<long long>(val.getTrueData().value)));
+            }
+            else {
+                stack.push_back(vData(-vDataToDouble(val.getTrueData())));
+            }
+            break;
+        }
+
+                              // --- COMPARAȚII SUPLIMENTARE ---
+        case OpCode::OP_NOT_EQUAL: {
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
+            stack.push_back(vData(a.toWString() != b.toWString()));
+            break;
+        }
+
+        case OpCode::OP_GREATER_EQUAL: {
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
+            stack.push_back(vData(vDataToDouble(a.getTrueData()) >= vDataToDouble(b.getTrueData())));
+            break;
+        }
+
+        case OpCode::OP_LESS_EQUAL: {
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
+            stack.push_back(vData(vDataToDouble(a.getTrueData()) <= vDataToDouble(b.getTrueData())));
+            break;
+        }
+
+
 
         default:
             this->logError(L"Unknown OpCode in VM!");

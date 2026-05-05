@@ -103,7 +103,20 @@ struct vData {
         return t1.value == t2.value;
     }
 
+    long long toInt() const {
+        if (std::holds_alternative<long long>(value)) return std::get<long long>(value);
+        if (std::holds_alternative<double>(value)) return (long long)std::get<double>(value);
+        return 0;
+    }
+
     std::wstring toWString() const {
+
+        if (std::holds_alternative<vData*>(value)) {
+            std::wstringstream wss;
+            wss << L"[PTR: 0x" << std::hex << std::uppercase << std::get<vData*>(value) << L"]";
+            return wss.str();
+        }
+
         const vData& actual = getTrueData();
 
         if (std::holds_alternative<std::monostate>(actual.value)) return L"null";
@@ -183,6 +196,16 @@ struct vData {
             }
         }
         return actual;
+    }
+
+    vData getFlattenedValue() const {
+        // Dacă e un Map (ierarhie), săpăm în el
+        if (std::holds_alternative<vDataMap>(value)) {
+            auto* m = rawMap();
+            if (m && !m->empty()) return m->begin()->second.getFlattenedValue();
+        }
+        // Returnăm valoarea așa cum e (chiar dacă e vData*)
+        return *this;
     }
 };
 

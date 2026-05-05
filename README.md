@@ -39,7 +39,7 @@ Note: For deep recursion on Windows x64, it is recommended to increase the Stack
 # Initialize global cache
 set $memo = []
 
-func FIBO_MEMO n
+func FIBO_MEMO($n)
     # Base cases
     if $n <= 1 then 
         return $n 

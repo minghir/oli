@@ -3729,58 +3729,57 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
 
   */
   void vOliEngine::handleFuncCommand(const ShellCommand& sc) {
-      if (sc.args.empty()) {
-          LOG_ERROR(L"Usage: func name(param1, param2, ...)");
-          return;
-      }
+    if (sc.args.empty()) {
+        LOG_ERROR(L"Usage: func name(param1, param2, ...)");
+        return;
+    }
 
-      // Reconstruim linia pentru a procesa parantezele corect, indiferent de spații
-      std::wstring fullLine;
-      for (const auto& arg : sc.args) fullLine += arg;
+    // Reconstruim linia pentru procesare
+    std::wstring fullLine;
+    for (const auto& arg : sc.args) fullLine += arg;
 
-      size_t openParen = fullLine.find(L'(');
-      size_t closeParen = fullLine.find(L')');
+    size_t openParen = fullLine.find(L'(');
+    size_t closeParen = fullLine.find(L')');
 
-      std::wstring funcName;
-      std::wstring paramsStr;
+    // --- VALIDARE CRITICĂ ---
+    if (openParen == std::wstring::npos || closeParen == std::wstring::npos || closeParen < openParen) {
+        LOG_ERROR(L"[PARSER ERROR] Missing parentheses in function definition!");
+        LOG_ERROR(L"Correct syntax: func name(params)");
+        return; // Oprim execuția aici pentru a preveni înregistrarea unei funcții corupte
+    }
 
-      if (openParen != std::wstring::npos && closeParen != std::wstring::npos) {
-          funcName = fullLine.substr(0, openParen);
-          paramsStr = fullLine.substr(openParen + 1, closeParen - openParen - 1);
-      }
-      else {
-          // Fallback în cazul în care nu se folosesc paranteze
-          funcName = sc.args[0];
-      }
+    std::wstring funcName = fullLine.substr(0, openParen);
+    std::wstring paramsStr = fullLine.substr(openParen + 1, closeParen - openParen - 1);
 
-      // Normalizăm numele funcției la majuscule
-      funcName = to_upper(trim(funcName));
-      m_activeFuncName = funcName;
+    funcName = to_upper(trim(funcName));
+    if (funcName.empty()) {
+        LOG_ERROR(L"[PARSER ERROR] Function name cannot be empty.");
+        return;
+    }
 
-      Procedure newFunc;
-      newFunc.name = m_activeFuncName;
-      newFunc.isVariadic = false;
+    m_activeFuncName = funcName;
+    Procedure newFunc;
+    newFunc.name = m_activeFuncName;
+    newFunc.isVariadic = false;
 
-      // Extragem parametrii folosind wexplode (echivalentul split din StringUtils)
-      std::vector<std::wstring> tokens = wexplode(paramsStr, L',');
-      for (auto& t : tokens) {
-          std::wstring p = trim(t);
-          if (p == L"...") {
-              newFunc.isVariadic = true;
-          }
-          else if (!p.empty()) {
-              // Curățăm numele parametrului de caractere speciale ($ sau paranteze)
-              newFunc.params.push_back(cleanVariableName(p));
-          }
-      }
+    // Procesare parametri
+    std::vector<std::wstring> tokens = wexplode(paramsStr, L',');
+    for (auto& t : tokens) {
+        std::wstring p = trim(t);
+        if (p == L"...") {
+            newFunc.isVariadic = true;
+        }
+        else if (!p.empty()) {
+            newFunc.params.push_back(cleanVariableName(p));
+        }
+    }
 
-      // Salvăm definiția funcției și activăm modul de înregistrare
-      m_userFunctions[m_activeFuncName] = newFunc;
-      m_isRecordingFunc = true;
+    m_userFunctions[m_activeFuncName] = newFunc;
+    m_isRecordingFunc = true;
 
-      LOG_INFO(L"Started recording function: " + m_activeFuncName +
-          (newFunc.isVariadic ? L" (Variadic support enabled)" : L""));
-  }
+    LOG_INFO(L"Started recording function: " + m_activeFuncName +
+        (newFunc.isVariadic ? L" (Variadic support enabled)" : L""));
+}
 
 
   /*

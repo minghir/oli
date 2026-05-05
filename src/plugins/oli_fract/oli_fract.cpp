@@ -14,6 +14,7 @@
 #endif
 
 #include <cmath>
+#include <algorithm>
 
 #ifndef PI
 #define PI 3.14159265358979323846
@@ -507,7 +508,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
 
             // glow radial + puls
             double radial = exp(-r * 1.3);
-            double glow = std::max(0.0, energy * radial * (1.0 + pulse));
+            double glow = std::max<double>(0.0, energy * radial * (1.0 + pulse));
 
             if (glow > 1.0) glow = 1.0;
 
@@ -580,7 +581,7 @@ registry[L"FX_COSMIC_VORTEX"] = [](const std::vector<vData>& args) -> vData {
 
             // glow radial + puls
             double radial = exp(-r * 1.1);
-            double glow = std::max(0.0, energy * radial * (1.0 + pulse));
+            double glow = std::max<double>(0.0, energy * radial * (1.0 + pulse));
 
             if (glow > 1.0) glow = 1.0;
 

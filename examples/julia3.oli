@@ -3,9 +3,10 @@ config echo off
 config max_iterations 0
 
 # --- SETUP ---
-plugin "oli_canvas"
-plugin "oli_math"
-plugin "oli_keyboard"
+plugin oli_canvas
+plugin oli_math
+plugin oli_keyboard
+plugin oli_time
 
 func RENDER_JULIA_HD()
     set $SW = 100

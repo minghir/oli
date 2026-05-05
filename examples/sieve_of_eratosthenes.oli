@@ -1,4 +1,4 @@
-plugin "oli_plugin/oli_plugin"
+plugin oli_math
 cls; unset all
 
 set $limit = 100

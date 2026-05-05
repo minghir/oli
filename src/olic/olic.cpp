@@ -30,7 +30,7 @@ void saveBytecode(const OliChunk& chunk, const std::string& path) {
 
     // --- AICI SERIALIZEZI FIECARE CONSTANTĂ ---
     for (const auto& constant : chunk.constants) {
-        serializevData(constant, ofs); // Folosește funcția din vDataSerialize.hpp
+        vDataSerialize::serializevData(constant, ofs); // Folosește funcția din vDataSerialize.hpp
     }
 
     // 2. Salvăm dimensiunea codului binar

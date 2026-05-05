@@ -1,0 +1,48 @@
+﻿[2026-05-05 21:52:13] [SUCCESS] Logarea în fișier a fost activată (UTF-8)
+--- OLI ASSEMBLY LISTING ---
+
+0000: OP_CONSTANT     0000 (Value: 42)
+0003: OP_SET_GLOBAL   0001 (Name: $valoare)
+0006: OP_CONSTANT     0002 (Value: 8)
+0009: OP_SET_GLOBAL   0003 (Name: $modificator)
+0012: OP_GET_ADDR      0001 (Variable: $valoare)
+0015: OP_SET_GLOBAL   0004 (Name: $ptr)
+0018: OP_GET_GLOBAL   0004 (Name: $ptr)
+0021: OP_GET_INDIRECT
+0022: OP_GET_GLOBAL   0003 (Name: $modificator)
+0025: OP_ADD
+0026: OP_SET_GLOBAL   0004 (Name: $ptr)
+0029: OP_SET_INDIRECT
+0030: OP_CONSTANT     0005 (Value: valoare)
+0033: OP_SET_GLOBAL   0006 (Name: $nume_tinta)
+0036: OP_GET_GLOBAL   0006 (Name: $nume_tinta)
+0039: OP_GET_INDIRECT
+0040: OP_CONSTANT     0007 (Value: 2)
+0043: OP_MUL
+0044: OP_GET_GLOBAL   0006 (Name: $nume_tinta)
+0047: OP_SET_INDIRECT
+0048: OP_GET_GLOBAL   0006 (Name: $nume_tinta)
+0051: OP_GET_INDIRECT
+0052: OP_CONSTANT     0007 (Value: 2)
+0055: OP_POW
+0056: OP_CONSTANT     0008 (Value: 4)
+0059: OP_DIV
+0060: OP_CONSTANT     0009 (Value: 0)
+0063: OP_NULL_COALESCE
+0064: OP_SET_GLOBAL   0010 (Name: $rezultat)
+0067: OP_CONSTANT     0011 (Value: --- RAPORT ENGINE ---)
+0070: OP_ECHO
+0071: OP_CONSTANT     0012 (Value: Adresa ptr: )
+0074: OP_GET_GLOBAL   0004 (Name: $ptr)
+0077: OP_CONCAT
+0078: OP_ECHO
+0079: OP_CONSTANT     0013 (Value: Valoare finala: )
+0082: OP_GET_GLOBAL   0001 (Name: $valoare)
+0085: OP_CONCAT
+0086: OP_ECHO
+0087: OP_CONSTANT     0014 (Value: Calcul complex ( (100^2)/4 ): )
+0090: OP_GET_GLOBAL   0010 (Name: $rezultat)
+0093: OP_CONCAT
+0094: OP_ECHO
+0095: OP_RETURN
+

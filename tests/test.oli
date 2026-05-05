@@ -1,0 +1,20 @@
+# 1. Inițializare variabile simple
+SET $valoare = 42
+SET $modificator = 8
+
+# 2. Lucrul cu pointeri (ADDRESS_OF și DEREFERENCE)
+SET $ptr = &$valoare
+SET *$ptr = *$ptr + $modificator  # $valoare devine 50
+
+# 3. Indirectare dinamică (L-Value complex)
+SET $nume_tinta = "valoare"
+SET $$nume_tinta = $$nume_tinta * 2  # $valoare devine 100
+
+# 4. Expresie complexă cu Null Coalescing și Concatenare
+SET $rezultat = ($$nume_tinta ** 2) / 4 ?? 0
+
+# 5. Afișare complexă
+ECHO "--- RAPORT ENGINE ---"
+ECHO "Adresa ptr: " .. $ptr
+ECHO "Valoare finala: " .. $valoare
+ECHO "Calcul complex ( (100^2)/4 ): " .. $rezultat

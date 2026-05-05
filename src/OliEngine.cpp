@@ -1399,18 +1399,27 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                     if (node->children.empty()) return { std::monostate{} };
 
                     ASTPtr leftNode = node->children[0];
-                    vData newValue = isSimpleAssign ? executeAST(node->children[1]) : vData{}; // (simplificat)
+                    vData newValue;// = isSimpleAssign ? executeAST(node->children[1]) : vData{}; // (simplificat)
+					vData currentVal = (isSimpleAssign) ? vData{} : executeAST(leftNode);
+					if(isSimpleAssign){
+						newValue = executeAST(node->children[1]);
+					}
+					
+					if(isPostfix) {
+						// Logica pentru +=, -= sau postfix (care au nevoie de valoarea curentă)
+						std::wstring baseOp = (op == L"POSTFIX_INC") ? L"+" : L"-";
+                        newValue = executeBinaryOperator(baseOp, currentVal, vData(1LL)); // Pas de 1
+					}
+					
+					if(isCompound){
+						vData rhsEvaluated = executeAST(node->children[1]);
+                        // Extragem operatorul matematic de bază (ex: "+" din "+=")
+                        std::wstring baseOp = op.substr(0, 1);
+                        newValue = executeBinaryOperator(baseOp, currentVal, rhsEvaluated);
+					}
+					
                     if (leftNode->value == L"DEREFERENCE") {
-                        /*
-                        vData ptrVal = executeAST(leftNode->children[0]);
-                        if (vData** addrPtr = std::get_if<vData*>(&ptrVal.value)) {
-                            if (*addrPtr) {
-                                return (**addrPtr).getTrueData();
-                                //**addrPtr = newValue;
-                                //return isPostfix ? currentVal : newValue;
-                            }
-                        }
-                        */
+                        
                         vData ptrContainer = executeAST(leftNode->children[0]);
 
                         if (vData** addrPtr = std::get_if<vData*>(&ptrContainer.value)) {
@@ -1424,31 +1433,6 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                         LOG_ERROR(L"Runtime Error: Cannot dereference '" + node->children[0]->value + L"'. Not a valid pointer.");
                         return { std::monostate{} };
                     }
-
-                    // Pasul A: Obținem valoarea curentă (necesară pentru Compound și Postfix)
-                    vData currentVal = (isSimpleAssign) ? vData{} : executeAST(leftNode);
-                    //vData newValue;
-
-                    // Pasul B: Calculăm noua valoare care va fi scrisă în memorie
-                    if (isSimpleAssign) {
-                        newValue = executeAST(node->children[1]);
-                    }
-                    else if (isCompound) {
-                        vData rhsEvaluated = executeAST(node->children[1]);
-                        // Extragem operatorul matematic de bază (ex: "+" din "+=")
-                        std::wstring baseOp = op.substr(0, 1);
-                        newValue = executeBinaryOperator(baseOp, currentVal, rhsEvaluated);
-                    }
-                    else if (isPostfix) {
-                        std::wstring baseOp = (op == L"POSTFIX_INC") ? L"+" : L"-";
-                        newValue = executeBinaryOperator(baseOp, currentVal, vData(1LL)); // Pas de 1
-                    }
-
-
-
-                    // Aceasta rezolvă eroarea "L-value required" când ai * în stânga
-                    
-                    
 
                     if (leftNode->type == ASTNodeType::Variable) {
                         std::wstring rawName = leftNode->value;

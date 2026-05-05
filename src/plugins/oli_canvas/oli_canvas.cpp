@@ -289,6 +289,54 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         }
         return vData{ 1LL };
         };
+		
+		
+		registry[L"CAN_LINE"] = [](const std::vector<vData>& args) -> vData {
+    if (args.size() < 5 || !g_Canvas.pBits) return vData{ 0LL };
+
+    int x1 = static_cast<int>(toDouble(args[0]));
+    int y1 = static_cast<int>(toDouble(args[1]));
+    int x2 = static_cast<int>(toDouble(args[2]));
+    int y2 = static_cast<int>(toDouble(args[3]));
+    unsigned int color = static_cast<unsigned int>(toDouble(args[4]));
+
+    unsigned int* pixels = (unsigned int*)g_Canvas.pBits;
+    int w = g_Canvas.width;
+    int h = g_Canvas.height;
+
+    int dx = abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
+    int dy = -abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
+    int err = dx + dy, e2;
+
+    while (true) {
+        // Clipping simplu direct în buclă
+        if (x1 >= 0 && x1 < w && y1 >= 0 && y1 < h) {
+            pixels[y1 * w + x1] = color;
+        }
+        if (x1 == x2 && y1 == y2) break;
+        e2 = 2 * err;
+        if (e2 >= dy) { err += dy; x1 += sx; }
+        if (e2 <= dx) { err += dx; y1 += sy; }
+    }
+    return vData{ 1LL };
+};
+
+registry[L"CAN_PUT_TXT"] = [](const std::vector<vData>& args) -> vData {
+    if (args.size() < 3 || !g_Canvas.hwnd) return vData{ 0LL };
+
+    int x = static_cast<int>(toDouble(args[0]));
+    int y = static_cast<int>(toDouble(args[1]));
+    std::wstring text = std::get<std::wstring>(args[2].value);
+
+#ifdef _WIN32
+    // Desenăm textul folosind GDI direct pe HDC-ul ferestrei sau pe hdcMem
+    SetTextColor(g_Canvas.hdcMem, RGB(255, 255, 0)); // Galben
+    SetBkMode(g_Canvas.hdcMem, TRANSPARENT);
+    TextOutW(g_Canvas.hdcMem, x, y, text.c_str(), (int)text.length());
+#endif
+
+    return vData{ 1LL };
+};
 
     registry[L"CAN_GET_PTR"] = [](const std::vector<vData>&) -> vData {
         // Returnăm adresa pointerului ca un număr (long long)

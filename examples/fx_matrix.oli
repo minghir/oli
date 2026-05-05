@@ -1,0 +1,22 @@
+config echo off
+config max_iterations 0
+
+plugin oli_canvas
+plugin oli_fract
+plugin oli_keyboard
+
+set $v = CAN_INIT(640, 480, "Matrix")
+set $ptr = CAN_GET_PTR()
+set $w = CAN_GET_WIDTH()
+set $h = CAN_GET_HEIGHT()
+
+while true do
+    set $res = FX_MATRIX($ptr, $w, $h)
+    set $res = FX_MATRIX($ptr, $w, $h)   # viteză dublă
+    CAN_PRESENT()
+
+    if KEY_STATE(81) == 1 then break endif
+endwhile
+
+CAN_CLOSE()
+echo "Revenire în lumea reală."

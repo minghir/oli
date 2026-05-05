@@ -1,0 +1,29 @@
+# --- SETUP ---
+config echo off
+config max_iterations 0
+
+plugin oli_canvas
+plugin oli_fract   # Unde ai înregistrat FX_3D_SHAPES
+plugin oli_keyboard
+plugin oli_time
+
+set $v = CAN_INIT(800, 600, "Oli 3D Engine - Cube & Sphere")
+set $ptr = CAN_GET_PTR()
+set $w = CAN_GET_WIDTH()
+set $h = CAN_GET_HEIGHT()
+
+echo "Randare 3D începută. Q pentru Ieșire."
+
+while true do
+    set $t = TIME()
+
+    # Apelăm funcția 3D
+    set $res = FX_3D_SHAPES($ptr, $w, $h, $t)
+    
+    CAN_PRESENT()
+    
+    if KEY_STATE(81) == 1 then break endif
+endwhile
+
+CAN_CLOSE()
+echo "Revenire în consolă."

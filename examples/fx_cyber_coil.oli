@@ -1,0 +1,32 @@
+# --- CONFIGURARE ---
+config echo off
+config max_iterations 0
+
+plugin oli_canvas
+plugin oli_fract
+plugin oli_keyboard
+plugin oli_time
+
+set $v = CAN_INIT(800, 600, "Oli CyberCoil Engine")
+set $ptr = CAN_GET_PTR()
+set $w = CAN_GET_WIDTH()
+set $h = CAN_GET_HEIGHT()
+
+echo "Rulăm CyberCoil FX. Q pentru Ieșire."
+
+while true do
+    # Obținem timpul actual
+    set $t = TIME()
+
+    # Apelăm plugin-ul de efecte speciale
+    set $res = FX_CYBER_COIL($ptr, $w, $h, $t/2)
+    
+    # Prezentăm frame-ul
+    CAN_PRESENT()
+    
+    # Ieșire la tasta Q
+    if KEY_STATE(81) == 1 then break endif
+endwhile
+
+CAN_CLOSE()
+echo "Consola Oli este pregatită."

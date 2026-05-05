@@ -1,0 +1,93 @@
+# --- SETUP ---
+config echo off
+config max_iterations 0
+
+plugin oli_canvas
+plugin oli_math
+plugin oli_keyboard
+plugin oli_time
+
+func RENDER_DIAMOND_STATS_FIXED()
+    set $W = 800; set $H = 800
+    set $v = CAN_INIT($W, $H, "Oli Engine - Diamond Stats")
+    
+    # --- DATE DIAMANT ---
+    array $vx[6]; array $vy[6]; array $vz[6]
+    array $sx[6]; array $sy[6]
+
+    set $vx[0]=0;    set $vy[0]=-2;  set $vz[0]=0
+    set $vx[1]=0;    set $vy[1]= 2;  set $vz[1]=0
+    set $vx[2]=-1.5; set $vy[2]=0;   set $vz[2]=-1.5
+    set $vx[3]= 1.5; set $vy[3]=0;   set $vz[3]=-1.5
+    set $vx[4]= 1.5; set $vy[4]=0;   set $vz[4]= 1.5
+    set $vx[5]=-1.5; set $vy[5]=0;   set $vz[5]= 1.5
+
+    # --- VARIABILE STATISTICI ---
+    set $oldTime = TIME()
+    set $minFps = 9999.0
+    set $maxFps = 0.0
+    set $totalFps = 0.0
+    set $frameCount = 0.0
+
+    while true do
+        # --- CALCUL PERFORMANȚĂ ---
+        set $currentTime = TIME()
+        set $deltaTime = $currentTime - $oldTime
+        set $oldTime = $currentTime
+
+        if $deltaTime > 0 then
+            set $currentFps = 1.0 / $deltaTime
+            
+            # Sărim peste primele 10 cadre pentru a evita lag-ul de inițializare
+            if $frameCount > 10 then
+                if $currentFps < $minFps then set $minFps = $currentFps endif
+                if $currentFps > $maxFps then set $maxFps = $currentFps endif
+            endif
+            
+            set $totalFps = $totalFps + $currentFps
+            set $frameCount = $frameCount + 1.0
+            set $avgFps = $totalFps / $frameCount
+        endif
+
+        CAN_CLS(0)
+        set $t = $currentTime * 30
+        set $color = 16711935 # Magenta
+
+        # --- 1. PROIECȚIE (Toate punctele calculate primele) ---
+        for $i = 0 to 5 do
+            set $x = $vx[$i]; set $y = $vy[$i]; set $z = $vz[$i]
+            
+            set $x1 = $x * COS($t) + $z * SIN($t)
+            set $z1 = -1.0 * $x * SIN($t) + $z * COS($t)
+            set $y2 = $y * COS($t * 0.5) - $z1 * SIN($t * 0.5)
+            set $z2 = $y * SIN($t * 0.5) + $z1 * COS($t * 0.5)
+            
+            set $f = 450.0 / ($z2 + 7.0)
+            set $sx[$i] = ($x1 * $f) + 200
+            set $sy[$i] = ($y2 * $f) + 200
+        endfor
+
+        # --- 2. DESENARE WIREFRAME ---
+        for $m = 2 to 5 do
+            CAN_LINE($sx[0], $sy[0], $sx[$m], $sy[$m], $color)
+            CAN_LINE($sx[1], $sy[1], $sx[$m], $sy[$m], $color)
+            
+            set $next = $m + 1
+            if $next > 5 then set $next = 2 endif
+            CAN_LINE($sx[$m], $sy[$m], $sx[$next], $sy[$next], $color)
+        endfor
+
+        # --- 3. AFIȘARE STATISTICI ---
+        if $frameCount > 1 then
+            CAN_PUT_TXT(10, 10, "FPS Actual: " + STR(INT($currentFps)))
+            CAN_PUT_TXT(10, 25, "FPS Mediu : " + STR(INT($avgFps)))
+            CAN_PUT_TXT(10, 40, "FPS Minim : " + STR(INT($minFps)))
+            CAN_PUT_TXT(10, 55, "FPS Maxim : " + STR(INT($maxFps)))
+        endif
+
+        CAN_PRESENT()
+        if KEY_STATE(81) == 1 then break endif
+    endwhile
+endfunc
+
+set $res = RENDER_DIAMOND_STATS_FIXED()

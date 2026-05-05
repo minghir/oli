@@ -9,8 +9,8 @@ plugin oli_keyboard
 plugin oli_time
 
 func RENDER_JULIA_HD()
-    set $SW = 100
-set $SH = 75
+set $SW = 200
+set $SH = 200
 set $v = CAN_INIT($SW, $SH, "Oli Engine - Julia Test")
     
     set $maxIter = 32

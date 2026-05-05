@@ -1,0 +1,31 @@
+config echo off
+config max_iterations 0
+
+plugin oli_canvas
+plugin oli_fract
+plugin oli_keyboard
+
+set $v = CAN_INIT(800, 600, "Sphere in Torus 3D")
+set $ptr = CAN_GET_PTR()
+set $w = CAN_GET_WIDTH()
+set $h = CAN_GET_HEIGHT()
+
+set $t = 0.0
+set $speed = 0.016
+
+while true do
+    set $t = $t + $speed
+
+    set $res = FX_SPHERE_TORUS($ptr, $w, $h, $t)
+    CAN_PRESENT()
+
+    WAIT(16)
+
+    if KEY_STATE(81) == 1 then break endif
+
+    if KEY_STATE(32) == 1 then
+        set $speed = $speed + 0.002
+    endif
+endwhile
+
+CAN_CLOSE()

@@ -1,0 +1,42 @@
+config echo off
+config max_iterations 0
+
+plugin oli_canvas
+plugin oli_fract
+plugin oli_keyboard
+
+set $v = CAN_INIT(800, 600, "Cosmic Aurora")
+set $ptr = CAN_GET_PTR()
+set $w = CAN_GET_WIDTH()
+set $h = CAN_GET_HEIGHT()
+
+# timp intern fluid
+set $t = 0.0
+
+# viteza de avans a timpului
+set $speed = 0.016   # ~60 FPS
+
+while true do
+
+    # creștem timpul cu viteza curentă
+    set $t = $t + $speed
+
+    # apelăm efectul
+    set $res = FX_COSMIC_AURORA($ptr, $w, $h, $t)
+
+    CAN_PRESENT()
+
+    # frame pacing stabil
+    WAIT(16)
+
+    # ESC/Q
+    if KEY_STATE(81) == 1 then break endif
+
+    # SPACE = accelerează animația
+    if KEY_STATE(32) == 1 then
+        set $speed = $speed + 0.002
+    endif
+
+endwhile
+
+CAN_CLOSE()

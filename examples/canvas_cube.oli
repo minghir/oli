@@ -1,0 +1,73 @@
+# --- CONFIGURARE ---
+config echo off
+config max_iterations 0
+
+plugin oli_canvas
+plugin oli_math
+plugin oli_keyboard
+plugin oli_time
+
+func RENDER_CUBE_DEBUG()
+    set $W = 400
+    set $H = 400
+    set $v = CAN_INIT($W, $H, "Oli 3D Debug")
+    
+    array $vx[8]
+    array $vy[8]
+    array $vz[8]
+
+    # Inițializare
+set $vx[0]=-1.5; set $vy[0]=-1.5; set $vz[0]=-1.5
+set $vx[1]= 1.5; set $vy[1]=-1.5; set $vz[1]=-1.5
+set $vx[2]= 1.5; set $vy[2]= 1.5; set $vz[2]=-1.5
+set $vx[3]=-1.5; set $vy[3]= 1.5; set $vz[3]=-1.5
+set $vx[4]=-1.5; set $vy[4]=-1.5; set $vz[4]= 1.5
+set $vx[5]= 1.5; set $vy[5]=-1.5; set $vz[5]= 1.5
+set $vx[6]= 1.5; set $vy[6]= 1.5; set $vz[6]= 1.5
+set $vx[7]=-1.5; set $vy[7]= 1.5; set $vz[7]= 1.5
+
+    # --- DEBUG 1: Verificăm dacă array-ul s-a populat corect ---
+    echo "--- Start Debug Array ---"
+    for $d = 0 to 7 do
+        echo "Index " + $d + ": x=" + $vx[$d] + " y=" + $vy[$d] + " z=" + $vz[$d]
+    endfor
+    echo "--- End Debug Array ---"
+
+    set $frameCounter = 0
+
+    while true do
+        set $v = CAN_CLS(0)
+        set $t = TIME() * 20
+        
+        for $i = 0 to 7 do
+            set $x = $vx[$i]
+            set $y = $vy[$i]
+            set $z = $vz[$i]
+
+            # Rotație
+            set $x1 = $x * COS($t) + $z * SIN($t)
+            set $z1 = -1.0 * $x * SIN($t) + $z * COS($t)
+            set $y2 = $y * COS($t * 0.5) - $z1 * SIN($t * 0.5)
+            set $z2 = $y * SIN($t * 0.5) + $z1 * COS($t * 0.5)
+
+            # Proiecție
+            set $dist = $z2 + 6.0
+            set $f = 400.0 / $dist
+            set $sx = ($x1 * $f) + 200
+            set $sy = ($y2 * $f) + 200
+
+            # --- DEBUG 2: Vedem unde se desenează punctele (doar pentru primul frame) ---
+            if $frameCounter == 0 then
+                echo "Punct " + $i + " proiectat la: " + $sx + " , " + $sy
+            endif
+
+            set $v = CAN_RECT($sx - 2, $sy - 2, 4, 4, 65280)
+        endfor
+
+        set $frameCounter = 1
+        set $v = CAN_PRESENT()
+        if KEY_STATE(81) == 1 then break endif
+    endwhile
+endfunc
+
+set $res = RENDER_CUBE_DEBUG()

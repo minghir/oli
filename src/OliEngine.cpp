@@ -1354,7 +1354,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                 // --- 1. OPERATORI DE CITIRE (Evaluare R-Value) ---
 
                 // Handler pentru ADDRESS_OF (&) - TREBUIE să fie aici, în afara blocului de assignment
-                if (op == L"ADDRESS_OF" || op == L"&") {
+                if (op == L"ADDRESS_OF" ) {
                     ASTPtr child = node->children[0];
                     if (child->type == ASTNodeType::Variable) {
                         std::wstring varName = child->value;

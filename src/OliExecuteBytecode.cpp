@@ -2,6 +2,8 @@
 #include "OliEngine.hpp"
 #include "olic/OliBytecode.hpp"
 
+#include <cmath>
+
 void vOliEngine::executeBytecode(const OliChunk& chunk) {
     size_t ip = 0; // Instruction Pointer (unde ne aflăm în cod)
     std::vector<vData> stack; // Stiva pentru calcule

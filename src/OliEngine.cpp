@@ -73,24 +73,7 @@ void vOliEngine::execute(const std::wstring& line) {
         return;
     }
 
-    // --- 6. ACTUALIZARE ADÂNCIME BLOCURI (IF, WHILE, etc.) ---
-    /*
-    auto checkBlock = [&](const std::wstring& key, bool increment) {
-        size_t p = upperMasked.find(key);
-        if (p != std::wstring::npos) {
-            // Verificăm dacă este cuvânt de sine stătător
-            bool startOk = (p == 0 || iswspace(upperMasked[p - 1]) || wcschr(L";()[]{}\"", upperMasked[p - 1]));
-            bool endOk = (p + key.length() >= upperMasked.length() || iswspace(upperMasked[p + key.length()]) || wcschr(L";()[]{}\"", upperMasked[p + key.length()]));
-
-            if (startOk && endOk) {
-                if (increment) m_blockDepth++;
-                else if (m_blockDepth > 0) m_blockDepth--;
-                return true;
-            }
-        }
-        return false;
-        };
-    */
+   
     auto checkBlock = [&](const std::wstring& key, bool increment, bool mustBeStart = false) {
         size_t p = upperMasked.find(key);
         if (p != std::wstring::npos) {
@@ -3393,6 +3376,17 @@ void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
         LOG_ERROR(L"Invalid Plugin: Export 'LoadOliPlugin' not found in " + dllPath);
         PortTools::freeDynamicLibrary(hLib);
     }
+}
+*/
+
+/*
+void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
+    if (sc.args.empty()) {
+        LOG_ERROR(L"Usage: plugin \"path/to/plugin\"");
+        return;
+    }
+    // Tot ce făceai înainte este acum încapsulat aici:
+    this->internalLoadPlugin(sc.args[0]);
 }
 */
 

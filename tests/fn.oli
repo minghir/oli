@@ -1,0 +1,6 @@
+SET $n = RANDOM(50)
+ECHO "Numarul este: " .. $n
+
+
+SET $funcName = "RANDOM"
+ECHO "acces indirect la fn:" .. $funcName(100)

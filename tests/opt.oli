@@ -1,0 +1,7 @@
+set  $a = 1
+echo $a++
+echo $a
+
+set $b = &$a
+echo *$b++
+echo *$b

@@ -1,0 +1,19 @@
+﻿[2026-05-06 22:32:01] [SUCCESS] Logarea în fișier a fost activată (UTF-8)
+--- OLI ASSEMBLY LISTING ---
+
+0000: OP_CONSTANT     0000 (Value: 50)
+0003: OP_CALL_NATIVE  0001 (Name: RANDOM, Args: 1)
+0007: OP_SET_GLOBAL   0002 (Name: $n)
+0010: OP_CONSTANT     0003 (Value: Numarul este: )
+0013: OP_GET_GLOBAL   0002 (Name: $n)
+0016: OP_CONCAT
+0017: OP_ECHO
+0018: OP_CONSTANT     0001 (Value: RANDOM)
+0021: OP_SET_GLOBAL   0004 (Name: $funcName)
+0024: OP_CONSTANT     0005 (Value: acces indirect la fn:)
+0027: OP_CONSTANT     0006 (Value: 100)
+0030: OP_CALL_NATIVE  0004 (Name: $funcName, Args: 1)
+0034: OP_CONCAT
+0035: OP_ECHO
+0036: OP_RETURN
+

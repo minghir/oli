@@ -7,3 +7,6 @@ echo $$$c
 
 set $d = 10%3
 echo $d
+
+echo 5 & 3
+echo 5 | 3

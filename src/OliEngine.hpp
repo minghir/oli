@@ -296,5 +296,7 @@ private:
         ///bitecode
         void executeBytecode(const OliChunk& chunk);
         void loadAndRunBytecode(const std::string& path);
+        vData* resolveVMPath(const std::wstring& rootName, const std::vector<std::wstring>& indexes, bool forceGlobal);
+        bool internalLoadPlugin(std::wstring pluginName);
 };
 #endif

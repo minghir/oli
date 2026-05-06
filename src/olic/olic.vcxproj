@@ -145,12 +145,14 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\PortTools.hpp" />
     <ClInclude Include="..\StringUtils.hpp" />
     <ClInclude Include="OliBytecode.hpp" />
     <ClInclude Include="OliCompiler.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\ConsoleManager.cpp" />
+    <ClCompile Include="..\PortTools.cpp" />
     <ClCompile Include="..\StringUtils.cpp" />
     <ClCompile Include="olic.cpp" />
     <ClCompile Include="OliCompiler.cpp" />

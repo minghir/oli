@@ -1,4 +1,4 @@
-﻿[2026-05-05 22:21:12] [SUCCESS] Logarea în fișier a fost activată (UTF-8)
+﻿[2026-05-06 20:00:24] [SUCCESS] Logarea în fișier a fost activată (UTF-8)
 --- OLI ASSEMBLY LISTING ---
 
 0000: OP_CONSTANT     0000 (Value: 2)
@@ -26,5 +26,9 @@
 0048: OP_SET_GLOBAL   0010 (Name: $d)
 0051: OP_GET_GLOBAL   0010 (Name: $d)
 0054: OP_ECHO
-0055: OP_RETURN
+0055: OP_CONSTANT     0011 (Value: 5)
+0058: OP_CONSTANT     0001 (Value: 3)
+0061: OP_BAND
+0062: OP_ECHO
+0063: OP_RETURN
 

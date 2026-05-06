@@ -1,0 +1,52 @@
+# --- TEST STRUCTURI DE DATE COMPLEXE ---
+ECHO "--- Test Array & Map ---"
+
+# 1. Test Array Simplu
+SET $simpleArray = [10, 20, 30, 40]
+ECHO "Array simplu: " .. $simpleArray
+
+# 2. Test Array Cuibărit (Nested)
+# Asta testează recursivitatea în generateFromAST și OP_ARRAY
+SET $matrix = [[1, 2], [3, 4]]
+ECHO "Matrice (Array in Array): " .. $matrix
+
+# 3. Test Map Simplu
+SET $user = { "nume": "Daneel", "functie": "Robot", "versiune": 3 }
+ECHO "Obiect Map: " .. $user
+
+# 4. Test Structură Mixtă (Complexă)
+# Un Map care conține un Array
+SET $robotData = { 
+    "id": 101, 
+    "senzori": ["optic", "termic", "presiune"],
+    "activ": true 
+}
+ECHO "Structura Complexa: " .. $robotData
+
+# 5. Test Dinamic (Variabile în Array/Map)
+SET $scor = 100
+SET $status = "In curs"
+SET $info = [$scor, $status, { "progres": 50 }]
+ECHO "Structura cu variabile: " .. $info
+
+# --- TEST POINTERI ÎN STRUCTURI (Stress Test) ---
+ECHO ""
+ECHO "--- Test Pointeri & Structuri ---"
+
+SET $valoareReala = 999
+SET $ptr = "valoareReala"
+
+# Punem indirația triplă într-un array
+# Ar trebui să salveze valoarea 999, nu string-ul "valoareReala"
+SET $pointerArray = [1, 2, $$ptr]
+ECHO "Array cu indiratie : " + $pointerArray
+
+unset $pointerArray[2]
+
+ECHO "Array cu indiratie 2: " + $pointerArray
+
+unset all
+
+ECHO "Array cu indiratie : " + $pointerArray
+
+ECHO "SFARSIT"

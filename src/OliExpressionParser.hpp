@@ -171,12 +171,11 @@ public:
     // --- Nivel: Putere ---
     ASTPtr parsePower() {
         ASTPtr left = parseUnary();
-        //while (match({ L"^", L"**" })) { // Aici "^" funcționează ca ridicare la putere
-        while (match({ L"**" })) { // Aici "^" funcționează ca ridicare la putere
+        while (match({ L"**" })) {
             std::wstring op = m_tokens[m_pos - 1];
             ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, op);
             node->addChild(left);
-            node->addChild(parsePower()); // Recursivitate la dreapta
+            node->addChild(parsePower());
             left = node;
         }
         return left;
@@ -435,7 +434,8 @@ ASTPtr parsePostfix() {
     // Notă: Folosim "BXOR" sau un alt token dacă "^" este deja rezervat pentru Putere
     ASTPtr parseBitwiseXOR() {
         ASTPtr left = parseBitwiseAND();
-        while (match({ L"BXOR" })) { // Am scos "^" de aici pentru a-l lăsa la Power
+        // Adăugăm suport și pentru simbolul '^'
+        while (match({ L"BXOR", L"^" })) {
             std::wstring op = m_tokens[m_pos - 1];
             ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, op);
             node->addChild(left);

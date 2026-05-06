@@ -2,6 +2,7 @@
 #include "OliCompiler.hpp"
 #include "../OliCommandParser.hpp"
 #include "../StringUtils.hpp"
+#include "../PortTools.hpp"
 #include <iostream>
 
 OliChunk OliCompiler::compile(const std::wstring& source) {
@@ -10,30 +11,64 @@ OliChunk OliCompiler::compile(const std::wstring& source) {
     std::wstring line;
     std::wstring commandBuffer = L"";
     int nestingLevel = 0;
+    int bracketDepth = 0; // <--- ADAUGAT: Monitorizare paranteze
 
     while (std::getline(ss, line)) {
-        line = trim(line);
-        if (line.empty()) continue;
+        std::wstring cleanLine = trim(line);
+        if (cleanLine.empty()) continue;
 
-        std::wstring upperLine = to_upper(line);
+        // --- MASCARE GHILIMELE (Logica împrumutată din interpretor) ---
+        bool inQuotes = false;
+        std::wstring maskedLine = cleanLine;
+        for (size_t i = 0; i < maskedLine.length(); ++i) {
+            if (maskedLine[i] == L'"' && (i == 0 || maskedLine[i - 1] != L'\\')) {
+                inQuotes = !inQuotes;
+                maskedLine[i] = L' ';
+                continue;
+            }
+            if (inQuotes) maskedLine[i] = L' ';
+        }
 
+        // --- DETECTARE COMENTARII ---
+        size_t commentPos = maskedLine.find(L'#');
+        if (commentPos != std::wstring::npos) {
+            cleanLine = trim(cleanLine.substr(0, commentPos));
+            maskedLine = trim(maskedLine.substr(0, commentPos));
+        }
+        if (cleanLine.empty()) continue;
+
+        // --- ACTUALIZARE ADÂNCIME BLOCURI ȘI PARANTEZE ---
+        std::wstring upperLine = to_upper(maskedLine);
+
+        // Blocuri (IF, WHILE, etc.)
         if (upperLine.find(L"IF ") == 0 || upperLine.find(L"WHILE ") == 0 ||
-            upperLine.find(L"REPEAT") == 0 || upperLine.find(L"FOR ") == 0) {
+            upperLine.find(L"REPEAT") == 0 || upperLine.find(L"FOR ") == 0 ||
+            upperLine.find(L"PROC ") == 0 || upperLine.find(L"FUNC ") == 0) {
             nestingLevel++;
         }
         if (upperLine.find(L"ENDIF") != std::wstring::npos ||
             upperLine.find(L"ENDWHILE") != std::wstring::npos ||
             upperLine.find(L"ENDREPEAT") != std::wstring::npos ||
-            upperLine.find(L"ENDFOR") != std::wstring::npos) {
+            upperLine.find(L"ENDFOR") != std::wstring::npos ||
+            upperLine.find(L"ENDPROC") != std::wstring::npos ||
+            upperLine.find(L"ENDFUNC") != std::wstring::npos) {
             nestingLevel--;
         }
 
-        commandBuffer += L" " + line;
+        // Paranteze (Array/Map)
+        for (wchar_t c : maskedLine) {
+            if (c == L'{' || c == L'[') bracketDepth++;
+            if (c == L'}' || c == L']') bracketDepth--;
+        }
 
-        // Trimitem la compilare DOAR când toate blocurile sunt închise (nestingLevel == 0)
-        if (nestingLevel == 0) {
+        commandBuffer += L" " + cleanLine;
+
+        // --- DECIZIA DE COMPILARE ---
+        // Compilăm doar când nestingLevel ȘI bracketDepth sunt 0
+        if (nestingLevel == 0 && bracketDepth == 0) {
             std::vector<std::wstring> statements = splitWBySemicolon(commandBuffer);
             for (const auto& stmt : statements) {
+                if (trim(stmt).empty()) continue;
                 ShellCommand sc = vOliCommandParser::parse(stmt);
                 compileStatement(sc, chunk);
             }
@@ -41,52 +76,31 @@ OliChunk OliCompiler::compile(const std::wstring& source) {
         }
     }
 
+    // Verificare de siguranță la final
+    if (bracketDepth != 0) {
+        throw std::runtime_error("Eroare Compilare: Paranteze neinchise la finalul fisierului.");
+    }
+
     chunk.addByte((uint8_t)OpCode::OP_RETURN, 0);
-    //this->optimize(chunk);
     return chunk;
 }
-
 void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
    // ShellCommand sc = vOliCommandParser::parse(line);
 
     // Exemplu: SET x = 10
     std::wstring cmdName = to_upper(sc.name);
-
+    
     if (cmdName == L"SET") {
-        if (sc.args.size() < 2) return;
+        if (sc.args.empty()) return;
 
-        // 1. Detectăm corect destinația (LHS), chiar dacă '*' este token separat
-        size_t targetTokenCount = 1;
-        std::wstring varName = sc.args[0];
-
-        if (varName == L"*" && sc.args.size() > 1) {
-            varName += sc.args[1]; // Reconstituim *$ptr
-            targetTokenCount = 2;
-        }
-
-        // 2. Identificăm unde începe expresia (RHS), sărind peste '='
-        size_t startIdx = targetTokenCount;
-        if (startIdx < sc.args.size() && sc.args[startIdx] == L"=") {
-            startIdx++;
-        }
-
-        // 3. Colectăm restul argumentelor într-un vector curat pentru parser
-        // Este CRITIC ca rhsTokens să NU conțină variabila destinație sau '='
-        std::vector<std::wstring> rhsTokens;
-        for (size_t i = startIdx; i < sc.args.size(); ++i) {
-            rhsTokens.push_back(sc.args[i]);
-        }
-
-        // 4. Parsăm Right-Hand Side (RHS) și generăm bytecode
-        OliExpressionParser exprParser(rhsTokens);
+        // --- REPARARE: Pasăm TOATE argumentele parserului ---
+        OliExpressionParser exprParser(sc.args);
         ASTPtr exprAST = exprParser.parse();
 
         if (exprAST) {
-            generateFromAST(exprAST, chunk); // Rezultatul calculului ajunge pe stivă
-
-            // 5. Salvăm valoarea de pe stivă în destinație (LHS)
-            // emitStore va genera OP_GET_GLOBAL + OP_SET_INDIRECT pentru pointeri
-            emitStore(varName, chunk);
+            // generateFromAST va detecta nodul de atribuire (=, +=) 
+            // și va gestiona singur calculul și salvarea.
+            generateFromAST(exprAST, chunk);
         }
     }
     // Exemplu: ECHO x
@@ -104,6 +118,47 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
                 generateFromAST(exprAST, chunk);
                 chunk.addByte((uint8_t)OpCode::OP_ECHO, 0);
             }
+        }
+    }
+
+    // Exemplu: UNSET $user.id sau UNSET $matrix[0][1]
+    else if (cmdName == L"UNSET") {
+        if (sc.args.empty()) return;
+
+        // 1. Reconstruim calea completă din argumente (ex: ["$", "user", ".", "id"] -> "$user.id")
+        std::wstring fullPath = L"";
+        for (const auto& arg : sc.args) {
+            fullPath += arg;
+        }
+
+        if (!fullPath.empty()) {
+            // 2. Înregistrăm calea ca o constantă în tabel
+            uint16_t pathIdx = chunk.addConstant(vData(fullPath));
+
+            // 3. Emitem OpCode-ul OP_UNSET urmat de indexul pe 2 bytes
+            // (Folosim 0 pentru linie momentan, sau sc.line dacă ai această info)
+            chunk.addByte((uint8_t)OpCode::OP_UNSET, 0);
+            chunk.addByte((uint8_t)((pathIdx >> 8) & 0xFF), 0);
+            chunk.addByte((uint8_t)(pathIdx & 0xFF), 0);
+        }
+    }
+
+    // Exemplu: PLUGIN "math_ext" sau PLUGIN "C:/libs/my_plugin.dll"
+    else if (cmdName == L"PLUGIN") {
+        if (sc.args.empty()) return;
+
+        std::wstring path = L"";
+        for (const auto& arg : sc.args) path += arg;
+
+        if (!path.empty()) {
+            // 1. Bytecode pentru VM (ca să încarce plugin-ul la execuție)
+            uint16_t pathIdx = chunk.addConstant(vData(path));
+            chunk.addByte((uint8_t)OpCode::OP_PLUGIN, 0);
+            chunk.addByte((uint8_t)((pathIdx >> 8) & 0xFF), 0);
+            chunk.addByte((uint8_t)(pathIdx & 0xFF), 0);
+
+            // 2. Metadata pentru Compilator (ca să știe noile cuvinte cheie)
+            this->loadPluginMetadata(path);
         }
     }
 
@@ -477,37 +532,46 @@ void OliCompiler::emitConstant(const vData& value, OliChunk& chunk, int line) {
 void OliCompiler::emitLoadOrConstant(const std::wstring& arg, OliChunk& chunk) {
     if (arg.empty()) return;
 
-    // 1. ȘIR DE CARACTERE (LITERAL)
+    if (arg == L"true" || arg == L"false") {
+        emitConstant(vData(arg == L"true"), chunk, 0);
+        return;
+    }
+
+    // 0. GESTIONARE NULL / MONOSTATE
+    if (arg == L"NULL" || arg == L"null" || arg == L"monostate") {
+        emitConstant(vData(std::monostate{}), chunk, 0);
+        return;
+    }
+
+    // 1. LITERAL STRING
     if (arg.size() >= 2 && arg.front() == L'\"' && arg.back() == L'\"') {
         std::wstring cleanStr = arg.substr(1, arg.size() - 2);
         emitConstant(vData(cleanStr), chunk, 0);
         return;
     }
 
-    // 2. NUMĂR (LITERAL)
+    // 2. LITERAL NUMĂR
     if (std::iswdigit(arg[0]) || (arg.size() > 1 && arg[0] == L'-' && std::iswdigit(arg[1]))) {
         double val = std::stod(arg);
         emitConstant(vData(val), chunk, 0);
         return;
     }
 
-    // 3. DEREFERENȚIERE POINTER (*$ptr)
+    // 3. DEREFERENȚIERE POINTER
     if (arg[0] == L'*') {
-        emitLoadOrConstant(arg.substr(1), chunk); // Încărcăm recursiv (ex: $ptr)
-        chunk.addByte((uint8_t)OpCode::OP_GET_INDIRECT, 0); // Citim valoarea de la adresă
+        emitLoadOrConstant(arg.substr(1), chunk);
+        chunk.addByte((uint8_t)OpCode::OP_GET_INDIRECT, 0);
         return;
     }
 
-    // 4. VARIABILE (Simple sau Indirecte: $a, $$b, $$$c)
-    if (arg[0] == L'$') {
+    // 4. VARIABILE (Cu prefix $ sau @)
+    if (arg[0] == L'$' || arg[0] == L'@') {
         size_t dollarCount = 0;
-        while (dollarCount < arg.size() && arg[dollarCount] == L'$') {
+        while (dollarCount < arg.size() && (arg[dollarCount] == L'$' || arg[dollarCount] == L'@')) {
             dollarCount++;
         }
 
-        std::wstring baseName = L"$" + arg.substr(dollarCount);
-
-        // --- ATENȚIE: Trebuie să fie OP_GET_GLOBAL (0x02) ---
+        std::wstring baseName = arg.substr(dollarCount - 1); // Păstrăm un singur prefix ($ sau @)
         chunk.addByte((uint8_t)OpCode::OP_GET_GLOBAL, 0);
         uint16_t nameIdx = chunk.addConstant(vData(baseName));
         chunk.addByte((uint8_t)(nameIdx >> 8), 0);
@@ -519,7 +583,9 @@ void OliCompiler::emitLoadOrConstant(const std::wstring& arg, OliChunk& chunk) {
         return;
     }
 
-    // 5. CAZ DEFAULT (Variabilă fără prefix)
+    // 5. CAZ DEFAULT: Eroare sau tratare ca variabilă fără prefix
+    // Dacă ajungem aici cu "++", înseamnă că parserul a greșit, 
+    // dar cel puțin nu mai emitem cod pentru NULL.
     chunk.addByte((uint8_t)OpCode::OP_GET_GLOBAL, 0);
     uint16_t nameIdx = chunk.addConstant(vData(arg));
     chunk.addByte((uint8_t)(nameIdx >> 8), 0);
@@ -586,81 +652,123 @@ void OliCompiler::optimize(OliChunk& chunk) {
 void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk) {
     if (!node) return;
 
+    // --- 1. ATRIBUIRE (=, +=, -=, *=, /=) ---
+    if (node->type == ASTNodeType::Operator && (node->value == L"=" ||
+        node->value == L"+=" || node->value == L"-=" ||
+        node->value == L"*=" || node->value == L"/=")) {
 
+        std::wstring rawLHS = reconstructRawName(node->children[0]);
 
-    // --- 1. ATRIBUIRE (=, +=, -=, etc.) ---
-    // Tratăm atribuirea special: evaluăm RHS (dreapta), apoi salvăm în LHS (stânga)
-    if (node->type == ASTNodeType::Operator && (node->value == L"=" || node->value == L"+=")) {
         if (node->value == L"=") {
-            // 1. Evaluăm Right-Hand Side (RHS). Valoarea rezultată rămâne pe stivă.
             generateFromAST(node->children[1], chunk);
-
-            // 2. Pasăm Left-Hand Side (LHS) direct către emitStore.
-            // emitStore va decide dacă generează OP_SET_GLOBAL, OP_SET_INDIRECT (pt *) sau logică de $$.
-            emitStore(node->children[0]->value, chunk);
-
-            return; // Finalizăm procesarea nodului de atribuire
+            emitStore(rawLHS, chunk);
+            return;
         }
-        // TODO: Implementare +=, -= aici
+
+        generateFromAST(node->children[0], chunk);
+        generateFromAST(node->children[1], chunk);
+
+        if (node->value == L"+=")      chunk.addByte((uint8_t)OpCode::OP_ADD, 0);
+        else if (node->value == L"-=") chunk.addByte((uint8_t)OpCode::OP_SUB, 0);
+        else if (node->value == L"*=") chunk.addByte((uint8_t)OpCode::OP_MUL, 0);
+        else if (node->value == L"/=") chunk.addByte((uint8_t)OpCode::OP_DIV, 0);
+
+        emitStore(rawLHS, chunk);
+        return;
     }
 
-    // --- 2. OPERATORI UNARI (-, !, ~, *, ++, --) ---
+    // --- 2. OPERATORI UNARI ---
     if (node->type == ASTNodeType::Operator && node->children.size() == 1) {
-        // --- EXCEPȚIE CRITICĂ PENTRU & ---
         if (node->value == L"ADDRESS_OF" || node->value == L"&") {
             std::wstring varName = node->children[0]->value;
             uint16_t nameIdx = chunk.addConstant(vData(varName));
             chunk.addByte((uint8_t)OpCode::OP_GET_ADDR, 0);
             chunk.addByte((nameIdx >> 8) & 0xFF, 0);
             chunk.addByte(nameIdx & 0xFF, 0);
-            return; // Ieșim imediat! NU apelăm generateFromAST pe copil.
+            return;
         }
 
-        generateFromAST(node->children[0], chunk); // Punem operandul pe stivă
+        generateFromAST(node->children[0], chunk);
 
         if (node->value == L"UNARY_MINUS")      chunk.addByte((uint8_t)OpCode::OP_NEGATE, 0);
         else if (node->value == L"NOT")         chunk.addByte((uint8_t)OpCode::OP_LOGICAL_NOT, 0);
         else if (node->value == L"BITWISE_NOT") chunk.addByte((uint8_t)OpCode::OP_BNOT, 0);
         else if (node->value == L"DEREFERENCE") chunk.addByte((uint8_t)OpCode::OP_GET_INDIRECT, 0);
         else if (node->value == L"POSTFIX_INC") {
-            // Incrementarea este specială: adunăm 1 și salvăm înapoi
-            chunk.addByte((uint8_t)OpCode::OP_DUP, 0); // Păstrăm valoarea originală pentru rezultat
+            chunk.addByte((uint8_t)OpCode::OP_DUP, 0);
             emitConstant(vData(1.0), chunk, 0);
             chunk.addByte((uint8_t)OpCode::OP_ADD, 0);
-            emitStore(node->children[0]->value, chunk); // Salvăm noul i
-            chunk.addByte((uint8_t)OpCode::OP_POP, 0); // Eliminăm gunoiul, lăsăm originalul pe stivă
-        }
-        else if (node->value == L"ADDRESS_OF" || node->value == L"&") {
-            // Luăm numele variabilei de la copilul nodului &
-            std::wstring varName = node->children[0]->value;
-            uint16_t nameIdx = chunk.addConstant(vData(varName));
-            chunk.addByte((uint8_t)OpCode::OP_GET_ADDR, 0);
-            chunk.addByte((nameIdx >> 8) & 0xFF, 0);
-            chunk.addByte(nameIdx & 0xFF, 0);
-            return;
+            emitStore(node->children[0]->value, chunk);
         }
         return;
     }
 
-    // --- 3. NODURI TERMINALE ---
+    // --- 3. NODURI TERMINALE & STRUCTURI (Array/Map) ---
     if (node->type == ASTNodeType::Literal) {
+        if (node->value == L"ARRAY_OBJECT") {
+            // 1. Evaluăm fiecare element și îl punem pe stivă
+            for (auto& child : node->children) {
+                generateFromAST(child, chunk);
+            }
+            // 2. Emitem OP_ARRAY urmat de numărul de elemente
+            chunk.addByte((uint8_t)OpCode::OP_ARRAY, 0);
+            chunk.addByte((uint8_t)node->children.size(), 0);
+            return;
+        }
+        else if (node->value == L"MAP_OBJECT") {
+            // 1. Evaluăm fiecare pereche (Cheie apoi Valoare)
+            for (auto& child : node->children) {
+                generateFromAST(child, chunk);
+            }
+            // 2. Emitem OP_MAP urmat de numărul de perechi (size/2)
+            chunk.addByte((uint8_t)OpCode::OP_MAP, 0);
+            chunk.addByte((uint8_t)(node->children.size() / 2), 0);
+            return;
+        }
+
+        // Literal simplu (Număr, String)
         emitLoadOrConstant(node->value, chunk);
         return;
     }
+
     if (node->type == ASTNodeType::Variable) {
-        emitLoadOrConstant(node->value, chunk); // Va genera OP_GET_GLOBAL sau GET_INDIRECT
+        emitLoadOrConstant(node->value, chunk);
         return;
     }
 
-    // --- 4. OPERATORI BINARI (Standard: Stânga, Dreapta, Op) ---
+    // --- 3.5 APELURI DE FUNCȚII (NATIVE) ---
+    if (node->type == ASTNodeType::FunctionCall) {
+        // Determinăm dacă este un apel dinamic (ex: $var()) sau unul simplu (ex: RANDOM())
+        bool isDynamic = (node->value == L"DYNAMIC_CALL");
+        size_t startIdx = isDynamic ? 1 : 0;
+
+        // 1. Punem toate argumentele pe stivă (de la stânga la dreapta)
+        for (size_t i = startIdx; i < node->children.size(); ++i) {
+            generateFromAST(node->children[i], chunk);
+        }
+
+        // 2. Identificăm numele funcției
+        // Dacă e DYNAMIC_CALL, numele/variabila e în primul copil. Altfel e în node->value.
+        std::wstring funcName = isDynamic ? node->children[0]->value : node->value;
+        uint8_t argCount = (uint8_t)(node->children.size() - startIdx);
+
+        // 3. Adăugăm numele în constante și emitem OP_CALL_NATIVE
+        uint16_t nameIdx = chunk.addConstant(vData(funcName));
+
+        chunk.addByte((uint8_t)OpCode::OP_CALL_NATIVE, 0);
+        chunk.addByte((uint8_t)((nameIdx >> 8) & 0xFF), 0);
+        chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
+        chunk.addByte(argCount, 0); // Spunem VM-ului câte elemente să „înghită” de pe stivă
+        return;
+    }
+
+    // --- 4. OPERATORI BINARI ---
     if (node->children.size() == 2) {
-        // Excepție: Logica && și || necesită salturi (scurtcircuitare)
         if (node->value == L"&&" || node->value == L"||") {
             generateShortCircuit(node, chunk);
             return;
         }
 
-        // Parcurgere normală: evaluăm ambii operanzi
         generateFromAST(node->children[0], chunk);
         generateFromAST(node->children[1], chunk);
 
@@ -671,26 +779,49 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk) {
         else if (op == L"/") chunk.addByte((uint8_t)OpCode::OP_DIV, 0);
         else if (op == L"%") chunk.addByte((uint8_t)OpCode::OP_MOD, 0);
         else if (op == L"**") chunk.addByte((uint8_t)OpCode::OP_POW, 0);
-
-        // Comparații
         else if (op == L"==") chunk.addByte((uint8_t)OpCode::OP_EQUAL, 0);
         else if (op == L"!=") chunk.addByte((uint8_t)OpCode::OP_NOT_EQUAL, 0);
         else if (op == L">")  chunk.addByte((uint8_t)OpCode::OP_GREATER, 0);
         else if (op == L">=") chunk.addByte((uint8_t)OpCode::OP_GREATER_EQUAL, 0);
         else if (op == L"<")  chunk.addByte((uint8_t)OpCode::OP_LESS, 0);
         else if (op == L"<=") chunk.addByte((uint8_t)OpCode::OP_LESS_EQUAL, 0);
-
-        // Bitwise
         else if (op == L"&")  chunk.addByte((uint8_t)OpCode::OP_BAND, 0);
         else if (op == L"|")  chunk.addByte((uint8_t)OpCode::OP_BOR, 0);
-        else if (op == L"BXOR") chunk.addByte((uint8_t)OpCode::OP_BXOR, 0);
+        else if (op == L"BXOR" || op == L"^") chunk.addByte((uint8_t)OpCode::OP_BXOR, 0);
+        else if (op == L"<<") chunk.addByte((uint8_t)OpCode::OP_SHL, 0);
+        else if (op == L">>") chunk.addByte((uint8_t)OpCode::OP_SHR, 0);
+        else if (op == L"??") chunk.addByte((uint8_t)OpCode::OP_NULL_COALESCE, 0);
+        else if (op == L"CONCAT") chunk.addByte((uint8_t)OpCode::OP_CONCAT, 0);
 
-        // Speciali
-        else if (op == L"??")    chunk.addByte((uint8_t)OpCode::OP_NULL_COALESCE, 0);
-        else if (op == L"CONCAT")chunk.addByte((uint8_t)OpCode::OP_CONCAT, 0);
-        else if (op == L"DOT" || op == L"INDEX") chunk.addByte((uint8_t)OpCode::OP_GET_INDIRECT, 0);
+        // --- ACCES INDEXAT (Array/Map) ---
+        // Aici DOT și INDEX pun pe stivă Containerul și Cheia/Indexul
+        else if (op == L"DOT" || op == L"INDEX") {
+            // Recomand folosirea unei instrucțiuni dedicate OP_INDEX_GET în loc de OP_GET_INDIRECT
+            // pentru a clarifica faptul că scoatem 2 valori de pe stivă
+            chunk.addByte((uint8_t)OpCode::OP_GET_INDIRECT, 0);
+        }
+    }
+}
 
-        
+void OliCompiler::emitTargetAddress(const std::wstring& varName, OliChunk& chunk) {
+    size_t dollarCount = 0;
+    while (dollarCount < varName.size() && varName[dollarCount] == L'$') dollarCount++;
+
+    if (dollarCount > 1) {
+        std::wstring baseName = L"$" + varName.substr(dollarCount);
+        uint16_t nameIdx = chunk.addConstant(vData(baseName));
+        chunk.addByte((uint8_t)OpCode::OP_GET_GLOBAL, 0);
+        chunk.addByte((nameIdx >> 8), 0); chunk.addByte((nameIdx & 0xFF), 0);
+
+        // Navigăm până la penultimul nivel (pentru a lăsa numele final pe stivă)
+        for (size_t i = 0; i < dollarCount - 2; ++i) {
+            chunk.addByte((uint8_t)OpCode::OP_GET_INDIRECT, 0);
+        }
+    }
+    else {
+        // Pentru variabile simple, punem doar numele ca constantă
+        uint16_t nameIdx = chunk.addConstant(vData(varName));
+        emitConstant(vData(varName), chunk, 0);
     }
 }
 
@@ -773,4 +904,78 @@ void OliCompiler::generateShortCircuit(ASTPtr node, OliChunk& chunk) {
     uint16_t offset = (uint16_t)(chunk.code.size() - (jumpAddr + 2));
     chunk.code[jumpAddr] = (uint8_t)(offset >> 8);
     chunk.code[jumpAddr + 1] = (uint8_t)(offset & 0xFF);
+}
+
+std::wstring OliCompiler::reconstructRawName(ASTPtr node) {
+    if (!node) return L"";
+
+    // Dacă e variabilă (ex: "$a", "$$b", "$$$ptrToPtr"), returnăm valoarea direct
+    if (node->type == ASTNodeType::Variable) return node->value;
+
+    // Dacă e dereferențiere (operatoul *), adăugăm "*" și procesăm recursiv copilul
+    if (node->type == ASTNodeType::Operator && node->value == L"DEREFERENCE") {
+        return L"*" + reconstructRawName(node->children[0]);
+    }
+
+    return node->value; // Fallback pentru alte cazuri
+}
+
+void OliCompiler::loadPluginMetadata(std::wstring pluginName) {
+    // 1. Curățăm ghilimelele de la începutul și sfârșitul căii
+    if (pluginName.size() >= 2 && pluginName.front() == L'"' && pluginName.back() == L'"') {
+        pluginName = pluginName.substr(1, pluginName.size() - 2);
+    }
+
+    if (pluginName.empty()) return;
+
+    // 2. Pregătim calea către DLL
+    std::wstring dllPath = pluginName;
+    std::wstring ext = PortTools::getPluginExtension();
+
+    // Adăugăm extensia (.dll / .so) doar dacă lipsește
+    if (dllPath.size() < ext.size() ||
+        dllPath.substr(dllPath.size() - ext.size()) != ext) {
+        dllPath += ext;
+    }
+
+    // 3. Încărcăm biblioteca în procesul curent al compilatorului
+    // Folosim PortTools pentru abstractizarea Windows/Linux
+    PortTools::LibHandle hLib = PortTools::loadDynamicLibrary(dllPath);
+
+    if (!hLib) {
+        // Dacă ești în mod de debug, poți afișa eroarea, altfel ignorăm silențios.
+        // VM-ul va raporta eroarea reală la execuție.
+        return;
+    }
+
+    // 4. Extragem simbolul pentru înregistrarea comenzilor
+    // Castăm simbolul la tipul LoadCommandsFunc definit în header
+    LoadCommandsFunc regCmds = (LoadCommandsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliCommandPlugin");
+
+    if (regCmds) {
+        // Creăm un map temporar (dummy) pentru a colecta cheile (numele comenzilor)
+        std::unordered_map<std::wstring, OliCommandHandler> dummyMap;
+
+        // Apelăm funcția din plugin.
+        // CRITIC: Trimitem nullptr pentru instanța de engine deoarece compilatorul 
+        // nu rulează codul, doar are nevoie de numele instrucțiunilor.
+        try {
+            regCmds(dummyMap, nullptr);
+
+            // 5. Înregistrăm fiecare comandă găsită în lista de cuvinte cheie dinamice
+            for (auto const& [name, handler] : dummyMap) {
+                if (!name.empty()) {
+                    vOliKeyWords::registerDynamicCommand(name);
+                }
+            }
+        }
+        catch (...) {
+            // Prevenim crash-ul compilatorului dacă plugin-ul încearcă 
+            // să folosească engine-ul (care e nullptr) fără să verifice.
+        }
+    }
+
+    // Notă: Nu facem FreeLibrary(hLib) aici. Deși std::wstring copiază datele,
+    // păstrarea bibliotecii încărcate până la finalul compilării previne
+    // orice problemă de memorie legată de simbolurile statice din plugin.
 }

@@ -110,37 +110,43 @@ struct vData {
     }
 
     std::wstring toWString() const {
-
-        if (std::holds_alternative<vData*>(value)) {
-            std::wstringstream wss;
-            wss << L"[PTR: 0x" << std::hex << std::uppercase << std::get<vData*>(value) << L"]";
-            return wss.str();
-        }
-
         const vData& actual = getTrueData();
 
-        if (std::holds_alternative<std::monostate>(actual.value)) return L"null";
-
+        if (actual.isNull())   return L"null";
         if (actual.isString()) return std::get<std::wstring>(actual.value);
 
-        if (actual.isInt()) return std::to_wstring(std::get<long long>(actual.value));
-
+        // Formatare inteligentă pentru numere
+        if (actual.isInt())    return std::to_wstring(std::get<long long>(actual.value));
         if (actual.isFloat()) {
+            double d = std::get<double>(actual.value);
+            // Dacă e practic întreg (ex: 10.0), scoatem zecimalele
+            if (d == (long long)d) return std::to_wstring((long long)d);
             std::wstringstream wss;
-            wss << std::get<double>(actual.value);
+            wss << d; // wstringstream e mai curat decât to_wstring pt double
             return wss.str();
         }
 
         if (actual.isBool()) return std::get<bool>(actual.value) ? L"true" : L"false";
 
         if (actual.isArray()) {
-            auto arr = actual.getTrueData().value; // Obținem shared_ptr-ul
-            return L"[Array(" + std::to_wstring(std::get<vDataArray>(arr)->size()) + L")]";
+            auto arr = std::get<vDataArray>(actual.value);
+            std::wstring res = L"[";
+            for (size_t i = 0; i < arr->size(); ++i) {
+                res += (*arr)[i].toWString();
+                if (i < arr->size() - 1) res += L", ";
+            }
+            return res + L"]";
         }
 
         if (actual.isMap()) {
-            auto m = actual.getTrueData().value;
-            return L"{Map(" + std::to_wstring(std::get<vDataMap>(m)->size()) + L")}";
+            auto m = std::get<vDataMap>(actual.value);
+            std::wstring res = L"{";
+            size_t i = 0;
+            for (auto const& [key, val] : *m) {
+                res += key + L": " + val.toWString();
+                if (++i < m->size()) res += L", ";
+            }
+            return res + L"}";
         }
 
         return L"unknown";

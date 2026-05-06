@@ -65,5 +65,5 @@ SET $$$ptrToPtr = 200
 ECHO "Dupa indirație $$$: " .. $realVar
 
 # Test postfix pe pointer
-SET $$$ptrToPtr ++
+SET $$$ptrToPtr += 1
 ECHO "Dupa postfix ++ pe pointer: " .. $realVar

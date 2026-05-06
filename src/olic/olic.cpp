@@ -52,7 +52,13 @@ int main(int argc, char* argv[]) {
 
     std::string inputPath = argv[1];
     std::string outputPath = (argc > 2) ? argv[2] : inputPath + "c"; // Default: file.olic
-
+	
+	try {
+        std::locale::global(std::locale("C"));
+    } catch (...) {
+        std::wcout<<"Eroare LOCALE"<<std::endl;	
+    }
+	
     try {
         std::wcout << L"Compiling: " << std::wstring(inputPath.begin(), inputPath.end()) << L"..." << std::endl;
 

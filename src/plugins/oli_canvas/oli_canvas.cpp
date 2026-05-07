@@ -124,6 +124,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         };
 
     // --- CAN_PRESENT ---
+	/*
     registry[L"CAN_PRESENT"] = [](const std::vector<vData>&) -> vData {
 #ifdef _WIN32
         if (g_Canvas.hwnd && g_Canvas.hdcMem) {
@@ -144,7 +145,35 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
 #endif
         return vData{ 1LL };
         };
+*/
 
+registry[L"CAN_PRESENT"] = [](const std::vector<vData>&) -> vData {
+#ifdef _WIN32
+    if (g_Canvas.hwnd && g_Canvas.hdcMem) {
+        // 1. Pompa de mesaje Windows (Esențială pentru KEY_STATE)
+        MSG msg;
+        // Folosim while pentru a goli coada de mesaje la fiecare cadru
+        while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+
+        // 2. Transferăm buffer-ul de pixeli pe ecran
+        HDC hdc = GetDC(g_Canvas.hwnd);
+        BitBlt(hdc, 0, 0, g_Canvas.width, g_Canvas.height, g_Canvas.hdcMem, 0, 0, SRCCOPY);
+        ReleaseDC(g_Canvas.hwnd, hdc);
+    }
+#else
+    // Linux logic rămâne la fel...
+    if (g_Canvas.display && g_Canvas.ximage) {
+        XPutImage(g_Canvas.display, g_Canvas.window, g_Canvas.gc, g_Canvas.ximage,
+                  0, 0, 0, 0, g_Canvas.width, g_Canvas.height);
+        XFlush(g_Canvas.display);
+    }
+#endif
+    return vData{ 1LL };
+};
+	
     // --- FUNCȚIILE DE DESENARE RĂMÂN IDENTICE! ---
     // CAN_PUT(x, y, color) - Color format: 0xRRGGBB
     registry[L"CAN_PUT"] = [](const std::vector<vData>& args) -> vData {

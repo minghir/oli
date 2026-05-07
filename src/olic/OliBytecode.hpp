@@ -8,6 +8,8 @@
 #include <iomanip>
 #include "../vData.hpp"
 
+struct OliChunk;
+
 enum class OpCode : uint8_t {
     // --- MEMORIE & STIVĂ ---
     OP_CONSTANT,
@@ -78,10 +80,27 @@ enum class OpCode : uint8_t {
     OP_HALT
 };
 
+struct ByteCodeProcedure {
+    std::wstring name;
+    std::vector<std::wstring> params;
+
+    // Folosim un shared_ptr pentru a sparge dependența circulară.
+    // În C++, nu poți avea un obiect "by value" dacă el conține tipul curent.
+    std::shared_ptr<OliChunk> compiledBody;
+
+    bool isVariadic = false;
+
+    // Helper pentru inițializare (opțional, dar util)
+    ByteCodeProcedure() : compiledBody(nullptr), isVariadic(false) {}
+};
+
 struct OliChunk {
     std::vector<uint8_t> code;
     std::vector<vData> constants;
     std::vector<int> lines;
+
+    // Acum OliChunk poate conține o listă de proceduri
+    std::unordered_map<std::wstring, ByteCodeProcedure> procedures;
 
     void addByte(uint8_t b, int line) {
         code.push_back(b);
@@ -97,7 +116,7 @@ struct OliChunk {
     }
 };
 
-inline std::wstring disassembleChunk(const OliChunk& chunk) {
+inline std::wstring disassembleChunk(const OliChunk& chunk, const std::wstring& chunkName = L"Main") {
     std::wstringstream ss;
     size_t ip = 0;
 
@@ -209,16 +228,18 @@ inline std::wstring disassembleChunk(const OliChunk& chunk) {
             ss << L"OP_LOOP          " << std::setw(4) << offset << L" (Sari inapoi la: " << (ip - offset) << L")\n";
             break;
         }
-        case OpCode::OP_CALL_NATIVE: {
+        case OpCode::OP_CALL_NATIVE: 
+        case OpCode::OP_CALL: {
             uint16_t nameIdx = (chunk.code[ip] << 8) | chunk.code[ip + 1];
             ip += 2;
             uint8_t argCount = chunk.code[ip++];
-            ss << L"OP_CALL_NATIVE  " << std::setw(4) << nameIdx
+            ss << (op == OpCode::OP_CALL ? L"OP_CALL         " : L"OP_CALL_NATIVE  ")
+                << std::setw(4) << nameIdx
                 << L" (Name: " << chunk.constants[nameIdx].toWString()
                 << L", Args: " << (int)argCount << L")\n";
             break;
         }
-        case OpCode::OP_CALL:   ss << L"OP_CALL\n"; break;
+        
         case OpCode::OP_RETURN: ss << L"OP_RETURN\n"; break;
         case OpCode::OP_ECHO:   ss << L"OP_ECHO\n"; break;
         case OpCode::OP_PLUGIN: { // <--- NOUL CASE
@@ -234,6 +255,26 @@ inline std::wstring disassembleChunk(const OliChunk& chunk) {
             break;
         }
     }
+    // --- NOUL BLOC: Dezasamblarea Recursivă a Funcțiilor ---
+    if (!chunk.procedures.empty()) {
+        for (auto const& [name, proc] : chunk.procedures) {
+            ss << L"\n--- FUNCTION: " << name << L" (Params: ";
+            for (size_t i = 0; i < proc.params.size(); ++i) {
+                ss << proc.params[i] << (i < proc.params.size() - 1 ? L", " : L"");
+            }
+            if (proc.isVariadic) ss << L", ...";
+            ss << L") ---";
+
+            if (proc.compiledBody) {
+                // Apelăm recursiv dezasamblarea pentru corpul funcției
+                ss << disassembleChunk(*proc.compiledBody, name);
+            }
+            else {
+                ss << L"\n[Error: Empty Body]\n";
+            }
+        }
+    }
+
     return ss.str();
 }
 

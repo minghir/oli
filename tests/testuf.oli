@@ -1,0 +1,15 @@
+FUNC FACTORIAL($n)
+    # Cazul de bază: 0! sau 1! este 1
+    IF $n <= 1 THEN
+        RETURN 1
+    ENDIF
+
+    # Apel recursiv: n * factorial(n - 1)
+    RETURN $n * FACTORIAL($n - 1)
+ENDFUNC
+
+# Testăm funcția
+SET $input = 5
+SET $rez = FACTORIAL($input)
+
+ECHO "Factorialul lui " + $input + " este: " + $rez

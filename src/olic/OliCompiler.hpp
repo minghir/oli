@@ -20,7 +20,7 @@ public:
     OliCompiler() = default;
 
     // Metoda principală: Text -> Bytecode
-    OliChunk compile(const std::wstring& source);
+    OliChunk compile(const std::wstring& source, const std::unordered_map<std::wstring, ByteCodeProcedure>& parentProcs = {}, bool isSubBlock = false);
 
 private:
     void compileStatement(const ShellCommand& sc, OliChunk& chunk);
@@ -38,6 +38,10 @@ private:
     void optimize(OliChunk& chunk);
 
     void loadPluginMetadata(std::wstring pluginName);
+
+    void compileSubBlock(const std::vector<std::wstring>& args, int start, int end, OliChunk& chunk);
+
+    std::wstring cleanVariableName(const std::wstring& name);
 };
 
 #endif

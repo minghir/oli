@@ -1,0 +1,38 @@
+plugin oli_math
+# --- TEST 1: IF Simplu ---
+SET $a = 10
+SET $b = 20
+
+IF $a < $b THEN 
+    ECHO "Test 1: Corect ($a < $b)" 
+ENDIF
+
+# --- TEST 2: IF-ELSE ---
+IF $a > $b THEN
+    ECHO "Test 2: Eroare (n-ar trebui sa ajung aici)"
+ELSE
+    ECHO "Test 2: Succes (ramura ELSE functioneaza)"
+ENDIF
+
+# --- TEST 3: Conditii Complexe ---
+IF ($a + 15) > $b THEN
+    ECHO "Test 3: Succes (expresiile matematice in IF functioneaza)"
+ENDIF
+
+# --- TEST 4: IF-uri Cuibarite (Nesting) ---
+IF $a == 10 THEN
+    ECHO "Test 4: Intrat in primul nivel..."
+    IF $b == 20 THEN
+        ECHO "Test 4: Succes (Nesting complet functional)"
+    ELSE
+        ECHO "Test 4: Eroare in ELSE-ul cuibarit"
+    ENDIF
+ENDIF
+
+# --- TEST 5: IF-uri Cuibarite (Nesting) ---
+IF ADD(@a, $b) == 30 THEN 
+	ECHO "BRICI!"
+ENDIF
+
+ECHO "--- SFARSIT TEST ---"
+

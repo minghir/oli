@@ -35,30 +35,42 @@ std::wstring readFile(const std::string& path) {
 }
 
 
-// Funcție rudimentară pentru a salva chunk-ul într-un fișier binar
 void saveBytecode(const OliChunk& chunk, const std::string& path) {
     std::ofstream ofs(path, std::ios::binary);
-    if (!ofs.is_open()) {
-        std::cerr << "Failed to open output file: " << path << std::endl;
-        return;
-    }
+    if (!ofs.is_open()) return;
 
-    // 1. Salvăm numărul de constante (Tabelul de simboluri/valori)
+    // 1. Constante
     uint32_t constCount = (uint32_t)chunk.constants.size();
-    ofs.write(reinterpret_cast<const char*>(&constCount), sizeof(constCount));
-
-    // --- AICI SERIALIZEZI FIECARE CONSTANTĂ ---
-    for (const auto& constant : chunk.constants) {
-        vDataSerialize::serializevData(constant, ofs); // Folosește funcția din vDataSerialize.hpp
+    ofs.write((char*)&constCount, 4);
+    for (const auto& c : chunk.constants) {
+        // FIX: Inversat (Date, Stream)
+        vDataSerialize::serializevData(c, ofs);
     }
 
-    // 2. Salvăm dimensiunea codului binar
+    // 2. Cod
     uint32_t codeSize = (uint32_t)chunk.code.size();
-    ofs.write(reinterpret_cast<const char*>(&codeSize), sizeof(codeSize));
+    ofs.write((char*)&codeSize, 4);
+    ofs.write((char*)chunk.code.data(), codeSize);
 
-    // 3. Salvăm instrucțiunile (Bytecode-ul)
-    ofs.write(reinterpret_cast<const char*>(chunk.code.data()), chunk.code.size());
+    // 3. Proceduri
+    uint32_t procCount = (uint32_t)chunk.procedures.size();
+    ofs.write((char*)&procCount, 4);
+    for (auto const& [name, proc] : chunk.procedures) {
+        // FIX: Inversat (Date, Stream)
+        vDataSerialize::serializeWString(proc.name, ofs);
 
+        uint32_t pCount = (uint32_t)proc.params.size();
+        ofs.write((char*)&pCount, 4);
+        for (const auto& p : proc.params) {
+            vDataSerialize::serializeWString(p, ofs); // FIX: Inversat
+        }
+
+        uint8_t variadic = proc.isVariadic ? 1 : 0;
+        ofs.write((char*)&variadic, 1);
+
+        // RECURSIVITATE
+        vDataSerialize::serializeChunk(*proc.compiledBody, ofs);
+    }
     ofs.close();
 }
 

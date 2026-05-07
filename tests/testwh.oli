@@ -1,0 +1,26 @@
+# Setup initial
+SET $row = 1
+ECHO "--- START MATRIX TEST ---"
+
+WHILE $row <= 3 DO
+    ECHO "Randul curent: " .. $row
+    
+    SET $col = 1
+    WHILE $col <= 3 DO
+        
+        # Testăm IF-ul în interiorul celui de-al doilea WHILE
+        IF $row == $col THEN
+            ECHO "  [*] DIAGONALA gasita la: " .. $col
+        ELSE
+            ECHO "  [ ] Celula normala: (" .. $row .. "," .. $col .. ")"
+        ENDIF
+        
+        # Incrementăm coloana
+        SET $col = $col + 1
+    ENDWHILE
+    
+    # Incrementăm rândul
+    SET $row = $row + 1
+ENDWHILE
+
+ECHO "--- TEST FINALIZAT CU SUCCES ---"

@@ -7,7 +7,7 @@ SRCS = $(wildcard *.cpp)
 OBJS = $(SRCS:.cpp=.o)
 
 
-COMMON_OBJS = $(wildcard ../../build/StringUtils.o ../../build/ConsoleManager.o)
+COMMON_OBJS = $(wildcard ../../build/StringUtils.o ../../build/ConsoleManager.o ../../build/PortTools.o)
 
 all: $(TARGET)
 

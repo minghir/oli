@@ -8,6 +8,7 @@
 #include "../vDataSerialize.hpp"
 
 // Funcție helper pentru a citi tot fișierul în memorie
+/*
 std::wstring readFile(const std::string& path) {
     std::wifstream wif(path);
     wif.imbue(std::locale("")); // Suport pentru caractere wide/unicode
@@ -15,6 +16,24 @@ std::wstring readFile(const std::string& path) {
     wss << wif.rdbuf();
     return wss.str();
 }
+*/
+
+std::wstring readFile(const std::string& path) {
+    std::wifstream wif(path);
+
+    // Locale universal compatibil în MSYS2, Linux și Windows
+    try {
+        wif.imbue(std::locale("C.UTF-8"));
+    } catch (...) {
+        // Fallback dacă MSYS2 nu are locale setat
+        wif.imbue(std::locale::classic());
+    }
+
+    std::wstringstream wss;
+    wss << wif.rdbuf();
+    return wss.str();
+}
+
 
 // Funcție rudimentară pentru a salva chunk-ul într-un fișier binar
 void saveBytecode(const OliChunk& chunk, const std::string& path) {

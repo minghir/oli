@@ -1,0 +1,81 @@
+# --- GAME OF LIFE - CANVAS SPEED EDITION ---
+config echo off
+config max_iterations 0
+
+plugin oli_canvas
+plugin oli_math
+plugin oli_keyboard
+plugin oli_time
+
+func RUN_LIFE_CANVAS()
+    set $W = 400; set $H = 400
+    set $cellSize = 10 # Celulă mai mare = viteză mult mai mare
+    set $cols = 40     # 400 / 10
+    set $rows = 40     # 400 / 10
+    
+    set $v = CAN_INIT($W, $H, "Oli Engine - Canvas Life")
+    
+    # 1. Inițializare Grid
+    set $grid = []
+    for $y = 0 to $rows - 1 do
+        set $row = []
+        for $x = 0 to $cols - 1 do
+            set $r = RANDOM(0, 10)
+            if $r > 7 then set $val = 1 else set $val = 0 endif
+            set $v = PUSH($row, $val)
+        endfor
+        set $v = PUSH($grid, $row)
+    endfor
+
+    while true do
+        CAN_CLS(0)
+        set $nextGen = []
+        
+        for $y = 0 to $rows - 1 do
+            set $nextRow = []
+            for $x = 0 to $cols - 1 do
+                # Numărare vecini simplificată
+                set $neighbors = 0
+                for $ny = -1 to 1 do
+                    set $ty = INT($y + $ny + $rows) % $rows
+                    for $nx = -1 to 1 do
+                        if $ny != 0 or $nx != 0 then
+                            set $tx = INT($x + $nx + $cols) % $cols
+                            set $neighbors = $neighbors + $grid[$ty][$tx]
+                        endif
+                    endfor
+                endfor
+
+                set $state = $grid[$y][$x]
+                set $alive = 0
+                
+                # Reguli Conway atomice
+                if $state == 1 then
+                    if $neighbors == 2 or $neighbors == 3 then set $alive = 1 endif
+                else
+                    if $neighbors == 3 then set $alive = 1 endif
+                endif
+
+                set $v = PUSH($nextRow, $alive)
+
+                # 2. Randare celulă
+                if $alive == 1 then
+                    set $px = $x * $cellSize
+                    set $py = $y * $cellSize
+                    
+                    # Culoare fixă (Verde) pentru a economisi calcule
+                    CAN_RECT($px, $py, $px + 8, $py + 8, 65280)
+                endif
+            endfor
+            set $v = PUSH($nextGen, $nextRow)
+        endfor
+
+        set $grid = $nextGen
+        CAN_PRESENT()
+        
+        # Q pentru ieșire
+        if KEY_STATE(81) == 1 then break endif 
+    endwhile
+endfunc
+
+set $res = RUN_LIFE_CANVAS()

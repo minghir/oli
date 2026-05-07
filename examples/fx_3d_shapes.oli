@@ -12,18 +12,22 @@ set $ptr = CAN_GET_PTR()
 set $w = CAN_GET_WIDTH()
 set $h = CAN_GET_HEIGHT()
 
-echo "Randare 3D începută. Q pentru Ieșire."
-
-while true do
+echo "Randare 3D inceputa. Q pentru Iesire."
+set $i = 1
+while $i == 1 do
     set $t = TIME()
-
+	echo $i
     # Apelăm funcția 3D
     set $res = FX_3D_SHAPES($ptr, $w, $h, $t)
     
-    CAN_PRESENT()
-    
-    if KEY_STATE(81) == 1 then break endif
+    set $v = CAN_PRESENT()
+    set $state = KEY_STATE(81)
+    if $state > 0.5 then 
+		set $i = 0 
+	endif
+	
 endwhile
 
-CAN_CLOSE()
-echo "Revenire în consolă."
+
+set $v = CAN_CLOSE()
+echo "Revenire in consola."

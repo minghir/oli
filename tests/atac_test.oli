@@ -6,7 +6,7 @@ def struct Entitate {nume, stats, poz}
 
 # 2. Funcție utilitară: Calcul Damage
 # Logica: Scade apărarea din atac, dar nu sub 0
-func CALCUL_DAMAGE atk def_val
+func CALCUL_DAMAGE($atk,$def_val)
     set $daune = $atk - $def_val
     if $daune < 0 then
         return 0
@@ -16,7 +16,7 @@ endfunc
 
 # 3. Funcția Principală de Luptă
 # Demonstrează: Deep Reading, Deep Writing și Dynamic Scope
-func ATACA atacator tinta daune_baza
+func ATACA($atacator,$tinta,$daune_baza)
     echo "--- LUPTA INCEPE ---"
     echo $atacator.nume + " loveste pe " + $tinta.nume
     
@@ -66,7 +66,7 @@ set $boss = Entitate("Dragon", Statistici(500, 200, 30), Pozitie(150, 50))
 
 # 2. Definim funcția de Teleportare
 # Observă: Nu returnăm nimic, lucrăm direct pe @
-func TELEPORT_GLOBAL nume_entitate nou_x
+func TELEPORT_GLOBAL($nume_entitate,$nou_x)
 [INFO] Started recording function: TELEPORT_GLOBAL
     echo "--- Initiere Teleportare ---"
     echo "Tinta: " + $nume_entitate
@@ -91,7 +91,7 @@ echo "Pozitie finala Dragon X (Global): " + $boss.poz.x
 # 4. Test de Shadowing vs Global
 # Verificăm dacă putem avea o variabilă locală cu același nume 
 # fără să o afectăm pe cea globală
-func TEST_SHADOW
+func TEST_SHADOW()
     set $boss = "Sunt un simplu cavaler local"
     set @boss.nume = "Dragon Suprem"
     echo "Local $boss: " + $boss

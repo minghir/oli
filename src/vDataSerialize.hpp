@@ -26,7 +26,10 @@ namespace vDataSerialize {
     inline void serializeWString(const std::wstring& str, std::ostream& out) {
         uint32_t len = static_cast<uint32_t>(str.size());
         out.write(reinterpret_cast<const char*>(&len), sizeof(len));
-        if (len > 0) out.write(reinterpret_cast<const char*>(str.data()), len * sizeof(wchar_t));
+        if (len > 0) {
+            // Scriem dimensiunea exacta a wchar_t pentru a fi citita corect
+            out.write(reinterpret_cast<const char*>(str.data()), len * sizeof(wchar_t));
+        }
     }
 
     inline std::wstring deserializeWString(std::istream& in) {

@@ -23,7 +23,9 @@ public:
     OliChunk compile(const std::wstring& source, const std::unordered_map<std::wstring, ByteCodeProcedure>& parentProcs = {}, bool isSubBlock = false);
 
 private:
-    void compileStatement(const ShellCommand& sc, OliChunk& chunk);
+    void compileStatement(const ShellCommand& sc, OliChunk& chunk,
+        const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs);
+
     void emitConstant(const vData& value, OliChunk& chunk, int line);
     void emitLoadOrConstant(const std::wstring& token, OliChunk& chunk);
     void emitStore(const std::wstring& varName, OliChunk& chunk);
@@ -33,13 +35,18 @@ private:
 
     std::wstring rebuildSubCommand(const std::vector<std::wstring>& args, size_t start, size_t end);
 
-    void generateFromAST(ASTPtr node, OliChunk& chunk);
+    void generateFromAST(ASTPtr node, OliChunk& chunk,
+        const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs);
 
     void optimize(OliChunk& chunk);
 
     void loadPluginMetadata(std::wstring pluginName);
 
-    void compileSubBlock(const std::vector<std::wstring>& args, int start, int end, OliChunk& chunk);
+    void compileSubBlock(const std::vector<std::wstring>& args,
+        int start,
+        int end,
+        OliChunk& chunk,
+        const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs);
 
     std::wstring cleanVariableName(const std::wstring& name);
 };

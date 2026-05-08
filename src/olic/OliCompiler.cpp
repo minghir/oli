@@ -52,9 +52,22 @@ std::vector<std::wstring> splitStatementsSmart(const std::wstring& input) {
     return result;
 }
 
-OliChunk OliCompiler::compile(const std::wstring& source, const std::unordered_map<std::wstring, ByteCodeProcedure>& parentProcs, bool isSubBlock) {
+OliChunk OliCompiler::compile(const std::wstring& source,
+    const std::unordered_map<std::wstring, ByteCodeProcedure>& parentProcs,
+    bool isSubBlock)
+{
+    if (isSubBlock) {
+        LOG_DEBUG(L"[DEBUG] Start compile. isSubBlock: YES");
+    }
+    else {
+        LOG_DEBUG(L"[DEBUG] Start compile. isSubBlock: NO");
+    }
+
     OliChunk chunk;
-    chunk.procedures = parentProcs;
+
+    // IMPORTANT: NU copiem parentProcs în chunk.procedures pentru a evita referințele circulare.
+    // Tabela 'chunk.procedures' va conține DOAR funcțiile definite în ACEST bloc.
+
     std::wstringstream ss(source);
     std::wstring line;
     std::wstring commandBuffer = L"";
@@ -65,13 +78,14 @@ OliChunk OliCompiler::compile(const std::wstring& source, const std::unordered_m
         std::wstring cleanLine = trim(line);
         if (cleanLine.empty()) continue;
 
-        // --- MASCARE & COMENTARII ---
+        // --- 1. MASCARE & COMENTARII ---
         bool inQuotes = false;
         std::wstring maskedLine = cleanLine;
         for (size_t i = 0; i < maskedLine.length(); ++i) {
             if (maskedLine[i] == L'"' && (i == 0 || maskedLine[i - 1] != L'\\')) inQuotes = !inQuotes;
             if (inQuotes) maskedLine[i] = L' ';
         }
+
         size_t commentPos = maskedLine.find(L'#');
         if (commentPos != std::wstring::npos) {
             cleanLine = trim(cleanLine.substr(0, commentPos));
@@ -79,7 +93,7 @@ OliChunk OliCompiler::compile(const std::wstring& source, const std::unordered_m
         }
         if (cleanLine.empty()) continue;
 
-        // --- ACTUALIZARE ADÂNCIME ---
+        // --- 2. ACTUALIZARE ADÂNCIME (Nesting) ---
         auto tokens = splitW(to_upper(maskedLine), L" \t\n\r();,");
         for (const auto& t : tokens) {
             if (t == L"IF" || t == L"WHILE" || t == L"FOR" || t == L"PROC" || t == L"FUNC") nestingLevel++;
@@ -88,54 +102,51 @@ OliChunk OliCompiler::compile(const std::wstring& source, const std::unordered_m
             if (t == L"}" || t == L"]") bracketDepth--;
         }
 
-        // --- ACUMULARE BUFFER ---
+        // --- 3. ACUMULARE BUFFER ---
         if (commandBuffer.empty()) commandBuffer = cleanLine;
         else commandBuffer += L" ; " + cleanLine;
 
-        // --- DECIZIA DE COMPILARE ---
+        // --- 4. DECIZIA DE COMPILARE ---
         if (nestingLevel == 0 && bracketDepth == 0) {
+            LOG_DEBUG(L"[DEBUG] Nesting reached 0. Compiling buffer...");
             std::wstring trimmedBuf = trim(commandBuffer);
-            while (!trimmedBuf.empty() && trimmedBuf.front() == L';') trimmedBuf = trim(trimmedBuf.substr(1));
+
+            // Eliminăm punct-virgulele de început
+            while (!trimmedBuf.empty() && trimmedBuf.front() == L';') {
+                trimmedBuf = trim(trimmedBuf.substr(1));
+            }
 
             if (!trimmedBuf.empty()) {
-                // ÎN LOC DE splitWBySemicolon, folosim split-ul inteligent
                 auto stmts = splitStatementsSmart(trimmedBuf);
 
                 for (const auto& s : stmts) {
+                    LOG_DEBUG(L"[DEBUG] Compiling statement: " + (s.length() > 30 ? s.substr(0, 30) + L"..." : s));
                     std::wstring ts = trim(s);
                     if (ts.empty()) continue;
 
-                    std::wstring upperS = to_upper(ts);
-                    // Verificăm dacă ACEASTĂ bucată este un bloc
-                    if (upperS.find(L"IF ") == 0 || upperS.find(L"WHILE ") == 0 ||
-                        upperS.find(L"FOR ") == 0 || upperS.find(L"PROC ") == 0) {
-                        compileStatement(vOliCommandParser::parse(ts), chunk);
-                    }
-                    else {
-                        compileStatement(vOliCommandParser::parse(ts), chunk);
-                    }
+                    // FIX CRITIC: Pasăm parentProcs către compileStatement pentru lookup-ul funcțiilor recursive
+                    compileStatement(vOliCommandParser::parse(ts), chunk, parentProcs);
                 }
             }
             commandBuffer = L"";
         }
     }
 
-    if (chunk.code.empty() || chunk.code.back() != (uint8_t)OpCode::OP_RETURN) {
-        chunk.addByte((uint8_t)OpCode::OP_RETURN, 0);
-    }
-
-    // Dacă este un sub-bloc (corp de IF, corp de FUNC), nu adăugăm nimic extra.
+    // --- 5. FINALIZARE ---
     if (!isSubBlock) {
+        LOG_DEBUG(L"[DEBUG] Finalizing Main Chunk.");
         if (chunk.code.empty() || chunk.code.back() != (uint8_t)OpCode::OP_RETURN) {
             chunk.addByte((uint8_t)OpCode::OP_RETURN, 0);
         }
     }
+
+    LOG_DEBUG(L"[DEBUG] End compile successfully.");
     return chunk;
 }
 
 
 
-void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
+void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs) {
    // ShellCommand sc = vOliCommandParser::parse(line);
 
     // Exemplu: SET x = 10
@@ -151,7 +162,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
         if (exprAST) {
             // generateFromAST va detecta nodul de atribuire (=, +=) 
             // și va gestiona singur calculul și salvarea.
-            generateFromAST(exprAST, chunk);
+            generateFromAST(exprAST, chunk, externalProcs);
         }
     }
     // Exemplu: ECHO x
@@ -166,7 +177,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
             ASTPtr exprAST = exprParser.parse();
 
             if (exprAST) {
-                generateFromAST(exprAST, chunk);
+                generateFromAST(exprAST, chunk, externalProcs);
                 chunk.addByte((uint8_t)OpCode::OP_ECHO, 0);
             }
         }
@@ -215,19 +226,24 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
 
 
     else if (cmdName == L"FUNC") {
+        LOG_DEBUG(L"[DEBUG] Entering FUNC block parsing...");
         // 1. Parsăm Header-ul: SUMA($a, $b)
         std::wstring header = L"";
         for (const auto& a : sc.args) header += a;
 
         size_t openP = header.find(L'(');
         size_t closeP = header.find(L')');
-        if (openP == std::wstring::npos || closeP == std::wstring::npos) return;
+        if (openP == std::wstring::npos || closeP == std::wstring::npos) {
+            LOG_DEBUG(L"[DEBUG] ERROR: Invalid FUNC header.");
+            return;
+        }
 
         std::wstring funcName = to_upper(trim(header.substr(0, openP)));
+        LOG_DEBUG(L"[DEBUG] Function Name: " + funcName);
+
         std::wstring paramsPart = header.substr(openP + 1, closeP - openP - 1);
 
-        // 2. Găsim unde începe și unde se termină corpul în lista de args
-        // Căutăm token-ul care conține închiderea parantezei ')'
+        // 2. Delimităm corpul funcției
         int bodyStart = 0;
         for (int i = 0; i < (int)sc.args.size(); ++i) {
             if (sc.args[i].find(L')') != std::wstring::npos) {
@@ -243,20 +259,17 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
             if (argU == L"FUNC") depth++;
             if (argU == L"ENDFUNC") {
                 depth--;
-                if (depth == 0) {
-                    bodyEnd = i;
-                    break;
-                }
+                if (depth == 0) { bodyEnd = i; break; }
             }
         }
-
         if (bodyEnd == -1) bodyEnd = (int)sc.args.size();
 
-        // 3. Înregistrăm funcția în map-ul CHUNK-ULUI (IMPORTANT: Înainte de compilarea corpului)
+        // 3. Pregătim obiectul procedurii COMPLET (Nume + Parametri)
         ByteCodeProcedure proc;
         proc.name = funcName;
         proc.compiledBody = std::make_shared<OliChunk>();
 
+        // IMPORTANT: Extragem parametrii ACUM, înainte de înregistrarea în map
         auto pTokens = splitW(paramsPart, L", ");
         for (auto& p : pTokens) {
             std::wstring cleaned = trim(p);
@@ -264,16 +277,21 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
             else if (!cleaned.empty()) proc.params.push_back(this->cleanVariableName(cleaned));
         }
 
-        // Punem funcția în tabelă ACUM (permite recursivitatea)
+        // 4. ÎNREGISTRARE (Shell) - Permitem recursivitatea
+        // Acum 'chunk.procedures' conține o funcție FACTORIAL care are parametri corecți.
         chunk.procedures[funcName] = proc;
+        LOG_DEBUG(L"[DEBUG] Registered shell for " + funcName + L". Starting sub-block compile..." ) ;
+        // 5. COMPILARE CORP (UN SINGUR APEL - cu 5 argumente)
+        // ATENȚIE: Nu mai adăuga un al doilea apel după acesta!
+        compileSubBlock(sc.args, bodyStart, bodyEnd, *(proc.compiledBody), chunk.procedures);
 
-        // 4. Compilăm DOAR corpul
-        compileSubBlock(sc.args, bodyStart, bodyEnd, *(proc.compiledBody));
-
-        // 5. Return implicit
+        // 6. Return implicit și salvare binară
         if (proc.compiledBody->code.empty() || proc.compiledBody->code.back() != (uint8_t)OpCode::OP_RETURN) {
             proc.compiledBody->addByte((uint8_t)OpCode::OP_RETURN, 0);
         }
+
+        // Salvăm varianta cu bytecode-ul proaspăt compilat înapoi în map
+        chunk.procedures[funcName] = proc;
     }
 
     // În OliCompiler::compileStatement, adaugă acest else if:
@@ -291,7 +309,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
 
             if (exprAST) {
                 // Generăm codul care calculează rezultatul și îl lasă pe stivă
-                generateFromAST(exprAST, chunk);
+                generateFromAST(exprAST, chunk, externalProcs);
                 // Emitem instrucțiunea de ieșire din funcție
                 chunk.addByte((uint8_t)OpCode::OP_RETURN, 0);
             }
@@ -326,7 +344,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
         ASTPtr condAST = condParser.parse();
 
         // Generăm bytecode pentru condiție (va lăsa un bool pe stivă)
-        generateFromAST(condAST, chunk);
+        generateFromAST(condAST, chunk, externalProcs);
 
         // --- 3. JUMP_IF_FALSE (Către ELSE sau END) ---
         chunk.addByte((uint8_t)OpCode::OP_JUMP_IF_FALSE, 0);
@@ -339,7 +357,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
 
         // Extragem și compilăm sub-comenzile din interior
         // Notă: Folosim o funcție helper 'compileSubBlock' pentru a suporta multiple comenzi
-        compileSubBlock(sc.args, thenIdx + 1, thenEnd, chunk);
+        compileSubBlock(sc.args, thenIdx + 1, thenEnd, chunk, {});
 
         // --- 5. JUMP PESTE ELSE (Ieșire din IF) ---
         size_t jumpToEndAddr = 0;
@@ -358,7 +376,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
         // --- 7. COMPILĂM BLOCUL ELSE (Dacă există) ---
         if (hasElse) {
             int elseEnd = (endifIdx != -1) ? endifIdx : (int)sc.args.size();
-            compileSubBlock(sc.args, elseIdx + 1, elseEnd, chunk);
+            compileSubBlock(sc.args, elseIdx + 1, elseEnd, chunk, {});
 
             // BACKPATCHING: Saltul de peste ELSE
             uint16_t distToEnd = (uint16_t)(chunk.code.size() - (jumpToEndAddr + 2));
@@ -404,7 +422,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
         OliExpressionParser condParser(condTokens);
         ASTPtr condAST = condParser.parse();
         if (condAST) {
-            generateFromAST(condAST, chunk);
+            generateFromAST(condAST, chunk, externalProcs);
         }
 
         // 5. Saltul de ieșire (OP_JUMP_IF_FALSE)
@@ -414,7 +432,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
 
         // 6. PROCESAREA CORPULUI (Folosim metoda noastră recursivă "brici")
         // compileSubBlock se ocupă de tot ce e între DO și ENDWHILE
-        compileSubBlock(sc.args, doIdx + 1, endWhileIdx, chunk);
+        compileSubBlock(sc.args, doIdx + 1, endWhileIdx, chunk, {});
 
         // 7. OP_LOOP (Salt înapoi la loopStart)
         chunk.addByte((uint8_t)OpCode::OP_LOOP, 0);
@@ -450,7 +468,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
         size_t loopStart = chunk.code.size();
 
         // Compilăm corpul (de la început până la UNTIL) folosind SubBlock
-        compileSubBlock(sc.args, 0, untilIdx, chunk);
+        compileSubBlock(sc.args, 0, untilIdx, chunk, {} );
 
         // Compilăm condiția (între UNTIL și ENDREPEAT)
         if (untilIdx + 1 < endRepeatIdx) {
@@ -459,7 +477,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
 
             OliExpressionParser condParser(condTokens);
             ASTPtr condAST = condParser.parse();
-            generateFromAST(condAST, chunk);
+            generateFromAST(condAST, chunk, externalProcs);
 
             chunk.addByte((uint8_t)OpCode::OP_JUMP_IF_TRUE, 0);
             size_t patchAddr = chunk.code.size();
@@ -517,7 +535,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk) {
             chunk.addByte(0, 0); chunk.addByte(0, 0);
 
             // 3. Corp (Între DO și ENDFOR)
-            compileSubBlock(sc.args, doIdx + 1, endForIdx, chunk);
+            compileSubBlock(sc.args, doIdx + 1, endForIdx, chunk, {});
 
             // 4. Increment
             emitLoadOrConstant(varName, chunk);
@@ -665,7 +683,7 @@ void OliCompiler::optimize(OliChunk& chunk) {
 }
 
 
-void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk) {
+void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk, const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs) {
     if (!node) return;
 
     // --- PROTECȚIE COPII ---
@@ -686,13 +704,13 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk) {
         std::wstring rawLHS = reconstructRawName(node->children[0]);
 
         if (node->value == L"=") {
-            generateFromAST(node->children[1], chunk);
+            generateFromAST(node->children[1], chunk, externalProcs);
             emitStore(rawLHS, chunk);
             return;
         }
 
-        generateFromAST(node->children[0], chunk);
-        generateFromAST(node->children[1], chunk);
+        generateFromAST(node->children[0], chunk, externalProcs);
+        generateFromAST(node->children[1], chunk, externalProcs);
 
         if (node->value == L"+=")      chunk.addByte((uint8_t)OpCode::OP_ADD, 0);
         else if (node->value == L"-=") chunk.addByte((uint8_t)OpCode::OP_SUB, 0);
@@ -717,7 +735,7 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk) {
             return;
         }
 
-        generateFromAST(node->children[0], chunk);
+        generateFromAST(node->children[0], chunk, externalProcs);
 
         if (node->value == L"UNARY_MINUS")      chunk.addByte((uint8_t)OpCode::OP_NEGATE, 0);
         else if (node->value == L"NOT")         chunk.addByte((uint8_t)OpCode::OP_LOGICAL_NOT, 0);
@@ -737,7 +755,7 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk) {
         if (node->value == L"ARRAY_OBJECT") {
             // 1. Evaluăm fiecare element și îl punem pe stivă
             for (auto& child : node->children) {
-                generateFromAST(child, chunk);
+                generateFromAST(child, chunk, externalProcs);
             }
             // 2. Emitem OP_ARRAY urmat de numărul de elemente
             chunk.addByte((uint8_t)OpCode::OP_ARRAY, 0);
@@ -747,7 +765,7 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk) {
         else if (node->value == L"MAP_OBJECT") {
             // 1. Evaluăm fiecare pereche (Cheie apoi Valoare)
             for (auto& child : node->children) {
-                generateFromAST(child, chunk);
+                generateFromAST(child, chunk, externalProcs);
             }
             // 2. Emitem OP_MAP urmat de numărul de perechi (size/2)
             chunk.addByte((uint8_t)OpCode::OP_MAP, 0);
@@ -766,42 +784,35 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk) {
     }
 
     // --- 3.5 APELURI DE FUNCȚII (INTELIGENT: NATIVE vs USER) ---
+    // --- În OliCompiler::generateFromAST ---
+
     if (node->type == ASTNodeType::FunctionCall) {
         bool isDynamic = (node->value == L"DYNAMIC_CALL");
-
-        // Validare de bază pentru apeluri dinamice
         if (isDynamic && node->children.empty()) return;
 
         size_t startIdx = isDynamic ? 1 : 0;
 
-        // 1. Încărcăm toate argumentele pe stivă (de la stânga la dreapta)
+        // 1. Încărcăm argumentele (pasăm contextul mai departe recursiv)
         for (size_t i = startIdx; i < node->children.size(); ++i) {
-            generateFromAST(node->children[i], chunk);
+            generateFromAST(node->children[i], chunk, externalProcs);
         }
 
-        // 2. Extragem și curățăm numele funcției
-        // trim() este critic aici pentru a evita erori de tipul "FACTORIAL " != "FACTORIAL"
         std::wstring rawName = isDynamic ? node->children[0]->value : node->value;
         std::wstring funcName = to_upper(trim(rawName));
-
         uint8_t argCount = (uint8_t)(node->children.size() - startIdx);
-
-        // 3. Înregistrăm numele în tabelul de constante
         uint16_t nameIdx = chunk.addConstant(vData(funcName));
 
-        // --- LOGICA DE DECIZIE: USER vs NATIVE ---
-        // Verificăm dacă funcția există în map-ul de proceduri al chunk-ului curent.
-        // Datorită fix-ului anterior cu moștenirea procedurilor, FACTORIAL va fi găsit aici.
-        if (chunk.procedures.count(funcName)) {
-            // Este o funcție definită în script -> OP_CALL
+        // --- LOGICA DE DECIZIE REPARATĂ ---
+        // Verificăm în procedurile locale (chunk) SAU în cele primite de la părinte (externalProcs)
+        if (chunk.procedures.count(funcName) || externalProcs.count(funcName)) {
+            // Găsit! Este un apel către o funcție definită în script Oli
             chunk.addByte((uint8_t)OpCode::OP_CALL, 0);
         }
         else {
-            // Nu este găsită în script -> Presupunem că este o funcție din C++ sau Plugin
+            // Nu este găsit în niciun context de script -> Apel către C++ / Plugin
             chunk.addByte((uint8_t)OpCode::OP_CALL_NATIVE, 0);
         }
 
-        // 4. Scriem argumentele instrucțiunii: Index Nume (2 bytes) + Nr. Argumente (1 byte)
         chunk.addByte((uint8_t)((nameIdx >> 8) & 0xFF), 0);
         chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
         chunk.addByte(argCount, 0);
@@ -816,8 +827,8 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk) {
             return;
         }
 
-        generateFromAST(node->children[0], chunk);
-        generateFromAST(node->children[1], chunk);
+        generateFromAST(node->children[0], chunk, externalProcs);
+        generateFromAST(node->children[1], chunk, externalProcs);
 
         std::wstring op = node->value;
         if (op == L"+")      chunk.addByte((uint8_t)OpCode::OP_ADD, 0);
@@ -930,10 +941,12 @@ void OliCompiler::emitStore(const std::wstring& varName, OliChunk& chunk) {
 }
 
 void OliCompiler::generateShortCircuit(ASTPtr node, OliChunk& chunk) {
+    const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs  = {}; // Nu avem nevoie de proceduri externe pentru această funcție
+    
     bool isAnd = (node->value == L"&&");
 
     // 1. Evaluăm partea stângă (rezultatul rămâne pe stivă)
-    generateFromAST(node->children[0], chunk);
+    generateFromAST(node->children[0], chunk, externalProcs);
 
     // 2. Generăm Jump-ul de scurtcircuit
     // Dacă e &&: sărim la final dacă stânga e FALSE (false && orice == false)
@@ -949,7 +962,7 @@ void OliCompiler::generateShortCircuit(ASTPtr node, OliChunk& chunk) {
     chunk.addByte((uint8_t)OpCode::OP_POP, 0);
 
     // 4. Evaluăm partea dreaptă
-    generateFromAST(node->children[1], chunk);
+    generateFromAST(node->children[1], chunk, externalProcs );
 
     // 5. Backpatching: setăm adresa de salt la instrucțiunea de după evaluarea dreptei
     uint16_t offset = (uint16_t)(chunk.code.size() - (jumpAddr + 2));
@@ -1033,36 +1046,36 @@ void OliCompiler::loadPluginMetadata(std::wstring pluginName) {
     // orice problemă de memorie legată de simbolurile statice din plugin.
 }
 
-void OliCompiler::compileSubBlock(const std::vector<std::wstring>& args, int start, int end, OliChunk& chunk) {
+void OliCompiler::compileSubBlock(const std::vector<std::wstring>& args,
+    int start,
+    int end,
+    OliChunk& chunk,
+    const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs)
+{
     if (start >= end) return;
 
-    // 1. Reconstruim sursa pentru acest sub-bloc (ex: corpul unui IF sau al unei bunde WHILE)
+    // 1. Reconstruim sursa pentru acest sub-bloc
     std::wstring subSource = L"";
     for (int i = start; i < end; ++i) {
         subSource += args[i] + L" ";
     }
     subSource += L"\n";
 
-    // 2. Compilare recursivă semnalând că acesta este un SUB-BLOC.
-    // parentProcs este transmis pentru a permite recursivitatea (funcția să se vadă pe ea însăși).
-    OliChunk subChunk = compile(subSource, chunk.procedures, true);
+    // 2. Compilare recursivă folosind map-ul extern primit ca parametru.
+    // Transmiterea 'externalProcs' este critică pentru ca funcția să se "vadă" pe ea însăși.
+    OliChunk subChunk = compile(subSource, externalProcs, true);
 
     // 3. --- MIGRARE PROCEDURI ---
-    // Dacă în acest bloc s-au definit funcții noi, le mutăm în chunk-ul părinte.
+    // Orice funcție nouă definită în interior (funcții imbricate) urcă în chunk-ul părinte.
     for (auto const& [name, proc] : subChunk.procedures) {
         chunk.procedures[name] = proc;
     }
 
     // 4. --- REMAPARE CONSTANTE ---
-    // Transferăm constantele din subChunk în chunk-ul principal și salvăm noile indexuri.
     std::map<uint16_t, uint16_t> indexMap;
     for (uint16_t i = 0; i < (uint16_t)subChunk.constants.size(); ++i) {
         indexMap[i] = chunk.addConstant(subChunk.constants[i]);
     }
-
-    // --- NOTĂ: Am eliminat curățarea automată a OP_RETURN de aici. ---
-    // Deoarece folosim flag-ul 'true' în apelul compile, sub-blocul nu va avea 
-    // un RETURN parazit la final, deci nu riscăm să ștergem return-urile legitime.
 
     // 5. --- COPIERE ȘI REMAPARE BYTECODE ---
     size_t i = 0;
@@ -1071,7 +1084,7 @@ void OliCompiler::compileSubBlock(const std::vector<std::wstring>& args, int sta
         chunk.addByte(op, 0);
         i++;
 
-        // Instrucțiuni care folosesc indexuri din tabelul de constante
+        // Remapăm indexurile pentru instrucțiunile care accesează tabela de constante
         if (op == (uint8_t)OpCode::OP_CONSTANT || op == (uint8_t)OpCode::OP_GET_GLOBAL ||
             op == (uint8_t)OpCode::OP_SET_GLOBAL || op == (uint8_t)OpCode::OP_UNSET ||
             op == (uint8_t)OpCode::OP_GET_ADDR || op == (uint8_t)OpCode::OP_PLUGIN ||
@@ -1079,30 +1092,24 @@ void OliCompiler::compileSubBlock(const std::vector<std::wstring>& args, int sta
         {
             if (i + 1 >= subChunk.code.size()) break;
 
-            // Citim indexul vechi (din contextul subChunk)
             uint16_t oldIdx = (uint16_t)((subChunk.code[i] << 8) | subChunk.code[i + 1]);
-            // Obținem indexul nou (din contextul chunk-ului principal)
             uint16_t newIdx = indexMap[oldIdx];
 
-            // Scriem indexul remapat
             chunk.addByte((uint8_t)(newIdx >> 8), 0);
             chunk.addByte((uint8_t)(newIdx & 0xFF), 0);
             i += 2;
 
-            // Pentru CALL și CALL_NATIVE, mai avem un byte extra pentru numărul de argumente
             if (op == (uint8_t)OpCode::OP_CALL_NATIVE || op == (uint8_t)OpCode::OP_CALL) {
                 if (i < subChunk.code.size()) {
                     chunk.addByte(subChunk.code[i++], 0);
                 }
             }
         }
-        // Instrucțiuni cu operand de tip "count" (1 byte)
         else if (op == (uint8_t)OpCode::OP_ARRAY || op == (uint8_t)OpCode::OP_MAP) {
             if (i < subChunk.code.size()) {
                 chunk.addByte(subChunk.code[i++], 0);
             }
         }
-        // Instrucțiuni de control (Jump/Loop) - offset-urile (2 bytes) se copiază direct
         else if (op == (uint8_t)OpCode::OP_JUMP || op == (uint8_t)OpCode::OP_JUMP_IF_FALSE ||
             op == (uint8_t)OpCode::OP_LOOP || op == (uint8_t)OpCode::OP_JUMP_IF_TRUE)
         {

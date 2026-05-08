@@ -374,7 +374,7 @@ registry[L"CAN_PRESENT"] = [](const std::vector<vData>&) -> vData {
                 if (y < 0 || y >= h) return;
                 if (x1 > x2) std::swap(x1, x2);
 #undef max
-#undef min0
+#undef min
                 x1 = std::max(0, x1);
                 x2 = std::min(w - 1, x2);
                 unsigned int* row = pixels + (y * w);

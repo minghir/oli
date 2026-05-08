@@ -24,10 +24,10 @@ while true do
     # apelăm efectul cosmic vortex
     set $res = FX_COSMIC_VORTEX($ptr, $w, $h, $t)
 
-    CAN_PRESENT()
+    set $v = CAN_PRESENT()
 
     # frame pacing stabil (~60 FPS)
-    WAIT(16)
+    set $v = WAIT(16)
 
     # Q = ieșire
     if KEY_STATE(81) == 1 then break endif
@@ -39,5 +39,5 @@ while true do
 
 endwhile
 
-CAN_CLOSE()
+set $v = CAN_CLOSE()
 

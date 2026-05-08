@@ -1,0 +1,47 @@
+﻿[2026-05-08 22:58:16] [SUCCESS] Logarea în fișier a fost activată (UTF-8)
+--- OLI ASSEMBLY LISTING ---
+
+0000: OP_PLUGIN       0000 (Path: oli_canvas)
+0003: OP_PLUGIN       0001 (Path: oli_fract)
+0006: OP_PLUGIN       0002 (Path: oli_keyboard)
+0009: OP_PLUGIN       0003 (Path: oli_time)
+0012: OP_CONSTANT     0004 (Value: 800)
+0015: OP_CONSTANT     0005 (Value: 600)
+0018: OP_CONSTANT     0006 (Value: Oli CyberCoil Engine)
+0021: OP_CALL_NATIVE  0007 (Name: CAN_INIT, Args: 3)
+0025: OP_SET_GLOBAL   0008 (Name: $v)
+0028: OP_CALL_NATIVE  0009 (Name: CAN_GET_PTR, Args: 0)
+0032: OP_SET_GLOBAL   0010 (Name: $ptr)
+0035: OP_CALL_NATIVE  0011 (Name: CAN_GET_WIDTH, Args: 0)
+0039: OP_SET_GLOBAL   0012 (Name: $w)
+0042: OP_CALL_NATIVE  0013 (Name: CAN_GET_HEIGHT, Args: 0)
+0046: OP_SET_GLOBAL   0014 (Name: $h)
+0049: OP_CONSTANT     0015 (Value: RulÄm CyberCoil FX. Q pentru IeÈire.)
+0052: OP_ECHO
+0053: OP_CONSTANT     0016 (Value: true)
+0056: OP_JUMP_IF_FALSE 0057 (Sari la: 116)
+0059: OP_CALL_NATIVE  0017 (Name: TIME, Args: 0)
+0063: OP_SET_GLOBAL   0018 (Name: $t)
+0066: OP_GET_GLOBAL   0010 (Name: $ptr)
+0069: OP_GET_GLOBAL   0012 (Name: $w)
+0072: OP_GET_GLOBAL   0014 (Name: $h)
+0075: OP_GET_GLOBAL   0018 (Name: $t)
+0078: OP_CONSTANT     0019 (Value: 2)
+0081: OP_DIV
+0082: OP_CALL_NATIVE  0020 (Name: FX_CYBER_COIL, Args: 4)
+0086: OP_SET_GLOBAL   0021 (Name: $res)
+0089: OP_CALL_NATIVE  0022 (Name: CAN_PRESENT, Args: 0)
+0093: OP_SET_GLOBAL   0023 (Name: $void)
+0096: OP_CONSTANT     0024 (Value: 81)
+0099: OP_CALL_NATIVE  0025 (Name: KEY_STATE, Args: 1)
+0103: OP_CONSTANT     0026 (Value: 1)
+0106: OP_EQUAL
+0107: OP_JUMP_IF_FALSE 0003 (Sari la: 113)
+0110: OP_JUMP          0003 (Sari la: 116)
+0113: OP_LOOP          0063 (Sari inapoi la: 53)
+0116: OP_CALL_NATIVE  0027 (Name: CAN_CLOSE, Args: 0)
+0120: OP_SET_GLOBAL   0023 (Name: $void)
+0123: OP_CONSTANT     0028 (Value: Consola Oli este pregatitÄ.)
+0126: OP_ECHO
+0127: OP_RETURN
+

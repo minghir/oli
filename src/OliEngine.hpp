@@ -80,8 +80,6 @@ private:
     OliStatus m_executionStatus = OliStatus::RUNNING;
 
     std::unordered_map<std::wstring, Procedure> m_userFunctions; // Refolosim structura Procedure
-    std::unordered_map<std::wstring, ByteCodeProcedure> m_bytecodeFunctions;
-
     bool m_isRecordingFunc = false;
     std::wstring m_activeFuncName;
     int m_bracketDepth = 0;
@@ -267,6 +265,8 @@ private:
     vData handleAppendFileFunc(const std::vector<vData>& args);
     vData handleExistsFileFunc(const std::vector<vData>& args);
     vData handleDeleteFileFunc(const std::vector<vData>& args);
+	
+	vData handleExecFunc(const std::vector<vData>& args);
     //vData handleKeysFunc(const std::vector<vData>& args);
     
     public:
@@ -300,8 +300,5 @@ private:
         void loadAndRunBytecode(const std::string& path);
         vData* resolveVMPath(const std::wstring& rootName, const std::vector<std::wstring>& indexes, bool forceGlobal);
         bool internalLoadPlugin(std::wstring pluginName);
-        vData callUserByteCodeFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context);
-
-        void registerBytecodeFunction(const std::wstring& name, const ByteCodeProcedure& proc );
 };
 #endif

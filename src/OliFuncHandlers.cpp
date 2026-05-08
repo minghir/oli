@@ -209,6 +209,10 @@ void vOliEngine::initializeFunctionsHandlers() {
     m_functionsHandlers[L"EVAL"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleEvalFunc(args);
         };
+		
+	m_functionsHandlers[L"EXEC"] = [this](const std::vector<vData>& args) -> vData {
+        return this->handleExecFunc(args);
+        };
 
     m_functionsHandlers[L"INT"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleIntFunc(args);
@@ -1343,3 +1347,33 @@ vData vOliEngine::parseJSONValue(const std::wstring& json, size_t& pos) {
     pos++;
     return vData(std::monostate{});
 }
+
+
+vData vOliEngine::handleExecFunc(const std::vector<vData>& args) {
+    if (args.empty()) return { 0LL };
+
+    // Verificăm dacă argumentul este un string (comanda de executat)
+    if (!std::holds_alternative<std::wstring>(args[0].value)) {
+        LOG_ERROR(L"[EXEC ERROR] Argumentul trebuie să fie un string (comanda).");
+        return { 0LL };
+    }
+
+    std::wstring commandLine = std::get<std::wstring>(args[0].value);
+    commandLine = trim(commandLine);
+
+    if (commandLine.empty()) return { 1LL }; // Succes "gol"
+
+    try {
+        // Trimitem linia către metoda execute() existentă.
+        // Aceasta va gestiona automat acumularea, blocurile (IF/CYCLE)
+        // și în final va apela executeInternal().
+        this->execute(commandLine);
+        
+        return { 1LL }; // Returnăm succes
+    }
+    catch (const std::exception& e) {
+        LOG_ERROR(L"[EXEC ERROR] Execuția a eșuat: " + PortTools::utf8_to_wstring(e.what()));
+        return { 0LL };
+    }
+}
+

@@ -1,0 +1,15 @@
+
+
+
+set $k = 0
+repeat
+    set $k = $k + 1
+    if $k == 2 then 
+        echo "Sari peste 2 (REPEAT)"
+        continue 
+    endif
+    echo "Repeat k = " .. $k
+until $k >= 3
+endrepeat
+
+echo "--- TEST FINALIZAT ---"

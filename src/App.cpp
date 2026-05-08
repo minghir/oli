@@ -50,4 +50,5 @@ void App::startConsole() {
    //ConsoleManager::getInstance().log(L"Consola inițializată! [AppInit] Începe inițializarea aplicației...");
    ConsoleManager::getInstance().resetColor();
    
+   
 }

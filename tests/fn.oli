@@ -1,6 +1,16 @@
-SET $n = RANDOM(50)
-ECHO "Numarul este: " .. $n
+func test($n)
+	return $n
+endfunc
+
+set $a=3
+echo test(3+$a)
+
+set $b = test($a) + 2
+echo $b
 
 
-SET $funcName = "RANDOM"
-ECHO "acces indirect la fn:" .. $funcName(100)
+if test($b) == 5 then
+	echo "Am 5"
+else
+	echo "Nu merge"
+endif

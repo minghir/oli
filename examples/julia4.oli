@@ -23,8 +23,8 @@ while true do
 	set $v = FRACT_PLASMA($ptr, $w, $h, $cX, $cY, 32)
     
     set $v = CAN_PRESENT()
-    
-    if KEY_STATE(81) == 1 then break endif
+    set $state = KEY_STATE(81)
+    if $state > 0.5 then break; endif
 endwhile
 
 CAN_CLOSE()

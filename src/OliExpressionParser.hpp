@@ -329,7 +329,7 @@ public:
     }
    
     
-
+/*
 ASTPtr parsePostfix() {
     // Începem cu unitatea de bază ($c1, "nume", 100, etc.)
     ASTPtr node = parsePrimary();
@@ -404,6 +404,73 @@ ASTPtr parsePostfix() {
 
     return node;
 }
+*/
+    ASTPtr parsePostfix() {
+        // Începem cu unitatea de bază (literal, variabilă, paranteze)
+        ASTPtr node = parsePrimary();
+        if (!node) return nullptr;
+
+        // Bucla permite înlănțuiri: $obj.prop, $arr[0], $func()++
+        while (true) {
+            // --- 1. ACCES MEMBRU ($obj.prop) ---
+            if (match({ L"." })) {
+                if (m_pos >= m_tokens.size()) {
+                    throw std::runtime_error("Eroare Sintaxa: Se astepta un nume de camp dupa '.'");
+                }
+
+                std::wstring fieldName = m_tokens[m_pos++];
+                ASTPtr dotNode = std::make_shared<ASTNode>(ASTNodeType::Operator, L"DOT");
+                dotNode->addChild(node);
+                dotNode->addChild(std::make_shared<ASTNode>(ASTNodeType::Literal, fieldName));
+                node = dotNode;
+            }
+
+            // --- 2. INDEXARE ($arr[index]) ---
+            else if (match({ L"[" })) {
+                ASTPtr indexNode = std::make_shared<ASTNode>(ASTNodeType::Operator, L"INDEX");
+                indexNode->addChild(node);
+                indexNode->addChild(parseAssignment()); // Permite orice expresie în index
+                consume(L"]", "Lipseste ]");
+                node = indexNode;
+            }
+
+            // --- 3. APEL DINAMIC ($var() sau $obj.metoda()) ---
+            else if (match({ L"(" })) {
+                ASTPtr callNode = std::make_shared<ASTNode>(ASTNodeType::FunctionCall, L"DYNAMIC_CALL");
+                callNode->addChild(node);
+                if (!check(L")")) {
+                    do {
+                        ASTPtr arg = parseAssignment();
+                        if (arg) callNode->addChild(arg);
+                        else break; // Siguranță împotriva buclelor infinite
+                    } while (match({ L"," }));
+                }
+                consume(L")", "Lipseste )");
+                node = callNode;
+            }
+
+            // --- 4. POSTFIX INCREMENT/DECREMENT ($i++) ---
+            else if (match({ L"++", L"--" })) {
+                std::wstring op = m_tokens[m_pos - 1];
+                std::wstring internalOp = (op == L"++") ? L"POSTFIX_INC" : L"POSTFIX_DEC";
+
+                ASTPtr postfixNode = std::make_shared<ASTNode>(ASTNodeType::Operator, internalOp);
+                postfixNode->addChild(node);
+                node = postfixNode;
+
+                // După un operator postfix (ca ++), în majoritatea limbajelor (inclusiv Oli)
+                // nu mai poți continua cu alți operatori postfix pe aceeași unitate.
+                break;
+            }
+
+            else {
+                // Nu mai există operatori de tip postfix, ieșim din buclă
+                break;
+            }
+        }
+
+        return node;
+    }
 
 
     ASTPtr parseCoalescing() {

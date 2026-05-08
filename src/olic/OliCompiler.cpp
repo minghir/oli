@@ -34,8 +34,12 @@ std::vector<std::wstring> splitStatementsSmart(const std::wstring& input) {
         if (token == L"\"") inQuotes = !inQuotes; // Notă: Depinde de cum scoate parserul tău ghilimelele
 
         if (!inQuotes) {
-            if (ut == L"IF" || ut == L"WHILE" || ut == L"FOR" || ut == L"FUNC") depth++;
-            if (ut == L"ENDIF" || ut == L"ENDWHILE" || ut == L"ENDFOR" || ut == L"ENDFUNC") depth--;
+            // Adăugăm REPEAT aici
+            if (ut == L"IF" || ut == L"WHILE" || ut == L"FOR" || ut == L"FUNC" || ut == L"REPEAT") depth++;
+
+            // Adăugăm ENDREPEAT aici
+            if (ut == L"ENDIF" || ut == L"ENDWHILE" || ut == L"ENDFOR" || ut == L"ENDFUNC" || ut == L"ENDREPEAT") depth--;
+
             if (token == L"{" || token == L"[") bDepth++;
             if (token == L"}" || token == L"]") bDepth--;
 
@@ -56,6 +60,11 @@ OliChunk OliCompiler::compile(const std::wstring& source,
     const std::unordered_map<std::wstring, ByteCodeProcedure>& parentProcs,
     bool isSubBlock)
 {
+    if (!isSubBlock) {
+        breakStack.clear();
+        continueStack.clear();
+    }
+
     if (isSubBlock) {
         LOG_DEBUG(L"[DEBUG] Start compile. isSubBlock: YES");
     }
@@ -95,9 +104,14 @@ OliChunk OliCompiler::compile(const std::wstring& source,
 
         // --- 2. ACTUALIZARE ADÂNCIME (Nesting) ---
         auto tokens = splitW(to_upper(maskedLine), L" \t\n\r();,");
+        
         for (const auto& t : tokens) {
-            if (t == L"IF" || t == L"WHILE" || t == L"FOR" || t == L"PROC" || t == L"FUNC") nestingLevel++;
-            if (t == L"ENDIF" || t == L"ENDWHILE" || t == L"ENDFOR" || t == L"ENDPROC" || t == L"ENDFUNC") nestingLevel--;
+            // Adăugăm REPEAT
+            if (t == L"IF" || t == L"WHILE" || t == L"FOR" || t == L"PROC" || t == L"FUNC" || t == L"REPEAT") nestingLevel++;
+
+            // Adăugăm ENDREPEAT
+            if (t == L"ENDIF" || t == L"ENDWHILE" || t == L"ENDFOR" || t == L"ENDPROC" || t == L"ENDFUNC" || t == L"ENDREPEAT") nestingLevel--;
+
             if (t == L"{" || t == L"[") bracketDepth++;
             if (t == L"}" || t == L"]") bracketDepth--;
         }
@@ -315,7 +329,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
             }
         }
         }
-
+/*
     else if (cmdName == L"IF") {
         int thenIdx = -1, elseIdx = -1, endifIdx = -1;
         int depth = 0;
@@ -384,174 +398,429 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
             chunk.code[jumpToEndAddr + 1] = (uint8_t)(distToEnd & 0xFF);
         }
     }
+    */
+    else if (cmdName == L"IF") {
+        int thenIdx = -1, elseIdx = -1, endifIdx = -1;
+        int depth = 0; // Folosim depth=0 pentru consistență
 
-    else if (cmdName == L"WHILE") {
-        int doIdx = -1;
-        int endWhileIdx = -1;
-
-        // 1. Găsim DO-ul buclei curent
+        // 1. Identificăm markerii (Universal Nesting)
         for (int i = 0; i < (int)sc.args.size(); ++i) {
-            if (to_upper(sc.args[i]) == L"DO") {
-                doIdx = i;
-                break;
+            std::wstring argU = to_upper(sc.args[i]);
+
+            if (depth == 0) {
+                if (argU == L"THEN" && thenIdx == -1) thenIdx = i;
+                else if (argU == L"ELSE" && elseIdx == -1) elseIdx = i;
+            }
+
+            // Adăugăm TOATE structurile de control în calculul adâncimii
+            if (argU == L"IF" || argU == L"WHILE" || argU == L"FOR" || argU == L"REPEAT" || argU == L"FUNC" || argU == L"PROC") {
+                depth++;
+            }
+            else if (argU == L"ENDIF" || argU == L"ENDWHILE" || argU == L"ENDFOR" || argU == L"ENDREPEAT" || argU == L"ENDFUNC" || argU == L"ENDPROC") {
+                if (depth > 0) {
+                    depth--;
+                }
+                else if (argU == L"ENDIF" && endifIdx == -1) {
+                    endifIdx = i;
+                    break;
+                }
             }
         }
 
-        // 2. Găsim ENDWHILE-ul CORECT (balansat)
-        int counter = 1;
-        for (int i = doIdx + 1; i < (int)sc.args.size(); ++i) {
-            std::wstring argUpper = to_upper(sc.args[i]);
-            if (argUpper == L"WHILE") counter++;
-            if (argUpper == L"ENDWHILE") {
-                counter--;
-                if (counter == 0) {
+        if (thenIdx == -1 || endifIdx == -1) return;
+
+        // --- 2. COMPILĂM CONDIȚIA ---
+        std::vector<std::wstring> condTokens(sc.args.begin(), sc.args.begin() + thenIdx);
+        ASTPtr condAST = OliExpressionParser(condTokens).parse();
+        if (condAST) generateFromAST(condAST, chunk, externalProcs);
+
+        // --- 3. JUMP_IF_FALSE ---
+        chunk.addByte((uint8_t)OpCode::OP_JUMP_IF_FALSE, 0);
+        size_t jumpToElseAddr = chunk.code.size();
+        chunk.addByte(0, 0); chunk.addByte(0, 0);
+
+        // --- 4. COMPILĂM BLOCUL THEN ---
+        int thenEnd = (elseIdx != -1) ? elseIdx : endifIdx;
+        compileSubBlock(sc.args, thenIdx + 1, thenEnd, chunk, externalProcs);
+
+        // --- 5. JUMP PESTE ELSE (Dacă există) ---
+        size_t jumpToEndAddr = 0;
+        bool hasElse = (elseIdx != -1);
+        if (hasElse) {
+            chunk.addByte((uint8_t)OpCode::OP_JUMP, 0);
+            jumpToEndAddr = chunk.code.size();
+            chunk.addByte(0, 0); chunk.addByte(0, 0);
+        }
+
+        // --- 6. BACKPATCHING: Condiție FALSE (Salt la ELSE sau ENDIF) ---
+        uint16_t distToElse = (uint16_t)(chunk.code.size() - (jumpToElseAddr + 2));
+        chunk.code[jumpToElseAddr] = (uint8_t)(distToElse >> 8);
+        chunk.code[jumpToElseAddr + 1] = (uint8_t)(distToElse & 0xFF);
+
+        // --- 7. COMPILĂM BLOCUL ELSE ---
+        if (hasElse) {
+            compileSubBlock(sc.args, elseIdx + 1, endifIdx, chunk, externalProcs);
+
+            // BACKPATCHING: Saltul de peste ELSE către finalul IF-ului
+            uint16_t distToEnd = (uint16_t)(chunk.code.size() - (jumpToEndAddr + 2));
+            chunk.code[jumpToEndAddr] = (uint8_t)(distToEnd >> 8);
+            chunk.code[jumpToEndAddr + 1] = (uint8_t)(distToEnd & 0xFF);
+        }
+        }
+
+    else if (cmdName == L"BREAK") {
+        if (breakStack.empty()) return;
+
+        chunk.addByte((uint8_t)OpCode::OP_JUMP, 0);
+        // Salvăm adresa la care încep cei 2 bytes de offset
+        breakStack.back().push_back(chunk.code.size());
+
+        chunk.addByte(0, 0); // Placeholder high
+        chunk.addByte(0, 0); // Placeholder low
+    }
+
+    else if (cmdName == L"CONTINUE") {
+        if (continueStack.empty()) {
+            LOG_ERROR(L"CONTINUE gasit in afara unei bucle! (Stiva este goala)");
+            return;
+        }
+
+        size_t patchAddr = chunk.code.size() + 1; // Adresa unde va fi offset-ul
+        chunk.addByte((uint8_t)OpCode::OP_JUMP, 0); // Placeholder
+        chunk.addByte(0, 0);
+        chunk.addByte(0, 0);
+
+        continueStack.back().push_back(patchAddr);
+        LOG_DEBUG(L"CONTINUE inregistrat pentru patch la adresa: " + std::to_wstring(patchAddr));
+}
+
+
+    else if (cmdName == L"WHILE") {
+        int doIdx = -1, endWhileIdx = -1, depth = 0;
+
+        // 1. Identificăm markerii (Acum și cu REPEAT pentru consistență)
+        for (int i = 0; i < (int)sc.args.size(); ++i) {
+            std::wstring argU = to_upper(sc.args[i]);
+            if (depth == 0 && argU == L"DO") doIdx = i;
+
+            // Adăugăm REPEAT și FUNC/PROC pentru un nesting universal
+            if (argU == L"WHILE" || argU == L"FOR" || argU == L"IF" || argU == L"REPEAT" || argU == L"FUNC") {
+                depth++;
+            }
+            else if (argU == L"ENDWHILE" || argU == L"ENDFOR" || argU == L"ENDIF" || argU == L"ENDREPEAT" || argU == L"ENDFUNC") {
+                if (depth > 0) {
+                    depth--;
+                }
+                else if (argU == L"ENDWHILE" && endWhileIdx == -1) {
                     endWhileIdx = i;
                     break;
                 }
             }
         }
 
-        if (doIdx == -1 || endWhileIdx == -1) return;
-
-        // 3. Punctul de întoarcere (Loop Start) - Unde evaluăm condiția din nou
-        size_t loopStart = chunk.code.size();
-
-        // 4. COMPILĂM CONDIȚIA (Folosind parserul de expresii complet)
-        // Luăm tot ce e între WHILE (începutul args) și DO
-        std::vector<std::wstring> condTokens(sc.args.begin(), sc.args.begin() + doIdx);
-        OliExpressionParser condParser(condTokens);
-        ASTPtr condAST = condParser.parse();
-        if (condAST) {
-            generateFromAST(condAST, chunk, externalProcs);
+        if (doIdx == -1 || endWhileIdx == -1) {
+            LOG_ERROR(L"Structura WHILE invalida (lipseste DO sau ENDWHILE)");
+            return;
         }
 
-        // 5. Saltul de ieșire (OP_JUMP_IF_FALSE)
+        // --- SETUP STIVE ---
+        breakStack.push_back({});
+        continueStack.push_back({});
+        size_t currentStackLevel = continueStack.size();
+
+        size_t loopStart = chunk.code.size();
+
+        // 2. Compilăm Condiția
+        std::vector<std::wstring> condTokens(sc.args.begin(), sc.args.begin() + doIdx);
+        ASTPtr condAST = OliExpressionParser(condTokens).parse();
+        if (condAST) generateFromAST(condAST, chunk, externalProcs);
+
         chunk.addByte((uint8_t)OpCode::OP_JUMP_IF_FALSE, 0);
-        size_t exitJumpPatchAddr = chunk.code.size();
-        chunk.addByte(0, 0); chunk.addByte(0, 0); // Placeholder offset
+        size_t exitJumpAddr = chunk.code.size();
+        chunk.addByte(0, 0); chunk.addByte(0, 0);
 
-        // 6. PROCESAREA CORPULUI (Folosim metoda noastră recursivă "brici")
-        // compileSubBlock se ocupă de tot ce e între DO și ENDWHILE
-        compileSubBlock(sc.args, doIdx + 1, endWhileIdx, chunk, {});
+        // 3. Compilăm Corpul (Recursiv)
+        compileSubBlock(sc.args, doIdx + 1, endWhileIdx, chunk, externalProcs);
 
-        // 7. OP_LOOP (Salt înapoi la loopStart)
+        // --- 4. PATCH CONTINUE ---
+        if (continueStack.size() >= currentStackLevel) {
+            std::vector<size_t> currentContinues = continueStack.back();
+            continueStack.pop_back();
+
+            for (size_t cAddr : currentContinues) {
+                if (cAddr > 0 && cAddr + 1 < chunk.code.size()) {
+                    chunk.code[cAddr - 1] = (uint8_t)OpCode::OP_LOOP;
+                    uint16_t offset = (uint16_t)(cAddr + 2 - loopStart);
+                    chunk.code[cAddr] = (uint8_t)(offset >> 8);
+                    chunk.code[cAddr + 1] = (uint8_t)(offset & 0xFF);
+                }
+            }
+        }
+
+        // 5. Saltul final înapoi la condiție
         chunk.addByte((uint8_t)OpCode::OP_LOOP, 0);
-        // +2 vine de la dimensiunea operandului de offset
         uint16_t loopOffset = (uint16_t)(chunk.code.size() + 2 - loopStart);
         chunk.addByte((uint8_t)(loopOffset >> 8), 0);
         chunk.addByte((uint8_t)(loopOffset & 0xFF), 0);
 
-        // 8. Backpatching: Scriem offset-ul de ieșire în JUMP_IF_FALSE
-        uint16_t exitOffset = (uint16_t)(chunk.code.size() - (exitJumpPatchAddr + 2));
-        chunk.code[exitJumpPatchAddr] = (uint8_t)(exitOffset >> 8);
-        chunk.code[exitJumpPatchAddr + 1] = (uint8_t)(exitOffset & 0xFF);
+        // --- 6. PATCH BREAK & EXIT ---
+        size_t postLoopAddr = chunk.code.size();
+        if (exitJumpAddr + 1 < chunk.code.size()) {
+            uint16_t exitDist = (uint16_t)(postLoopAddr - (exitJumpAddr + 2));
+            chunk.code[exitJumpAddr] = (uint8_t)(exitDist >> 8);
+            chunk.code[exitJumpAddr + 1] = (uint8_t)(exitDist & 0xFF);
         }
 
-
+        if (breakStack.size() >= currentStackLevel) {
+            std::vector<size_t> currentBreaks = breakStack.back();
+            breakStack.pop_back();
+            for (size_t bAddr : currentBreaks) {
+                if (bAddr + 1 < chunk.code.size()) {
+                    uint16_t bDist = (uint16_t)(postLoopAddr - (bAddr + 2));
+                    chunk.code[bAddr] = (uint8_t)(bDist >> 8);
+                    chunk.code[bAddr + 1] = (uint8_t)(bDist & 0xFF);
+                }
+            }
+        }
+        }
         // --- REPEAT ---
     else if (cmdName == L"REPEAT") {
-        int untilIdx = -1, endRepeatIdx = -1, depth = 1;
+        int untilIdx = -1, endRepeatIdx = -1, depth = 0;
 
-        // Găsim UNTIL și ENDREPEAT balansat
+        LOG_DEBUG(L"--- [REPEAT SCAN] Incepere cautare markeri (Args: " + std::to_wstring(sc.args.size()) + L") ---");
+
+        // 1. Identificăm markerii balansat
         for (int i = 0; i < (int)sc.args.size(); ++i) {
             std::wstring argU = to_upper(sc.args[i]);
-            if (argU == L"REPEAT") depth++;
-            if (argU == L"ENDREPEAT") {
-                depth--;
-                if (depth == 0) { endRepeatIdx = i; break; }
+
+            // Logăm fiecare token pentru a vedea exact unde se „pierde” compilatorul
+            // LOG_DEBUG(L"Token [" + std::to_wstring(i) + L"]: " + argU + L" (depth: " + std::to_wstring(depth) + L")");
+
+            if (depth == 0 && argU == L"UNTIL") {
+                untilIdx = i;
+                LOG_DEBUG(L"   -> Gasit UNTIL la indexul " + std::to_wstring(i));
             }
-            if (depth == 1 && argU == L"UNTIL") untilIdx = i;
+
+            // Gestionăm adâncimea pentru a nu prinde UNTIL-uri din bucle imbricate
+            if (argU == L"REPEAT" || argU == L"WHILE" || argU == L"FOR" || argU == L"IF" || argU == L"FUNC" || argU == L"PROC") {
+                depth++;
+            }
+            else if (argU == L"ENDREPEAT" || argU == L"ENDWHILE" || argU == L"ENDFOR" || argU == L"ENDIF" || argU == L"ENDFUNC" || argU == L"ENDPROC") {
+                if (depth > 0) {
+                    depth--;
+                }
+                else if (argU == L"ENDREPEAT" && endRepeatIdx == -1) {
+                    endRepeatIdx = i;
+                    LOG_DEBUG(L"   -> Gasit ENDREPEAT la indexul " + std::to_wstring(i));
+                    break;
+                }
+            }
         }
 
-        if (untilIdx == -1 || endRepeatIdx == -1) return;
+        // 2. Verificare de siguranță
+        if (untilIdx == -1 || endRepeatIdx == -1) {
+            LOG_ERROR(L"Structura REPEAT invalida! untilIdx: " + std::to_wstring(untilIdx) + L", endRepeatIdx: " + std::to_wstring(endRepeatIdx));
+            return;
+        }
+
+        // --- SETUP STIVE ---
+        breakStack.push_back({});
+        continueStack.push_back({});
+        size_t currentStackLevel = continueStack.size();
 
         size_t loopStart = chunk.code.size();
+        LOG_DEBUG(L"REPEAT Start - loopStart: " + std::to_wstring(loopStart));
 
-        // Compilăm corpul (de la început până la UNTIL) folosind SubBlock
-        compileSubBlock(sc.args, 0, untilIdx, chunk, {} );
+        // 3. Compilăm CORPUL (de la început până la UNTIL)
+        LOG_DEBUG(L"REPEAT: Compilare sub-bloc CORP...");
+        compileSubBlock(sc.args, 0, untilIdx, chunk, externalProcs);
 
-        // Compilăm condiția (între UNTIL și ENDREPEAT)
-        if (untilIdx + 1 < endRepeatIdx) {
-            std::vector<std::wstring> condTokens;
-            for (int k = untilIdx + 1; k < endRepeatIdx; ++k) condTokens.push_back(sc.args[k]);
+        // --- PUNCTUL DE REINTRARE PENTRU CONTINUE ---
+        size_t conditionStart = chunk.code.size();
+        LOG_DEBUG(L"REPEAT: conditionStart (target for CONTINUE): " + std::to_wstring(conditionStart));
 
-            OliExpressionParser condParser(condTokens);
-            ASTPtr condAST = condParser.parse();
-            generateFromAST(condAST, chunk, externalProcs);
+        // 4. Compilăm CONDIȚIA (între UNTIL și ENDREPEAT)
+        LOG_DEBUG(L"REPEAT: Compilare CONDITIE...");
+        std::vector<std::wstring> condTokens(sc.args.begin() + untilIdx + 1, sc.args.begin() + endRepeatIdx);
+        OliExpressionParser condParser(condTokens);
+        ASTPtr condAST = condParser.parse();
+        if (condAST) generateFromAST(condAST, chunk, externalProcs);
 
-            chunk.addByte((uint8_t)OpCode::OP_JUMP_IF_TRUE, 0);
-            size_t patchAddr = chunk.code.size();
-            chunk.addByte(0, 0); chunk.addByte(0, 0);
+        // 5. EMITERE SALTURI
+        // Dacă condiția e TRUE, sărim la final (ieșim)
+        chunk.addByte((uint8_t)OpCode::OP_JUMP_IF_TRUE, 0);
+        size_t exitJumpAddr = chunk.code.size();
+        chunk.addByte(0, 0); chunk.addByte(0, 0);
 
-            chunk.addByte((uint8_t)OpCode::OP_LOOP, 0);
-            uint16_t loopOffset = (uint16_t)(chunk.code.size() + 2 - loopStart);
-            chunk.addByte((uint8_t)(loopOffset >> 8), 0);
-            chunk.addByte((uint8_t)(loopOffset & 0xFF), 0);
+        // Dacă condiția e FALSE, sărim înapoi la loopStart
+        chunk.addByte((uint8_t)OpCode::OP_LOOP, 0);
+        uint16_t loopOffset = (uint16_t)(chunk.code.size() + 2 - loopStart);
+        chunk.addByte((uint8_t)(loopOffset >> 8), 0);
+        chunk.addByte((uint8_t)(loopOffset & 0xFF), 0);
 
-            uint16_t exitOffset = (uint16_t)(chunk.code.size() - (patchAddr + 2));
-            chunk.code[patchAddr] = (uint8_t)(exitOffset >> 8);
-            chunk.code[patchAddr + 1] = (uint8_t)(exitOffset & 0xFF);
+        // --- 6. BACKPATCHING FINAL ---
+        size_t postLoopAddr = chunk.code.size();
+        LOG_DEBUG(L"REPEAT End - postLoopAddr: " + std::to_wstring(postLoopAddr));
+
+        // A. Patch Ieșire (UNTIL TRUE)
+        if (exitJumpAddr + 1 < chunk.code.size()) {
+            uint16_t exitDist = (uint16_t)(postLoopAddr - (exitJumpAddr + 2));
+            chunk.code[exitJumpAddr] = (uint8_t)(exitDist >> 8);
+            chunk.code[exitJumpAddr + 1] = (uint8_t)(exitDist & 0xFF);
+        }
+
+        // B. Patch CONTINUE
+        if (continueStack.size() >= currentStackLevel) {
+            auto currentContinues = continueStack.back();
+            continueStack.pop_back();
+            LOG_DEBUG(L"REPEAT: Patch " + std::to_wstring(currentContinues.size()) + L" CONTINUE.");
+            for (size_t cAddr : currentContinues) {
+                if (cAddr > 0 && cAddr + 1 < chunk.code.size()) {
+                    uint16_t cDist = (uint16_t)(conditionStart - (cAddr + 2));
+                    chunk.code[cAddr] = (uint8_t)(cDist >> 8);
+                    chunk.code[cAddr + 1] = (uint8_t)(cDist & 0xFF);
+                }
+            }
+        }
+
+        // C. Patch BREAK
+        if (breakStack.size() >= currentStackLevel) {
+            auto currentBreaks = breakStack.back();
+            breakStack.pop_back();
+            LOG_DEBUG(L"REPEAT: Patch " + std::to_wstring(currentBreaks.size()) + L" BREAK.");
+            for (size_t bAddr : currentBreaks) {
+                if (bAddr + 1 < chunk.code.size()) {
+                    uint16_t bDist = (uint16_t)(postLoopAddr - (bAddr + 2));
+                    chunk.code[bAddr] = (uint8_t)(bDist >> 8);
+                    chunk.code[bAddr + 1] = (uint8_t)(bDist & 0xFF);
+                }
+            }
         }
         }
 
-        // --- FOR ---
-    else if (cmdName == L"FOR") {
-            int toIdx = -1, byIdx = -1, doIdx = -1, endForIdx = -1, depth = 1;
+       
 
+        else if (cmdName == L"FOR") {
+            int toIdx = -1, byIdx = -1, doIdx = -1, endForIdx = -1;
+            int depth = 0;
+
+            // 1. Identificăm markerii TO, BY, DO și ENDFOR (Nesting Universal)
             for (int i = 0; i < (int)sc.args.size(); ++i) {
                 std::wstring argU = to_upper(sc.args[i]);
-                if (argU == L"FOR") depth++;
-                if (argU == L"ENDFOR") {
-                    depth--;
-                    if (depth == 0) { endForIdx = i; break; }
-                }
-                if (depth == 1) {
+                if (depth == 0) {
                     if (argU == L"TO") toIdx = i;
                     else if (argU == L"BY") byIdx = i;
                     else if (argU == L"DO") doIdx = i;
                 }
+
+                // Adăugăm toate structurile de control pentru un nesting corect
+                if (argU == L"FOR" || argU == L"IF" || argU == L"WHILE" || argU == L"REPEAT" || argU == L"FUNC" || argU == L"PROC") {
+                    depth++;
+                }
+                else if (argU == L"ENDFOR" || argU == L"ENDIF" || argU == L"ENDWHILE" || argU == L"ENDREPEAT" || argU == L"ENDFUNC" || argU == L"ENDPROC") {
+                    if (depth > 0) {
+                        depth--;
+                    }
+                    else if (argU == L"ENDFOR" && endForIdx == -1) {
+                        endForIdx = i;
+                        break;
+                    }
+                }
             }
 
-            // Verificăm siguranța indicilor înainte de accesare (PREVENIRE SEGFAULT)
-            if (toIdx <= 0 || doIdx <= toIdx || endForIdx <= doIdx || sc.args.size() < 3) return;
+            if (toIdx == -1 || doIdx == -1 || endForIdx == -1) {
+                LOG_ERROR(L"Structura FOR invalida (lipseste TO, DO sau ENDFOR)");
+                return;
+            }
+
+            // --- SETUP STIVE ---
+            breakStack.push_back({});
+            continueStack.push_back({});
+            size_t currentStackLevel = continueStack.size();
 
             std::wstring varName = sc.args[0];
             std::wstring startVal = sc.args[2];
-            std::wstring limitVal = sc.args[toIdx + 1];
-            std::wstring stepVal = (byIdx != -1 && byIdx + 1 < (int)sc.args.size()) ? sc.args[byIdx + 1] : L"1";
 
-            // 1. Init
+            // 2. Inițializare ($i = startVal)
             emitLoadOrConstant(startVal, chunk);
             emitStore(varName, chunk);
 
             size_t loopStart = chunk.code.size();
 
-            // 2. Condiție (EXIT dacă $i > limitVal)
+            // 3. Condiție de ieșire ($i > limitVal)
             emitLoadOrConstant(varName, chunk);
-            emitLoadOrConstant(limitVal, chunk);
+            int limitEnd = (byIdx != -1) ? byIdx : doIdx;
+            std::vector<std::wstring> limTokens(sc.args.begin() + toIdx + 1, sc.args.begin() + limitEnd);
+            ASTPtr limAST = OliExpressionParser(limTokens).parse();
+            if (limAST) generateFromAST(limAST, chunk, externalProcs);
+
             chunk.addByte((uint8_t)OpCode::OP_GREATER, 0);
             chunk.addByte((uint8_t)OpCode::OP_JUMP_IF_TRUE, 0);
-            size_t exitAddr = chunk.code.size();
+            size_t exitJumpAddr = chunk.code.size();
             chunk.addByte(0, 0); chunk.addByte(0, 0);
 
-            // 3. Corp (Între DO și ENDFOR)
-            compileSubBlock(sc.args, doIdx + 1, endForIdx, chunk, {});
+            // 4. Corpul buclei (Recursiv)
+            compileSubBlock(sc.args, doIdx + 1, endForIdx, chunk, externalProcs);
 
-            // 4. Increment
+            // --- PUNCTUL DE REINTRARE PENTRU CONTINUE ---
+            // Orice CONTINUE din corp va sări AICI pentru a executa incrementarea
+            size_t continueTarget = chunk.code.size();
+
+            // 5. Incrementare ($i = $i + stepVal)
             emitLoadOrConstant(varName, chunk);
-            emitLoadOrConstant(stepVal, chunk);
+            if (byIdx != -1) {
+                std::vector<std::wstring> stepTokens(sc.args.begin() + byIdx + 1, sc.args.begin() + doIdx);
+                ASTPtr stepAST = OliExpressionParser(stepTokens).parse();
+                if (stepAST) generateFromAST(stepAST, chunk, externalProcs);
+            }
+            else {
+                emitConstant(vData(1.0), chunk, 0);
+            }
             chunk.addByte((uint8_t)OpCode::OP_ADD, 0);
             emitStore(varName, chunk);
 
-            // 5. Loop
+            // 6. Salt înapoi la condiție (Evaluare)
             chunk.addByte((uint8_t)OpCode::OP_LOOP, 0);
             uint16_t offset = (uint16_t)(chunk.code.size() + 2 - loopStart);
             chunk.addByte((uint8_t)(offset >> 8), 0);
             chunk.addByte((uint8_t)(offset & 0xFF), 0);
 
-            uint16_t exitOff = (uint16_t)(chunk.code.size() - (exitAddr + 2));
-            chunk.code[exitAddr] = (uint8_t)(exitOff >> 8);
-            chunk.code[exitAddr + 1] = (uint8_t)(exitOff & 0xFF);
+            // --- BACKPATCHING FINAL ---
+            size_t postLoopAddr = chunk.code.size();
+
+            // Patch EXIT Jump (JUMP_IF_TRUE)
+            if (exitJumpAddr + 1 < chunk.code.size()) {
+                uint16_t exitDist = (uint16_t)(postLoopAddr - (exitJumpAddr + 2));
+                chunk.code[exitJumpAddr] = (uint8_t)(exitDist >> 8);
+                chunk.code[exitJumpAddr + 1] = (uint8_t)(exitDist & 0xFF);
+            }
+
+            // Patch BREAK jumps (Săritură la postLoopAddr)
+            if (breakStack.size() >= currentStackLevel) {
+                std::vector<size_t> currentBreaks = breakStack.back();
+                breakStack.pop_back();
+                for (size_t bAddr : currentBreaks) {
+                    if (bAddr + 1 < chunk.code.size()) {
+                        uint16_t bDist = (uint16_t)(postLoopAddr - (bAddr + 2));
+                        chunk.code[bAddr] = (uint8_t)(bDist >> 8);
+                        chunk.code[bAddr + 1] = (uint8_t)(bDist & 0xFF);
+                    }
+                }
+            }
+
+            // Patch CONTINUE jumps (Săritură la continueTarget)
+            if (continueStack.size() >= currentStackLevel) {
+                std::vector<size_t> currentContinues = continueStack.back();
+                continueStack.pop_back();
+                for (size_t cAddr : currentContinues) {
+                    if (cAddr > 0 && cAddr + 1 < chunk.code.size()) {
+                        // În FOR, CONTINUE sare înainte la incrementare, deci rămâne OP_JUMP
+                        uint16_t cDist = (uint16_t)(continueTarget - (cAddr + 2));
+                        chunk.code[cAddr] = (uint8_t)(cDist >> 8);
+                        chunk.code[cAddr + 1] = (uint8_t)(cDist & 0xFF);
+                    }
+                }
+            }
             }
 }
 
@@ -682,7 +951,7 @@ void OliCompiler::optimize(OliChunk& chunk) {
     }
 }
 
-
+/*
 void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk, const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs) {
     if (!node) return;
 
@@ -785,34 +1054,57 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk, const std::unord
 
     // --- 3.5 APELURI DE FUNCȚII (INTELIGENT: NATIVE vs USER) ---
     // --- În OliCompiler::generateFromAST ---
-
+    
     if (node->type == ASTNodeType::FunctionCall) {
         bool isDynamic = (node->value == L"DYNAMIC_CALL");
+
+        // 1. VALIDARE DE BAZĂ
+        // Un apel dinamic are nevoie de cel puțin un copil (funcția sau variabila apelată)
         if (isDynamic && node->children.empty()) return;
 
         size_t startIdx = isDynamic ? 1 : 0;
+        size_t totalChildren = node->children.size();
 
-        // 1. Încărcăm argumentele (pasăm contextul mai departe recursiv)
-        for (size_t i = startIdx; i < node->children.size(); ++i) {
+        // 2. ÎNCĂRCARE ARGUMENTE
+        // Generăm codul pentru fiecare argument. Acestea vor ajunge pe stiva VM.
+        for (size_t i = startIdx; i < totalChildren; ++i) {
             generateFromAST(node->children[i], chunk, externalProcs);
         }
 
+        // 3. EXTRAGERE ȘI CURĂȚARE NUME
+        // Ne asigurăm că funcția are un nume valid și fără spații accidentale
         std::wstring rawName = isDynamic ? node->children[0]->value : node->value;
         std::wstring funcName = to_upper(trim(rawName));
-        uint8_t argCount = (uint8_t)(node->children.size() - startIdx);
+
+        if (funcName.empty()) {
+            // Dacă numele e gol, ceva a eșuat în parser (ex: cazul de la IP 0090)
+            // Punem un nume de fallback pentru a evita crash-ul VM-ului la căutarea în map
+            funcName = L"__INVALID_CALL__";
+        }
+
+        // 4. CALCULARE ARGCOUNT (Sursă de Segfault rezolvată)
+        // Ne asigurăm că argCount reflectă EXACT numărul de noduri procesate la pasul 2
+        size_t actualArgs = (totalChildren > startIdx) ? (totalChildren - startIdx) : 0;
+
+        // uint8_t suportă max 255. Dacă parserul a luat-o razna, tăiem la 255
+        // pentru a nu corupe restul bytecode-ului (overflow la 0)
+        uint8_t argCount = (actualArgs > 255) ? 255 : (uint8_t)actualArgs;
+
         uint16_t nameIdx = chunk.addConstant(vData(funcName));
 
-        // --- LOGICA DE DECIZIE REPARATĂ ---
-        // Verificăm în procedurile locale (chunk) SAU în cele primite de la părinte (externalProcs)
+        // 5. DECIZIA DE APEL (INTERNAL vs NATIVE)
+        // Verificăm în chunk-ul curent SAU în contextul primit de la părinte (externalProcs)
         if (chunk.procedures.count(funcName) || externalProcs.count(funcName)) {
-            // Găsit! Este un apel către o funcție definită în script Oli
+            // Funcție definită în script (Oli)
             chunk.addByte((uint8_t)OpCode::OP_CALL, 0);
         }
         else {
-            // Nu este găsit în niciun context de script -> Apel către C++ / Plugin
+            // Funcție din C++ sau Plugin (Native)
             chunk.addByte((uint8_t)OpCode::OP_CALL_NATIVE, 0);
         }
 
+        // 6. EMITERE INSTRUCȚIUNE
+        // Structura: OpCode (1b) + NameIdx (2b) + ArgCount (1b)
         chunk.addByte((uint8_t)((nameIdx >> 8) & 0xFF), 0);
         chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
         chunk.addByte(argCount, 0);
@@ -860,6 +1152,180 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk, const std::unord
         }
     }
 }
+*/
+void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk, const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs) {
+    if (!node) return;
+
+    // --- 1. ATRIBUIRE (=, +=, -=, *=, /=) ---
+    if (node->type == ASTNodeType::Operator && (node->value == L"=" ||
+        node->value == L"+=" || node->value == L"-=" ||
+        node->value == L"*=" || node->value == L"/=")) {
+
+        if (node->children.size() < 2) return;
+
+        ASTPtr lhs = node->children[0];
+        ASTPtr rhs = node->children[1];
+
+        // FIX CRITIC: Verificăm dacă scriem într-un Array sau Map ($vx[i] = ...)
+        if (node->value == L"=" && lhs->type == ASTNodeType::Operator && (lhs->value == L"INDEX" || lhs->value == L"DOT")) {
+            // 1. Punem Containerul pe stivă (ex: $vx)
+            generateFromAST(lhs->children[0], chunk, externalProcs);
+            // 2. Punem Indexul/Cheia pe stivă (ex: $i)
+            generateFromAST(lhs->children[1], chunk, externalProcs);
+            // 3. Punem Valoarea pe stivă
+            generateFromAST(rhs, chunk, externalProcs);
+
+            // 4. Emitem OP_SET_INDIRECT care așteaptă [Container, Index, Value]
+            chunk.addByte((uint8_t)OpCode::OP_SET_INDIRECT, 0);
+            return;
+        }
+
+        // Atribuire normală sau compusă
+        std::wstring rawLHS = reconstructRawName(lhs);
+
+        if (node->value == L"=") {
+            generateFromAST(rhs, chunk, externalProcs);
+            emitStore(rawLHS, chunk);
+            return;
+        }
+
+        // Operatori compuși (+=, -=, etc.)
+        generateFromAST(lhs, chunk, externalProcs);
+        generateFromAST(rhs, chunk, externalProcs);
+
+        if (node->value == L"+=")      chunk.addByte((uint8_t)OpCode::OP_ADD, 0);
+        else if (node->value == L"-=") chunk.addByte((uint8_t)OpCode::OP_SUB, 0);
+        else if (node->value == L"*=") chunk.addByte((uint8_t)OpCode::OP_MUL, 0);
+        else if (node->value == L"/=") chunk.addByte((uint8_t)OpCode::OP_DIV, 0);
+
+        emitStore(rawLHS, chunk);
+        return;
+    }
+
+    // --- 2. OPERATORI UNARI ---
+    if (node->type == ASTNodeType::Operator && node->children.size() == 1) {
+        if (node->value == L"ADDRESS_OF" || node->value == L"&") {
+            std::wstring varName = node->children[0]->value;
+            uint16_t nameIdx = chunk.addConstant(vData(varName));
+            chunk.addByte((uint8_t)OpCode::OP_GET_ADDR, 0);
+            chunk.addByte((nameIdx >> 8) & 0xFF, 0);
+            chunk.addByte(nameIdx & 0xFF, 0);
+            return;
+        }
+
+        generateFromAST(node->children[0], chunk, externalProcs);
+
+        if (node->value == L"UNARY_MINUS")      chunk.addByte((uint8_t)OpCode::OP_NEGATE, 0);
+        else if (node->value == L"NOT")         chunk.addByte((uint8_t)OpCode::OP_LOGICAL_NOT, 0);
+        else if (node->value == L"BITWISE_NOT") chunk.addByte((uint8_t)OpCode::OP_BNOT, 0);
+        else if (node->value == L"DEREFERENCE") chunk.addByte((uint8_t)OpCode::OP_GET_INDIRECT, 0);
+        else if (node->value == L"POSTFIX_INC") {
+            chunk.addByte((uint8_t)OpCode::OP_DUP, 0);
+            emitConstant(vData(1.0), chunk, 0);
+            chunk.addByte((uint8_t)OpCode::OP_ADD, 0);
+            emitStore(node->children[0]->value, chunk);
+        }
+        return;
+    }
+
+    // --- 3. LITERALI ȘI VARIABILE ---
+    if (node->type == ASTNodeType::Literal) {
+        if (node->value == L"ARRAY_OBJECT") {
+            for (auto& child : node->children) generateFromAST(child, chunk, externalProcs);
+            chunk.addByte((uint8_t)OpCode::OP_ARRAY, 0);
+            chunk.addByte((uint8_t)node->children.size(), 0);
+            return;
+        }
+        else if (node->value == L"MAP_OBJECT") {
+            for (auto& child : node->children) generateFromAST(child, chunk, externalProcs);
+            chunk.addByte((uint8_t)OpCode::OP_MAP, 0);
+            chunk.addByte((uint8_t)(node->children.size() / 2), 0);
+            return;
+        }
+        emitLoadOrConstant(node->value, chunk);
+        return;
+    }
+
+    if (node->type == ASTNodeType::Variable) {
+        emitLoadOrConstant(node->value, chunk);
+        return;
+    }
+
+    // --- 4. APELURI DE FUNCȚII (Inclusiv TYPE()) ---
+    if (node->type == ASTNodeType::FunctionCall) {
+        bool isDynamic = (node->value == L"DYNAMIC_CALL");
+        if (isDynamic && node->children.empty()) return;
+
+        std::wstring rawName = isDynamic ? node->children[0]->value : node->value;
+        std::wstring funcName = to_upper(trim(rawName));
+
+        // INTRINSIC: TYPE(expr)
+        if (funcName == L"TYPE") {
+            generateFromAST(node->children[isDynamic ? 1 : 0], chunk, externalProcs);
+            chunk.addByte((uint8_t)OpCode::OP_TYPE, 0);
+            return;
+        }
+
+        // Apel normal
+        size_t startIdx = isDynamic ? 1 : 0;
+        for (size_t i = startIdx; i < node->children.size(); ++i) {
+            generateFromAST(node->children[i], chunk, externalProcs);
+        }
+
+        if (funcName.empty()) funcName = L"__INVALID_CALL__";
+#undef min
+        uint8_t argCount = (uint8_t)std::min((size_t)255, node->children.size() - startIdx);
+        uint16_t nameIdx = chunk.addConstant(vData(funcName));
+
+        if (chunk.procedures.count(funcName) || externalProcs.count(funcName)) {
+            chunk.addByte((uint8_t)OpCode::OP_CALL, 0);
+        }
+        else {
+            chunk.addByte((uint8_t)OpCode::OP_CALL_NATIVE, 0);
+        }
+
+        chunk.addByte((uint8_t)((nameIdx >> 8) & 0xFF), 0);
+        chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
+        chunk.addByte(argCount, 0);
+        return;
+    }
+
+    // --- 5. OPERATORI BINARI ---
+    if (node->children.size() == 2) {
+        if (node->value == L"&&" || node->value == L"||") {
+            generateShortCircuit(node, chunk);
+            return;
+        }
+
+        generateFromAST(node->children[0], chunk, externalProcs);
+        generateFromAST(node->children[1], chunk, externalProcs);
+
+        std::wstring op = node->value;
+        if (op == L"+")      chunk.addByte((uint8_t)OpCode::OP_ADD, 0);
+        else if (op == L"-") chunk.addByte((uint8_t)OpCode::OP_SUB, 0);
+        else if (op == L"*") chunk.addByte((uint8_t)OpCode::OP_MUL, 0);
+        else if (op == L"/") chunk.addByte((uint8_t)OpCode::OP_DIV, 0);
+        else if (op == L"%") chunk.addByte((uint8_t)OpCode::OP_MOD, 0);
+        else if (op == L"**") chunk.addByte((uint8_t)OpCode::OP_POW, 0);
+        else if (op == L"==") chunk.addByte((uint8_t)OpCode::OP_EQUAL, 0);
+        else if (op == L"!=") chunk.addByte((uint8_t)OpCode::OP_NOT_EQUAL, 0);
+        else if (op == L">")  chunk.addByte((uint8_t)OpCode::OP_GREATER, 0);
+        else if (op == L">=") chunk.addByte((uint8_t)OpCode::OP_GREATER_EQUAL, 0);
+        else if (op == L"<")  chunk.addByte((uint8_t)OpCode::OP_LESS, 0);
+        else if (op == L"<=") chunk.addByte((uint8_t)OpCode::OP_LESS_EQUAL, 0);
+        else if (op == L"&")  chunk.addByte((uint8_t)OpCode::OP_BAND, 0);
+        else if (op == L"|")  chunk.addByte((uint8_t)OpCode::OP_BOR, 0);
+        else if (op == L"BXOR" || op == L"^") chunk.addByte((uint8_t)OpCode::OP_BXOR, 0);
+        else if (op == L"<<") chunk.addByte((uint8_t)OpCode::OP_SHL, 0);
+        else if (op == L">>") chunk.addByte((uint8_t)OpCode::OP_SHR, 0);
+        else if (op == L"??") chunk.addByte((uint8_t)OpCode::OP_NULL_COALESCE, 0);
+        else if (op == L"CONCAT") chunk.addByte((uint8_t)OpCode::OP_CONCAT, 0);
+        else if (op == L"DOT" || op == L"INDEX") {
+            chunk.addByte((uint8_t)OpCode::OP_GET_INDIRECT, 0);
+        }
+    }
+}
+
 
 void OliCompiler::emitTargetAddress(const std::wstring& varName, OliChunk& chunk) {
     size_t dollarCount = 0;
@@ -1050,41 +1516,44 @@ void OliCompiler::compileSubBlock(const std::vector<std::wstring>& args,
     int start,
     int end,
     OliChunk& chunk,
-    const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs)
-{
+    const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs) {
+
     if (start >= end) return;
 
-    // 1. Reconstruim sursa pentru acest sub-bloc
-    std::wstring subSource = L"";
-    for (int i = start; i < end; ++i) {
-        subSource += args[i] + L" ";
-    }
-    subSource += L"\n";
+    // 1. REȚINEM CONTEXTUL ADRESELOR ȘI STIVELOR
+    // 'baseAddress' reprezintă offset-ul unde va fi inserat noul bytecode în chunk-ul părinte
+    size_t baseAddress = chunk.code.size();
 
-    // 2. Compilare recursivă folosind map-ul extern primit ca parametru.
-    // Transmiterea 'externalProcs' este critică pentru ca funcția să se "vadă" pe ea însăși.
-    OliChunk subChunk = compile(subSource, externalProcs, true);
+    // Reținem dimensiunea actuală a stivelor pentru a ajusta doar noile intrări adăugate în acest sub-bloc
+    size_t startBreakIdx = (!breakStack.empty()) ? breakStack.back().size() : 0;
+    size_t startContinueIdx = (!continueStack.empty()) ? continueStack.back().size() : 0;
 
-    // 3. --- MIGRARE PROCEDURI ---
-    // Orice funcție nouă definită în interior (funcții imbricate) urcă în chunk-ul părinte.
+    // 2. RECONSTRUIM SURSA SUB-BLOCULUI
+    std::wstring subSource = rebuildSubCommand(args, start, end) + L"\n";
+
+    // 3. COMPILARE RECURSIVĂ
+    // IMPORTANT: Transmitem 'true' pentru isSubBlock pentru a preveni golirea stivelor în funcția compile()
+    OliChunk subChunk = this->compile(subSource, externalProcs, true);
+
+    // 4. MIGRARE PROCEDURI GENERATE ÎN SUB-BLOC
     for (auto const& [name, proc] : subChunk.procedures) {
         chunk.procedures[name] = proc;
     }
 
-    // 4. --- REMAPARE CONSTANTE ---
+    // 5. REMAPARE CONSTANTE (Migrăm constantele din subChunk în chunk-ul principal)
     std::map<uint16_t, uint16_t> indexMap;
     for (uint16_t i = 0; i < (uint16_t)subChunk.constants.size(); ++i) {
         indexMap[i] = chunk.addConstant(subChunk.constants[i]);
     }
 
-    // 5. --- COPIERE ȘI REMAPARE BYTECODE ---
+    // 6. COPIERE ȘI REMAPARE BYTECODE
     size_t i = 0;
     while (i < subChunk.code.size()) {
         uint8_t op = subChunk.code[i];
         chunk.addByte(op, 0);
         i++;
 
-        // Remapăm indexurile pentru instrucțiunile care accesează tabela de constante
+        // Operanzi care fac referire la tabela de constante (2 bytes)
         if (op == (uint8_t)OpCode::OP_CONSTANT || op == (uint8_t)OpCode::OP_GET_GLOBAL ||
             op == (uint8_t)OpCode::OP_SET_GLOBAL || op == (uint8_t)OpCode::OP_UNSET ||
             op == (uint8_t)OpCode::OP_GET_ADDR || op == (uint8_t)OpCode::OP_PLUGIN ||
@@ -1099,17 +1568,16 @@ void OliCompiler::compileSubBlock(const std::vector<std::wstring>& args,
             chunk.addByte((uint8_t)(newIdx & 0xFF), 0);
             i += 2;
 
+            // Gestionare argument suplimentar pentru apeluri
             if (op == (uint8_t)OpCode::OP_CALL_NATIVE || op == (uint8_t)OpCode::OP_CALL) {
-                if (i < subChunk.code.size()) {
-                    chunk.addByte(subChunk.code[i++], 0);
-                }
+                if (i < subChunk.code.size()) chunk.addByte(subChunk.code[i++], 0);
             }
         }
+        // Operanzi cu 1 byte (Array/Map size)
         else if (op == (uint8_t)OpCode::OP_ARRAY || op == (uint8_t)OpCode::OP_MAP) {
-            if (i < subChunk.code.size()) {
-                chunk.addByte(subChunk.code[i++], 0);
-            }
+            if (i < subChunk.code.size()) chunk.addByte(subChunk.code[i++], 0);
         }
+        // Salturi (JUMP/LOOP) - 2 bytes. Offset-urile rămân relative la codul propriu.
         else if (op == (uint8_t)OpCode::OP_JUMP || op == (uint8_t)OpCode::OP_JUMP_IF_FALSE ||
             op == (uint8_t)OpCode::OP_LOOP || op == (uint8_t)OpCode::OP_JUMP_IF_TRUE)
         {
@@ -1117,6 +1585,22 @@ void OliCompiler::compileSubBlock(const std::vector<std::wstring>& args,
                 chunk.addByte(subChunk.code[i++], 0);
                 chunk.addByte(subChunk.code[i++], 0);
             }
+        }
+    }
+
+    // 7. AJUSTARE ADRESE PENTRU BACKPATCHING (BREAK & CONTINUE)
+    // Deoarece am concatenat bytecode-ul sub-blocului la chunk-ul principal,
+    // adresele placeholder emise în timpul compilării recursive trebuie translatate.
+
+    if (!breakStack.empty()) {
+        for (size_t k = startBreakIdx; k < breakStack.back().size(); ++k) {
+            breakStack.back()[k] += baseAddress;
+        }
+    }
+
+    if (!continueStack.empty()) {
+        for (size_t k = startContinueIdx; k < continueStack.back().size(); ++k) {
+            continueStack.back()[k] += baseAddress;
         }
     }
 }

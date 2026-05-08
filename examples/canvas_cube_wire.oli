@@ -12,7 +12,15 @@ func RENDER_WIRE_CUBE()
     set $v = CAN_INIT($W, $H, "Oli 3D Wireframe")
     
     # --- DATE CUB ---
-    array $vx[8]; array $vy[8]; array $vz[8]
+    #array $vx[8]; array $vy[8]; array $vz[8]
+	
+	
+set $vx = ARRAY(8)
+set $vy = ARRAY(8)
+set $vz = ARRAY(8)
+set $sx = ARRAY(8)
+set $sy = ARRAY(8)
+	
     # Baza de jos
     set $vx[0]=-1.5; set $vy[0]=-1.5; set $vz[0]=-1.5
     set $vx[1]= 1.5; set $vy[1]=-1.5; set $vz[1]=-1.5
@@ -25,11 +33,13 @@ func RENDER_WIRE_CUBE()
     set $vx[7]=-1.5; set $vy[7]= 1.5; set $vz[7]= 1.5
 
     # Array-uri pentru coordonatele proiectate 2D
-    array $sx[8]; array $sy[8]
+    a#rray $sx[8]; array $sy[8]
 
     while true do
-        CAN_CLS(0)
-        set $t = TIME() * 25
+        set $v = CAN_CLS(0)
+        set $t = TIME()
+		set $t = $t * 25
+		#echo $t
         set $color = 65280 # Verde Neon
 
         # 1. Proiecție 3D -> 2D
@@ -49,25 +59,25 @@ func RENDER_WIRE_CUBE()
 
         # 2. Desenare Muchii (Wireframe)
         # Legăm pătratul de jos
-        CAN_LINE($sx[0], $sy[0], $sx[1], $sy[1], $color)
-        CAN_LINE($sx[1], $sy[1], $sx[2], $sy[2], $color)
-        CAN_LINE($sx[2], $sy[2], $sx[3], $sy[3], $color)
-        CAN_LINE($sx[3], $sy[3], $sx[0], $sy[0], $color)
+        set $v = CAN_LINE($sx[0], $sy[0], $sx[1], $sy[1], $color)
+        set $v = CAN_LINE($sx[1], $sy[1], $sx[2], $sy[2], $color)
+        set $v = CAN_LINE($sx[2], $sy[2], $sx[3], $sy[3], $color)
+        set $v = CAN_LINE($sx[3], $sy[3], $sx[0], $sy[0], $color)
         
         # Legăm pătratul de sus
-        CAN_LINE($sx[4], $sy[4], $sx[5], $sy[5], $color)
-        CAN_LINE($sx[5], $sy[5], $sx[6], $sy[6], $color)
-        CAN_LINE($sx[6], $sy[6], $sx[7], $sy[7], $color)
-        CAN_LINE($sx[7], $sy[7], $sx[4], $sy[4], $color)
+        set $v = CAN_LINE($sx[4], $sy[4], $sx[5], $sy[5], $color)
+        set $v = CAN_LINE($sx[5], $sy[5], $sx[6], $sy[6], $color)
+        set $v = CAN_LINE($sx[6], $sy[6], $sx[7], $sy[7], $color)
+        set $v = CAN_LINE($sx[7], $sy[7], $sx[4], $sy[4], $color)
         
         # Legăm cele două baze (stâlpii verticali)
-        CAN_LINE($sx[0], $sy[0], $sx[4], $sy[4], $color)
-        CAN_LINE($sx[1], $sy[1], $sx[5], $sy[5], $color)
-        CAN_LINE($sx[2], $sy[2], $sx[6], $sy[6], $color)
-        CAN_LINE($sx[3], $sy[3], $sx[7], $sy[7], $color)
+        set $v = CAN_LINE($sx[0], $sy[0], $sx[4], $sy[4], $color)
+        set $v = CAN_LINE($sx[1], $sy[1], $sx[5], $sy[5], $color)
+        set $v = CAN_LINE($sx[2], $sy[2], $sx[6], $sy[6], $color)
+        set $v = CAN_LINE($sx[3], $sy[3], $sx[7], $sy[7], $color)
 
-        CAN_PRESENT()
-        if KEY_STATE(81) == 1 then break endif
+        set $v = CAN_PRESENT()
+        if KEY_STATE(81) == 1 then break; endif
     endwhile
 endfunc
 

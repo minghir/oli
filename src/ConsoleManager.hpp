@@ -30,12 +30,12 @@ using WORD = unsigned short;
 
 
 enum class LogLevel {
-    INFO,           // Informații generale (default)
-    SUCCESS,        // Operație reușită (opțional, dar util)
-    WARNING,        // Avertisment (nu e critic, dar necesită atenție)
-    LOG_ERROR,      // Eroare (o problemă care nu oprește programul)
-    FATAL_ERROR,    // Eroare critică (programul trebuie să se oprească sau este grav afectat)
-    DEBUG           // Mesaje pentru depanare (folosite în timpul dezvoltării)
+    DEBUG = 0,
+    INFO = 1,
+    SUCCESS = 2,
+    WARNING = 3,
+    LOG_ERROR = 4,
+    FATAL_ERROR = 5
 };
 
 class ILogOutput {
@@ -74,8 +74,12 @@ private:
     // Lista de ferestre/canvas-uri care vor loguri
     std::vector<ILogOutput*> m_extraOutputs;
     
+    LogLevel minLevel = LogLevel::INFO;
 
 public:
+
+    
+
     // METODA SINGLETON: Acesta este noul tău punct de acces
     static ConsoleManager& getInstance() {
         // Creează instanța la prima utilizare (thread-safe din C++11 încoace)
@@ -111,6 +115,10 @@ public:
     void clearExtraOutputs() {
         std::lock_guard<std::recursive_mutex> lock(mtxLog);
         m_extraOutputs.clear();
+    }
+
+    void setMinLogLevel(LogLevel lvl) {
+        minLevel = lvl;
     }
 
 private:

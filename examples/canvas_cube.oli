@@ -12,9 +12,9 @@ func RENDER_CUBE_DEBUG()
     set $H = 400
     set $v = CAN_INIT($W, $H, "Oli 3D Debug")
     
-    array $vx[8]
-    array $vy[8]
-    array $vz[8]
+    set $vx = array()
+    set $vy = array()
+    set $vz = array()
 
     # Inițializare
 set $vx[0]=-1.5; set $vy[0]=-1.5; set $vz[0]=-1.5

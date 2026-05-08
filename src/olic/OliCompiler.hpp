@@ -16,6 +16,11 @@ using OliCommandHandler = std::function<void(const ShellCommand&)>;
 class IOliEngine; // Forward declaration
 typedef void (*LoadCommandsFunc)(std::unordered_map<std::wstring, OliCommandHandler>&, IOliEngine*);
 class OliCompiler {
+
+
+    std::vector<std::vector<size_t>> breakStack;
+    std::vector<std::vector<size_t>> continueStack; // Noua stivă
+
 public:
     OliCompiler() = default;
 

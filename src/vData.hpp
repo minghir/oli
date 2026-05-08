@@ -91,7 +91,10 @@ struct vData {
     bool isNull()   const { return std::holds_alternative<std::monostate>(getTrueData().value); }
     bool isPointer() const { return std::holds_alternative<vData*>(value); }
 
+    bool isNumber()  const { return isInt() || isFloat(); }
+
     // --- OPERATORI ---
+    /*
     bool operator==(const vData& other) const {
         const vData& t1 = this->getTrueData();
         const vData& t2 = other.getTrueData();
@@ -102,12 +105,49 @@ struct vData {
         // Comparăm valorile reale
         return t1.value == t2.value;
     }
+    */
+
+    double toDouble() const {
+        // 1. Ne asigurăm că extragem valoarea reală dacă e pointer
+        const vData& actual = getTrueData();
+
+        // 2. Dacă e deja double, îl returnăm direct
+        if (std::holds_alternative<double>(actual.value))
+            return std::get<double>(actual.value);
+
+        // 3. Dacă e long long, îl convertim la double
+        if (std::holds_alternative<long long>(actual.value))
+            return static_cast<double>(std::get<long long>(actual.value));
+
+        // 4. Bonus: Dacă e boolean, îl convertim (true -> 1.0, false -> 0.0)
+        if (std::holds_alternative<bool>(actual.value))
+            return std::get<bool>(actual.value) ? 1.0 : 0.0;
+
+        // 5. Fallback pentru orice altceva (String, Null, etc.)
+        return 0.0;
+    }
 
     long long toInt() const {
         if (std::holds_alternative<long long>(value)) return std::get<long long>(value);
         if (std::holds_alternative<double>(value)) return (long long)std::get<double>(value);
         return 0;
     }
+
+    bool operator==(const vData& other) const {
+        const vData& t1 = this->getTrueData();
+        const vData& t2 = other.getTrueData();
+
+        // --- FIX: Comparare numerică inteligentă ---
+        if ((t1.isInt() || t1.isFloat()) && (t2.isInt() || t2.isFloat())) {
+            return t1.toDouble() == t2.toDouble();
+        }
+
+        // Pentru celelalte tipuri (String, Array, etc.), rămânem la verificarea strictă
+        if (t1.value.index() != t2.value.index()) return false;
+        return t1.value == t2.value;
+    }
+
+    
 
     std::wstring toWString() const {
         const vData& actual = getTrueData();
@@ -147,6 +187,12 @@ struct vData {
                 if (++i < m->size()) res += L", ";
             }
             return res + L"}";
+        }
+
+        if (actual.isPointer()) {
+            std::wstringstream wss;
+            wss << L"ptr:" << std::hex << std::get<vData*>(actual.value);
+            return wss.str();
         }
 
         return L"unknown";

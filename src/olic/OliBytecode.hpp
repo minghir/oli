@@ -58,7 +58,7 @@ enum class OpCode : uint8_t {
 
     // --- OPERATORI SPECIALI ---
     OP_NULL_COALESCE,
-    OP_TYPEOF,
+    OP_TYPE,
     OP_CONCAT,
 
     // --- STRUCTURI DE DATE ---
@@ -190,7 +190,7 @@ inline std::wstring disassembleChunk(const OliChunk& chunk, const std::wstring& 
 
         case OpCode::OP_NULL_COALESCE: ss << L"OP_NULL_COALESCE\n"; break;
         case OpCode::OP_CONCAT:        ss << L"OP_CONCAT\n"; break;
-        case OpCode::OP_TYPEOF:        ss << L"OP_TYPEOF\n"; break;
+        case OpCode::OP_TYPE:        ss << L"OP_TYPE\n"; break;
 
             // --- STRUCTURI DE DATE (Logica de dezasamblare) ---
         case OpCode::OP_ARRAY: {

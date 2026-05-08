@@ -1,6 +1,7 @@
 #include "Shell.hpp"
 #include "OliEngine.hpp"
 #include "App.hpp"
+#include "ConsoleManager.hpp"
 
 
 #include<iostream>
@@ -95,9 +96,10 @@ int main(int argc, char* argv[]) {
         }
         return 0;
     }
-
+    //ConsoleManager::getInstance().setMinLogLevel(LogLevel::LOG_ERROR);
     // 4. Altfel → modul interactiv normal
     oli app(RunMode::CONSOLE);
     app.startConsole();
+    
     return app.run();
 }

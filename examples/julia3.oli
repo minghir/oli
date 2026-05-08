@@ -9,8 +9,8 @@ plugin oli_keyboard
 plugin oli_time
 
 func RENDER_JULIA_HD()
-set $SW = 200
-set $SH = 200
+set $SW = 100
+set $SH = 100
 set $v = CAN_INIT($SW, $SH, "Oli Engine - Julia Test")
     
     set $maxIter = 32
@@ -71,8 +71,8 @@ set $v = CAN_INIT($SW, $SH, "Oli Engine - Julia Test")
         
         # Transferăm tot buffer-ul pe ecran și procesăm mesajele Windows
         set $v = CAN_PRESENT()
-        
-        if KEY_STATE(81) == 1 then # Q pentru ieșire
+        set $state = KEY_STATE(81)
+        if $state > 0.5 then # Q pentru ieșire
             break
         endif
     endwhile

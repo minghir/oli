@@ -350,6 +350,52 @@ registry[L"CAN_PRESENT"] = [](const std::vector<vData>&) -> vData {
     return vData{ 1LL };
 };
 
+        registry[L"CAN_TRIANGLE"] = [](const std::vector<vData>& args) -> vData {
+            if (args.size() < 7 || !g_Canvas.pBits) return vData{ 0LL };
+
+            struct Point { int x, y; };
+            Point p[3];
+            for (int i = 0; i < 3; i++) {
+                p[i].x = static_cast<int>(toDouble(args[i * 2]));
+                p[i].y = static_cast<int>(toDouble(args[i * 2 + 1]));
+            }
+            unsigned int color = static_cast<unsigned int>(toDouble(args[6]));
+
+            // Sortează punctele după Y (p[0] sus, p[2] jos)
+            if (p[0].y > p[1].y) std::swap(p[0], p[1]);
+            if (p[0].y > p[2].y) std::swap(p[0], p[2]);
+            if (p[1].y > p[2].y) std::swap(p[1], p[2]);
+
+            unsigned int* pixels = (unsigned int*)g_Canvas.pBits;
+            int w = g_Canvas.width;
+            int h = g_Canvas.height;
+
+            auto drawScanline = [&](int y, int x1, int x2) {
+                if (y < 0 || y >= h) return;
+                if (x1 > x2) std::swap(x1, x2);
+#undef max
+#undef min0
+                x1 = std::max(0, x1);
+                x2 = std::min(w - 1, x2);
+                unsigned int* row = pixels + (y * w);
+                for (int x = x1; x <= x2; x++) row[x] = color;
+                };
+
+            // Partea de sus a triunghiului
+            for (int y = p[0].y; y <= p[1].y; y++) {
+                int x_left = p[0].x + (p[2].x - p[0].x) * (y - p[0].y) / (p[2].y - p[0].y + 1);
+                int x_right = p[0].x + (p[1].x - p[0].x) * (y - p[0].y) / (p[1].y - p[0].y + 1);
+                drawScanline(y, x_left, x_right);
+            }
+            // Partea de jos
+            for (int y = p[1].y; y <= p[2].y; y++) {
+                int x_left = p[0].x + (p[2].x - p[0].x) * (y - p[0].y) / (p[2].y - p[0].y + 1);
+                int x_right = p[1].x + (p[2].x - p[1].x) * (y - p[1].y) / (p[2].y - p[1].y + 1);
+                drawScanline(y, x_left, x_right);
+            }
+            return vData{ 1LL };
+            };
+
 registry[L"CAN_PUT_TXT"] = [](const std::vector<vData>& args) -> vData {
     if (args.size() < 3 || !g_Canvas.hwnd) return vData{ 0LL };
 

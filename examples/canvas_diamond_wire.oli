@@ -12,8 +12,11 @@ func RENDER_DIAMOND_STATS_FIXED()
     set $v = CAN_INIT($W, $H, "Oli Engine - Diamond Stats")
     
     # --- DATE DIAMANT ---
-    array $vx[6]; array $vy[6]; array $vz[6]
-    array $sx[6]; array $sy[6]
+    set $vx = array(6)
+	set $vy = array(6)
+	set $vz = array(6)
+    set $sx = array(6)
+	set $sy = array(6)
 
     set $vx[0]=0;    set $vy[0]=-2;  set $vz[0]=0
     set $vx[1]=0;    set $vy[1]= 2;  set $vz[1]=0
@@ -49,7 +52,7 @@ func RENDER_DIAMOND_STATS_FIXED()
             set $avgFps = $totalFps / $frameCount
         endif
 
-        CAN_CLS(0)
+        set $v = CAN_CLS(0)
         set $t = $currentTime * 30
         set $color = 16711935 # Magenta
 
@@ -69,23 +72,23 @@ func RENDER_DIAMOND_STATS_FIXED()
 
         # --- 2. DESENARE WIREFRAME ---
         for $m = 2 to 5 do
-            CAN_LINE($sx[0], $sy[0], $sx[$m], $sy[$m], $color)
-            CAN_LINE($sx[1], $sy[1], $sx[$m], $sy[$m], $color)
+            set $v = CAN_LINE($sx[0], $sy[0], $sx[$m], $sy[$m], $color)
+            set $v = CAN_LINE($sx[1], $sy[1], $sx[$m], $sy[$m], $color)
             
             set $next = $m + 1
             if $next > 5 then set $next = 2 endif
-            CAN_LINE($sx[$m], $sy[$m], $sx[$next], $sy[$next], $color)
+            set $v = CAN_LINE($sx[$m], $sy[$m], $sx[$next], $sy[$next], $color)
         endfor
 
         # --- 3. AFIȘARE STATISTICI ---
         if $frameCount > 1 then
-            CAN_PUT_TXT(10, 10, "FPS Actual: " + STR(INT($currentFps)))
-            CAN_PUT_TXT(10, 25, "FPS Mediu : " + STR(INT($avgFps)))
-            CAN_PUT_TXT(10, 40, "FPS Minim : " + STR(INT($minFps)))
-            CAN_PUT_TXT(10, 55, "FPS Maxim : " + STR(INT($maxFps)))
+            set $v = CAN_PUT_TXT(10, 10, "FPS Actual: " + STR(INT($currentFps)))
+            set $v = CAN_PUT_TXT(10, 25, "FPS Mediu : " + STR(INT($avgFps)))
+            set $v = CAN_PUT_TXT(10, 40, "FPS Minim : " + STR(INT($minFps)))
+            set $v = CAN_PUT_TXT(10, 55, "FPS Maxim : " + STR(INT($maxFps)))
         endif
 
-        CAN_PRESENT()
+        set $v = CAN_PRESENT()
         if KEY_STATE(81) == 1 then break endif
     endwhile
 endfunc

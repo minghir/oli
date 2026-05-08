@@ -121,6 +121,22 @@ void RegisterMathFunctions(std::unordered_map<std::wstring, std::function<vData(
     registry[L"E"] = [=](const std::vector<vData>&) -> vData {
         return vData{ E_VAL };
         };
+    
+    //lerp(a, b, t) = a + t \times(b - a)$$
+    registry[L"LERP"] = [=](const std::vector<vData>& args) -> vData {
+        // Avem nevoie de 3 argumente: start, end, t
+        if (args.size() < 3) return vData{ 0.0 };
+
+        double a = args[0].toDouble();
+        double b = args[1].toDouble();
+        double t = args[2].toDouble();
+
+        // Clamp opțional pentru t între 0 și 1 pentru siguranță
+        if (t < 0.0) t = 0.0;
+        if (t > 1.0) t = 1.0;
+
+        return vData{ a + t * (b - a) };
+        };
 }
 
 

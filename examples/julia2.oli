@@ -95,4 +95,4 @@ func RENDER_JULIA_MEMO()
     endwhile
 endfunc
 
-RENDER_JULIA_MEMO()
+set v = RENDER_JULIA_MEMO()

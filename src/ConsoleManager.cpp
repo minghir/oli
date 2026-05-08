@@ -57,6 +57,9 @@ void ConsoleManager::resetColor() {
 void ConsoleManager::log(const std::wstring& message, LogLevel level) {
     std::lock_guard<std::recursive_mutex> lock(mtxLog); // Decomentează pentru thread-safety
 
+    if (level < minLevel)
+        return;
+
     if (std::wcout.fail()) {
         std::wcout.clear(); // Resetează starea stream-ului dacă a "crăpat" anterior
     }

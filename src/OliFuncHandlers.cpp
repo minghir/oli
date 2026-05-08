@@ -816,7 +816,7 @@ vData vOliEngine::handleEvalFunc(const std::vector<vData>& args) {
         return { std::monostate{} };
     }
 }
-
+/*
 vData vOliEngine::handleIntFunc(const std::vector<vData>& args) {
     if (args.empty()) return vData{ 0LL }; // Default la 0 de tip long long
 
@@ -842,7 +842,12 @@ vData vOliEngine::handleIntFunc(const std::vector<vData>& args) {
 
     return vData{ 0LL };
 }
-
+*/
+vData vOliEngine::handleIntFunc(const std::vector<vData>& args) {
+    if (args.empty()) return vData{ 0LL };
+    return vData{ args[0].getTrueData().toInt() };
+}
+/*
 vData vOliEngine::handleFloatFunc(const std::vector<vData>& args) {
     if (args.empty()) return vData{ 0.0 };
 
@@ -871,10 +876,39 @@ vData vOliEngine::handleFloatFunc(const std::vector<vData>& args) {
     if (input.isBool()) {
         return vData{ std::get<bool>(input.value) ? 1.0 : 0.0 };
     }
+   
+
 
     return vData{ 0.0 };
 }
+ */
 
+vData vOliEngine::handleFloatFunc(const std::vector<vData>& args) {
+    if (args.empty()) return vData{ 0.0 };
+
+    // Folosim toDouble() care știe deja să:
+    // 1. Dereferențieze pointeri (via getTrueData)
+    // 2. Convertească Int -> Double
+    // 3. Gestioneze Booleans
+    // 4. Fallback la 0.0
+    double val = args[0].toDouble();
+
+    // Singurul caz special rămâne String-ul, dacă toDouble() 
+    // nu face deja conversie de string în implementarea ta
+    if (args[0].getTrueData().isString()) {
+        try {
+            val = std::stod(std::get<std::wstring>(args[0].getTrueData().value));
+        }
+        catch (...) {
+            val = 0.0;
+        }
+    }
+
+    return vData{ val };
+}
+
+
+/*
 vData vOliEngine::handleStrFunc(const std::vector<vData>& args) {
     if (args.empty()) return vData{ L"" }; // Default: șir vid
 
@@ -887,10 +921,30 @@ vData vOliEngine::handleStrFunc(const std::vector<vData>& args) {
     // Folosim funcția ta vDataToWString care se ocupă deja de formatare
     return vData{ vDataToWString(input) };
 }
+*/
 
+vData vOliEngine::handleStrFunc(const std::vector<vData>& args) {
+    if (args.empty()) return vData{ L"" };
+    return vData{ args[0].getTrueData().toWString() };
+}
 
+/*
 vData vOliEngine::handleArrayFunc(const std::vector<vData>& args) {
     // Creăm un shared_ptr care copiază conținutul lui 'args' direct în heap
+    return vData{ std::make_shared<std::vector<vData>>(args) };
+}
+*/
+
+vData vOliEngine::handleArrayFunc(const std::vector<vData>& args) {
+    // 1. Dacă avem un singur argument numeric -> ALOCARE (pt. Cubul 3D)
+    if (args.size() == 1 && args[0].getTrueData().isNumber()) {
+        int size = (int)args[0].getTrueData().toInt();
+        return vData{ std::make_shared<std::vector<vData>>(size, vData{ std::monostate{} }) };
+    }
+
+    // 2. Altfel -> CONVERSIE / CONSTRUCTOR (Simetric cu MAP)
+    // ARRAY(1, 2, 3) -> [1, 2, 3]
+    // ARRAY("test")  -> ["test"]
     return vData{ std::make_shared<std::vector<vData>>(args) };
 }
 

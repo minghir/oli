@@ -1,0 +1,15 @@
+
+func ARR_KEYS($array)
+  set $keys = []
+  set $iter = 0
+  cycle $array as $val do push($keys,$iter++); endcycle
+  return $keys
+  endfunc
+
+func ARR_2_MAP($array)
+	set $map = MAP()
+	#set $iter = LEN($array)-1
+	#cycle $array as $val do $map[STRING($iter--)]=$array[$iter]; endcycle
+	for $iter = LEN($array)-1 to 0 by -1 do $map[STRING($iter)]=$array[$iter]; endfor
+	return $map
+endfunc

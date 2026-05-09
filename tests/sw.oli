@@ -1,0 +1,12 @@
+$nota = 9
+
+switch $nota
+    case 10
+        echo "Excelent!"
+        break
+    case 9
+        echo "Foarte bine"
+        break
+    default
+        echo "Mai invata"
+endswitch

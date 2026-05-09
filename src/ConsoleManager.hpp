@@ -96,6 +96,7 @@ public:
     void shutdown();
     void clear();
     void writeRaw(const std::wstring& message, WORD color = 0);
+    void writePlain(const std::wstring& message, WORD color = 0);
 
     bool enableFileLogging(const std::wstring& filePath, bool append = true);
     void closeLogFile();

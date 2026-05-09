@@ -35,7 +35,7 @@ public:
 
 
 int main(int argc, char* argv[]) {
-
+    ConsoleManager::getInstance().setMinLogLevel(LogLevel::LOG_ERROR);
     // 1. Detectăm dacă STDIN este terminal sau pipe
     bool stdin_is_terminal = isatty(fileno(stdin));
 
@@ -80,6 +80,7 @@ int main(int argc, char* argv[]) {
 
     // 3. Dacă STDIN vine din pipe → rulăm în modul batch
     if (!stdin_is_terminal) {
+        
         vOliEngine engine;
         std::wstring line;
 
@@ -96,8 +97,9 @@ int main(int argc, char* argv[]) {
         }
         return 0;
     }
-    //ConsoleManager::getInstance().setMinLogLevel(LogLevel::LOG_ERROR);
+    
     // 4. Altfel → modul interactiv normal
+    
     oli app(RunMode::CONSOLE);
     app.startConsole();
     

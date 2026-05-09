@@ -274,7 +274,7 @@ private:
 ///command plugin interface
         void setVar(const std::wstring& name, const vData& value) override {
             // Aici apelezi logica ta existentă de setare (ex: assignToVariable sau varianta ta de setVariable)
-            this->assignToVariable(name, value);
+            this->assignToByteCodeVariable(name, value);
         }
 
         vData getVar(const std::wstring& name) override {
@@ -288,11 +288,11 @@ private:
         }
 
         void logSuccess(const std::wstring& msg) override {
-            LOG_SUCCESS(msg); // Presupunând că LOG_SUCCESS e un macro sau funcție globală
+          //  LOG_SUCCESS(msg); // Presupunând că LOG_SUCCESS e un macro sau funcție globală
         }
 
         void logError(const std::wstring& msg) override {
-            LOG_ERROR(msg);
+         //   LOG_ERROR(msg);
         }
     
         ///bitecode
@@ -302,6 +302,9 @@ private:
         bool internalLoadPlugin(std::wstring pluginName);
         void registerBytecodeFunction(const std::wstring& name, const ByteCodeProcedure& proc);
         vData callUserByteCodeFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context);
+        void assignToByteCodeVariable(const std::wstring& varName, const vData& newValue);
+
+
         std::unordered_map<std::wstring, ByteCodeProcedure> m_bytecodeFunctions;
 };
 #endif

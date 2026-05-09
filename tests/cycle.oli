@@ -1,0 +1,21 @@
+$categorii = ["Fructe", "Legume"]
+$iteme = ["Mici", "Mari"]
+
+echo "--- START TEST NESTING ---"
+
+cycle $categorii as $cat do
+    echo "Categorie: " .. $cat
+    
+    cycle $iteme as $tip do
+        # Testăm un skip în bucla interioară
+        if $tip == "Mici" then
+            continue
+        endif
+        
+        echo "  -> " .. $cat .. " " .. $tip
+    endcycle
+    
+    echo "--- Gata categoria " .. $cat
+endcycle
+
+echo "TEST FINALIZAT"

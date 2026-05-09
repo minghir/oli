@@ -614,33 +614,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         std::wstring varName = trim(rawVar);
         if (varName.empty()) return { std::monostate{} };
 
-        /*
-        // --- STRATUL 1: DEREFERENȚIERE (*) ---
-        if (varName[0] == L'*') {
-            // 1. Rezolvăm recursiv ce se află după '*'
-            vData pointerVar = resolveVariable(varName.substr(1));
-
-            // 2. Încercăm să obținem adresa folosind std::get_if.
-            // Acesta returnează un pointer către valoarea din variantă (vData**) 
-            // sau nullptr dacă tipul din variantă nu este cel cerut.
-            if (vData** addrPtr = std::get_if<vData*>(&pointerVar.value)) {
-                vData* actualAddr = *addrPtr; // Extragem adresa stocată (vData*)
-
-                if (actualAddr) {
-                    return *actualAddr; // Succes! Returnăm valoarea de la acea adresă
-                }
-                else {
-                    LOG_ERROR(L"Runtime Error: Dereferencing a NULL pointer!");
-                }
-            }
-            else {
-                // Dacă am ajuns aici, înseamnă că variabila nu conține un pointer (vData*)
-                LOG_ERROR(L"Runtime Error: '" + varName + L"' is not a pointer (Type mismatch).");
-            }
-
-            return { std::monostate{} };
-        }
-        */
+       
         // --- STRATUL 2: ACCES GLOBAL (@) ---
         if (varName[0] == L'@') {
             std::wstring content = varName.substr(1);

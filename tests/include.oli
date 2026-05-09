@@ -1,0 +1,4 @@
+include ("./tests/proc.oli")
+
+# Apel direct, exact ca în interpretorul vechi
+Salutare "Admin"

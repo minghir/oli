@@ -2,7 +2,7 @@
 #define OLIEXPRESSIONPARSER_HPP
 
 #include "ASTNode.hpp"
-
+#include "StringUtils.hpp"
 #include <vector>
 #include <string>
 
@@ -183,7 +183,7 @@ public:
     
   
 
-
+    /*
     ASTPtr parsePrimary() {
         std::wstring current = peek();
         if (current.empty()) return nullptr;
@@ -215,8 +215,42 @@ public:
         m_pos++;
         return std::make_shared<ASTNode>(ASTNodeType::Literal, literalValue);
     }
+*/
+
+    ASTPtr parsePrimary() {
+        std::wstring current = peek();
+        if (current.empty()) return nullptr;
+
+        // 1. Variabile ($a, @arr)
+        if (current[0] == L'$' || current[0] == L'@') {
+            m_pos++;
+            return std::make_shared<ASTNode>(ASTNodeType::Variable, current);
+        }
+
+        // 2. Structuri & Paranteze de grupare
+        if (match({ L"[" })) return parseArray();
+        if (match({ L"{" })) return parseMap();
+        if (match({ L"(" })) {
+            ASTPtr node = parseAssignment(); // Punct de intrare pentru expresii în paranteze
+            consume(L")", "Lipseste )");
+            return node;
+        }
+
+        // 3. Bariera pentru structuri
+        if (current == L"}" || current == L"]" || current == L")" ||
+            current == L"," || current == L":") {
+            return nullptr;
+        }
+
+        // 4. IDENTIFICATORI (test, CAN_CLS) și LITERALE (10, "text")
+        // Aceasta este schimbarea cheie!
+        std::wstring value = m_tokens[m_pos++];
+        return std::make_shared<ASTNode>(ASTNodeType::Literal, value);
+    }
+
 
     // Utilitare pentru deplasarea în lista de tokeni
+    /*
     bool match(std::initializer_list<std::wstring> ops) {
         if (m_pos >= m_tokens.size()) return false;
         for (auto op : ops) {
@@ -227,7 +261,18 @@ public:
         }
         return false;
     }
-
+    */
+    bool match(std::initializer_list<std::wstring> ops) {
+        if (m_pos >= m_tokens.size()) return false;
+        std::wstring current = to_upper(m_tokens[m_pos]); // Converteste tokenul actual la UPPER
+        for (auto op : ops) {
+            if (current == to_upper(op)) { // Compară UPPER cu UPPER
+                m_pos++;
+                return true;
+            }
+        }
+        return false;
+    }
     bool check(std::wstring token) {
         if (m_pos >= m_tokens.size()) return false;
         return m_tokens[m_pos] == token;

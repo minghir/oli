@@ -1,0 +1,9 @@
+$a = 10
+
+echo $a
+
+func test()
+	echo "Test"
+endfunc
+
+test()

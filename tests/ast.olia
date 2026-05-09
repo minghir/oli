@@ -1,0 +1,16 @@
+﻿[2026-05-09 11:34:14] [SUCCESS] Logarea în fișier a fost activată (UTF-8)
+--- OLI ASSEMBLY LISTING ---
+
+0000: OP_CONSTANT     0000 (Value: 10)
+0003: OP_SET_GLOBAL   0001 (Name: $a)
+0006: OP_POP
+0007: OP_GET_GLOBAL   0001 (Name: $a)
+0010: OP_ECHO
+0011: OP_CALL         0002 (Name: TEST, Args: 0)
+0015: OP_POP
+0016: OP_RETURN
+
+--- FUNCTION: TEST (Params: ) ---0000: OP_CONSTANT     0000 (Value: Test)
+0003: OP_ECHO
+0004: OP_RETURN
+

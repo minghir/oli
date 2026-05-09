@@ -2,15 +2,6 @@ func test($n)
 	return $n
 endfunc
 
-set $a=3
-echo test(3+$a)
 
-set $b = test($a) + 2
-echo $b
-
-
-if test($b) == 5 then
-	echo "Am 5"
-else
-	echo "Nu merge"
-endif
+set $a="test"
+echo $a(2)

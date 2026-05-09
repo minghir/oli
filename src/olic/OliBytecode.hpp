@@ -72,12 +72,22 @@ enum class OpCode : uint8_t {
     OP_LOOP,
     OP_CALL,
     OP_CALL_NATIVE,
+    OP_CALL_DYNAMIC,
+    OP_CALL_METHOD,
     OP_RETURN,
+
+    //CYCLE
+    OP_ITER_START,
+    OP_ITER_NEXT,
+    OP_ITER_FREE,
 
     // --- SYSTEM ---
     OP_ECHO,
     OP_PLUGIN,
-    OP_HALT
+    OP_HALT,
+
+	// --- OBIECTE ȘI PROCEDURI ---
+    OP_DEF_TYPE // [OpCode] [NameIdx] [isClass] [FieldCount] [Field1Idx]
 };
 
 struct ByteCodeProcedure {
@@ -228,6 +238,7 @@ inline std::wstring disassembleChunk(const OliChunk& chunk, const std::wstring& 
             ss << L"OP_LOOP          " << std::setw(4) << offset << L" (Sari inapoi la: " << (ip - offset) << L")\n";
             break;
         }
+        
         case OpCode::OP_CALL_NATIVE: 
         case OpCode::OP_CALL: {
             uint16_t nameIdx = (chunk.code[ip] << 8) | chunk.code[ip + 1];
@@ -241,6 +252,11 @@ inline std::wstring disassembleChunk(const OliChunk& chunk, const std::wstring& 
         }
         
         case OpCode::OP_RETURN: ss << L"OP_RETURN\n"; break;
+            // --- CYCLE / ITERATION ---
+        case OpCode::OP_ITER_START: ss << L"OP_ITER_START\n"; break;
+        case OpCode::OP_ITER_NEXT:  ss << L"OP_ITER_NEXT\n";  break;
+        case OpCode::OP_ITER_FREE:  ss << L"OP_ITER_FREE\n";  break;
+
         case OpCode::OP_ECHO:   ss << L"OP_ECHO\n"; break;
         case OpCode::OP_PLUGIN: { // <--- NOUL CASE
             uint16_t idx = (chunk.code[ip] << 8) | chunk.code[ip + 1];
@@ -249,6 +265,38 @@ inline std::wstring disassembleChunk(const OliChunk& chunk, const std::wstring& 
             break;
         }
         case OpCode::OP_HALT:   ss << L"OP_HALT\n"; break;
+        case OpCode::OP_DEF_TYPE: {
+            if (ip + 2 > chunk.code.size()) break; // Siguranță
+            // 1. Citim Numele Tipului
+            uint16_t nameIdx = (chunk.code[ip] << 8) | chunk.code[ip + 1];
+            ip += 2;
+
+            // 2. Citim Flag-ul isClass și Numărul de Câmpuri
+            uint8_t isClass = chunk.code[ip++];
+            uint8_t fieldCount = chunk.code[ip++];
+
+            ss << L"OP_DEF_TYPE      " << std::setw(4) << nameIdx
+                << L" (Type: " << chunk.constants[nameIdx].toWString()
+                << L", " << (isClass ? L"CLASS" : L"STRUCT")
+                << L", Fields: " << (int)fieldCount << L")\n";
+
+            // 3. Afișăm indexul fiecărui câmp pentru claritate
+            for (int i = 0; i < (int)fieldCount; ++i) {
+                uint16_t fIdx = (chunk.code[ip] << 8) | chunk.code[ip + 1];
+                ip += 2;
+                ss << L"    Field [" << i << L"]: " << std::setw(4) << fIdx
+                    << L" (Name: " << chunk.constants[fIdx].toWString() << L")\n";
+            }
+            break;
+        }
+        case OpCode::OP_CALL_DYNAMIC:
+        case OpCode::OP_CALL_METHOD: {
+            uint8_t argCount = chunk.code[ip++];
+            // Folosim op pentru a afișa numele corect al instrucțiunii
+            ss << (op == OpCode::OP_CALL_DYNAMIC ? L"OP_CALL_DYNAMIC   " : L"OP_CALL_METHOD    ")
+                << L" (Args: " << (int)argCount << L", Context & Name on Stack)\n";
+            break;
+        }
 
         default:
             ss << L"UNKNOWN_OP [0x" << std::hex << (int)instruction << std::dec << L"]\n";

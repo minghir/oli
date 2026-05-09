@@ -1,0 +1,50 @@
+# 1. Definim structura
+DEF struct Punct { x, y, print_x, print_y }
+DEF struct Linie { a, b, print_linie }
+
+
+
+func prt_x()
+	return "x="..$this.x
+endfunc
+
+func prt_y()
+	return "y="..$this.y
+endfunc
+
+
+# Creăm linia
+$l = NEW("Linie")
+
+# Alocăm punctele în interiorul liniei
+$l.a = NEW("Punct")
+$l.b = NEW("Punct")
+
+# Accesăm membrii imbricați
+$l.a.x = 10
+$l.a.y = 20
+$l.b.x = 50
+$l.b.y = 100
+
+
+
+$l.a.print_x = "prt_x"
+$l.a.print_y = "prt_y"
+
+$l.b.print_x = "prt_x"
+$l.b.print_y = "prt_y"
+
+
+
+func prt_linie()
+    # Folosește $this pentru a accesa punctele 'a' și 'b' ale instanței curente
+    echo "Linie de la (" .. $this.a.print_x() .. "," .. $this.a.print_y() .. ") la (" .. $this.b.print_x() .. "," .. $this.b.print_y() .. ")"
+endfunc
+
+
+
+$l.print_linie = "prt_linie"
+
+$l.print_linie()
+	
+	

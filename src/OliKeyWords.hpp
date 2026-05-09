@@ -55,14 +55,26 @@ private:
     };
 
     static inline std::unordered_set<std::wstring> DYNAMIC_COMMANDS = {};
+    static inline std::unordered_set<std::wstring> NATIVE_FUNCTIONS = {};
 
 public:
+
+    static bool isNativeFunction(const std::wstring& name) {
+        return NATIVE_FUNCTIONS.find(name) != NATIVE_FUNCTIONS.end();
+    }
 
     static void registerDynamicCommand(std::wstring name) {
         transformToUpper(name);
         // Ne asigurăm că începe cu '/' dacă așa ai decis sintaxa
         //if (name[0] != L'/') name = L"/" + name;
         DYNAMIC_COMMANDS.insert(name);
+    }
+
+    static void registerNativeFunction(std::wstring name) {
+        transformToUpper(name);
+        // Ne asigurăm că începe cu '/' dacă așa ai decis sintaxa
+        //if (name[0] != L'/') name = L"/" + name;
+        NATIVE_FUNCTIONS.insert(name);
     }
 
     static bool isSqlKeyword(std::wstring word) {
@@ -102,6 +114,87 @@ public:
         transformToUpper(word);
         return (SHELL_COMMANDS.count(word) > 0) || (DYNAMIC_COMMANDS.count(word) > 0);
     }
+
+    static void populateNativeFunctions() {
+        if (!NATIVE_FUNCTIONS.empty()) return;
+        static const std::vector<std::wstring> funcs = {
+
+            // --- PARTEA 1 ---
+            L"INCLUDE",
+            L"NEW",
+            L"ISREF",
+            L"DEREF",
+            L"SETREF",
+            L"CLONE",
+            L"TYPE",
+            L"LEN",
+            L"INPUT",
+            L"RANDOM",
+            L"RND",
+            L"HASH",
+            L"WAIT",
+            L"SYS",
+            L"CONTAINS",
+            L"EVAL",
+            L"EXEC",
+            L"INT",
+            L"FLOAT",
+            L"STR",
+            L"STRING",
+            L"ARRAY",
+            L"MAP",
+            L"TRIM",
+            L"PUSH",
+            L"POP",
+            L"SHIFT",
+            L"UNSHIFT",
+            L"INDEXOF",
+            L"SET_AT",
+
+            // --- PARTEA 2 ---
+            L"SORT",
+            L"HASKEY",
+            L"KEYS",
+            L"VALUES",
+            L"SPLIT",
+            L"JOIN",
+            L"UPPER",
+            L"LOWER",
+            L"REPLACE",
+            L"FIND",
+            L"SUBSTR",
+            L"ABS",
+            L"ROUND",
+            L"FLOOR",
+            L"CEIL",
+            L"MIN",
+            L"MAX",
+            L"READFILE",
+            L"WRITEFILE",
+            L"APPENDFILE",
+            L"EXISTSFILE",
+            L"DELETEFILE",
+
+            // --- PARTEA 3 ---
+            L"JSON_ENCODE",
+            L"JSON_DECODE",
+            L"NOW",
+            L"DATE",
+            L"TIME",
+            L"MSTIME",
+            L"CHR",
+            L"CHAR",
+            L"ASC",
+            L"WRITE",
+            L"WRITE_PLAIN",
+            L"CLS"
+            
+        };
+
+        for (auto f : funcs)
+            registerNativeFunction(f);
+    }
+
 
 private:
     static void transformToUpper(std::wstring& s) {

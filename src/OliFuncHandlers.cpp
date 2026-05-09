@@ -24,7 +24,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         this->handleRunCommand(sc);
         return vData(1LL);
         };
-
+    vOliKeyWords::registerNativeFunction(L"INCLUDE");
     /*
     m_functionsHandlers[L"REF"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return { std::monostate{} };
@@ -54,6 +54,29 @@ void vOliEngine::initializeFunctionsHandlers() {
         };
         */
 
+    m_functionsHandlers[L"NEW"] = [this](const std::vector<vData>& args) -> vData {
+        if (args.empty()) return vData(std::monostate{});
+
+        std::wstring typeName = args[0].toWString();
+        if (m_blueprints.count(typeName)) {
+            vTypeBlueprint& bp = m_blueprints[typeName];
+            vDataMap instance = std::make_shared<std::unordered_map<std::wstring, vData>>();
+
+            // Populăm instanța cu câmpurile din blueprint
+            for (const auto& field : bp.fields) {
+                (*instance)[field] = vData(std::monostate{});
+            }
+
+            // Adăugăm metadate despre tip (opțional, dar util pentru debug)
+            (*instance)[L"__type__"] = vData(typeName);
+
+            return vData(instance);
+        }
+
+        LOG_ERROR(L"Unknown blueprint: " + typeName);
+        return vData(std::monostate{});
+        };
+    vOliKeyWords::registerNativeFunction(L"NEW");
     m_functionsHandlers[L"REF"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return { std::monostate{} };
 
@@ -98,7 +121,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         bool isRef = std::holds_alternative<vData*>(args[0].value);
         return vData(isRef ? 1LL : 0LL);
         };
-
+    vOliKeyWords::registerNativeFunction(L"ISREF");
     // --- DEREF(ref) -> Extrage valoarea din spatele pointerului ---
     m_functionsHandlers[L"DEREF"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData(std::monostate{});
@@ -111,7 +134,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         // Dacă nu e pointer, returnăm valoarea ca atare (comportament de siguranță)
         return args[0];
         };
-
+    vOliKeyWords::registerNativeFunction(L"DEREF");
     // --- SETREF(ref, value) -> Scrie o valoare nouă la adresa indicată ---
     m_functionsHandlers[L"SETREF"] = [this](const std::vector<vData>& args) -> vData {
         if (args.size() < 2) return vData(0LL);
@@ -125,7 +148,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         }
         return vData(0LL); // Eșec (nu era un pointer valid)
         };
-
+    vOliKeyWords::registerNativeFunction(L"SETREF");
     m_functionsHandlers[L"CLONE"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) {
             LOG_ERROR(L"[RUNTIME ERROR] CLONE() requires a parameter.");
@@ -136,6 +159,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         // pur si simplu trimitem primul argument catre deepCopy.
         return this->deepCopy(args[0]);
         };
+    vOliKeyWords::registerNativeFunction(L"CLONE");     
 
     // Înregistrăm funcția TYPE
     m_functionsHandlers[L"TYPE"] = [this](const std::vector<vData>& args) -> vData {
@@ -144,26 +168,25 @@ void vOliEngine::initializeFunctionsHandlers() {
         // args[0] este deja vData, nu mai facem evaluateExpression!
         return { getVariantTypeName(args[0]) };
         };
-
+    vOliKeyWords::registerNativeFunction(L"TYPE");
+    
     // Funcția LEN
     m_functionsHandlers[L"LEN"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return { 0LL };
-        const vData& d = args[0];
 
-        // Cazul ARRAY
+        // CRITIC: Scoatem valoarea reală din ierarhie înainte de verificare
+        vData d = args[0].getScalarValue();
+
         if (d.isArray()) {
             auto arrPtr = std::get<vDataArray>(d.value);
-            // Folosim ->size() pe pointerul partajat
             return { static_cast<long long>(arrPtr ? arrPtr->size() : 0) };
         }
 
-        // Cazul MAP
         if (d.isMap()) {
             auto mapPtr = std::get<vDataMap>(d.value);
             return { static_cast<long long>(mapPtr ? mapPtr->size() : 0) };
         }
 
-        // Cazul STRING (rămâne neschimbat, wstring nu e pointer)
         if (d.isString()) {
             return { static_cast<long long>(std::get<std::wstring>(d.value).size()) };
         }
@@ -171,17 +194,19 @@ void vOliEngine::initializeFunctionsHandlers() {
         return { 0LL };
         };
 
+    vOliKeyWords::registerNativeFunction(L"LEN");
 
 
     m_functionsHandlers[L"INPUT"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleInputFunc(args);
         };
-
+    vOliKeyWords::registerNativeFunction(L"INPUT");
     m_functionsHandlers[L"RANDOM"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleRandomFunc(args);
         };
-
+    vOliKeyWords::registerNativeFunction(L"RANDOM");
     m_functionsHandlers[L"RND"] = m_functionsHandlers[L"RANDOM"];
+    vOliKeyWords::registerNativeFunction(L"RND");
 
     m_functionsHandlers[L"HASH"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData(0LL);
@@ -193,46 +218,47 @@ void vOliEngine::initializeFunctionsHandlers() {
         return vData((long long)hashValue);
         };
 
-
+    vOliKeyWords::registerNativeFunction(L"HASH");
     m_functionsHandlers[L"WAIT"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleWaitFunc(args);
         };
-
+    vOliKeyWords::registerNativeFunction(L"WAIT");
     m_functionsHandlers[L"SYS"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleSysFunc(args);
         };
-
+    vOliKeyWords::registerNativeFunction(L"SYS");
     m_functionsHandlers[L"CONTAINS"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleContainsFunc(args);
         };
-
+    vOliKeyWords::registerNativeFunction(L"CONTAINS");
     m_functionsHandlers[L"EVAL"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleEvalFunc(args);
         };
-		
+    vOliKeyWords::registerNativeFunction(L"EVAL");
 	m_functionsHandlers[L"EXEC"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleExecFunc(args);
         };
-
+    vOliKeyWords::registerNativeFunction(L"EXEC");
     m_functionsHandlers[L"INT"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleIntFunc(args);
         };
-
+    vOliKeyWords::registerNativeFunction(L"INT");
     m_functionsHandlers[L"FLOAT"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleFloatFunc(args);
         };
-
+    vOliKeyWords::registerNativeFunction(L"FLOAT");
     m_functionsHandlers[L"STR"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleStrFunc(args);
         };
+    vOliKeyWords::registerNativeFunction(L"STR");
     m_functionsHandlers[L"STRING"] = m_functionsHandlers[L"STR"];
-
+    vOliKeyWords::registerNativeFunction(L"STRING");
     m_functionsHandlers[L"ARRAY"] = [this](const auto& args) { return handleArrayFunc(args); };
-
+    vOliKeyWords::registerNativeFunction(L"ARRAY");
     m_functionsHandlers[L"MAP"] = [this](const auto& args) { return handleMapFunc(args); };
-
+    vOliKeyWords::registerNativeFunction(L"MAP");
     m_functionsHandlers[L"TRIM"] = [this](const auto& args) { return handleTrimFunc(args); };
-
+    vOliKeyWords::registerNativeFunction(L"TRIM");
     //functii array
     // --- PUSH(array, value) -> Adaugă la final ---
     m_functionsHandlers[L"PUSH"] = [this](const std::vector<vData>& args) -> vData {
@@ -244,7 +270,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         }
         return { 0LL };
         };
-
+    vOliKeyWords::registerNativeFunction(L"PUSH");
     // --- POP(array) -> Scoate de la final și returnează valoarea ---
     m_functionsHandlers[L"POP"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty() || !args[0].isArray()) return { std::monostate{} };
@@ -256,7 +282,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         }
         return { std::monostate{} };
         };
-
+    vOliKeyWords::registerNativeFunction(L"POP");
     // --- SHIFT(array) -> Scoate de la început și returnează ---
     m_functionsHandlers[L"SHIFT"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty() || !args[0].isArray()) return { std::monostate{} };
@@ -268,7 +294,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         }
         return { std::monostate{} };
         };
-
+    vOliKeyWords::registerNativeFunction(L"SHIFT");
     // --- UNSHIFT(array, value) -> Adaugă la început ---
     m_functionsHandlers[L"UNSHIFT"] = [this](const std::vector<vData>& args) -> vData {
         if (args.size() < 2 || !args[0].isArray()) return { 0LL };
@@ -279,6 +305,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         }
         return { 0LL };
         };
+    vOliKeyWords::registerNativeFunction(L"UNSHIFT");
 
     // --- INDEXOF(array, value) -> Caută valoarea și returnează indexul sau -1 ---
     m_functionsHandlers[L"INDEXOF"] = [this](const std::vector<vData>& args) -> vData {
@@ -292,7 +319,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         }
         return { -1LL };
         };
-
+    vOliKeyWords::registerNativeFunction(L"INDEXOF");
     m_functionsHandlers[L"SET_AT"] = [this](const std::vector<vData>& args) -> vData {
         if (args.size() < 3 || !args[0].isArray()) return vData(0LL);
 
@@ -307,7 +334,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         }
         return vData(0LL);
         };
-
+    vOliKeyWords::registerNativeFunction(L"SET_AT");
     // --- SORT(array) -> Sortează array-ul (In-place) ---
     /*
     m_functionsHandlers[L"SORT"] = [this](const std::vector<vData>& args) -> vData {
@@ -378,6 +405,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         }
         return args[0];
         };
+    vOliKeyWords::registerNativeFunction(L"SORT");
     //functii pt map-uri
     // --- HASKEY(map, key) -> Returnează 1 dacă cheia există, altfel 0 ---
     m_functionsHandlers[L"HASKEY"] = [this](const std::vector<vData>& args) -> vData {
@@ -391,23 +419,30 @@ void vOliEngine::initializeFunctionsHandlers() {
         }
         return { 0LL };
         };
-
+    vOliKeyWords::registerNativeFunction(L"HASKEY");
     // --- KEYS(map) -> Returnează un ARRAY cu toate cheile (string-uri) ---
     m_functionsHandlers[L"KEYS"] = [this](const std::vector<vData>& args) -> vData {
-        if (args.empty() || !args[0].isMap()) return vData::CreateArray();
+        // 1. Verificăm dacă avem argumente și dacă datele REALE sunt un Map
+        if (args.empty() || !args[0].isMap()) {
+            return vData::CreateArray();
+        }
 
-        auto mapPtr = std::get<vDataMap>(args[0].value);
+        // 2. Extragem pointerul către map-ul real folosind helper-ul tău robust
+        auto mapPtr = args[0].rawMap(); // rawMap() apelează intern getTrueData()
+
         vData result = vData::CreateArray();
-        auto arrPtr = result.rawArray(); // Presupunem că ai acest helper pentru acces la vectorul intern
+        auto arrPtr = result.rawArray();
 
-        if (mapPtr) {
+        if (mapPtr && arrPtr) {
             for (auto const& [key, val] : *mapPtr) {
-                arrPtr->push_back(vData(key));
+                // Adăugăm cheia în noul array
+                arrPtr->push_back(vData{ key });
             }
         }
+
         return result;
         };
-
+    vOliKeyWords::registerNativeFunction(L"KEYS");
     // --- VALUES(map) -> Returnează un ARRAY cu toate valorile ---
     m_functionsHandlers[L"VALUES"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty() || !args[0].isMap()) return vData::CreateArray();
@@ -423,24 +458,26 @@ void vOliEngine::initializeFunctionsHandlers() {
         }
         return result;
         };
-
+    vOliKeyWords::registerNativeFunction(L"VALUES");
     // functii pt stringuri
     m_functionsHandlers[L"SPLIT"] = [this](const auto& args) {return this->handleSplitFunc(args); };
+    vOliKeyWords::registerNativeFunction(L"SPLIT");
     m_functionsHandlers[L"JOIN"] = [this](const auto& args) {return this->handleJoinFunc(args); };
+    vOliKeyWords::registerNativeFunction(L"JOIN");
     // --- UPPER(str) ---
     m_functionsHandlers[L"UPPER"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return { L"" };
         // Folosim to_upper definit in StringUtils.hpp
         return { to_upper(vDataToWString(args[0])) };
         };
-
+    vOliKeyWords::registerNativeFunction(L"UPPER");
     // --- LOWER(str) ---
     m_functionsHandlers[L"LOWER"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return { L"" };
         // Folosim to_lower definit in StringUtils.hpp
         return { to_lower(vDataToWString(args[0])) };
         };
-
+    vOliKeyWords::registerNativeFunction(L"LOWER");
     // --- REPLACE(str, old, new) ---
     m_functionsHandlers[L"REPLACE"] = [this](const std::vector<vData>& args) -> vData {
         if (args.size() < 3) return args.empty() ? vData{ L"" } : args[0];
@@ -452,7 +489,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         // Folosim rpl_wstr_in_wstr din StringUtils.hpp (care face replace global)
         return { rpl_wstr_in_wstr(str, from, to) };
         };
-
+    vOliKeyWords::registerNativeFunction(L"REPLACE");
     // --- FIND(str, pattern) ---
     m_functionsHandlers[L"FIND"] = [this](const std::vector<vData>& args) -> vData {
         if (args.size() < 2) return { -1LL };
@@ -465,52 +502,52 @@ void vOliEngine::initializeFunctionsHandlers() {
 
         return { static_cast<long long>(pos) };
         };
-
+    vOliKeyWords::registerNativeFunction(L"FIND");
     // --- SUBSTR(str, start, [length]) ---
     m_functionsHandlers[L"SUBSTR"] = [this](const std::vector<vData>& args) -> vData {
         if (args.size() < 2) return args.empty() ? vData{ L"" } : args[0];
 
-        std::wstring str = vDataToWString(args[0]);
-        int start = static_cast<int>(vDataToDouble(args[1]));
+        // Ne asigurăm că substr lucrează pe string-ul din interior, nu pe reprezentarea Map-ului
+        std::wstring str = args[0].getScalarValue().toWString();
+        int start = static_cast<int>(args[1].getScalarValue().toDouble());
 
-        // Validare start bounds
         if (start < 0) start = 0;
         if (start >= (int)str.length()) return { L"" };
 
         if (args.size() >= 3) {
-            int len = static_cast<int>(vDataToDouble(args[2]));
+            int len = static_cast<int>(args[2].getScalarValue().toDouble());
             if (len < 0) return { L"" };
             return { str.substr(start, len) };
         }
 
         return { str.substr(start) };
         };
-
+    vOliKeyWords::registerNativeFunction(L"SUBSTR");
     // functii mate
 // --- ABS(x) -> Valoarea absolută ---
     m_functionsHandlers[L"ABS"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return { 0.0 };
         return { std::fabs(this->vDataToDouble(args[0])) };
         };
-
+    vOliKeyWords::registerNativeFunction(L"ABS");
     // --- ROUND(x) -> Rotunjire la cel mai apropiat întreg ---
     m_functionsHandlers[L"ROUND"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return { 0.0 };
         return { std::round(this->vDataToDouble(args[0])) };
         };
-
+    vOliKeyWords::registerNativeFunction(L"ROUND");
     // --- FLOOR(x) -> Cel mai mare întreg mai mic sau egal cu x ---
     m_functionsHandlers[L"FLOOR"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return { 0.0 };
         return { std::floor(this->vDataToDouble(args[0])) };
         };
-
+    vOliKeyWords::registerNativeFunction(L"FLOOR");
     // --- CEIL(x) -> Cel mai mic întreg mai mare sau egal cu x ---
     m_functionsHandlers[L"CEIL"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return { 0.0 };
         return { std::ceil(this->vDataToDouble(args[0])) };
         };
-
+    vOliKeyWords::registerNativeFunction(L"CEIL");
     // --- MIN(a, b) -> Returnează valoarea minimă ---
     m_functionsHandlers[L"MIN"] = [this](const std::vector<vData>& args) -> vData {
         // Dacă nu avem 2 argumente, returnăm primul argument sau 0.0
@@ -520,7 +557,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         double b = this->vDataToDouble(args[1]);
         return { std::min<double>(a, b) };
         };
-
+    vOliKeyWords::registerNativeFunction(L"MIN");
     // --- MAX(a, b) -> Returnează valoarea maximă ---
     m_functionsHandlers[L"MAX"] = [this](const std::vector<vData>& args) -> vData {
         if (args.size() < 2) return args.empty() ? vData{ 0.0 } : args[0];
@@ -529,13 +566,18 @@ void vOliEngine::initializeFunctionsHandlers() {
         double b = this->vDataToDouble(args[1]);
         return { std::max<double>(a, b) };
         };
-
+    vOliKeyWords::registerNativeFunction(L"MAX");
 
     m_functionsHandlers[L"READFILE"] = [this](const auto& args) {return this->handleReadFileFunc(args); };
+    vOliKeyWords::registerNativeFunction(L"READFILE");
     m_functionsHandlers[L"WRITEFILE"] = [this](const auto& args) {return this->handleWriteFileFunc(args); };
+    vOliKeyWords::registerNativeFunction(L"WRITEFILE");
     m_functionsHandlers[L"APPENDFILE"] = [this](const auto& args) {return this->handleAppendFileFunc(args); };
+    vOliKeyWords::registerNativeFunction(L"APPENDFILE");
     m_functionsHandlers[L"EXISTSFILE"] = [this](const auto& args) {return this->handleExistsFileFunc(args); };
+    vOliKeyWords::registerNativeFunction(L"EXISTSFILE");
     m_functionsHandlers[L"DELETEFILE"] = [this](const auto& args) {return this->handleDeleteFileFunc(args); };
+    vOliKeyWords::registerNativeFunction(L"DELETEFILE");
 
     // Prototip conceptual pentru handlere
     m_functionsHandlers[L"JSON_ENCODE"] = [this](const std::vector<vData>& args) -> vData {
@@ -586,7 +628,7 @@ void vOliEngine::initializeFunctionsHandlers() {
 
         return vData(encode(args[0]));
         };
-
+    vOliKeyWords::registerNativeFunction(L"JSON_ENCODE");
     m_functionsHandlers[L"JSON_DECODE"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty() || !args[0].isString()) return vData(std::monostate{});
 
@@ -612,30 +654,30 @@ void vOliEngine::initializeFunctionsHandlers() {
             return vData(std::monostate{});
         }
         };
-
+    vOliKeyWords::registerNativeFunction(L"JSON_DECODE");
     // --- NOW() -> Returnează Unix Timestamp (secunde de la 1970) ---
     m_functionsHandlers[L"NOW"] = [this](const std::vector<vData>& args) -> vData {
         auto acum = std::chrono::system_clock::now();
         auto secunde = std::chrono::duration_cast<std::chrono::seconds>(acum.time_since_epoch()).count();
         return vData((long long)secunde);
         };
-
+    vOliKeyWords::registerNativeFunction(L"NOW");
     // --- DATE() ---
     m_functionsHandlers[L"DATE"] = [this](const std::vector<vData>& args) -> vData {
         return vData(PortTools::getFormattedTime(L"%Y-%m-%d"));
         };
-
+    vOliKeyWords::registerNativeFunction(L"DATE");
     // --- TIME() ---
     m_functionsHandlers[L"TIME"] = [this](const std::vector<vData>& args) -> vData {
         return vData(PortTools::getFormattedTime(L"%H:%M:%S"));
         };
-
+    vOliKeyWords::registerNativeFunction(L"TIME");
     m_functionsHandlers[L"MSTIME"] = [this](const std::vector<vData>& args) -> vData {
         auto acum = std::chrono::high_resolution_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(acum.time_since_epoch()).count();
         return vData((long long)ms);
         };
-
+    vOliKeyWords::registerNativeFunction(L"MSTIME");
     m_functionsHandlers[L"CHR"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData{ L"" };
 
@@ -667,10 +709,10 @@ void vOliEngine::initializeFunctionsHandlers() {
         // Returnăm un wstring format dintr-un singur caracter
         return vData{ std::wstring(1, ch) };
         };
-
+    vOliKeyWords::registerNativeFunction(L"CHR");
     // Mapăm și sub numele de CHAR pentru prietenie cu alte limbaje
     m_functionsHandlers[L"CHAR"] = m_functionsHandlers[L"CHR"];
-
+    vOliKeyWords::registerNativeFunction(L"CHAR");
     m_functionsHandlers[L"ASC"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty() || !args[0].isString()) return vData{ 0LL };
 
@@ -679,7 +721,8 @@ void vOliEngine::initializeFunctionsHandlers() {
 
         return vData{ static_cast<long long>(str[0]) };
         };
-
+    vOliKeyWords::registerNativeFunction(L"ASC");
+    /*
     m_functionsHandlers[L"WRITE"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return { 0LL };
 
@@ -689,7 +732,47 @@ void vOliEngine::initializeFunctionsHandlers() {
 
         return { 0LL };
         };
+    */
+
+    m_functionsHandlers[L"WRITE"] = [this](const std::vector<vData>& args) -> vData {
+        if (args.empty()) return { 0LL };
+
+        // Folosim getScalarValue pentru a evita afișarea acoladelor de Map
+        std::wstring str = args[0].getScalarValue().toWString();
+
+        // În loc de wcout direct, folosim ConsoleManager pentru a respecta logarea
+        ConsoleManager::getInstance().writeRaw(str);
+
+        return { 0LL };
+        };
+
+	vOliKeyWords::registerNativeFunction(L"WRITE");
+
+    m_functionsHandlers[L"WRITE_PLAIN"] = [this](const std::vector<vData>& args) -> vData {
+        if (args.empty()) return { 0LL };
+
+        // Folosim getScalarValue pentru a evita afișarea acoladelor de Map
+        std::wstring str = args[0].getScalarValue().toWString();
+
+        // În loc de wcout direct, folosim ConsoleManager pentru a respecta logarea
+        ConsoleManager::getInstance().writePlain(str);
+
+        return { 0LL };
+        };
+
+    vOliKeyWords::registerNativeFunction(L"WRITE_PLAIN");
+    m_functionsHandlers[L"CLS"] = [this](const std::vector<vData>& args) -> vData {
+        // Apelăm metoda de curățare a consolei pe care o ai deja în manager
+        ConsoleManager::getInstance().clear();
+
+        return { 0LL };
+        };
+
+    vOliKeyWords::registerNativeFunction(L"CLS");
 }
+
+
+
 
 
 vData vOliEngine::handleInputFunc(const std::vector<vData>& args) {
@@ -845,7 +928,8 @@ vData vOliEngine::handleIntFunc(const std::vector<vData>& args) {
 */
 vData vOliEngine::handleIntFunc(const std::vector<vData>& args) {
     if (args.empty()) return vData{ 0LL };
-    return vData{ args[0].getTrueData().toInt() };
+    // getScalarValue() va "săpa" prin Map-uri până găsește numărul
+    return vData{ args[0].getScalarValue().toInt() };
 }
 /*
 vData vOliEngine::handleFloatFunc(const std::vector<vData>& args) {

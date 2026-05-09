@@ -1,5 +1,4 @@
-# --- CONFIGURARE ENGINE --- load examples/tinybasic/bas/mandel.bas
-
+# --- CONFIGURARE ENGINE ---
 plugin oli_math
 plugin oli_keyboard
 plugin oli_time
@@ -9,28 +8,27 @@ include "examples/tinybasic/int_sort.oli"
 cls; unset all
 config echo off
 config max_iterations 0
-
 # --- INIȚIALIZARE MEMORIE ---
-set @tb_program = MAP()
-set @tb_vars = ARRAY()
-for $i = 0 to 25 do PUSH(@tb_vars, 0) endfor
-set @tb_jump_to = -1 
-set @tb_gosub_stack = ARRAY()  # <---  Stiva pentru GOSUB
-set @pc = -1
+set $tb_program = MAP()
+set $tb_vars = ARRAY()
+for $i = 0 to 25 do PUSH($tb_vars, 0) endfor
+set $tb_jump_to = -1 
+set $tb_gosub_stack = ARRAY()  # <---  Stiva pentru GOSUB
+set $pc = -1
 
 func tb_split($line)
-##echo "==========IN TB_SPLIT"
+#echo "==========IN TB_SPLIT"
     set $result = ARRAY()
     set $current_tok = ""
     set $in_quotes = false
     set $len = LEN($line)
-##echo "==========IN TB_SPLIT ...inainte de for"    
+#echo "==========IN TB_SPLIT ...inainte de for"    
     for $i = 0 to $len - 1 do
         set $char = SUBSTR($line, $i, 1)
-#        #echo "==========IN TB_SPLIT ...in for1"    
+#        echo "==========IN TB_SPLIT ...in for1"    
         # Folosim codul ASCII 34 pentru ghilimele
         if ASC($char) == 34 then
-#			#echo "==========IN TB_SPLIT ...in for2"    
+#			echo "==========IN TB_SPLIT ...in for2"    
             if $in_quotes == true then 
                 set $in_quotes = false 
             else 
@@ -38,22 +36,22 @@ func tb_split($line)
             endif
             set $current_tok = $current_tok + $char
         else 
-#			#echo "==========IN TB_SPLIT ...in for3"    
+#			echo "==========IN TB_SPLIT ...in for3"    
             # Verificăm spațiul (ASCII 32) sau string-ul " "
             if ( $char == " " ) && ( $in_quotes == false ) then
-#				#echo "==========IN TB_SPLIT ...in for4"  
+#				echo "==========IN TB_SPLIT ...in for4"  
                 if $current_tok != "" then
-#					#echo "==========IN TB_SPLIT ...in for5"  
+#					echo "==========IN TB_SPLIT ...in for5"  
                     $void = PUSH($result, $current_tok)
                     set $current_tok = ""
                 endif
             else
-#				#echo "==========IN TB_SPLIT ...in for6"  
+#				echo "==========IN TB_SPLIT ...in for6"  
                 set $current_tok = $current_tok + $char
             endif
         endif
     endfor
- #   #echo "==========IN TB_SPLIT ...in for3"    
+ #   echo "==========IN TB_SPLIT ...in for3"    
     if $current_tok != "" then
         $void = PUSH($result, $current_tok)
     endif
@@ -86,7 +84,7 @@ func tbasic_parse_expr($p_expr)
     for $idx = 0 to 25 do
         set $char = CHR(65 + $idx)
         if FIND($p_work, $char) != -1 then
-            set $p_work = REPLACE($p_work, $char, STR(@tb_vars[$idx]))
+            set $p_work = REPLACE($p_work, $char, STR($tb_vars[$idx]))
         endif
     endfor
     
@@ -95,40 +93,40 @@ func tbasic_parse_expr($p_expr)
     if $has_rnd != -1 then
         set $p_work = REPLACE($p_work, "#1", "RND")
     endif
-	##echo "---------Inainte de eval"
+	echo "---------Inainte de eval"
 	set $res_eval = EVAL($p_work)
-	##echo "---------Dupa de eval"
+	echo "---------Dupa de eval"
     return $res_eval
 endfunc
 
 # --- FUNCȚIE: EXECUTĂ O LINIE ---
 func tbasic_exec_line($line_content)
 
-##echo "Execut:{"+$line_content+"}"
+#echo "Execut:{"+$line_content+"}"
 
 	set $l_c = TRIM($line_content)
 	if $l_c == "" then 
 		return 0 
 	endif
-	##echo "Aici inainte de splict:" + $l_c
+	#echo "Aici inainte de splict:" + $l_c
 	set $p_parts = TB_SPLIT($l_c)
-	##echo "Aici dupa split:" + STR($p_parts)
+	#echo "Aici dupa split:" + STR($p_parts)
 	set $p_cmd = UPPER($p_parts[0])
-	##echo "COMANDA($p_cmd): {" + $p_cmd +"}"
+	#echo "COMANDA($p_cmd): {" + $p_cmd +"}"
 	
-	##echo "INAINTE DE LET"
+	#echo "INAINTE DE LET"
 	if $p_cmd == "LET" then
-		###echo "SUNT in LET"
+		##echo "SUNT in LET"
 		set $eq_pos = FIND($l_c, "=")
-		###echo "eq_pos=" + $eq_pos
+		##echo "eq_pos=" + $eq_pos
 		set $v_name = TRIM(SUBSTR($l_c, 4, $eq_pos - 4))
-		###echo "V name=" + $v_name
+		##echo "V name=" + $v_name
 		set $v_idx = ASC(UPPER($v_name)) - 65
-		###echo "v_idx=" + $v_idx
+		##echo "v_idx=" + $v_idx
 		set $de_evaluat = SUBSTR($l_c, $eq_pos + 1)
-		##echo "De evaluat:" + $de_evaluat
-		set @tb_vars[$v_idx] = tbasic_parse_expr($de_evaluat)
-		##echo "tb_vars=" + @tb_vars[$v_idx]
+		#echo "De evaluat:" + $de_evaluat
+		set $tb_vars[$v_idx] = tbasic_parse_expr($de_evaluat)
+		#echo "tb_vars=" + $tb_vars[$v_idx]
 		return 1
 	endif
 	
@@ -170,25 +168,25 @@ func tbasic_exec_line($line_content)
 	endif
 	
 	
-	##echo "INAINTE DE GOTO"
+	#echo "INAINTE DE GOTO"
 	if $p_cmd == "GOTO" then
-		##echo "Sunt in GOTO"
-		set @tb_jump_to = INT($p_parts[1])
+		#echo "Sunt in GOTO"
+		set $tb_jump_to = INT($p_parts[1])
 		return 1
 	endif
 	
 	# --- COMANDA GOSUB ---
     if $p_cmd == "GOSUB" then
-		# Folosim @pc pentru a accesa contorul din funcția run
-		$void = PUSH($tb_gosub_stack, @pc) 
-		set @tb_jump_to = INT($p_parts[1])
+		# Folosim $pc pentru a accesa contorul din funcția run
+		$void = PUSH($tb_gosub_stack, $pc) 
+		set $tb_jump_to = INT($p_parts[1])
 		return 1
 	endif
 	
 	# --- COMANDA RETURN ---
     if $p_cmd == "RETURN" then
         if LEN($tb_gosub_stack) == 0 then
-            #echo "RUNTIME ERROR: RETURN without GOSUB"
+            echo "RUNTIME ERROR: RETURN without GOSUB"
             return -1
         endif
         
@@ -196,9 +194,9 @@ func tbasic_exec_line($line_content)
         set $return_pc = POP($tb_gosub_stack)
         
         # Setăm PC-ul în tbasic_run la poziția de după GOSUB
-        # Deoarece tbasic_run va face @pc = @pc + 1 la finalul buclei, 
+        # Deoarece tbasic_run va face $pc = $pc + 1 la finalul buclei, 
         # setăm direct indexul recuperat.
-        set @pc = $return_pc 
+        set $pc = $return_pc 
         return 1
     endif
 	
@@ -233,7 +231,7 @@ func tbasic_exec_line($line_content)
 				# Am ajuns la un separator, scriem ce am adunat
 					if TRIM($current_part) != "" then
 						set $val = tbasic_parse_expr($current_part)
-						set $void = WRITE_PLAIN(STR($val)) # Folosim WRITE nativ
+						set $void = WRITE(STR($val)) # Folosim WRITE nativ
 					endif
 				
 					# Gestionăm spațierea (virgula adaugă tab/spații)
@@ -251,13 +249,12 @@ func tbasic_exec_line($line_content)
 		# Scriem și ultima parte rămasă
 		if TRIM($current_part) != "" then
 			set $val = tbasic_parse_expr($current_part)
-			set $void = WRITE_PLAIN(STR($val))
+			set $void = WRITE(STR($val))
 		endif
 
 		# DACĂ nu avem separator la final, dăm un rând nou
 		if $has_trailing == false then
 			echo "" 
-			#WRITE("")
 		endif
 		
 		return 1
@@ -280,7 +277,7 @@ func tbasic_exec_line($line_content)
 		
 		set $res = INPUT($msg)
 		set $v_idx = ASC(UPPER($var_raw)) - 65
-		set @tb_vars[INT($v_idx)] = $res # Scoate INT() dacă vrei și fractale
+		set $tb_vars[INT($v_idx)] = $res # Scoate INT() dacă vrei și fractale
 		
 		return 1
 	endif
@@ -294,7 +291,7 @@ func tbasic_exec_line($line_content)
 	endif
 	
 	if $p_cmd == "CLS" then
-		cls()
+		cls
 		return 1
 	endif
 	
@@ -310,13 +307,13 @@ func tbasic_exec_line($line_content)
 		
 		if $filename == "" then set $filename = "program.bas" endif
 		
-		set $k = KEYS(@tb_program)
+		set $k = KEYS($tb_program)
 		set $k = SORT_NUMERIC_ARRAY($k)
 		
 		set $file_content = ""
 		for $idx = 0 to LEN($k)-1 do 
 			set $line_num = $k[$idx]
-			set $line_text = @tb_program[$line_num]
+			set $line_text = $tb_program[$line_num]
 			# Construim linia: "10 PRINT A" + Newline
 			set $file_content = $file_content + STR($line_num) + " " + $line_text + CHR(10)
 		endfor
@@ -325,9 +322,9 @@ func tbasic_exec_line($line_content)
 		set $res = WRITEFILE($filename, $file_content)
 		
 		if $res == 1 then
-			#echo "Program salvat cu succes in: " + $filename
+			echo "Program salvat cu succes in: " + $filename
 		else
-			#echo "EROARE la salvarea fisierului!"
+			echo "EROARE la salvarea fisierului!"
 		endif
 		continue
 	endif
@@ -342,11 +339,11 @@ func tbasic_exec_line($line_content)
 		set $raw_content = READFILE($filename)
 		
 		if $raw_content == null then
-			#echo "Eroare: Fisierul " + $filename + " nu exista!"
+			echo "Eroare: Fisierul " + $filename + " nu exista!"
 			return 1
 		else
 			# Resetăm programul curent
-			set @tb_program = MAP()
+			set $tb_program = MAP()
 			
 			# Spargem conținutul în linii (presupunând că ai un SPLIT după \n)
 			set $lines = SPLIT($raw_content, CHR(10))
@@ -359,41 +356,41 @@ func tbasic_exec_line($line_content)
 					if $ln > 0 then
 						# Extragem restul liniei de după numărul liniei
 						set $content = TRIM(SUBSTR($trimmed, LEN($parts[0])))
-						set @tb_program[$ln] = $content
+						set $tb_program[$ln] = $content
 					endif
 				endif
 			endcycle
-			#echo "Incarcat " + LEN(@tb_program) + " linii din " + $filename
+			echo "Incarcat " + LEN($tb_program) + " linii din " + $filename
 		endif
 	endif
 endfunc
 
 func tbasic_run()
-    set $keys = KEYS(@tb_program)
+    set $keys = KEYS($tb_program)
 	#dm
 	#trace
     #SORT($keys)
 	set $keys = SORT_NUMERIC_ARRAY($keys)
-    set @pc = 0
-    set @tb_jump_to = -1
-    echo "[Oli-BASIC Running...]"
+    set $pc = 0
+    set $tb_jump_to = -1
+    #echo "[Oli-BASIC Running...]"
     
-    while @pc < LEN($keys) do
+    while $pc < LEN($keys) do
         # Debug: sa vedem ce e in keys la pozitia curenta
-        # ##echo "PC:" + @pc + " LINE:" + $keys[@pc]
+        # #echo "PC:" + $pc + " LINE:" + $keys[$pc]
         
-        #tbasic_exec_line(@tb_program[$keys[@pc]])
-		set $res = tbasic_exec_line(@tb_program[$keys[@pc]])
+        #tbasic_exec_line($tb_program[$keys[$pc]])
+		set $res = tbasic_exec_line($tb_program[$keys[$pc]])
         
 		if $res == -1 then
             set $tb_running = false
             break
         endif
 		
-        if @tb_jump_to != -1 then
+        if $tb_jump_to != -1 then
             # REPARAȚIE: Forțăm căutarea să fie compatibilă (String vs String)
             set $target = STR($tb_jump_to) 
-            set @tb_jump_to = -1
+            set $tb_jump_to = -1
             
             # Căutăm în array-ul de chei convertit sau direct
             set $new_pc = INDEXOF($keys, $target)
@@ -409,23 +406,23 @@ func tbasic_run()
             endif
 
             if $new_pc != -1 then
-                set @pc = $new_pc
+                set $pc = $new_pc
                 continue # Sari direct la iterația următoare cu noul PC
             else
-                ##echo "ERROR: Line " + $target + " not found in " + STR($keys)
+                #echo "ERROR: Line " + $target + " not found in " + STR($keys)
                 break
             endif
         endif
         
-        set @pc = @pc + 1
+        set $pc = $pc + 1
     endwhile
-    echo "[Done]"
+    #echo "[Done]"
 endfunc
 
 # --- MONITORUL INTERACTIV ---
 #set $running = 1
 cls
-#echo "Oli-BASIC v1.9 - Ready"
+echo "Oli-BASIC v1.9 - Ready"
 #while $running == 1 do
 while true do
 	set $input = TRIM(INPUT("BASIC> "))
@@ -441,43 +438,43 @@ while true do
 		continue 
 	endif
 	if $up_in == "LIST" then
-        #echo "Inainte de sooort---------------" .. @tb_program
-		set $k = KEYS(@tb_program)
+        echo "Inainte de sooort---------------" .. $tb_program
+		set $k = KEYS($tb_program)
 		#SORT($k)
-        #echo "Inainte de sooort" .. $k
+        echo "Inainte de sooort" .. $k
 		SORT_NUMERIC_ARRAY($k)
 		
 		for $j = 0 to LEN($k)-1 do 
 			# Extragem numarul liniei si continutul
-			echo STR($k[$j]) + " " + @tb_program[$k[$j]] 
+			echo STR($k[$j]) + " " + $tb_program[$k[$j]] 
 		endfor
 		continue
 	endif
 	if $up_in == "NEW" then
-		set @tb_program = MAP(); 
+		set $tb_program = MAP(); 
 		for $v = 0 to 25 do 
-			set @tb_vars[$v] = 0 
+			set $tb_vars[$v] = 0 
 		endfor; 
-			##echo "Memory Cleared."; 
+			#echo "Memory Cleared."; 
 			continue
 	endif
 	if $up_in == "CLEAR" then
 		for $i = 0 to 25 do
-			set @tb_vars[$i] = 0
+			set $tb_vars[$i] = 0
 		endfor
 			continue
 	endif
-	##echo "++++++++INainte de tb_split"
+	#echo "++++++++INainte de tb_split"
 	set $parts = tb_split($input)
-	##echo "++++++++Dupa de tb_split"
+	#echo "++++++++Dupa de tb_split"
 	set $line_no = INT($parts[0])
-    ##echo "Setez linia:"..$line_no
+    echo "Setez linia:"..$line_no
 	if $line_no > 0 then
         $comanda = TRIM(SUBSTR($input, LEN($parts[0])))
-       # #echo "AAAAAAAAAAAAAAAAAAA:" .. $comanda
-		#set @tb_program[INT($line_no)] = $comanda
-        set @tb_program[STR(INT($line_no))] = $comanda
-        ##echo "MAP:" .. @tb_program
+        echo "AAAAAAAAAAAAAAAAAAA:" .. $comanda
+		#set $tb_program[INT($line_no)] = $comanda
+        set $tb_program[STR(INT($line_no))] = $comanda
+        echo "MAP:" .. $tb_program
 	else
 		set $void = tbasic_exec_line($input)
 	endif

@@ -186,6 +186,30 @@ void ConsoleManager::writeRaw(const std::wstring& message, WORD color) {
     }
 }
 
+void ConsoleManager::writePlain(const std::wstring& message, WORD color) {
+    std::lock_guard<std::recursive_mutex> lock(mtxLog);
+
+    // 1. Consolă - scoatem std::endl
+    if (color != 0) setColor(color);
+    std::wcout << message;
+    std::wcout.flush(); // IMPORTANT: flush() asigură afișarea imediată fără newline
+    if (color != 0) resetColor();
+
+    // 2. Fișier - scoatem std::endl sau \n
+    if (logToFileEnabled && !fileLoggingMuted && logFile.is_open()) {
+        std::string utf8Message = utf8_encode(message);
+        logFile << utf8Message;
+        logFile.flush();
+    }
+
+    // 3. Extra Outputs
+    for (size_t i = 0; i < m_extraOutputs.size(); ++i) {
+        if (m_extraOutputs[i]) {
+            m_extraOutputs[i]->writeLog(message, LogLevel::INFO);
+        }
+    }
+}
+
 
 /*
 void ConsoleManager::clear() {

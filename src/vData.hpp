@@ -128,8 +128,31 @@ struct vData {
     }
 
     long long toInt() const {
-        if (std::holds_alternative<long long>(value)) return std::get<long long>(value);
-        if (std::holds_alternative<double>(value)) return (long long)std::get<double>(value);
+        // 1. Folosim varianta dereferențiată (pentru suport pointeri)
+        const vData& actual = getTrueData();
+
+        // 2. Dacă este deja întreg
+        if (std::holds_alternative<long long>(actual.value))
+            return std::get<long long>(actual.value);
+
+        // 3. Dacă este double, facem cast (ex: 10.5 -> 10)
+        if (std::holds_alternative<double>(actual.value))
+            return (long long)std::get<double>(actual.value);
+
+        // 4. CRITIC: Dacă este String, încercăm conversia (ex: "123" -> 123)
+        if (std::holds_alternative<std::wstring>(actual.value)) {
+            try {
+                return std::stoll(std::get<std::wstring>(actual.value));
+            }
+            catch (...) {
+                return 0; // Conversie eșuată (nu e număr)
+            }
+        }
+
+        // 5. Dacă e Boolean (true -> 1, false -> 0)
+        if (std::holds_alternative<bool>(actual.value))
+            return std::get<bool>(actual.value) ? 1LL : 0LL;
+
         return 0;
     }
 
@@ -226,11 +249,13 @@ struct vData {
 
     std::wstring toPlainString() const {
         const vData& actual = getTrueData();
+        /*
         if (actual.isMap()) {
             auto* m = actual.getTrueData().rawMap();
             // Dacă map-ul are un singur element, probabil e valoarea variabilei
             if (m && m->size() == 1) return m->begin()->second.getTrueData().toWString();
         }
+        */
         return actual.toWString();
     }
 

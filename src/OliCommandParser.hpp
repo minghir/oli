@@ -19,7 +19,7 @@ struct ShellCommand {
 
 inline void printShellCommandStr(const ShellCommand& cmd) {
     if (!cmd.isValid) {
-        std::wcout << L"[ShellCommand] Status: INVALID" << std::endl;
+        LOG_DEBUG(L"[ShellCommand] Status: INVALID");
         return;
     }
 
@@ -30,7 +30,7 @@ inline void printShellCommandStr(const ShellCommand& cmd) {
         ss << L"  [" << i << L"]: L\"" << cmd.args[i] << L"\"" << std::endl;
     }
 
-    std::wcout << ss.str() << std::endl;
+    LOG_DEBUG(ss.str());
 }
 
 class vOliCommandParser {
@@ -124,7 +124,7 @@ public:
         flush();
         return tokens;
     }
-
+    /*
     static ShellCommand parse(const std::wstring& line) {
         ShellCommand cmd;
         if (line.empty()) return cmd;
@@ -145,6 +145,32 @@ public:
         }
 
         cmd.isValid = true;
+        return cmd;
+    }
+    */
+
+    static ShellCommand parse(const std::wstring& line) {
+        ShellCommand cmd;
+        if (line.empty()) return cmd;
+
+        auto tokens = tokenize(line);
+        if (tokens.empty()) return cmd;
+
+        cmd.name = tokens[0];
+
+        // COLECTĂM TOATE ARGUMENTELE, indiferent de tipul comenzii
+        for (size_t i = 1; i < tokens.size(); ++i) {
+            cmd.args.push_back(tokens[i]);
+        }
+
+        std::wstring upperName = cmd.name;
+        std::transform(upperName.begin(), upperName.end(), upperName.begin(), ::towupper);
+
+        // Verificăm validitatea doar pentru a seta flag-ul isValid (pentru ramurile IF/SET/ECHO)
+        if (vOliKeyWords::isShellCommand(upperName)) {
+            cmd.isValid = true;
+        }
+
         return cmd;
     }
 };

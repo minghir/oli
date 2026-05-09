@@ -19,7 +19,8 @@ class OliCompiler {
 
 
     std::vector<std::vector<size_t>> breakStack;
-    std::vector<std::vector<size_t>> continueStack; // Noua stivă
+    std::vector<std::vector<size_t>> continueStack;
+    std::unordered_set<std::wstring> m_includedFiles;
 
 public:
     OliCompiler() = default;
@@ -35,7 +36,7 @@ private:
     void emitLoadOrConstant(const std::wstring& token, OliChunk& chunk);
     void emitStore(const std::wstring& varName, OliChunk& chunk);
     void emitTargetAddress(const std::wstring& varName, OliChunk& chunk);
-    void generateShortCircuit(ASTPtr node, OliChunk& chunk);
+    void generateShortCircuit(ASTPtr node, OliChunk& chunk, const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs);
     std::wstring reconstructRawName(ASTPtr node);
 
     std::wstring rebuildSubCommand(const std::vector<std::wstring>& args, size_t start, size_t end);

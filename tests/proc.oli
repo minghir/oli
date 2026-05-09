@@ -1,0 +1,6 @@
+PROC Salutare $nume
+    echo "Salut, " .. $nume .. "!"
+ENDPROC
+
+# Apel direct, exact ca în interpretorul vechi
+Salutare "Admin"

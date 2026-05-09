@@ -1,0 +1,59 @@
+set @tb_program = MAP()
+
+set $comm = ["10 LET A = 10", "20 LET B = 20"]
+
+func tb_split($line)
+
+    set $result = ARRAY()
+    set $current_tok = ""
+    set $in_quotes = false
+    set $len = LEN($line)
+   
+    for $i = 0 to $len - 1 do
+        set $char = SUBSTR($line, $i, 1)
+        # Folosim codul ASCII 34 pentru ghilimele
+        if ASC($char) == 34 then
+
+            if $in_quotes == true then 
+                set $in_quotes = false 
+            else 
+                set $in_quotes = true 
+            endif
+            set $current_tok = $current_tok + $char
+        else 
+  
+            # Verificăm spațiul (ASCII 32) sau string-ul " "
+            if ( $char == " " ) && ( $in_quotes == false ) then
+
+                if $current_tok != "" then
+
+                    $void = PUSH($result, $current_tok)
+                    set $current_tok = ""
+                endif
+            else
+ 
+                set $current_tok = $current_tok + $char
+            endif
+        endif
+    endfor
+    
+    if $current_tok != "" then
+        $void = PUSH($result, $current_tok)
+    endif
+    return $result
+endfunc
+
+
+cycle $comm as $input do
+	set $parts = tb_split($input)
+
+	set $line_no = INT($parts[0])
+    echo "Setez linia:"..$line_no
+	if $line_no > 0 then
+        $comanda = TRIM(SUBSTR($input, LEN($parts[0])))
+        
+		
+        set @tb_program[STR(INT($line_no))] = $comanda
+        echo "MAP:" .. @tb_program
+	endif
+endcycle

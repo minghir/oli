@@ -38,7 +38,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
             this->setVar(nameConst.toWString(), val);
             break;
         }
-
+        /*
         case OpCode::OP_GET_GLOBAL: {
             uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
             ip += 2;
@@ -68,7 +68,27 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
             
             break;
         }
+        */
 
+        case OpCode::OP_GET_GLOBAL: {
+            uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
+            ip += 2;
+            std::wstring rawName = chunk.constants[nameIdx].toWString();
+            std::wstring cleanName = this->cleanVariableName(rawName);
+
+            vData val;
+            // 1. Căutăm direct în stack-ul local (fără resolveVariable)
+            if (!m_callStack.empty() && m_callStack.back().localVariables.count(cleanName)) {
+                val = m_callStack.back().localVariables[cleanName];
+            }
+            // 2. Căutăm direct în globale
+            else if (m_globalVariables.count(cleanName)) {
+                val = m_globalVariables[cleanName];
+            }
+
+            stack.push_back(val);
+            break;
+        }
         case OpCode::OP_GET_ADDR: {
             uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
             ip += 2;
@@ -671,6 +691,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
             stack.pop_back();
             break;
         }
+        /*
         case OpCode::OP_DEF_TYPE: {
             // 1. Citim numele tipului
             uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
@@ -697,6 +718,54 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
             LOG_SUCCESS(L"[VM] Blueprint registered: " + typeName);
             break;
         }
+        */
+        case OpCode::OP_DEF_TYPE: {
+            // 1. Citim numele tipului (2 bytes)
+            uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
+            ip += 2;
+            std::wstring typeName = to_upper(chunk.constants[nameIdx].toWString());
+
+            vTypeBlueprint bp;
+            bp.name = typeName;
+
+            // 2. Citim metadatele (isClass, counts) - ORDINEA TREBUIE SĂ FIE IDENTICĂ CU COMPILATORUL
+            bp.isClass = (chunk.code[ip++] == 1);
+            uint8_t fieldCount = chunk.code[ip++];
+            uint8_t methodCount = chunk.code[ip++]; // <--- MUTAT AICI (Citit în header)
+
+            LOG_DEBUG(L"[VM] Inregistrare " + std::wstring(bp.isClass ? L"CLASS: " : L"STRUCT: ") + typeName);
+
+            // 3. Citim indicii Câmpurilor
+            for (int i = 0; i < fieldCount; ++i) {
+                uint16_t fIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
+                ip += 2;
+                std::wstring fieldName = to_lower(chunk.constants[fIdx].toWString());
+                bp.fields.push_back(fieldName);
+                LOG_DEBUG(L"    -> Field[" + std::to_wstring(i) + L"]: " + fieldName);
+            }
+
+            // 4. Citim indicii Metodelor
+            for (int i = 0; i < methodCount; ++i) {
+                uint16_t mIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
+                ip += 2;
+                std::wstring methodName = to_upper(chunk.constants[mIdx].toWString());
+
+                // Mapăm metoda pentru Dispatch-ul din v0.2
+                std::wstring internalFuncName = typeName + L"::" + methodName;
+                bp.methods[methodName] = internalFuncName;
+
+                LOG_DEBUG(L"    -> Method[" + std::to_wstring(i) + L"]: " + methodName + L" (Target: " + internalFuncName + L")");
+            }
+
+            // 5. Salvare Blueprint
+            m_blueprints[typeName] = bp;
+
+            LOG_SUCCESS(L"Blueprint " + typeName + L" gata! (" +
+                std::to_wstring(fieldCount) + L" proprietati, " +
+                std::to_wstring(methodCount) + L" metode).");
+            break;
+        }
+        /*
         case OpCode::OP_CALL_METHOD: {
             // 1. Citim numărul de argumente (1 byte conform noului format de apel dinamic)
             uint8_t argCount = chunk.code[ip++];
@@ -741,6 +810,80 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
                 this->m_executionStatus = OliStatus::ERR;
                 return;
             }
+            break;
+        }
+        */
+        case OpCode::OP_CALL_METHOD: {
+            uint8_t argCount = chunk.code[ip++];
+            vData methodNameData = stack.back(); stack.pop_back();
+            std::wstring methodName = to_upper(methodNameData.toWString());
+
+            vData contextObj = stack.back(); // Nu dăm pop, rămâne pentru $this
+
+            LOG_DEBUG(L"[VM] Apel metoda: " + methodName + L" pe obiect de tip " + getVariantTypeName(contextObj));
+
+            if (contextObj.isMap()) {
+                auto m = contextObj.rawMap();
+                if (m->count(L"__type__")) {
+                    std::wstring typeName = (*m)[L"__type__"].toWString();
+                    LOG_DEBUG(L"[VM] Caut metoda " + methodName + L" in Blueprint-ul " + typeName);
+
+                    if (m_blueprints.count(typeName)) {
+                        auto& bp = m_blueprints[typeName];
+                        if (bp.methods.count(methodName)) {
+                            std::wstring finalFunc = bp.methods[methodName];
+                            LOG_DEBUG(L"    -> Metoda gasita in Blueprint! Apelam: " + finalFunc);
+
+                            // Colectăm argumentele...
+                            std::vector<vData> args(argCount);
+                            for (int i = argCount - 1; i >= 0; --i) {
+                                args[i] = stack.back(); stack.pop_back();
+                            }
+                            stack.pop_back(); // Scoatem obiectul context acum
+
+                            vData result = this->callUserByteCodeFunction(finalFunc, args, contextObj);
+                            stack.push_back(result);
+                            LOG_SUCCESS(L"[VM] Metoda gasita! Executam: " + finalFunc);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            LOG_ERROR(L"Runtime Error: Metoda '" + methodName + L"' nu a putut fi rezolvata.");
+            this->m_executionStatus = OliStatus::ERR;
+            break;
+        }
+        case OpCode::OP_SET_PTR: {
+            // Stiva la noi este: [Valoare_Noua, Adresa]
+            if (stack.size() < 2) {
+                LOG_ERROR(L"OP_SET_PTR: Stack underflow");
+                break;
+            }
+
+            vData ptrData = stack.back(); stack.pop_back();   // Scoatem Adresa
+            vData newValue = stack.back(); stack.pop_back(); // Scoatem Valoarea Nouă
+
+            if (vData** addrPtr = std::get_if<vData*>(&ptrData.value)) {
+                if (*addrPtr) {
+                    **addrPtr = newValue;
+                    LOG_DEBUG(L"[VM] Pointer Write SUCCESS: " + newValue.toWString());
+                }
+                else {
+                    LOG_ERROR(L"Runtime Error: Null pointer write attempt.");
+                }
+            }
+            else {
+                LOG_ERROR(L"Runtime Error: Expected pointer for OP_SET_PTR, got " + getVariantTypeName(ptrData));
+            }
+            break;
+        }
+        case OpCode::OP_SWAP: {
+            if (stack.size() < 2) break;
+            vData a = stack.back(); stack.pop_back();
+            vData b = stack.back(); stack.pop_back();
+            stack.push_back(a);
+            stack.push_back(b);
             break;
         }
 
@@ -1081,6 +1224,11 @@ vData vOliEngine::callUserByteCodeFunction(const std::wstring& funcName, const s
     auto it = m_bytecodeFunctions.find(funcName);
     if (it == m_bytecodeFunctions.end()) {
         LOG_ERROR(L"   -> EROARE: Functia " + funcName + L" nu este inregistrata!");
+        // DEBUG: Listează ce avem în „meniu”
+        LOG_DEBUG(L"   -> Functii disponibile in VM:");
+        for (auto const& [name, proc] : m_bytecodeFunctions) {
+            LOG_DEBUG(L"      - [" + name + L"]");
+        }
         return vData();
     }
 

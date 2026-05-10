@@ -1250,62 +1250,101 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             }
 
             case ASTNodeType::FunctionCall: {
-                std::wstring funcName;
+                std::wstring funcName = L"";
                 std::vector<vData> evaluatedArgs;
                 vData contextObj = { std::monostate{} };
 
-                // 1. IDENTIFICARE CONTEXT ȘI NUME
+                // --- 1. IDENTIFICARE CONTEXT ȘI NUME ---
                 if (!node->children.empty() && (node->children[0]->value == L"." || node->children[0]->value == L"DOT")) {
+                    // Caz: $obj.metoda()
                     const ASTPtr& dotNode = node->children[0];
-                    if (dotNode && !dotNode->children.empty()) {
-                        contextObj = executeAST(dotNode->children[0]);
-                        funcName = vDataToWString(executeAST(dotNode));
-                        for (size_t i = 1; i < node->children.size(); ++i)
-                            evaluatedArgs.push_back(executeAST(node->children[i]));
+
+                    // Evaluăm obiectul (partea stângă a punctului)
+                    contextObj = executeAST(dotNode->children[0]);
+                    std::wstring rawMethodName = dotNode->children[1]->value;
+
+                    // Verificăm dacă obiectul aparține unei CLASE (Dynamic Dispatch)
+                    if (contextObj.isMap()) {
+                        auto m = contextObj.rawMap();
+                        if (m->count(L"__type__")) {
+                            std::wstring typeName = to_upper((*m)[L"__type__"].toWString());
+                            std::wstring methodUpper = to_upper(rawMethodName);
+
+                            // Căutăm în Blueprints dacă metoda este definită în clasă
+                            if (m_blueprints.count(typeName)) {
+                                auto& bp = m_blueprints[typeName];
+                                if (bp.methods.count(methodUpper)) {
+                                    // Am găsit metoda în clasă! Rezultă "CLASA::METODA"
+                                    funcName = bp.methods[methodUpper];
+                                }
+                            }
+                        }
                     }
+
+                    // Fallback: Dacă nu e metodă de clasă, căutăm direct în obiect (metodă ad-hoc)
+                    if (funcName.empty()) {
+                        funcName = vDataToWString(executeAST(dotNode));
+                    }
+
+                    // Colectăm argumentele apelului (începând de la indexul 1 al nodului de apel)
+                    for (size_t i = 1; i < node->children.size(); ++i)
+                        evaluatedArgs.push_back(executeAST(node->children[i]));
                 }
                 else if (node->value == L"DYNAMIC_CALL" && !node->children.empty()) {
+                    // Caz: $var()
                     funcName = vDataToWString(executeAST(node->children[0]));
                     for (size_t i = 1; i < node->children.size(); ++i)
                         evaluatedArgs.push_back(executeAST(node->children[i]));
                 }
                 else if (!node->value.empty() && node->value[0] == L'$') {
+                    // Caz: apelare variabilă directă
                     funcName = vDataToWString(resolveVariable(node->value));
-                    for (auto& child : node->children) evaluatedArgs.push_back(executeAST(child));
+                    for (auto& child : node->children)
+                        evaluatedArgs.push_back(executeAST(child));
                 }
                 else {
+                    // Caz: apelare funcție globală după nume
                     funcName = node->value;
-                    for (auto& child : node->children) evaluatedArgs.push_back(executeAST(child));
+                    for (auto& child : node->children)
+                        evaluatedArgs.push_back(executeAST(child));
                 }
 
                 if (funcName.empty()) return { std::monostate{} };
 
-                // 2. CONSTRUCTORI (Blueprints)
-                auto itBlueprint = m_blueprints.find(funcName);
+                // --- 2. CONSTRUCTORI (Instanțiere din Blueprints) ---
+                std::wstring upperName = to_upper(funcName);
+                auto itBlueprint = m_blueprints.find(upperName);
                 if (itBlueprint != m_blueprints.end()) {
                     vDataMap instance = std::make_shared<std::unordered_map<std::wstring, vData>>();
+
+                    // Marcăm obiectul cu tipul său (esențial pentru OP_CALL_METHOD și dispatch)
                     (*instance)[L"__type__"] = vData(itBlueprint->second.name);
+
                     const auto& fields = itBlueprint->second.fields;
                     for (size_t i = 0; i < fields.size(); ++i) {
+                        // Inițializăm câmpurile cu argumentele date sau NULL
                         (*instance)[fields[i]] = (i < evaluatedArgs.size()) ? evaluatedArgs[i] : vData{ std::monostate{} };
                     }
                     return { instance };
                 }
 
-                // 3. APELARE (Intern/User)
-                std::wstring upperName = funcName;
-                std::transform(upperName.begin(), upperName.end(), upperName.begin(), ::towupper);
-
+                // --- 3. EXECUȚIE (Native sau User Defined) ---
+                // Căutăm în handler-ele interne (ECHO, PRINT, etc.)
                 auto itInternal = m_functionsHandlers.find(upperName);
-                if (itInternal != m_functionsHandlers.end()) return itInternal->second(evaluatedArgs);
+                if (itInternal != m_functionsHandlers.end()) {
+                    return itInternal->second(evaluatedArgs);
+                }
 
+                // Căutăm în funcțiile definite de utilizator în script (FUNC)
                 auto itUser = m_userFunctions.find(upperName);
-                if (itUser != m_userFunctions.end()) return callUserFunction(upperName, evaluatedArgs, contextObj);
+                if (itUser != m_userFunctions.end()) {
+                    // Injectăm contextObj (dacă există) pentru a deveni $this în funcție
+                    return callUserFunction(upperName, evaluatedArgs, contextObj);
+                }
 
-                LOG_ERROR(L"[RUNTIME ERROR] Unknown function: " + funcName);
+                LOG_ERROR(L"[INTERPRETER ERROR] Unknown function or method: " + funcName);
                 return { std::monostate{} };
             }
-
             case ASTNodeType::Operator: {
                 std::wstring op = node->value;
                 // --- 1. OPERATORI DE CITIRE (Evaluare R-Value) ---
@@ -1356,60 +1395,58 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                     if (node->children.empty()) return { std::monostate{} };
 
                     ASTPtr leftNode = node->children[0];
-                    vData newValue;// = isSimpleAssign ? executeAST(node->children[1]) : vData{}; // (simplificat)
-					vData currentVal = (isSimpleAssign) ? vData{} : executeAST(leftNode);
-					if(isSimpleAssign){
-						newValue = executeAST(node->children[1]);
-					}
-					
-					if(isPostfix) {
-						// Logica pentru +=, -= sau postfix (care au nevoie de valoarea curentă)
-						std::wstring baseOp = (op == L"POSTFIX_INC") ? L"+" : L"-";
-                        newValue = executeBinaryOperator(baseOp, currentVal, vData(1LL)); // Pas de 1
-					}
-					
-					if(isCompound){
-						vData rhsEvaluated = executeAST(node->children[1]);
-                        // Extragem operatorul matematic de bază (ex: "+" din "+=")
+
+
+                    // 1. Obținem valoarea curentă (pentru postfix sau operatori compuși +=)
+                    vData currentVal = (isSimpleAssign) ? vData{} : executeAST(leftNode);
+                    vData newValue;
+
+                    if (isSimpleAssign) {
+                        newValue = executeAST(node->children[1]);
+                    }
+                    else if (isPostfix) {
+                        std::wstring baseOp = (op == L"POSTFIX_INC") ? L"+" : L"-";
+                        newValue = executeBinaryOperator(baseOp, currentVal, vData(1LL));
+                    }
+                    else if (isCompound) {
+                        vData rhsEvaluated = executeAST(node->children[1]);
                         std::wstring baseOp = op.substr(0, 1);
                         newValue = executeBinaryOperator(baseOp, currentVal, rhsEvaluated);
-					}
+                    }
 					
-                    if (leftNode->value == L"DEREFERENCE") {
-                        
-                        vData ptrContainer = executeAST(leftNode->children[0]);
+                    // --- 2. LOGICA DE SCRIERE (L-Value) ---
 
+                    // A. SCRIERE PRIN POINTER EXPLICIT (*$b = ...)
+                    if (leftNode->value == L"DEREFERENCE") {
+                        vData ptrContainer = executeAST(leftNode->children[0]);
                         if (vData** addrPtr = std::get_if<vData*>(&ptrContainer.value)) {
-                            if (*addrPtr) {
-                                // 2. SCRII DIRECT la adresa de memorie stocată
+                            if (*addrPtr && *addrPtr) {
                                 **addrPtr = newValue;
-                                return newValue;
+                                // FIX CRITIC: Returnăm valoarea veche dacă e postfix!
+                                return isPostfix ? currentVal : newValue;
                             }
                         }
-
-                        LOG_ERROR(L"Runtime Error: Cannot dereference '" + node->children[0]->value + L"'. Not a valid pointer.");
+                        LOG_ERROR(L"Runtime Error: Cannot dereference a null or invalid pointer.");
                         return { std::monostate{} };
                     }
 
                     if (leftNode->type == ASTNodeType::Variable) {
                         std::wstring rawName = leftNode->value;
 
-                        // --- 1. DETECTARE POINTER (*) ---
-                        // Verificăm dacă avem o operație de dereferențiere (ex: *$$pName)
+                        // --- 1. DETECTARE MOD SCRIERE (*) ---
+                        // Verificăm dacă scriem la o adresă stocată într-un pointer (ex: *$ptr = 10)
                         bool isPointer = (!rawName.empty() && rawName[0] == L'*');
                         std::wstring targetName = isPointer ? rawName.substr(1) : rawName;
 
-                        // --- 2. DETECTARE ȘI NORMALIZARE SCOPE (@) ---
-                        // Păstrăm intenția originală de scope (Global vs Local)
+                        // --- 2. GESTIONARE SCOPE GLOBAL (@) ---
                         bool forceGlobal = (!targetName.empty() && targetName[0] == L'@');
-
-                        // Normalizăm temporar prefixul pentru a permite buclei de indirație să funcționeze
                         if (forceGlobal) {
+                            // Normalizăm prefixul pentru ca bucla de indirație să poată procesa numele
                             targetName[0] = L'$';
                         }
 
-                        // --- 3. REZOLVARE LANȚ DE INDIRAȚIE (L-Value) ---
-                        // Săpăm prin semnele $ până găsim numele final (ex: de la "$$pName" la "$ptrToRoot")
+                        // --- 3. REZOLVARE INDIRAȚIE DINAMICĂ ($$, $$$) ---
+                        // Săpăm prin semnele de dolar până găsim variabila „container” finală
                         int safetyGuard = 0;
                         while (targetName.size() > 1 && targetName[0] == L'$' && targetName[1] == L'$') {
                             vData nextNameData = resolveVariable(targetName.substr(1));
@@ -1420,41 +1457,44 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                                 return { std::monostate{} };
                             }
 
-                            // Ne asigurăm că numele rezultat are prefixul corect pentru următoarea iterație
+                            // Re-atașăm prefixul necesar pentru următoarea iterație de resolve
                             targetName = (nextName[0] == L'$' || nextName[0] == L'@') ? nextName : L"$" + nextName;
 
                             if (++safetyGuard > 20) {
-                                LOG_ERROR(L"Runtime Error: Circular reference detected in indirection chain.");
+                                LOG_ERROR(L"Runtime Error: Circular reference in L-Value indirection.");
                                 return { std::monostate{} };
                             }
                         }
 
-                        // --- 4. RESTAURARE SCOPE ORIGINAL ---
+                        // --- 4. RESTAURARE SCOPE (@) ---
                         if (forceGlobal && !targetName.empty()) {
                             if (targetName[0] == L'$') targetName[0] = L'@';
                             else if (targetName[0] != L'@') targetName = L"@" + targetName;
                         }
 
-                        // --- 5. LOGICĂ DE SCRIERE FINALĂ ---
+                        // --- 5. EXECUȚIE SCRIERE FINALĂ ---
 
-                        // A. Caz special: Scrierea printr-un pointer real (*$var)
                         if (isPointer) {
-                            // Rezolvăm variabila care conține adresa (ex: rezolvăm "$ptrToRoot")
+                            // --- CAZ A: Scrierea la adresa din pointer (*$var) ---
                             vData ptrInfo = resolveVariable(targetName);
                             if (vData** addrPtr = std::get_if<vData*>(&ptrInfo.value)) {
                                 if (*addrPtr && *addrPtr) {
                                     **addrPtr = newValue;
+                                    // CRITIC pentru Postfix: returnăm valoarea originală (currentVal)
                                     return isPostfix ? currentVal : newValue;
                                 }
                             }
-                            LOG_ERROR(L"Runtime Error: Invalid pointer assignment for *" + targetName);
+                            LOG_ERROR(L"Runtime Error: Invalid pointer write attempt via *" + targetName);
                             return { std::monostate{} };
                         }
+                        else {
+                            // --- CAZ B: Scrierea într-o variabilă directă ($var) ---
+                            setVariable(targetName, newValue);
 
-                        // B. Caz standard: Scrierea într-o variabilă (acum cu numele complet rezolvat)
-                        setVariable(targetName, newValue);
-
-                        return isPostfix ? currentVal : newValue;
+                            // CRITIC pentru Postfix: returnăm valoarea originală (currentVal)
+                            // Astfel echo $a++ va afișa valoarea veche, deși în memorie este cea nouă.
+                            return isPostfix ? currentVal : newValue;
+                        }
                     }
 
 
@@ -1748,126 +1788,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
     }
 
     
-/*
-vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& left, const vData& right) {
-    // --- 1. OPERATORI DE COALESCENCE ---
-    if (op == L"??") {
-        return left.isNull() ? right : left;
-    }
 
-    // --- 2. LOGICĂ DE EGALITATE (Punctul critic pentru Pointeri) ---
-    if (op == L"==") {
-        // A. Verificăm dacă sunt ambii NULL (monostate)
-        if (left.isNull() && right.isNull()) return { true };
-
-        // B. LOGICĂ SPECIALĂ PENTRU POINTERI (vData*)
-        bool leftIsPtr = std::holds_alternative<vData*>(left.value);
-        bool rightIsPtr = std::holds_alternative<vData*>(right.value);
-
-        if (leftIsPtr || rightIsPtr) {
-            // Dacă ambii sunt pointeri, comparăm adresele de memorie brute
-            if (leftIsPtr && rightIsPtr) {
-                return { std::get<vData*>(left.value) == std::get<vData*>(right.value) };
-            }
-
-            // Un pointer real NU este egal cu NULL (monostate), decât dacă adresa e nullptr
-            if (leftIsPtr && right.isNull()) return { std::get<vData*>(left.value) == nullptr };
-            if (rightIsPtr && left.isNull()) return { std::get<vData*>(right.value) == nullptr };
-
-            // Un pointer nu este egal cu un string sau un număr
-            return { false };
-        }
-
-        // C. Logică standard pentru NULL vs restul
-        if (left.isNull() || right.isNull()) return { false };
-
-        // D. Comparație numerică (cu toleranță pentru float)
-        if (canBeNumeric(left) && canBeNumeric(right)) {
-            return { std::abs(vDataToDouble(left) - vDataToDouble(right)) < 1e-9 };
-        }
-
-        // E. Fallback: Comparație ca String
-        return { vDataToWString(left) == vDataToWString(right) };
-    }
-
-    if (op == L"!=") {
-        vData res = executeBinaryOperator(L"==", left, right);
-        return vData(!vDataToBool(res));
-    }
-
-    // --- 3. ADUNAREA / CONCATENAREA ---
-    if (op == L"+") {
-        if (left.isString() || right.isString()) {
-            return { vDataToWString(left) + vDataToWString(right) };
-        }
-
-        if (left.isInt() && right.isInt()) {
-            return { std::get<long long>(left.value) + std::get<long long>(right.value) };
-        }
-
-        if (canBeNumeric(left) || left.isNull() || canBeNumeric(right) || right.isNull()) {
-            double valL = left.isNull() ? 0.0 : vDataToDouble(left);
-            double valR = right.isNull() ? 0.0 : vDataToDouble(right);
-            return { valL + valR };
-        }
-        return { vDataToWString(left) + vDataToWString(right) };
-    }
-
-    // --- 4. BARIERĂ PENTRU OPERAȚII STRICTE ---
-    // Pointers, Maps și Arrays nu pot participa la matematică directă (^, *, /, -)
-    if (left.isNull() || right.isNull() ||
-        std::holds_alternative<vData*>(left.value) ||
-        std::holds_alternative<vData*>(right.value)) {
-        return vData();
-    }
-
-    // --- 5. OPERAȚII NUMERICE ---
-    if (canBeNumeric(left) && canBeNumeric(right)) {
-
-        if (op == L"^" || op == L"**") {
-            return { std::pow(vDataToDouble(left), vDataToDouble(right)) };
-        }
-
-        if (left.isInt() && right.isInt()) {
-            long long iL = std::get<long long>(left.value);
-            long long iR = std::get<long long>(right.value);
-
-            if (op == L"-") return { iL - iR };
-            if (op == L"*") return { iL * iR };
-            if (op == L"%") return iR != 0 ? vData(iL % iR) : vData();
-            if (op == L"/") {
-                if (iR == 0) return vData();
-                return (iL % iR == 0) ? vData(iL / iR) : vData((double)iL / (double)iR);
-            }
-        }
-
-        double dL = vDataToDouble(left);
-        double dR = vDataToDouble(right);
-        if (op == L"-") return { dL - dR };
-        if (op == L"*") return { dL * dR };
-        if (op == L"/") return std::abs(dR) > 1e-12 ? vData(dL / dR) : vData();
-
-        if (op == L"<")  return { dL < dR };
-        if (op == L">")  return { dL > dR };
-        if (op == L"<=") return { dL <= dR };
-        if (op == L">=") return { dL >= dR };
-    }
-
-    // --- 6. OPERATORI LOGICI ---
-    if (op == L"&&") return { vDataToBool(left) && vDataToBool(right) };
-    if (op == L"||") return { vDataToBool(left) || vDataToBool(right) };
-
-    // --- 7. STRING COMPARISON ---
-    if (left.isString() || right.isString()) {
-        std::wstring sL = vDataToWString(left);
-        std::wstring sR = vDataToWString(right);
-        if (op == L"<")  return { sL < sR };
-        if (op == L">")  return { sL > sR };
-    }
-
-    return vData();
-}
-  */
 
 vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& left, const vData& right) {
     // --- 1. OPERATORI DE COALESCENCE ---
@@ -4309,7 +4230,11 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
 
       if (posStartBody == std::wstring::npos) posStartBody = posEnd;
 
-      std::wstring controlExpr = trim(fullLine.substr(6, posStartBody - 6)); // "SWITCH " are 7 caractere
+      size_t spaceAfterSwitch = fullLine.find(L' ', 0);
+      if (spaceAfterSwitch == std::wstring::npos) return; // Switch fără expresie?
+
+      std::wstring controlExpr = trim(fullLine.substr(spaceAfterSwitch, posStartBody - spaceAfterSwitch));
+
       vData controlValue = evaluateExpression(controlExpr);
       std::wstring controlStr = vDataToWString(controlValue);
 
@@ -4378,40 +4303,48 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
       size_t kwLen = upperKey.length();
 
       for (size_t i = 0; i < line.length(); ++i) {
+          // 1. Gestionare ghilimele
           if (line[i] == L'"' && (i == 0 || line[i - 1] != L'\\')) {
               inQuotes = !inQuotes;
               continue;
           }
           if (inQuotes) continue;
 
-          // --- FIX CRITIC: Verificăm keyword-ul la nivelul de adâncime curent ---
-          // Dacă căutăm CASE/DEFAULT, vrem să le găsim la depth 1 (în interiorul SWITCH-ului curent)
-          // Dacă căutăm ENDSWITCH, vrem să îl găsim când depth redevine 0 (sau este 1 înainte de scădere)
+          // 2. Verificăm dacă suntem la un cuvânt cheie (normalizat)
+          // Extragem o porțiune sigură pentru a nu ieși din string
+          std::wstring currentChunk = toUpper(line.substr(i, (std::min)(kwLen, line.length() - i)));
 
-          std::wstring sub = toUpper(line.substr(i, kwLen));
-          if (sub == upperKey) {
+          if (currentChunk == upperKey) {
               bool startOk = (i == 0 || iswspace(line[i - 1]) || wcschr(L";()[]{}\"", line[i - 1]));
               bool endOk = (i + kwLen >= line.length() || iswspace(line[i + kwLen]) || wcschr(L";()[]{}\"", line[i + kwLen]));
 
-              // Logica de aur: CASE/DEFAULT apar la depth 1. ENDSWITCH ne scoate la depth 0.
               if (startOk && endOk) {
-                  // Dacă căutăm ENDSWITCH, acceptăm să îl găsim la depth 1 (pentru că el ne va închide blocul)
+                  // Dacă căutăm ENDSWITCH, el este valid la depth 1 (ne va scoate la 0)
                   if (upperKey == L"ENDSWITCH" && depth == 1) return i;
-                  // Dacă căutăm CASE/DEFAULT, le vrem la depth 1
+                  // CASE și DEFAULT sunt valide doar direct în interiorul switch-ului curent
                   if ((upperKey == L"CASE" || upperKey == L"DEFAULT") && depth == 1) return i;
-                  // Fallback pentru alte căutări la nivel 0
+                  // Pentru alte căutări la nivelul de bază
                   if (depth == 0 && upperKey != L"ENDSWITCH") return i;
               }
           }
 
-          // --- Gestionare adâncime (după verificare) ---
-          if (line.substr(i, 6) == L"SWITCH") {
-              depth++;
-              i += 5;
+          // 3. --- FIX-UL CRITIC: Gestionare adâncime CASE-INSENSITIVE ---
+          if (i + 6 <= line.length()) {
+              std::wstring checkSwitch = toUpper(line.substr(i, 6));
+              if (checkSwitch == L"SWITCH") {
+                  depth++;
+                  i += 5; // Sărim peste restul cuvântului
+                  continue;
+              }
           }
-          else if (line.substr(i, 9) == L"ENDSWITCH") {
-              depth--;
-              i += 8;
+
+          if (i + 9 <= line.length()) {
+              std::wstring checkEnd = toUpper(line.substr(i, 9));
+              if (checkEnd == L"ENDSWITCH") {
+                  depth--;
+                  i += 8;
+                  continue;
+              }
           }
       }
       return std::wstring::npos;
@@ -4582,7 +4515,7 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       LOG_INFO(L"----------------------------------");
       LOG_INFO(L"");
   }
-
+  /*
   void vOliEngine::handleDefCommand(const ShellCommand& sc) {
       if (sc.args.size() < 3) {
           LOG_ERROR(L"[SYNTAX ERROR] Usage: def struct/class Name { field1, field2 }");
@@ -4632,6 +4565,55 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       LOG_SUCCESS(L"Blueprint '" + typeName + L"' (as " + subTypeLower + L") recorded with " +
           std::to_wstring(cleanFields.size()) + L" fields.");
   }
+  */
+
+
+  void vOliEngine::handleDefCommand(const ShellCommand& sc) {
+      if (sc.args.size() < 3) {
+          LOG_ERROR(L"[SYNTAX ERROR] Usage: def class Name { field, method() }");
+          return;
+      }
+
+      std::wstring subType = to_lower(sc.args[0]);
+      std::wstring typeName = to_upper(sc.args[1]); // Normalizăm numele tipului
+
+      // Extragem conținutul dintre acolade (curățat de spații)
+      std::wstring fullLine;
+      for (size_t i = 2; i < sc.args.size(); ++i) fullLine += sc.args[i];
+
+      size_t start = fullLine.find(L'{');
+      size_t end = fullLine.find(L'}');
+      if (start == std::wstring::npos || end == std::wstring::npos) return;
+
+      std::wstring content = fullLine.substr(start + 1, end - start - 1);
+      std::vector<std::wstring> tokens = wexplodeQuoteSafe(content, L',');
+
+      vTypeBlueprint bp;
+      bp.name = typeName;
+      bp.isClass = (subType == L"class");
+
+      for (auto& t : tokens) {
+          std::wstring item = trim(t);
+          size_t paren = item.find(L'(');
+
+          if (paren != std::wstring::npos) {
+              // Este o METODĂ
+              std::wstring methodName = to_upper(trim(item.substr(0, paren)));
+              // Mapăm "METODA" -> "CLASA::METODA"
+              bp.methods[methodName] = typeName + L"::" + methodName;
+          }
+          else {
+              // Este un CÂMP
+              bp.fields.push_back(to_lower(item));
+          }
+      }
+
+      m_blueprints[typeName] = bp;
+      LOG_SUCCESS(L"Interpreter Blueprint '" + typeName + L"' registered with " +
+          std::to_wstring(bp.fields.size()) + L" fields and " +
+          std::to_wstring(bp.methods.size()) + L" methods.");
+  }
+
 
   void vOliEngine::updateDataMember(vData& container, const vData& key, const vData& newValue) {
       // 1. CAZUL MAP

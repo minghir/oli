@@ -72,7 +72,7 @@ public:
                     if (two == L"==" || two == L"!=" || two == L">=" || two == L"<=" ||
                         two == L"&&" || two == L"||" || two == L"++" || two == L"--" ||
                         two == L"**" || two == L"??" || two == L".." ||
-                        two == L"<<" || two == L">>" || // <-- ADĂUGAT: Bitwise Shift
+						two == L"<<" || two == L">>" || two == L"::" ||
                         two == L"+=" || two == L"-=" || two == L"*=" || two == L"/=") {
                         flush();
                         tokens.push_back(two);
@@ -124,30 +124,7 @@ public:
         flush();
         return tokens;
     }
-    /*
-    static ShellCommand parse(const std::wstring& line) {
-        ShellCommand cmd;
-        if (line.empty()) return cmd;
-
-        auto tokens = tokenize(line);
-        if (tokens.empty()) return cmd;
-
-        cmd.name = tokens[0];
-        std::wstring upperName = cmd.name;
-        std::transform(upperName.begin(), upperName.end(), upperName.begin(), ::towupper);
-
-        if (!vOliKeyWords::isShellCommand(upperName)) {
-            return cmd;
-        }
-
-        for (size_t i = 1; i < tokens.size(); ++i) {
-            cmd.args.push_back(tokens[i]);
-        }
-
-        cmd.isValid = true;
-        return cmd;
-    }
-    */
+    
 
     static ShellCommand parse(const std::wstring& line) {
         ShellCommand cmd;

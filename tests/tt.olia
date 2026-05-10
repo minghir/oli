@@ -1,0 +1,101 @@
+﻿[2026-05-10 23:08:24] [SUCCESS] Logarea în fișier a fost activată (UTF-8)
+--- OLI ASSEMBLY LISTING ---
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_DEF_TYPE      0000 (Type: INAMIC, CLASS, Fields: 2, Methods: 0)
+    Field [0]: 0001 (Name: hp)
+    Field [1]: 0002 (Name: nume)
+0010: OP_DEF_TYPE      0003 (Type: SEFINAMIC, CLASS, Fields: 4, Methods: 0)
+    Field [0]: 0001 (Name: hp)
+    Field [1]: 0002 (Name: nume)
+    Field [2]: 0004 (Name: armura)
+    Field [3]: 0005 (Name: furie)
+0024: OP_CONSTANT     0006 (Value: SefInamic)
+0027: OP_CALL_NATIVE  0007 (Name: NEW, Args: 1)
+0031: OP_SET_GLOBAL   0008 (Name: $boss)
+0034: OP_GET_GLOBAL   0008 (Name: $boss)
+0037: OP_CONSTANT     0002 (Value: nume)
+0040: OP_CONSTANT     0009 (Value: Moroianu Cel Rau)
+0043: OP_SET_INDIRECT
+0044: OP_GET_GLOBAL   0008 (Name: $boss)
+0047: OP_CONSTANT     0001 (Value: hp)
+0050: OP_CONSTANT     0010 (Value: 500)
+0053: OP_SET_INDIRECT
+0054: OP_GET_GLOBAL   0008 (Name: $boss)
+0057: OP_CONSTANT     0004 (Value: armura)
+0060: OP_CONSTANT     0011 (Value: 50)
+0063: OP_SET_INDIRECT
+0064: OP_GET_GLOBAL   0008 (Name: $boss)
+0067: OP_CONSTANT     0005 (Value: furie)
+0070: OP_CONSTANT     0012 (Value: false)
+0073: OP_SET_INDIRECT
+0074: OP_CONSTANT     0013 (Value: --- Status Initial ---)
+0077: OP_ECHO
+0078: OP_CONSTANT     0014 (Value: HP: )
+0081: OP_GET_GLOBAL   0008 (Name: $boss)
+0084: OP_CONSTANT     0001 (Value: hp)
+0087: OP_GET_INDIRECT
+0088: OP_CONCAT
+0089: OP_ECHO
+0090: OP_CONSTANT     0015 (Value: Armura: )
+0093: OP_GET_GLOBAL   0008 (Name: $boss)
+0096: OP_CONSTANT     0004 (Value: armura)
+0099: OP_GET_INDIRECT
+0100: OP_CONCAT
+0101: OP_ECHO
+0102: OP_GET_GLOBAL   0016 (Name: ()
+0105: OP_GET_GLOBAL   0017 (Name: &)
+0108: OP_GET_GLOBAL   0008 (Name: $boss)
+0111: OP_GET_GLOBAL   0018 (Name: ))
+0114: OP_CALL         0019 (Name: UPGRADE_BOSS, Args: 4)
+0118: OP_CONSTANT     0020 (Value: --- Status Dupa Upgrade ---)
+0121: OP_ECHO
+0122: OP_CONSTANT     0014 (Value: HP: )
+0125: OP_GET_GLOBAL   0008 (Name: $boss)
+0128: OP_CONSTANT     0001 (Value: hp)
+0131: OP_GET_INDIRECT
+0132: OP_CONCAT
+0133: OP_ECHO
+0134: OP_CONSTANT     0015 (Value: Armura: )
+0137: OP_GET_GLOBAL   0008 (Name: $boss)
+0140: OP_CONSTANT     0004 (Value: armura)
+0143: OP_GET_INDIRECT
+0144: OP_CONCAT
+0145: OP_ECHO
+0146: OP_CONSTANT     0021 (Value: Furie: )
+0149: OP_GET_GLOBAL   0008 (Name: $boss)
+0152: OP_CONSTANT     0005 (Value: furie)
+0155: OP_GET_INDIRECT
+0156: OP_CONCAT
+0157: OP_ECHO
+0158: OP_RETURN
+
+--- FUNCTION: UPGRADE_BOSS (Params: pPtr) ---
+=== DISASSEMBLY: UPGRADE_BOSS ===
+0000: OP_GET_GLOBAL   0000 (Name: $pPtr)
+0003: OP_GET_INDIRECT
+0004: OP_CONSTANT     0001 (Value: hp)
+0007: OP_CONSTANT     0002 (Value: 100)
+0010: OP_SET_INDIRECT
+0011: OP_POP
+0012: OP_GET_GLOBAL   0000 (Name: $pPtr)
+0015: OP_GET_INDIRECT
+0016: OP_CONSTANT     0003 (Value: armura)
+0019: OP_CONSTANT     0004 (Value: 2)
+0022: OP_SET_INDIRECT
+0023: OP_POP
+0024: OP_GET_GLOBAL   0000 (Name: $pPtr)
+0027: OP_GET_INDIRECT
+0028: OP_CONSTANT     0005 (Value: furie)
+0031: OP_CONSTANT     0006 (Value: true)
+0034: OP_SET_INDIRECT
+0035: OP_CONSTANT     0007 (Value: [FUNC] Upgrade complet pentru )
+0038: OP_GET_GLOBAL   0000 (Name: $pPtr)
+0041: OP_GET_INDIRECT
+0042: OP_CONSTANT     0008 (Value: nume)
+0045: OP_GET_INDIRECT
+0046: OP_CONCAT
+0047: OP_ECHO
+0048: OP_RETURN
+

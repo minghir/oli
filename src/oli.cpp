@@ -35,7 +35,7 @@ public:
 
 
 int main(int argc, char* argv[]) {
-    ConsoleManager::getInstance().setMinLogLevel(LogLevel::LOG_ERROR);
+    ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
     // 1. Detectăm dacă STDIN este terminal sau pipe
     bool stdin_is_terminal = isatty(fileno(stdin));
 

@@ -3,5 +3,5 @@ echo $a++
 echo $a
 
 set $b = &$a
-echo *$b++
+echo (*$b)++
 echo *$b

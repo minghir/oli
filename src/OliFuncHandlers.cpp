@@ -25,35 +25,8 @@ void vOliEngine::initializeFunctionsHandlers() {
         return vData(1LL);
         };
     vOliKeyWords::registerNativeFunction(L"INCLUDE");
+    
     /*
-    m_functionsHandlers[L"REF"] = [this](const std::vector<vData>& args) -> vData {
-        if (args.empty()) return { std::monostate{} };
-
-        // Avem nevoie de numele variabilei (ex: REF("a"))
-        std::wstring varName = vDataToWString(args[0]);
-        if (varName[0] == L'$') varName.erase(0, 1);
-
-        // Căutăm variabila în memorie (Global sau Local)
-        vData* targetPtr = nullptr;
-        if (!m_callStack.empty()) {
-            auto& locals = m_callStack.back().localVariables;
-            if (locals.count(varName)) targetPtr = &locals[varName];
-        }
-
-        if (!targetPtr && m_globalVariables.count(varName)) {
-            targetPtr = &m_globalVariables[varName];
-        }
-
-        if (targetPtr) {
-            vData refResult;
-            refResult.value = targetPtr; // Stocăm adresa brută
-            return refResult;
-        }
-
-        return { std::monostate{} };
-        };
-        */
-
     m_functionsHandlers[L"NEW"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData(std::monostate{});
 
@@ -76,7 +49,40 @@ void vOliEngine::initializeFunctionsHandlers() {
         LOG_ERROR(L"Unknown blueprint: " + typeName);
         return vData(std::monostate{});
         };
+        */
+    m_functionsHandlers[L"NEW"] = [this](const std::vector<vData>& args) -> vData {
+        if (args.empty()) return vData(std::monostate{});
+
+        // --- FIX CRITIC: Normalizăm numele la UPPERCASE ---
+        std::wstring rawTypeName = args[0].toWString();
+        std::wstring typeName = to_upper(rawTypeName);
+
+        auto it = m_blueprints.find(typeName);
+        if (it != m_blueprints.end()) {
+            vTypeBlueprint& bp = it->second;
+            vDataMap instance = std::make_shared<std::unordered_map<std::wstring, vData>>();
+
+            // Populăm instanța cu câmpurile din blueprint
+            for (const auto& field : bp.fields) {
+                // Recomandat: inițializează cu 0 sau string gol, nu null, 
+                // pentru a evita probleme la operații matematice ulterioare
+                (*instance)[field] = vData(0LL);
+            }
+
+            // IMPORTANT: Salvăm tipul tot UPPER pentru ca OP_CALL_METHOD să-l găsească
+            (*instance)[L"__type__"] = vData(typeName);
+
+            LOG_DEBUG(L"[VM] Instantiere reusita pentru: " + typeName);
+            return vData(instance);
+        }
+
+        LOG_ERROR(L"Unknown blueprint: " + typeName + L" (Original: " + rawTypeName + L")");
+        return vData(std::monostate{});
+        };
+
     vOliKeyWords::registerNativeFunction(L"NEW");
+
+
     m_functionsHandlers[L"REF"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return { std::monostate{} };
 

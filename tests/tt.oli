@@ -1,0 +1,32 @@
+# 1. Definim "clasele" (pentru moment, manual)
+def class Inamic { hp, nume }
+def class SefInamic { hp, nume, armura, furie }
+
+# 2. Funcția care lucrează cu REFERINȚĂ (Pointer)
+# In loc să primească o copie, primește adresa obiectului
+func upgrade_boss($pPtr)
+    (*$pPtr).hp += 100
+    (*$pPtr).armura *= 2
+    (*$pPtr).furie = true
+    echo "[FUNC] Upgrade complet pentru " .. (*$pPtr).nume
+endfunc
+
+# 3. Instanțiere
+$boss = new("SefInamic")
+$boss.nume = "Moroianu Cel Rau"
+$boss.hp = 500
+$boss.armura = 50
+$boss.furie = false
+
+echo "--- Status Initial ---"
+echo "HP: " .. $boss.hp
+echo "Armura: " .. $boss.armura
+
+# 4. APELUL PRIN REFERINȚĂ (&)
+# Trimitem adresa lui $boss, nu obiectul întreg
+upgrade_boss(&$boss)
+
+echo "--- Status Dupa Upgrade ---"
+echo "HP: " .. $boss.hp
+echo "Armura: " .. $boss.armura
+echo "Furie: " .. $boss.furie

@@ -87,7 +87,9 @@ enum class OpCode : uint8_t {
     OP_HALT,
 
 	// --- OBIECTE ȘI PROCEDURI ---
-    OP_DEF_TYPE // [OpCode] [NameIdx] [isClass] [FieldCount] [Field1Idx]
+    OP_DEF_TYPE, // [OpCode] [NameIdx] [isClass] [FieldCount] [Field1Idx]
+    OP_SET_PTR,
+    OP_SWAP
 };
 
 struct ByteCodeProcedure {
@@ -128,6 +130,7 @@ struct OliChunk {
 
 inline std::wstring disassembleChunk(const OliChunk& chunk, const std::wstring& chunkName = L"Main") {
     std::wstringstream ss;
+    ss << L"\n=== DISASSEMBLY: " << chunkName << L" ===\n"; // <--- Adaugă asta!
     size_t ip = 0;
 
     while (ip < chunk.code.size()) {
@@ -266,26 +269,37 @@ inline std::wstring disassembleChunk(const OliChunk& chunk, const std::wstring& 
         }
         case OpCode::OP_HALT:   ss << L"OP_HALT\n"; break;
         case OpCode::OP_DEF_TYPE: {
-            if (ip + 2 > chunk.code.size()) break; // Siguranță
-            // 1. Citim Numele Tipului
+            if (ip + 2 > chunk.code.size()) break;
+
             uint16_t nameIdx = (chunk.code[ip] << 8) | chunk.code[ip + 1];
             ip += 2;
 
-            // 2. Citim Flag-ul isClass și Numărul de Câmpuri
             uint8_t isClass = chunk.code[ip++];
             uint8_t fieldCount = chunk.code[ip++];
 
             ss << L"OP_DEF_TYPE      " << std::setw(4) << nameIdx
                 << L" (Type: " << chunk.constants[nameIdx].toWString()
                 << L", " << (isClass ? L"CLASS" : L"STRUCT")
-                << L", Fields: " << (int)fieldCount << L")\n";
+                << L", Fields: " << (int)fieldCount;
 
-            // 3. Afișăm indexul fiecărui câmp pentru claritate
+            // NOU: Citim și numărul de metode din bytecode
+            uint8_t methodCount = chunk.code[ip++];
+            ss << L", Methods: " << (int)methodCount << L")\n";
+
+            // Afișăm câmpurile
             for (int i = 0; i < (int)fieldCount; ++i) {
                 uint16_t fIdx = (chunk.code[ip] << 8) | chunk.code[ip + 1];
                 ip += 2;
                 ss << L"    Field [" << i << L"]: " << std::setw(4) << fIdx
                     << L" (Name: " << chunk.constants[fIdx].toWString() << L")\n";
+            }
+
+            // NOU: Afișăm și metodele pentru a păstra sincronizarea cu bytecode-ul
+            for (int i = 0; i < (int)methodCount; ++i) {
+                uint16_t mIdx = (chunk.code[ip] << 8) | chunk.code[ip + 1];
+                ip += 2;
+                ss << L"    Method [" << i << L"]: " << std::setw(4) << mIdx
+                    << L" (Name: " << chunk.constants[mIdx].toWString() << L")\n";
             }
             break;
         }
@@ -297,6 +311,8 @@ inline std::wstring disassembleChunk(const OliChunk& chunk, const std::wstring& 
                 << L" (Args: " << (int)argCount << L", Context & Name on Stack)\n";
             break;
         }
+        case OpCode::OP_SET_PTR: ss << L"OP_SET_PTR\n"; break;
+        case OpCode::OP_SWAP:    ss << L"OP_SWAP\n";    break;
 
         default:
             ss << L"UNKNOWN_OP [0x" << std::hex << (int)instruction << std::dec << L"]\n";

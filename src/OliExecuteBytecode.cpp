@@ -836,7 +836,7 @@ vData* vOliEngine::resolveVMPath(const std::wstring& rootName, const std::vector
 
     return current;
 }
-
+/*
 bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
     if (pluginName.empty()) return false;
 
@@ -874,12 +874,26 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
     bool loadedAnything = false;
 
     // --- A. Încărcare FUNCȚII (NATIVE CALLS) ---
-    typedef void (*RegisterFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&);
-    RegisterFunc regFunc = (RegisterFunc)PortTools::getFunctionSymbol(hLib, "LoadOliPlugin");
+   
+    typedef void (*LoadFunctionsFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&, void*);
+    LoadFunctionsFunc regFuncs = (LoadFunctionsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliFunctionPlugin");
 
-    if (regFunc) {
-        regFunc(this->m_functionsHandlers);
-        LOG_SUCCESS(L"Functions injected from: " + dllPath);
+    if (regFuncs) {
+        std::unordered_map<std::wstring, OliFunctionHandler> dummyFuncs;
+        try {
+            // Trimitem nullptr pentru context, compilatorul vrea doar cheile (numele)
+            regFuncs(dummyFuncs, nullptr);
+            for (auto const& [name, handler] : dummyFuncs) {
+                if (!name.empty()) {
+                    vOliKeyWords::registerNativeFunction(name);
+                    LOG_DEBUG(L"Compiler recognized native function: " + name);
+                }
+            }
+            
+        }
+        catch (...) {
+            LOG_ERROR(L"Failed to extract functions from plugin metadata.");
+        }
         loadedAnything = true;
     }
 
@@ -909,6 +923,115 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
         return false;
     }
 }
+*/
+
+bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
+    if (pluginName.empty()) return false;
+
+    // 1. Curățare ghilimele
+    if (pluginName.size() >= 2 && pluginName.front() == L'"' && pluginName.back() == L'"') {
+        pluginName = pluginName.substr(1, pluginName.size() - 2);
+    }
+
+    // 2. Construire cale DLL
+    std::wstring dllPath = (pluginName.find(L'/') == std::wstring::npos && pluginName.find(L'\\') == std::wstring::npos)
+        ? m_pluginsPath + pluginName
+        : pluginName;
+
+    std::wstring ext = PortTools::getPluginExtension();
+    if (dllPath.size() < ext.size() || dllPath.substr(dllPath.size() - ext.size()) != ext) {
+        dllPath += ext;
+    }
+
+    // 3. Încărcare bibliotecă
+    PortTools::LibHandle hLib = PortTools::loadDynamicLibrary(dllPath);
+    if (!hLib) {
+        LOG_ERROR(L"Could not load plugin: " + dllPath + L" (Error: " + PortTools::getLastErrorString() + L")");
+        return false;
+    }
+
+    bool loadedAnything = false;
+
+    // --- A. ÎNCĂRCARE FUNCȚII (NATIVE CALLS) ---
+    
+    typedef void (*LoadFunctionsFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&, void*);
+    LoadFunctionsFunc regFuncs = (LoadFunctionsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliPlugin");
+
+    if (regFuncs) {
+        // 1. Map temporar pentru a izola funcțiile din acest plugin
+        std::unordered_map<std::wstring, OliFunctionHandler> pluginFuncs;
+        try {
+            regFuncs(pluginFuncs, this); // Plugin-ul umple map-ul temporar
+
+            // 2. Normalizăm și mutăm în map-ul principal al motorului
+            for (auto const& [name, handler] : pluginFuncs) {
+                std::wstring upName = name;
+                for (auto& c : upName) c = std::towupper(c);
+
+                // Acum înregistrăm în VM cu numele normalizat
+                this->m_functionsHandlers[upName] = handler;
+
+                // Spunem și parserului/compilatorului din VM că e funcție nativă
+                vOliKeyWords::registerNativeFunction(upName);
+
+                LOG_DEBUG(L"Injected function: " + upName);
+            }
+            loadedAnything = true;
+            LOG_SUCCESS(L"Functions injected from: " + dllPath);
+        }
+        catch (...) { LOG_ERROR(L"Exception in LoadOliPlugin"); }
+    }
+
+    // --- B. ÎNCĂRCARE COMENZI (CU ADAPTARE LA std::function<void(const std::wstring&)>) ---
+    typedef void (*LoadCommandsFunc)(std::unordered_map<std::wstring, OliCommandHandler>&, void*);
+    LoadCommandsFunc regCmds = (LoadCommandsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliCommandPlugin");
+
+    if (regCmds) {
+        // Map temporar pentru ce vrea plugin-ul (OliCommandHandler lucrează cu ShellCommand)
+        std::unordered_map<std::wstring, OliCommandHandler> pluginCmds;
+        try {
+            regCmds(pluginCmds, this);
+
+            for (auto const& [name, handler] : pluginCmds) {
+                // ADAPTOR: Învelim comanda din plugin (ShellCommand) în formatul clasei tale (wstring)
+                this->m_commandHandlers[name] = [handler, name](const std::wstring& line) {
+                    ShellCommand cmd;
+                    cmd.name = name; // Numele comenzii înregistrate
+                    cmd.isValid = true;
+
+                    // Parsare simplă a argumentelor (split by space)
+                    // Dacă ai deja o funcție de split în motor, folosește-o pe aceea
+                    std::wstringstream ss(line);
+                    std::wstring arg;
+                    while (ss >> arg) {
+                        cmd.args.push_back(arg);
+                    }
+
+                    // Apelăm handler-ul din plugin cu obiectul populat
+                    handler(cmd);
+                    };
+
+                vOliKeyWords::registerDynamicCommand(name);
+            }
+            loadedAnything = true;
+            LOG_SUCCESS(L"Commands injected and adapted: " + dllPath);
+        }
+        catch (...) { LOG_ERROR(L"Exception in LoadOliCommandPlugin"); }
+    }
+
+    // 5. Finalizare
+    if (loadedAnything) {
+        LOG_SUCCESS(L"Plugin '" + pluginName + L"' is fully operational.");
+        return true;
+    }
+    else {
+        LOG_ERROR(L"Invalid Plugin: No entry points (LoadOliFunctionPlugin/LoadOliCommandPlugin) found in " + dllPath);
+        PortTools::freeDynamicLibrary(hLib);
+        return false;
+    }
+}
+
+
 /*
 vData vOliEngine::callUserByteCodeFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context) {
     LOG_INFO(L"[VM] Apel functia: " + funcName + L" cu " + std::to_wstring(args.size()) + L" argumente.");

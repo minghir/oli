@@ -65,8 +65,12 @@ private:
     std::wstring m_accumulator;
     std::vector<std::wstring> m_history;
 
+    //using OliCommandHandler = std::function<void(const ShellCommand&)>;
     //std::map<std::wstring, OliCommandHandler> m_commandHandlers;
+
     std::unordered_map<std::wstring, std::function<void(const std::wstring&)>> m_commandHandlers;
+    //std::unordered_map<std::wstring, OliCommandHandler> m_commandHandlers;
+
     //std::unordered_map<std::wstring, std::function<void(const ShellCommand&)>> m_commandHandlers;
 
     std::unordered_map<std::wstring, OliFunctionHandler> m_functionsHandlers;

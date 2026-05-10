@@ -1,13 +1,17 @@
-﻿[2026-05-08 22:37:09] [SUCCESS] Logarea în fișier a fost activată (UTF-8)
+﻿[2026-05-10 09:53:20] [SUCCESS] Logarea în fișier a fost activată (UTF-8)
 --- OLI ASSEMBLY LISTING ---
 
-0000: OP_PLUGIN       0000 (Path: oli_canvas)
-0003: OP_PLUGIN       0001 (Path: oli_math)
-0006: OP_PLUGIN       0002 (Path: oli_keyboard)
-0009: OP_PLUGIN       0003 (Path: oli_time)
-0012: OP_CALL         0004 (Name: RENDER_DIAMOND_SOLID, Args: 0)
-0016: OP_SET_GLOBAL   0005 (Name: $res)
-0019: OP_RETURN
+0000: OP_GET_GLOBAL   0000 (Name: config)
+0003: OP_POP
+0004: OP_GET_GLOBAL   0000 (Name: config)
+0007: OP_POP
+0008: OP_PLUGIN       0001 (Path: oli_canvas)
+0011: OP_PLUGIN       0002 (Path: oli_math)
+0014: OP_PLUGIN       0003 (Path: oli_keyboard)
+0017: OP_PLUGIN       0004 (Path: oli_time)
+0020: OP_CALL         0005 (Name: RENDER_DIAMOND_SOLID, Args: 0)
+0024: OP_SET_GLOBAL   0006 (Name: $res)
+0027: OP_RETURN
 
 --- FUNCTION: RENDER_DIAMOND_SOLID (Params: ) ---0000: OP_CONSTANT     0000 (Value: 800)
 0003: OP_SET_GLOBAL   0001 (Name: $W)

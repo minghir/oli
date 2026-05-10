@@ -10,8 +10,8 @@ plugin oli_fract
 plugin oli_time
 plugin oli_sprites
 
-set $SW = 640
-set $SH = 480
+set $SW = 800
+set $SH = 600
 set $v = CAN_INIT($SW, $SH, "Oli Engine - Starfield Invaders")
 set $ptr = CAN_GET_PTR()
 set $ship_size = 40
@@ -23,10 +23,10 @@ set $myShip = SPRITE_LOAD("./examples/games/winvaders/ship.png")
 SPRITE_SIZE($myShip, $ship_size, $ship_size)
 
 # 2. Inițializare Sistem Stele (Parallax)
-set $numStars = 160
-set $starX = []
-set $starY = []
-set $starSpeed = []
+set $numStars = 80
+set $starX = array($numStars)      # REPARAT
+set $starY = array($numStars)      # REPARAT
+set $starSpeed = array($numStars)  # REPARAT
 
 for $i = 0 to $numStars - 1 do
     set $starX[$i] = RANDOM(0, $SW)
@@ -39,9 +39,9 @@ set $y = 350
 
 # 2.5 Inițializare Gloanțe (Max 10 pe ecran simultan)
 set $maxBullets = 1
-set $bX = []
-set $bY = []
-set $bActive = []
+set $bX = array($maxBullets)       # REPARAT
+set $bY = array($maxBullets)       # REPARAT
+set $bActive = array($maxBullets)  # REPARAT
 set $bulletSpeed = 12
 
 for $i = 0 to $maxBullets - 1 do
@@ -59,9 +59,9 @@ set $eSize = 30
 SPRITE_SIZE($enemyShip, $eSize, $eSize)
 
 set $numEnemies = 8
-set $eX = []
-set $eY = []
-set $eAlive = []
+set $eX = array($numEnemies)       # REPARAT
+set $eY = array($numEnemies)       # REPARAT
+set $eAlive = array($numEnemies)   # REPARAT
 set $eSpeed = 2
 set $eDirection = 1 # 1 = dreapta, -1 = stânga
 
@@ -74,17 +74,36 @@ endfor
 
 # 2.7 Inițializare Gloanțe Inamici
 set $maxEBullets = 5
-set $ebX = []
-set $ebY = []
-set $ebActive = []
+set $ebX = array($maxEBullets)
+set $ebY = array($maxEBullets)
+set $ebActive = array($maxEBullets)
 set $eBulletSpeed = 5
 
 for $i = 0 to $maxEBullets - 1 do
     set $ebActive[$i] = 0
 endfor
 
+set $oldTime = TIME()
+set $smoothFps = 60.0  # Începem cu o valoare estimată
+set $frameCount = 0
 
 while true do
+
+	# 1. Calcul Delta Time
+    set $currentTime = TIME()
+    set $dt = $currentTime - $oldTime
+    set $oldTime = $currentTime
+
+    # 2. Calcul FPS și Netezire cu LERP
+    if $dt > 0 then
+        set $instantFps = 1.0 / $dt
+        
+        # Folosim LERP: 
+        # LERP(valoare_curentă, valoare_nouă, factor_de_netezire)
+        # Un factor de 0.05 înseamnă că "adoptăm" 5% din noua valoare la fiecare cadru
+        set $smoothFps = LERP($smoothFps, $instantFps, 0.05)
+    endif
+
     # Ștergem buffer-ul
     CAN_CLS(0)
 
@@ -264,6 +283,8 @@ endfor
         endfor
     endif
 
+	CAN_PUT_TXT(10, 10, "FPS: " + STR(INT($smoothFps)))
+	
 	CAN_PRESENT()
 	
     # Limite ecran (neschimbat)
@@ -272,7 +293,7 @@ endfor
     if $y < 0 then set $y = 0 endif
     if $y > $VPH then set $y = $VPH endif
 
-    SLEEP(16)
+    SLEEP(12)
     if KEY_STATE(81) == 1 then break endif
 endwhile
 

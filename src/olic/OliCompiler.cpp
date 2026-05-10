@@ -1897,13 +1897,13 @@ void OliCompiler::loadPluginMetadata(std::wstring pluginName) {
 
     // --- B. ÎNCĂRCARE FUNCȚII DIN PLUGIN (Asta lipsea!) ---
     // Presupunând că ai un simbol similar pentru funcții, de ex: "LoadOliFunctionPlugin"
-    typedef void (*LoadFunctionsFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&, void*);
-    LoadFunctionsFunc regFuncs = (LoadFunctionsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliFunctionPlugin");
+    typedef void (*LoadFunctionsFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&);
+    LoadFunctionsFunc regFuncs = (LoadFunctionsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliPlugin");
 
     if (regFuncs) {
         std::unordered_map<std::wstring, OliFunctionHandler> dummyFuncs;
         try {
-            regFuncs(dummyFuncs, nullptr);
+            regFuncs(dummyFuncs);
             for (auto const& [name, handler] : dummyFuncs) {
                 if (!name.empty()) {
                     // Înregistrăm numele ca fiind o funcție nativă (C++)

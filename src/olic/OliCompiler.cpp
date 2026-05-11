@@ -1425,62 +1425,74 @@ void OliCompiler::emitConstant(const vData& value, OliChunk& chunk, int line) {
 void OliCompiler::emitLoadOrConstant(const std::wstring& arg, OliChunk& chunk) {
     if (arg.empty()) return;
 
-    if (arg == L"true" || arg == L"false") {
-        emitConstant(vData(arg == L"true"), chunk, 0);
-        return;
+    // --- 0. PRE-PROCESARE PREFIXE (Mapping @ -> $) ---
+    std::wstring normalizedArg = arg;
+    if (arg[0] == L'@') {
+        normalizedArg = L"$" + arg.substr(1);
+        LOG_DEBUG(L"[EMIT_LOAD] Mapping global alias: " + arg + L" -> " + normalizedArg);
     }
 
-    // 0. GESTIONARE NULL / MONOSTATE
-    if (arg == L"NULL" || arg == L"null" || arg == L"monostate") {
+    // --- 1. LITERALI (Booleeni, Null) ---
+    if (normalizedArg == L"true" || normalizedArg == L"false") {
+        emitConstant(vData(normalizedArg == L"true"), chunk, 0);
+        return;
+    }
+    if (normalizedArg == L"NULL" || normalizedArg == L"null" || normalizedArg == L"monostate") {
         emitConstant(vData(std::monostate{}), chunk, 0);
         return;
     }
 
-    // 1. LITERAL STRING
-    if (arg.size() >= 2 && arg.front() == L'\"' && arg.back() == L'\"') {
-        std::wstring cleanStr = arg.substr(1, arg.size() - 2);
+    // --- 2. LITERAL STRING ---
+    if (normalizedArg.size() >= 2 && normalizedArg.front() == L'\"' && normalizedArg.back() == L'\"') {
+        std::wstring cleanStr = normalizedArg.substr(1, normalizedArg.size() - 2);
         emitConstant(vData(cleanStr), chunk, 0);
         return;
     }
 
-    // 2. LITERAL NUMĂR
-    if (std::iswdigit(arg[0]) || (arg.size() > 1 && arg[0] == L'-' && std::iswdigit(arg[1]))) {
-        double val = std::stod(arg);
-        emitConstant(vData(val), chunk, 0);
+    // --- 3. LITERAL NUMĂR ---
+    if (std::iswdigit(normalizedArg[0]) || (normalizedArg.size() > 1 && normalizedArg[0] == L'-' && std::iswdigit(normalizedArg[1]))) {
+        try {
+            double val = std::stod(normalizedArg);
+            emitConstant(vData(val), chunk, 0);
+        } catch (...) {
+            LOG_ERROR(L"Eroare conversie număr: " + normalizedArg);
+        }
         return;
     }
 
-    // 3. DEREFERENȚIERE POINTER
-    if (arg[0] == L'*') {
-        emitLoadOrConstant(arg.substr(1), chunk);
+    // --- 4. DEREFERENȚIERE POINTER (*$ptr) ---
+    if (normalizedArg[0] == L'*') {
+        emitLoadOrConstant(normalizedArg.substr(1), chunk);
         chunk.addByte((uint8_t)OpCode::OP_GET_INDIRECT, 0);
         return;
     }
 
-    // 4. VARIABILE (Cu prefix $ sau @)
-    if (arg[0] == L'$' || arg[0] == L'@') {
+    // --- 5. VARIABILE (Cu prefix $ sau indirație $$a) ---
+    if (normalizedArg[0] == L'$') {
         size_t dollarCount = 0;
-        while (dollarCount < arg.size() && (arg[dollarCount] == L'$' || arg[dollarCount] == L'@')) {
+        while (dollarCount < normalizedArg.size() && normalizedArg[dollarCount] == L'$') {
             dollarCount++;
         }
 
-        std::wstring baseName = arg.substr(dollarCount - 1); // Păstrăm un singur prefix ($ sau @)
-        chunk.addByte((uint8_t)OpCode::OP_GET_GLOBAL, 0);
+        // Luăm numele de bază (ex: din $$$a luăm $a)
+        std::wstring baseName = L"$" + normalizedArg.substr(dollarCount);
+        
+        // Emitem încărcarea rădăcinii
         uint16_t nameIdx = chunk.addConstant(vData(baseName));
+        chunk.addByte((uint8_t)OpCode::OP_GET_GLOBAL, 0);
         chunk.addByte((uint8_t)(nameIdx >> 8), 0);
         chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
 
+        // Aplicăm indirațiile suplimentare (pentru $$ sau $$$)
         for (size_t i = 1; i < dollarCount; ++i) {
             chunk.addByte((uint8_t)OpCode::OP_GET_INDIRECT, 0);
         }
         return;
     }
 
-    // 5. CAZ DEFAULT: Eroare sau tratare ca variabilă fără prefix
-    // Dacă ajungem aici cu "++", înseamnă că parserul a greșit, 
-    // dar cel puțin nu mai emitem cod pentru NULL.
+    // --- 6. CAZ DEFAULT (Nume fără prefix - tratat ca Global) ---
+    uint16_t nameIdx = chunk.addConstant(vData(normalizedArg));
     chunk.addByte((uint8_t)OpCode::OP_GET_GLOBAL, 0);
-    uint16_t nameIdx = chunk.addConstant(vData(arg));
     chunk.addByte((uint8_t)(nameIdx >> 8), 0);
     chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
 }
@@ -1789,9 +1801,19 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk, const std::unord
 
         // A. Dacă e INDEXARE (@a[0] = x)
         if (lhs->type == ASTNodeType::Operator && (lhsOp == L"INDEX" || lhsOp == L"[" || lhsOp == L"DOT")) {
+			ASTPtr collectionNode = lhs->children[0];
+			std::wstring collectionName = reconstructRawName(collectionNode);
+			// TRATARE @: Dacă începe cu @, emitem forțat o încărcare GLOBALĂ
+			if (!collectionName.empty() && collectionName[0] == L'@') {
+				// Opțional: poți mapa @ în $ intern dacă VM-ul tău caută după $
+				// std::wstring finalName = L"$" + collectionName.substr(1);
+				emitLoadOrConstant(collectionName, chunk); 
+			} else {
+				generateFromAST(collectionNode, chunk, externalProcs);
+			}
             LOG_DEBUG(L"[DEBUG_ASSIGN] -> Ramura: INDEXARE detectata.");
 
-            generateFromAST(lhs->children[0], chunk, externalProcs);
+            
             if (lhsOp == L"DOT") emitConstant(vData(lhs->children[1]->value), chunk, 0);
             else generateFromAST(lhs->children[1], chunk, externalProcs);
 
@@ -2216,7 +2238,22 @@ void OliCompiler::emitStore(const std::wstring& varName, OliChunk& chunk) {
 void OliCompiler::emitStore(const std::wstring& varName, OliChunk& chunk) {
     LOG_DEBUG(L"[DEBUG_EMIT] emitStore chemat pentru: " + varName);
     if (varName.empty()) return;
+		
+		
+	
+	
+	// --- 0. TRATARE SCOPE GLOBAL (@var = valoare) ---
+    // Dacă variabila începe cu @, o mapăm intern la variabila globală echivalentă
+    std::wstring finalVarName = varName;
+    bool forceGlobal = false;
 
+    if (varName[0] == L'@') {
+        forceGlobal = true;
+        // Transformăm @memo în $memo pentru a partaja aceeași locație de memorie
+        finalVarName = L"$" + varName.substr(1);
+        LOG_DEBUG(L"[DEBUG_EMIT] -> Detectat prefix @. Mapare: " + varName + L" -> " + finalVarName);
+    }
+	
     // --- 1. DEREFERENȚIERE POINTER (*$ptr = valoare) ---
     // Exemplu: *$b = 10
     if (varName[0] == L'*') {

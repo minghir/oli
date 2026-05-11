@@ -52,6 +52,9 @@
     <ClCompile Include="src\OliExecuteBytecode.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\OliCompiler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\ASTNode.hpp">
@@ -96,6 +99,8 @@
     <ClInclude Include="src\vDataSerialize.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\OliBytecode.hpp" />
+    <ClInclude Include="src\OliCompiler.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="tests\factorial.oli">

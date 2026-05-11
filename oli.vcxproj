@@ -138,6 +138,7 @@
     <ClCompile Include="src\ASTNode.cpp" />
     <ClCompile Include="src\ConsoleManager.cpp" />
     <ClCompile Include="src\oli.cpp" />
+    <ClCompile Include="src\OliCompiler.cpp" />
     <ClCompile Include="src\OliEngine.cpp" />
     <ClCompile Include="src\OliExecuteBytecode.cpp" />
     <ClCompile Include="src\OliExpressionParser.cpp" />
@@ -152,7 +153,9 @@
     <ClInclude Include="src\ConsoleManager.hpp" />
     <ClInclude Include="src\IOliEngine.hpp" />
     <ClInclude Include="src\IShellEngine.hpp" />
+    <ClInclude Include="src\OliBytecode.hpp" />
     <ClInclude Include="src\OliCommandParser.hpp" />
+    <ClInclude Include="src\OliCompiler.hpp" />
     <ClInclude Include="src\OliEngine.hpp" />
     <ClInclude Include="src\OliExpressionParser.hpp" />
     <ClInclude Include="src\OliKeyWords.hpp" />

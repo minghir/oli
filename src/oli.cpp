@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
 
                 // B. Salvare Assembly Listing (.olia)
                 std::wstring assemblyPath = str_to_wstr(outputPath) + L".olia";
-                std::wofstream asmf(assemblyPath);
+                std::wofstream asmf(assemblyPath.c_str());
 
                 // Folosim același safe_imbue pentru scriere
                 try { asmf.imbue(std::locale("")); }

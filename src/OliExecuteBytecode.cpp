@@ -164,7 +164,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
             vData b = stack.back(); stack.pop_back();
             vData a = stack.back(); stack.pop_back();
             double valB = vDataToDouble(b);
-            if (valB == 0) { this->logError(L"Runtime Error: Div by zero!"); this->m_executionStatus = OliStatus::ERR; return; }
+            if (valB == 0) { LOG_ERROR(L"Runtime Error: Div by zero!"); this->m_executionStatus = OliStatus::ERR; return; }
             stack.push_back(vData(vDataToDouble(a) / valB));
             break;
         }
@@ -511,7 +511,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
                 stack.push_back(result);
             }
             else {
-                this->logError(L"Runtime Error: Functia '" + funcName + L"' nu a fost gasita.");
+                LOG_ERROR(L"Runtime Error: Functia '" + funcName + L"' nu a fost gasita.");
                 this->m_executionStatus = OliStatus::ERR;
                 return;
             }
@@ -527,7 +527,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
 
             // Încărcăm plugin-ul folosind noua metodă internă
             if (!this->internalLoadPlugin(pluginPath)) {
-                this->logError(L"VM Error: Failed to load plugin required by bytecode: " + pluginPath);
+                LOG_ERROR(L"VM Error: Failed to load plugin required by bytecode: " + pluginPath);
                 this->m_executionStatus = OliStatus::ERR;
                 return;
             }
@@ -806,7 +806,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
                 stack.push_back(result);
             }
             else {
-                this->logError(L"Runtime Error: Metoda '" + funcName + L"' nu a fost găsită.");
+                LOG_ERROR(L"Runtime Error: Metoda '" + funcName + L"' nu a fost găsită.");
                 this->m_executionStatus = OliStatus::ERR;
                 return;
             }
@@ -888,7 +888,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
         }
 
         default:
-            this->logError(L"VM Error: OpCode necunoscut [0x" + std::to_wstring((int)instruction) + L"] la IP: " + std::to_wstring(ip - 1));
+            LOG_ERROR(L"VM Error: OpCode necunoscut [0x" + std::to_wstring((int)instruction) + L"] la IP: " + std::to_wstring(ip - 1));
             this->m_executionStatus = OliStatus::ERR; return;
         }
 
@@ -901,7 +901,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
 void vOliEngine::loadAndRunBytecode(const std::string& path) {
     std::ifstream ifs(path, std::ios::binary);
     if (!ifs.is_open()) {
-        this->logError(L"Could not open bytecode file: " + str_to_wstr(path));
+        LOG_ERROR(L"Could not open bytecode file: " + str_to_wstr(path));
         return;
     }
 

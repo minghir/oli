@@ -1,0 +1,7 @@
+plugin oli_power
+
+INJECT_HERO
+
+STATS
+
+echo $hero_name

@@ -296,46 +296,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
             generateFromAST(exprAST, chunk, externalProcs);
         }
     }
-    /*
-    else if (cmdName == L"DEF") {
-        if (sc.args.size() < 3) return;
-
-        // 1. struct / class
-        std::wstring subType = to_lower(sc.args[0]);
-        bool isClass = (subType == L"class");
-
-        // 2. Numele Tipului
-        std::wstring typeName = sc.args[1];
-        uint16_t nameIdx = chunk.addConstant(vData(typeName));
-
-        // 3. Extragerea Câmpurilor (între { și })
-        std::vector<uint16_t> fieldIndices;
-        bool inBraces = false;
-
-        for (size_t i = 2; i < sc.args.size(); ++i) {
-            if (sc.args[i] == L"{") { inBraces = true; continue; }
-            if (sc.args[i] == L"}") { inBraces = false; break; }
-
-            if (inBraces && sc.args[i] != L",") {
-                fieldIndices.push_back(chunk.addConstant(vData(sc.args[i])));
-            }
-        }
-
-        // 4. Emiterea Bytecode-ului
-        chunk.addByte((uint8_t)OpCode::OP_DEF_TYPE, 0);
-        chunk.addByte((uint8_t)(nameIdx >> 8), 0);
-        chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
-        chunk.addByte(isClass ? 1 : 0, 0);
-        chunk.addByte((uint8_t)fieldIndices.size(), 0);
-
-        for (uint16_t fIdx : fieldIndices) {
-            chunk.addByte((uint8_t)(fIdx >> 8), 0);
-            chunk.addByte((uint8_t)(fIdx & 0xFF), 0);
-        }
-
-        LOG_DEBUG(L"[COMPILER] DEF Type: " + typeName + L" with " + std::to_wstring(fieldIndices.size()) + L" fields.");
-    }
-    */
+    
     else if (cmdName == L"DEF") {
         if (sc.args.size() < 3) return;
 
@@ -747,76 +708,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
         }
     }
 
-    /*
-    else if (cmdName == L"FUNC") {
-        LOG_DEBUG(L"[DEBUG] Entering FUNC block parsing...");
-        // 1. Parsăm Header-ul: SUMA($a, $b)
-        std::wstring header = L"";
-        for (const auto& a : sc.args) header += a;
-
-        size_t openP = header.find(L'(');
-        size_t closeP = header.find(L')');
-        if (openP == std::wstring::npos || closeP == std::wstring::npos) {
-            LOG_DEBUG(L"[DEBUG] ERROR: Invalid FUNC header.");
-            return;
-        }
-
-        std::wstring funcName = to_upper(trim(header.substr(0, openP)));
-        LOG_DEBUG(L"[DEBUG] Function Name: " + funcName);
-
-        std::wstring paramsPart = header.substr(openP + 1, closeP - openP - 1);
-
-        // 2. Delimităm corpul funcției
-        int bodyStart = 0;
-        for (int i = 0; i < (int)sc.args.size(); ++i) {
-            if (sc.args[i].find(L')') != std::wstring::npos) {
-                bodyStart = i + 1;
-                break;
-            }
-        }
-
-        int bodyEnd = -1;
-        int depth = 1;
-        for (int i = bodyStart; i < (int)sc.args.size(); ++i) {
-            std::wstring argU = to_upper(sc.args[i]);
-            if (argU == L"FUNC") depth++;
-            if (argU == L"ENDFUNC") {
-                depth--;
-                if (depth == 0) { bodyEnd = i; break; }
-            }
-        }
-        if (bodyEnd == -1) bodyEnd = (int)sc.args.size();
-
-        // 3. Pregătim obiectul procedurii COMPLET (Nume + Parametri)
-        ByteCodeProcedure proc;
-        proc.name = funcName;
-        proc.compiledBody = std::make_shared<OliChunk>();
-
-        // IMPORTANT: Extragem parametrii ACUM, înainte de înregistrarea în map
-        auto pTokens = splitW(paramsPart, L", ");
-        for (auto& p : pTokens) {
-            std::wstring cleaned = trim(p);
-            if (cleaned == L"...") proc.isVariadic = true;
-            else if (!cleaned.empty()) proc.params.push_back(this->cleanVariableName(cleaned));
-        }
-
-        // 4. ÎNREGISTRARE (Shell) - Permitem recursivitatea
-        // Acum 'chunk.procedures' conține o funcție FACTORIAL care are parametri corecți.
-        chunk.procedures[funcName] = proc;
-        LOG_DEBUG(L"[DEBUG] Registered shell for " + funcName + L". Starting sub-block compile..." ) ;
-        // 5. COMPILARE CORP (UN SINGUR APEL - cu 5 argumente)
-        // ATENȚIE: Nu mai adăuga un al doilea apel după acesta!
-        compileSubBlock(sc.args, bodyStart, bodyEnd, *(proc.compiledBody), chunk.procedures);
-
-        // 6. Return implicit și salvare binară
-        if (proc.compiledBody->code.empty() || proc.compiledBody->code.back() != (uint8_t)OpCode::OP_RETURN) {
-            proc.compiledBody->addByte((uint8_t)OpCode::OP_RETURN, 0);
-        }
-
-        // Salvăm varianta cu bytecode-ul proaspăt compilat înapoi în map
-        chunk.procedures[funcName] = proc;
-    }
-    */
+    
     else if (cmdName == L"FUNC") {
         LOG_DEBUG(L"[DEBUG] Entering FUNC block parsing...");
 
@@ -1349,24 +1241,8 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
             }
             }
             // 2. FALLBACK PENTRU EXPRESII LIBERE ($a = 10 sau test())
-    // Dacă am ajuns aici, sc.isValid e false, dar avem tokenii în sc.name + sc.args
+    
             /*
-    else {
-        // FALLBACK pentru expresii libere ($a = 10, test())
-        std::vector<std::wstring> tokens;
-        tokens.push_back(sc.name);
-        for (const auto& arg : sc.args) tokens.push_back(arg);
-
-        OliExpressionParser exprParser(tokens);
-        ASTPtr exprAST = exprParser.parse();
-        if (exprAST) {
-            if (exprAST->type == ASTNodeType::Variable && tokens.size() == 1) return;
-            generateFromAST(exprAST, chunk, externalProcs);
-            chunk.addByte((uint8_t)OpCode::OP_POP, 0); // Curățăm stiva
-        }
-    }
-    */
-
             else {
                 // 1. Reconstruim numele potențialei proceduri
                 std::wstring funcName = to_upper(sc.name);
@@ -1413,6 +1289,45 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
                     }
                 }
             }
+            */
+            else {
+                // 1. Reconstruim toată linia într-un vector de tokeni pentru a fi parsați ca o expresie
+                std::vector<std::wstring> tokens;
+                tokens.push_back(sc.name);
+                for (const auto& arg : sc.args) {
+                    tokens.push_back(arg);
+                }
+
+                // 2. Pasăm TOTUL la Parserul de Expresii
+                // Parserul va știi să transforme "upgrade_boss(&$boss)" într-un nod FunctionCall corect
+                OliExpressionParser exprParser(tokens);
+                ASTPtr exprAST = exprParser.parse();
+
+                if (exprAST) {
+                    // Determinăm dacă expresia este ceva ce lasă un rezultat „murdar” pe stivă
+                    // (Vrem să păstrăm stiva curată în Main după fiecare linie executată)
+                    bool isAssignment = (exprAST->type == ASTNodeType::Operator &&
+                        (exprAST->value == L"=" || exprAST->value == L"+=" || exprAST->value == L"-="));
+
+                    // Verificăm dacă este un apel de funcție (care de obicei returnează ceva)
+                    bool isCall = (exprAST->type == ASTNodeType::FunctionCall || exprAST->value == L"DYNAMIC_CALL");
+
+                    // 3. Generăm bytecode-ul folosind arborele (AST)
+                    // Acesta va apela corect logica de filtrare a parantezelor și OP_GET_ADDR pentru '&'
+                    generateFromAST(exprAST, chunk, externalProcs);
+
+                    // 4. MANAGEMENTUL STIVEI
+                    // Dacă e un apel de funcție de sine stătător (nu e într-un echo sau atribuire),
+                    // dăm POP la valoarea returnată pentru a nu bloca stiva VM-ului.
+                    if (isCall && !isAssignment) {
+                        chunk.addByte((uint8_t)OpCode::OP_POP, 0);
+                        LOG_DEBUG(L"[COMPILER] Adaugat OP_POP pentru a curata stiva dupa apelul: " + sc.name);
+                    }
+                }
+                else {
+                    LOG_ERROR(L"Eroare de sintaxa: Nu am putut interpreta linia: " + sc.name);
+                }
+}
 }
  
 void OliCompiler::emitConstant(const vData& value, OliChunk& chunk, int line) {
@@ -1787,7 +1702,7 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk, const std::unord
 */
 void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk, const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs) {
     if (!node) return;
-
+    /*
     // 1. ATRIBUIRE
     std::wstring opValue = to_upper(node->value);
     if (node->type == ASTNodeType::Operator && (opValue == L"=" || opValue == L"SET" ||
@@ -1846,6 +1761,109 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk, const std::unord
         }
 
         LOG_DEBUG(L"[DEBUG_ASSIGN] -> EROARE: Nicio ramura de atribuire nu a fost aleasa!");
+        return;
+    }
+    */
+    // --- 1. ATRIBUIRE (Assignment & Compound Assignment) ---
+    std::wstring opValue = to_upper(node->value);
+    if (node->type == ASTNodeType::Operator && (opValue == L"=" || opValue == L"SET" ||
+        opValue == L"+=" || opValue == L"-=" || opValue == L"*=" || opValue == L"/=")) {
+
+        ASTPtr lhs = node->children[0];
+        ASTPtr rhs = node->children[1];
+        std::wstring lhsOp = to_upper(lhs->value);
+
+        LOG_DEBUG(L"[DEBUG_ASSIGN] Procesare Op: " + opValue + L" pe LHS: " + lhs->value);
+
+        // =========================================================================
+        // A. RAMURA INDEXARE: Obiecte, Array-uri sau Dereferențieri ($obj.prop, $arr[0])
+        // =========================================================================
+        if (lhs->type == ASTNodeType::Operator && (lhsOp == L"INDEX" || lhsOp == L"[" || lhsOp == L"DOT")) {
+            LOG_DEBUG(L"[DEBUG_ASSIGN] -> Detectata ramura INDEXARE (Map/Array/Object)");
+
+            ASTPtr collectionNode = lhs->children[0];
+
+            // 1. Pregătim terenul: Punem CONTAINERUL și CHEIA pe stivă
+            // Acestea trebuie să fie primele două elemente pentru OP_SET_INDIRECT final.
+            std::wstring collectionName = reconstructRawName(collectionNode);
+            if (!collectionName.empty() && collectionName[0] == L'@') {
+                emitLoadOrConstant(collectionName, chunk);
+            }
+            else {
+                generateFromAST(collectionNode, chunk, externalProcs);
+            }
+
+            // Punem cheia (numele proprietății sau indexul)
+            if (lhsOp == L"DOT") emitConstant(vData(lhs->children[1]->value), chunk, 0);
+            else generateFromAST(lhs->children[1], chunk, externalProcs);
+
+            // Stiva acum: [Container, Key]
+
+            // 2. Gestionăm OPERATORII COMPUȘI (+=, -=, etc.)
+            if (opValue != L"=" && opValue != L"SET") {
+                LOG_DEBUG(L"[DEBUG_ASSIGN] -> Calcul compus detectat pentru membru. Extragem valoarea veche.");
+
+                // Pentru a face +=, trebuie să știm ce era înainte acolo.
+                // Re-evaluăm containerul și cheia pentru a apela un GET temporar.
+                // (Alternativ, dacă ai instrucțiune DUP2 în VM, ar fi mai eficient)
+                generateFromAST(collectionNode, chunk, externalProcs);
+                if (lhsOp == L"DOT") emitConstant(vData(lhs->children[1]->value), chunk, 0);
+                else generateFromAST(lhs->children[1], chunk, externalProcs);
+
+                chunk.addByte((uint8_t)OpCode::OP_GET_INDIRECT, 0); // Stiva: [Container, Key, OldValue]
+
+                // Evaluăm partea dreaptă a egalului (RHS)
+                generateFromAST(rhs, chunk, externalProcs); // Stiva: [Container, Key, OldValue, RHSValue]
+
+                // Aplicăm operația matematică
+                if (opValue == L"+=")      chunk.addByte((uint8_t)OpCode::OP_ADD, 0);
+                else if (opValue == L"-=") chunk.addByte((uint8_t)OpCode::OP_SUB, 0);
+                else if (opValue == L"*=") chunk.addByte((uint8_t)OpCode::OP_MUL, 0);
+                else if (opValue == L"/=") chunk.addByte((uint8_t)OpCode::OP_DIV, 0);
+
+                // Stiva finală înainte de salvare: [Container, Key, CalculatedNewValue]
+            }
+            else {
+                // Atribuire simplă: Doar evaluăm RHS
+                generateFromAST(rhs, chunk, externalProcs); // Stiva: [Container, Key, RHSValue]
+            }
+
+            // 3. Executăm salvarea în memorie
+            chunk.addByte((uint8_t)OpCode::OP_SET_INDIRECT, 0);
+            LOG_DEBUG(L"[DEBUG_ASSIGN] -> Emis OP_SET_INDIRECT pentru structura.");
+            return;
+        }
+
+        // =========================================================================
+        // B. RAMURA NORMALĂ: Variabile simple ($boss = ...)
+        // =========================================================================
+        std::wstring rawLHS = reconstructRawName(lhs);
+        if (!rawLHS.empty()) {
+            LOG_DEBUG(L"[DEBUG_ASSIGN] -> Detectata ramura NORMALA (Variabila: " + rawLHS + L")");
+
+            if (opValue == L"=" || opValue == L"SET") {
+                // Cazul simplu: calculăm RHS și stocăm
+                generateFromAST(rhs, chunk, externalProcs);
+            }
+            else {
+                LOG_DEBUG(L"[DEBUG_ASSIGN] -> Calcul compus pe variabila simpla.");
+                // Cazul compus: Luăm valoarea actuală, calculăm RHS, facem operația
+                generateFromAST(lhs, chunk, externalProcs); // Load Old
+                generateFromAST(rhs, chunk, externalProcs); // Load RHS
+
+                if (opValue == L"+=")      chunk.addByte((uint8_t)OpCode::OP_ADD, 0);
+                else if (opValue == L"-=") chunk.addByte((uint8_t)OpCode::OP_SUB, 0);
+                else if (opValue == L"*=") chunk.addByte((uint8_t)OpCode::OP_MUL, 0);
+                else if (opValue == L"/=") chunk.addByte((uint8_t)OpCode::OP_DIV, 0);
+            }
+
+            // Salvăm rezultatul final în variabilă
+            LOG_DEBUG(L"[DEBUG_ASSIGN] -> Apelam emitStore pentru: " + rawLHS);
+            emitStore(rawLHS, chunk);
+            return;
+        }
+
+        LOG_DEBUG(L"[DEBUG_ASSIGN] -> EROARE: LHS-ul nu este o destinatie valida pentru scriere!");
         return;
     }
 
@@ -1934,77 +1952,8 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk, const std::unord
         return;
     }
 
+    
     /*
-    // --- 4. APELURI DE FUNCȚII (Inclusiv TYPE()) ---
-    if (node->type == ASTNodeType::FunctionCall) {
-        bool isDynamic = (node->value == L"DYNAMIC_CALL");
-        ASTPtr funcSource = isDynamic ? node->children[0] : node;
-
-        // A. VERIFICĂM DACĂ ESTE UN APEL DE TIP METODĂ: $p.metoda()
-        if (isDynamic && funcSource->value == L"DOT") {
-            // 1. Punem argumentele pe stivă
-            size_t startIdx = 1;
-            for (size_t i = startIdx; i < node->children.size(); ++i) {
-                generateFromAST(node->children[i], chunk, externalProcs);
-            }
-
-            // 2. Punem obiectul ($p) pe stivă
-            // Acesta va fi extras de VM și folosit ca $this
-            generateFromAST(funcSource->children[0], chunk, externalProcs);
-
-            // 3. Punem NUMELE metodei pe stivă (ca string constant, ex: "ataca")
-            // IMPORTANT: NU facem OP_GET_INDIRECT aici!
-            emitConstant(vData(funcSource->children[1]->value), chunk, 0);
-
-            // 4. Emitem apelul de metodă
-            uint8_t argCount = (uint8_t)std::min((size_t)255, node->children.size() - startIdx);
-            chunk.addByte((uint8_t)OpCode::OP_CALL_METHOD, 0);
-            chunk.addByte(argCount, 0);
-
-            LOG_DEBUG(L"[COMPILER] Method Call: " + funcSource->children[1]->value + L" with " + std::to_wstring(argCount) + L" args.");
-            return;
-        }
-
-        // B. PREGĂTIRE NUME ȘI TYPE()
-        std::wstring rawName = isDynamic ? node->children[0]->value : node->value;
-        std::wstring funcName = to_upper(trim(rawName));
-        LOG_DEBUG(L"[DEBUG_CALL] Functie: " + funcName + L" | Native: " + (vOliKeyWords::isNativeFunction(funcName) ? L"DA" : L"NU"));
-        // Suport pentru funcția intrinsecă TYPE()
-        if (funcName == L"TYPE") {
-            generateFromAST(node->children[isDynamic ? 1 : 0], chunk, externalProcs);
-            chunk.addByte((uint8_t)OpCode::OP_TYPE, 0);
-            return;
-        }
-
-        // C. GENERARE ARGUMENTE PENTRU APEL NORMAL
-        size_t startIdx = isDynamic ? 1 : 0;
-        for (size_t i = startIdx; i < node->children.size(); ++i) {
-            generateFromAST(node->children[i], chunk, externalProcs);
-        }
-
-        if (funcName.empty()) funcName = L"__INVALID_CALL__";
-        uint8_t argCount = (uint8_t)std::min((size_t)255, node->children.size() - startIdx);
-        uint16_t nameIdx = chunk.addConstant(vData(funcName));
-
-        // D. LOGICA DE DECIZIE (SOLUȚIA PENTRU TB_SPLIT)
-        // Nu verificăm dacă există în procedures (single-pass issue).
-        // Verificăm DOAR dacă este o comandă nativă cunoscută de motor (PRINT, LEN, MAP etc.)
-        if (vOliKeyWords::isNativeFunction(funcName)) {
-            chunk.addByte((uint8_t)OpCode::OP_CALL_NATIVE, 0);
-        }
-        else {
-            // Dacă nu e în lista de keywords native, presupunem că este o funcție 
-            // definită în script (chiar dacă apare mai jos în cod).
-            chunk.addByte((uint8_t)OpCode::OP_CALL, 0);
-        }
-
-        chunk.addByte((uint8_t)((nameIdx >> 8) & 0xFF), 0);
-        chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
-        chunk.addByte(argCount, 0);
-        return;
-    }
-    */
-
     // --- 4. APELURI DE FUNCȚII (Inclusiv TYPE() și Metode) ---
     if (node->type == ASTNodeType::FunctionCall) {
         bool isDynamic = (node->value == L"DYNAMIC_CALL");
@@ -2085,6 +2034,111 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk, const std::unord
         chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
         chunk.addByte(finalArgCount, 0); // Transmitem numărul REAL de argumente (1)
 
+        return;
+    }
+    */
+
+    // --- 4. APELURI DE FUNCȚII (Inclusiv TYPE() și Metode) ---
+// Verificăm dacă nodul curent este un apel de funcție sau un apel dinamic
+    if (node->type == ASTNodeType::FunctionCall || node->value == L"DYNAMIC_CALL") {
+        bool isDynamic = (node->value == L"DYNAMIC_CALL");
+        ASTPtr funcSource = isDynamic ? node->children[0] : node;
+
+        // A. IDENTIFICARE NUME FUNCȚIE
+        // Dacă este dinamic (ex: $obj.metoda()), numele vine din primul copil
+        std::wstring rawName = isDynamic ? node->children[0]->value : node->value;
+        std::wstring funcName = to_upper(trim(rawName));
+
+        LOG_DEBUG(L"[COMPILER] Pregatire apel pentru: " + funcName + (isDynamic ? L" (DINAMIC)" : L" (STATIC)"));
+
+        // B. COLECTARE ARGUMENTE REALE (FILTRARE ANTI-FANTOME)
+        // Eliminăm token-urile de control (paranteze, virgule) care pot rămâne în AST din faza de parsing
+        std::vector<ASTPtr> realArgs;
+        size_t startIdx = isDynamic ? 1 : 0;
+
+        for (size_t i = startIdx; i < node->children.size(); ++i) {
+            ASTPtr arg = node->children[i];
+            if (arg->value == L"(" || arg->value == L")" || arg->value == L",") {
+                LOG_DEBUG(L"  -> Skip token control: " + arg->value);
+                continue;
+            }
+            realArgs.push_back(arg);
+        }
+
+        // C. CAZ SPECIAL: TYPE()
+        // Intrinsecul TYPE() returnează tipul unei variabile/obiect la runtime
+        if (funcName == L"TYPE") {
+            if (!realArgs.empty()) {
+                LOG_DEBUG(L"  -> Procesare intrinsec TYPE()");
+                generateFromAST(realArgs[0], chunk, externalProcs);
+                chunk.addByte((uint8_t)OpCode::OP_TYPE, 0);
+            }
+            return;
+        }
+
+        // D. CAZ SPECIAL: APEL METODĂ ($obj.metoda())
+        // Dacă sursa funcției este un operator DOT, înseamnă că avem un apel de metodă pe obiect
+        if (isDynamic && funcSource->value == L"DOT") {
+            LOG_DEBUG(L"  -> Detectat apel de metoda: " + funcSource->children[1]->value);
+
+            // 1. Punem argumentele pe stivă
+            for (auto& arg : realArgs) generateFromAST(arg, chunk, externalProcs);
+
+            // 2. Punem obiectul ($this) pe stivă
+            generateFromAST(funcSource->children[0], chunk, externalProcs);
+
+            // 3. Punem numele metodei (constant string)
+            emitConstant(vData(funcSource->children[1]->value), chunk, 0);
+
+            chunk.addByte((uint8_t)OpCode::OP_CALL_METHOD, 0);
+            chunk.addByte((uint8_t)realArgs.size(), 0);
+            return;
+        }
+
+        // E. APEL NORMAL (GLOBAL SAU NATIV)
+        uint8_t finalArgCount = 0;
+        LOG_DEBUG(L"  -> Procesare argumente (" + std::to_wstring(realArgs.size()) + L" gasite)");
+
+        for (size_t i = 0; i < realArgs.size(); ++i) {
+            ASTPtr arg = realArgs[i];
+
+            // --- LOGICA PENTRU REFERINȚĂ (&) ---
+            // Dacă argumentul este operatorul de adresă, forțăm obținerea adresei variabilei
+            if (arg->value == L"&" || arg->value == L"ADDRESS_OF") {
+                if (i + 1 < realArgs.size()) {
+                    ASTPtr varNode = realArgs[i + 1];
+                    LOG_DEBUG(L"    -> Argument[" + std::to_wstring(finalArgCount) + L"]: REFERINTA la " + varNode->value);
+
+                    uint16_t nameIdx = chunk.addConstant(vData(varNode->value));
+                    chunk.addByte((uint8_t)OpCode::OP_GET_ADDR, 0);
+                    chunk.addByte((nameIdx >> 8) & 0xFF, 0);
+                    chunk.addByte(nameIdx & 0xFF, 0);
+
+                    i++; // Consumăm și nodul variabilei, deoarece i-am luat deja adresa
+                    finalArgCount++;
+                    continue;
+                }
+            }
+
+            // Generare standard pentru argumente normale (expresii, literali, variabile)
+            LOG_DEBUG(L"    -> Argument[" + std::to_wstring(finalArgCount) + L"]: Evaluare valoare (" + arg->value + L")");
+            generateFromAST(arg, chunk, externalProcs);
+            finalArgCount++;
+        }
+
+        // F. EMITERE INSTRUCȚIUNE CALL FINALĂ
+        // Alegem între CALL (procedură utilizator) și CALL_NATIVE (funcție C++ înregistrată)
+        uint16_t nameIdx = chunk.addConstant(vData(funcName.empty() ? L"__INVALID__" : funcName));
+        OpCode callOp = vOliKeyWords::isNativeFunction(funcName) ? OpCode::OP_CALL_NATIVE : OpCode::OP_CALL;
+
+        chunk.addByte((uint8_t)callOp, 0);
+        chunk.addByte((uint8_t)((nameIdx >> 8) & 0xFF), 0);
+        chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
+
+        // Transmitem numărul REAL de argumente (fără paranteze sau tokeni skip-uiți)
+        chunk.addByte(finalArgCount, 0);
+
+        LOG_DEBUG(L"[COMPILER] Apel finalizat: " + funcName + L" | Args: " + std::to_wstring(finalArgCount));
         return;
     }
 

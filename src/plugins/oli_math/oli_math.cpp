@@ -101,10 +101,20 @@ void RegisterMathFunctions(std::unordered_map<std::wstring, std::function<vData(
         return vData{ std::sin(rad) };
         };
 
+    registry[L"SINR"] = [=](const std::vector<vData>& a) -> vData {
+        if (a.empty()) return vData{ 0.0 };
+        return vData{ std::sin(toDouble(a[0])) };
+        };
+
     registry[L"COS"] = [=](const std::vector<vData>& a) -> vData {
         if (a.empty()) return vData{ 0.0 };
         double rad = toDouble(a[0]) * (PI_VAL / 180.0);
         return vData{ std::cos(rad) };
+        };
+
+    registry[L"COSR"] = [=](const std::vector<vData>& a) -> vData {
+        if (a.empty()) return vData{ 0.0 };
+        return vData{ std::cos(toDouble(a[0])) };
         };
 
     registry[L"TAN"] = [=](const std::vector<vData>& a) -> vData {

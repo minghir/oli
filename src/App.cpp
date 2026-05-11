@@ -45,10 +45,10 @@ void App::shutdown() {
 }
 
 void App::startConsole() {
-   ConsoleManager::getInstance().initialize(); 
-   ConsoleManager::getInstance().setColor(FOREGROUND_GREEN);
+   //ConsoleManager::getInstance().initialize(); 
+   //ConsoleManager::getInstance().setColor(FOREGROUND_GREEN);
    //ConsoleManager::getInstance().log(L"Consola inițializată! [AppInit] Începe inițializarea aplicației...");
-   ConsoleManager::getInstance().resetColor();
+   //ConsoleManager::getInstance().resetColor();
    
    
 }

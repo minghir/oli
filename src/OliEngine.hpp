@@ -292,11 +292,11 @@ private:
         }
 
         void logSuccess(const std::wstring& msg) override {
-          //  LOG_SUCCESS(msg); // Presupunând că LOG_SUCCESS e un macro sau funcție globală
+            LOG_SUCCESS(msg); // Presupunând că LOG_SUCCESS e un macro sau funcție globală
         }
 
         void logError(const std::wstring& msg) override {
-         //   LOG_ERROR(msg);
+            LOG_ERROR(msg);
         }
     
         ///bitecode

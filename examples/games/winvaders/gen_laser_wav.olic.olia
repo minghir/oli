@@ -1,0 +1,84 @@
+--- OLI ASSEMBLY LISTING ---
+Source: ./examples/games/winvaders/gen_laser_wav.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_PLUGIN       0000 (Path: oli_miniaudio)
+0003: OP_PLUGIN       0001 (Path: oli_math)
+0006: OP_CONSTANT     0002 (Value: Generăm laserul... de data asta va suna cum trebuie!)
+0009: OP_ECHO
+0010: OP_CONSTANT     0003 (Value: 22050)
+0013: OP_SET_GLOBAL   0004 (Name: $sampleRate)
+0016: OP_CONSTANT     0005 (Value: 0.4)
+0019: OP_SET_GLOBAL   0006 (Name: $duration)
+0022: OP_GET_GLOBAL   0004 (Name: $sampleRate)
+0025: OP_GET_GLOBAL   0006 (Name: $duration)
+0028: OP_MUL
+0029: OP_SET_GLOBAL   0007 (Name: $numSamples)
+0032: OP_GET_GLOBAL   0007 (Name: $numSamples)
+0035: OP_CALL_NATIVE  0008 (Name: ARRAY, Args: 1)
+0039: OP_SET_GLOBAL   0009 (Name: $samples)
+0042: OP_CONSTANT     0010 (Value: 1500)
+0045: OP_SET_GLOBAL   0011 (Name: $fStart)
+0048: OP_CONSTANT     0012 (Value: 150)
+0051: OP_SET_GLOBAL   0013 (Name: $fEnd)
+0054: OP_CONSTANT     0014 (Value: 3.14159)
+0057: OP_SET_GLOBAL   0015 (Name: $PI)
+0060: OP_CONSTANT     0016 (Value: 0)
+0063: OP_SET_GLOBAL   0017 (Name: $phase)
+0066: OP_CONSTANT     0016 (Value: 0)
+0069: OP_SET_GLOBAL   0018 (Name: $i)
+0072: OP_GET_GLOBAL   0018 (Name: $i)
+0075: OP_GET_GLOBAL   0007 (Name: $numSamples)
+0078: OP_CONSTANT     0019 (Value: 1)
+0081: OP_SUB
+0082: OP_GREATER
+0083: OP_JUMP_IF_TRUE  0101 (Sari la: 187)
+0086: OP_GET_GLOBAL   0018 (Name: $i)
+0089: OP_GET_GLOBAL   0007 (Name: $numSamples)
+0092: OP_DIV
+0093: OP_SET_GLOBAL   0020 (Name: $progress)
+0096: OP_GET_GLOBAL   0011 (Name: $fStart)
+0099: OP_GET_GLOBAL   0013 (Name: $fEnd)
+0102: OP_GET_GLOBAL   0020 (Name: $progress)
+0105: OP_CALL_NATIVE  0021 (Name: LERP, Args: 3)
+0109: OP_SET_GLOBAL   0022 (Name: $currentFreq)
+0112: OP_GET_GLOBAL   0017 (Name: $phase)
+0115: OP_CALL_NATIVE  0023 (Name: SINR, Args: 1)
+0119: OP_SET_GLOBAL   0024 (Name: $val)
+0122: OP_CONSTANT     0025 (Value: 2)
+0125: OP_GET_GLOBAL   0015 (Name: $PI)
+0128: OP_MUL
+0129: OP_GET_GLOBAL   0022 (Name: $currentFreq)
+0132: OP_MUL
+0133: OP_GET_GLOBAL   0004 (Name: $sampleRate)
+0136: OP_DIV
+0137: OP_SET_GLOBAL   0026 (Name: $phaseStep)
+0140: OP_GET_GLOBAL   0017 (Name: $phase)
+0143: OP_GET_GLOBAL   0026 (Name: $phaseStep)
+0146: OP_ADD
+0147: OP_SET_GLOBAL   0017 (Name: $phase)
+0150: OP_CONSTANT     0019 (Value: 1)
+0153: OP_GET_GLOBAL   0020 (Name: $progress)
+0156: OP_SUB
+0157: OP_SET_GLOBAL   0027 (Name: $amplitude)
+0160: OP_GET_GLOBAL   0009 (Name: $samples)
+0163: OP_GET_GLOBAL   0018 (Name: $i)
+0166: OP_GET_GLOBAL   0024 (Name: $val)
+0169: OP_GET_GLOBAL   0027 (Name: $amplitude)
+0172: OP_MUL
+0173: OP_SET_INDIRECT
+0174: OP_GET_GLOBAL   0018 (Name: $i)
+0177: OP_CONSTANT     0019 (Value: 1)
+0180: OP_ADD
+0181: OP_SET_GLOBAL   0018 (Name: $i)
+0184: OP_LOOP          0115 (Sari inapoi la: 72)
+0187: OP_CONSTANT     0028 (Value: ./examples/games/winvaders/laser_oli.wav)
+0190: OP_GET_GLOBAL   0009 (Name: $samples)
+0193: OP_GET_GLOBAL   0004 (Name: $sampleRate)
+0196: OP_CALL_NATIVE  0029 (Name: SND_SAVE_WAV, Args: 3)
+0200: OP_POP
+0201: OP_CONSTANT     0030 (Value: Gata! Încearcă acum fișierul.)
+0204: OP_ECHO
+0205: OP_RETURN

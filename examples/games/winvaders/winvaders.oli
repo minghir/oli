@@ -9,6 +9,11 @@ plugin oli_keyboard
 plugin oli_fract
 plugin oli_time
 plugin oli_sprites
+plugin oli_miniaudio
+
+set $audio_status = SND_INIT()
+set $laserSnd = SND_LOAD("./examples/games/winvaders/laser_oli.wav")
+
 
 set $SW = 800
 set $SH = 600
@@ -222,6 +227,7 @@ endfor
                     set $bX[$i] = $x + ($ship_size / 2)
                     set $bY[$i] = $y
                     set $lastShot = $now
+					SND_PLAY($laserSnd)
                     break # Ieșim din for după ce am tras un glonț
                 endif
             endfor
@@ -298,3 +304,4 @@ endfor
 endwhile
 
 CAN_CLOSE()
+SND_CLOSE()

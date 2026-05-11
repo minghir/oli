@@ -99,8 +99,12 @@
     <ClInclude Include="src\vDataSerialize.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\OliBytecode.hpp" />
-    <ClInclude Include="src\OliCompiler.hpp" />
+    <ClInclude Include="src\OliBytecode.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OliCompiler.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="tests\factorial.oli">

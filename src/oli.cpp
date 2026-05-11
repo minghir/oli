@@ -46,9 +46,14 @@ public:
 };
 
 int main(int argc, char* argv[]) {
+
+
+    ConsoleManager::getInstance().initialize();
+    ConsoleManager::getInstance().setMinLogLevel(LogLevel::LOG_ERROR);
+
     if (vOliEngine::runEmbeddedIfPresent(argv[0])) return 0;
 
-    ConsoleManager::getInstance().setMinLogLevel(LogLevel::LOG_ERROR);
+   
 
     // --- SECTOR A: FLAG-URI (-b, -c, -v) ---
     if (argc >= 2 && argv[1][0] == '-') {
@@ -103,7 +108,7 @@ int main(int argc, char* argv[]) {
 
             try {
                 // Setăm log-ul la DEBUG pentru a vedea ce se întâmplă în consolă
-                ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
+                //ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
 
                 std::wifstream wif(inputPath);
                 safe_imbue(wif);

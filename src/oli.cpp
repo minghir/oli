@@ -4,7 +4,7 @@
 #include "ConsoleManager.hpp"
 #include "vDataSerialize.hpp"
 #include "OliCompiler.hpp"
-#include "StringUtils.hpp" // <--- Inclus pentru str_to_wstr
+#include "StringUtils.hpp" 
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -46,7 +46,6 @@ public:
 };
 
 int main(int argc, char* argv[]) {
-    // 1. Standalone check
     if (vOliEngine::runEmbeddedIfPresent(argv[0])) return 0;
 
     ConsoleManager::getInstance().setMinLogLevel(LogLevel::LOG_ERROR);
@@ -55,11 +54,13 @@ int main(int argc, char* argv[]) {
     if (argc >= 2 && argv[1][0] == '-') {
         std::string cmd = argv[1];
 
+        // 1. VERSION
         if (cmd == "--version" || cmd == "-v") {
             std::wcout << L"Oli Engine v0.1\nBuild Date: " << __DATE__ << std::endl;
             return 0;
         }
 
+        // 2. BUILD STANDALONE (-b)
         if (cmd == "-b") {
             if (argc < 3) return 1;
             std::string inputPath = argv[2];
@@ -94,21 +95,49 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        // 3. COMPILE BYTECODE (-c) + GENERARE ASSEMBLY (.olia)
         if (cmd == "-c") {
             if (argc < 3) return 1;
             std::string inputPath = argv[2];
             std::string outputPath = (argc > 3) ? argv[3] : inputPath + "c";
 
             try {
+                // Setăm log-ul la DEBUG pentru a vedea ce se întâmplă în consolă
+                ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
+
                 std::wifstream wif(inputPath);
                 safe_imbue(wif);
                 std::wstringstream wss; wss << wif.rdbuf();
+
                 OliCompiler compiler;
                 OliChunk chunk = compiler.compile(wss.str());
 
+                // A. Salvare Bytecode (.olic)
                 std::ofstream ofs(outputPath, std::ios::binary);
                 vDataSerialize::serializeChunk(chunk, ofs);
                 ofs.close();
+
+                // B. Salvare Assembly Listing (.olia)
+                std::wstring assemblyPath = str_to_wstr(outputPath) + L".olia";
+                std::wofstream asmf(assemblyPath);
+
+                // Folosim același safe_imbue pentru scriere
+                try { asmf.imbue(std::locale("")); }
+                catch (...) { asmf.imbue(std::locale::classic()); }
+
+                if (asmf.is_open()) {
+                    asmf << L"--- OLI ASSEMBLY LISTING ---\n";
+                    asmf << L"Source: " << str_to_wstr(inputPath) << L"\n";
+                    asmf << L"Generated: " << L"2026-05-11\n\n"; // Hardcoded pentru contextul tău
+
+                    // Apelăm funcția ta de dezasamblare
+                    asmf << disassembleChunk(chunk);
+
+                    asmf.close();
+                    LOG_SUCCESS(L"Assembly listing generat: " + assemblyPath);
+                }
+
+                LOG_INFO(L"Compilare reusita: " + str_to_wstr(outputPath));
                 return 0;
             }
             catch (const std::exception& e) {

@@ -18,6 +18,10 @@ public:
 };
 
 // Tipul de funcție pe care DLL-ul trebuie să o exporte
-typedef void (*LoadCommandsFunc)(std::unordered_map<std::wstring, std::function<void(const std::wstring&)>>&, IOliEngine*);
+typedef void (*LoadCommandsFunc)(
+    std::unordered_map<std::wstring, std::function<void(const std::wstring&)>>&, 
+    IOliEngine*
+);
+
 
 #endif

@@ -2,7 +2,7 @@
 #include "vDataSerialize.hpp"
 #include "OliEngine.hpp"
 #include "PortTools.hpp"
-#include "olic/OliBytecode.hpp"
+#include "OliBytecode.hpp"
 
 #include <cmath>
 

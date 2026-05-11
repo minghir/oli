@@ -1,6 +1,7 @@
 ﻿#include "OliEngine.hpp"
 #include "OliExpressionParser.hpp"
 #include "PortTools.hpp"
+#include "vDataSerialize.hpp"
 
 #include <fstream>
 #include <filesystem>
@@ -4878,3 +4879,39 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       }
       
   }
+  
+  
+  bool vOliEngine::runEmbeddedIfPresent(const std::string& exePath) {
+    std::ifstream file(exePath, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) return false;
+
+    std::streamsize fileSize = file.tellg();
+    if (fileSize < sizeof(uint64_t)) return false;
+
+    // 1. Citim ultimii 8 octeți (footer-ul cu dimensiunea)
+    file.seekg(-8, std::ios::end);
+    uint64_t bytecodeSize = 0;
+    file.read(reinterpret_cast<char*>(&bytecodeSize), sizeof(uint64_t));
+
+    // 2. Verificăm dacă dimensiunea este plauzibilă
+    // (trebuie să fie mai mică decât fișierul total și mai mare de 0)
+    if (bytecodeSize == 0 || bytecodeSize > (uint64_t)fileSize - 1024) {
+        return false; 
+    }
+
+    // 3. Ne poziționăm la începutul bytecode-ului
+    // Poziția = Final - 8 (footer) - bytecodeSize
+    file.seekg(fileSize - 8 - bytecodeSize);
+
+    // 4. Încărcăm și rulăm
+    try {
+        // Folosim logica ta de deserializare existentă direct din stream
+        OliChunk chunk = vDataSerialize::deserializeChunk(file);
+        
+        vOliEngine engine;
+        engine.executeBytecode(chunk); // Metoda care pornește VM-ul
+        return true;
+    } catch (...) {
+        return false;
+    }
+}

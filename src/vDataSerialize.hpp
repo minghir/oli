@@ -189,7 +189,7 @@ namespace vDataSerialize {
 
 // ATENȚIE: Pentru ca serializeChunk să funcționeze (să acceseze .code, .constants), 
 // trebuie să incluzi header-ul unde este definit OliChunk.
-#include "olic/OliBytecode.hpp"
+#include "OliBytecode.hpp"
 
 namespace vDataSerialize {
 
@@ -239,6 +239,57 @@ namespace vDataSerialize {
         if (data.isString()) return std::get<std::wstring>(data.value);
         return data.toWString();
     }
+	
+	
+	inline OliChunk deserializeChunk(std::istream& in) {
+        OliChunk chunk;
+
+        // 1. Citim Constantele
+        uint32_t constCount = 0;
+        in.read(reinterpret_cast<char*>(&constCount), sizeof(constCount));
+        for (uint32_t i = 0; i < constCount; ++i) {
+            chunk.constants.push_back(deserializevData(in));
+        }
+
+        // 2. Citim Codul (Bytecode)
+        uint32_t codeSize = 0;
+        in.read(reinterpret_cast<char*>(&codeSize), sizeof(codeSize));
+        if (codeSize > 0) {
+            chunk.code.resize(codeSize);
+            in.read(reinterpret_cast<char*>(chunk.code.data()), codeSize);
+        }
+
+        // 3. Citim Procedurile
+        uint32_t procCount = 0;
+        in.read(reinterpret_cast<char*>(&procCount), sizeof(procCount));
+
+        for (uint32_t i = 0; i < procCount; ++i) {
+            std::wstring procName = deserializeWString(in);
+            
+            // Reconstruim obiectul ByteCodeProcedure
+            // Notă: Trebuie să incluzi OliBytecode.hpp pentru a vedea structura
+            ByteCodeProcedure proc;
+            proc.name = procName;
+
+            uint32_t paramCount = 0;
+            in.read(reinterpret_cast<char*>(&paramCount), sizeof(paramCount));
+            for (uint32_t j = 0; j < paramCount; ++j) {
+                proc.params.push_back(deserializeWString(in));
+            }
+
+            uint8_t variadic = 0;
+            in.read(reinterpret_cast<char*>(&variadic), 1);
+            proc.isVariadic = (variadic == 1);
+
+            // RECURSIVITATE: Citim corpul procedurii (care este tot un Chunk)
+            proc.compiledBody = std::make_shared<OliChunk>(deserializeChunk(in));
+
+            chunk.procedures[procName] = proc;
+        }
+
+        return chunk;
+    }
+	
 } // end namespace vDataSerialize
 
 #endif

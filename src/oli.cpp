@@ -2,6 +2,8 @@
 #include "OliEngine.hpp"
 #include "App.hpp"
 #include "ConsoleManager.hpp"
+#include "vDataSerialize.hpp"
+#include "OliCompiler.hpp"
 
 
 #include<iostream>
@@ -33,12 +35,156 @@ public:
 
 };
 
-
 int main(int argc, char* argv[]) {
-    ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
+	// Încercăm să rulăm codul embedded dacă există
+    // argv[0] este calea către executabilul curent
+    if (vOliEngine::runEmbeddedIfPresent(argv[0])) {
+        return 0; 
+    }
+	
+	
+    ConsoleManager::getInstance().setMinLogLevel(LogLevel::LOG_ERROR);
+	
+	if (argc >= 2) {
+        std::string cmd = argv[1];
+
+        // VERSION
+        if (cmd == "--version" || cmd == "-v") {
+            std::wcout << L"Oli Engine v0.1\nBuild Date: " << __DATE__ << std::endl;
+            return 0;
+        }
+
+        // BUILD STANDALONE (-b)
+        if (cmd == "-b" && argc >= 3) {
+            std::string inputPath = argv[2];
+            std::string outputPath = (argc > 3) ? argv[3] : std::filesystem::path(inputPath).stem().string() + ".exe";
+
+            try {
+                LOG_INFO(L"Building standalone: " + str_to_wstr(outputPath));
+                
+                // Refolosim logica de citire sigură (sau funcția readFile dacă o ai)
+                std::wifstream wif(inputPath);
+                // --- START SAFE IMBUE ---
+				try {
+					wif.imbue(std::locale("C.UTF-8"));
+				} catch (...) {
+					try {
+						wif.imbue(std::locale("")); // Fallback la sistem
+					} catch (...) {
+						wif.imbue(std::locale::classic()); // Ultimul recurs
+					}
+				}
+				// --- END SAFE IMBUE ---
+                std::wstringstream wss; wss << wif.rdbuf();
+                
+                OliCompiler compiler;
+                OliChunk chunk = compiler.compile(wss.str());
+
+                std::ifstream src(argv[0], std::ios::binary);
+                std::ofstream dst(outputPath, std::ios::binary);
+                if (!src || !dst) throw std::runtime_error("IO Error");
+
+                dst << src.rdbuf(); // Clonăm motorul
+                src.close();
+
+                std::stringstream ss(std::ios::binary | std::ios::out);
+                vDataSerialize::serializeChunk(chunk, ss);
+                std::string bytecode = ss.str();
+                
+                dst.write(bytecode.data(), bytecode.size());
+                uint64_t footer = (uint64_t)bytecode.size();
+                dst.write(reinterpret_cast<const char*>(&footer), 8);
+                
+                dst.close();
+                LOG_SUCCESS(L"Build successful!");
+                return 0;
+            } catch (const std::exception& e) {
+                LOG_ERROR(L"Build failed: " + str_to_wstr(e.what()));
+                return 1;
+            }
+        }
+		
+		if (argc >= 3 && std::string(argv[1]) == "-c") {
+        std::string inputPath = argv[2];
+        std::string outputPath = (argc > 3) ? argv[3] : inputPath + "c";
+
+        try {
+            ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
+            LOG_INFO(L"Compiling: " + str_to_wstr(inputPath));
+
+            // Citire sursă
+            std::wifstream wif(inputPath);
+            try {
+				// Încercăm C.UTF-8 (standard pe multe sisteme Linux/MSYS2)
+				wif.imbue(std::locale("C.UTF-8"));
+			} catch (...) {
+				try {
+					// Fallback pentru Windows/alte sisteme
+					wif.imbue(std::locale("")); 
+				} catch (...) {
+					// Ultimul recurs: locale-ul clasic (nu va procesa caractere speciale, dar nu crapă)
+					wif.imbue(std::locale::classic());
+				}
+			}
+			
+			if (!wif.is_open()) {
+				LOG_ERROR(L"Nu s-a putut deschide fișierul sursă: " + str_to_wstr(inputPath));
+				return 1;
+			}
+
+            std::wstringstream wss;
+            wss << wif.rdbuf();
+            std::wstring source = wss.str();
+
+            // Compilare
+            OliCompiler compiler;
+            OliChunk chunk = compiler.compile(source);
+
+            // Salvare Bytecode
+            std::ofstream ofs(outputPath, std::ios::binary);
+            if (!ofs.is_open()) {
+                LOG_ERROR(L"Nu s-a putut deschide fisierul de iesire.");
+                return 1;
+            }
+            vDataSerialize::serializeChunk(chunk, ofs);
+            ofs.close();
+
+            LOG_INFO(L"[SUCCESS] Bytecode salvat in: " + str_to_wstr(outputPath));
+            
+            // Opțional: Generare Assembly automată la compilare
+            std::wstring assemblyPath = str_to_wstr(outputPath) + L".olia";
+            if (ConsoleManager::getInstance().enableFileLogging(assemblyPath, false)) {
+                ConsoleManager::getInstance().writeRaw(L"--- OLI ASSEMBLY ---\n" + disassembleChunk(chunk));
+                ConsoleManager::getInstance().closeLogFile();
+            }
+
+            return 0; // Ieșim după compilare
+        }
+        catch (const std::exception& e) {
+            std::wcerr << L"Compile Error: " << e.what() << std::endl;
+            return 1;
+        }
+    }
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
     // 1. Detectăm dacă STDIN este terminal sau pipe
     bool stdin_is_terminal = isatty(fileno(stdin));
-
+	// 1. Verificăm dacă avem flag de compilare: oli.exe -c fisier.oli [iesire.olic]
+    
+	
     // 2. Dacă avem un argument (script.oli) → rulăm acel fișier
     if (argc > 1) {
         std::string scriptPath = argv[1];

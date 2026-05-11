@@ -21,7 +21,7 @@
 #include "ConsoleManager.hpp"
 #include "OliCommandParser.hpp"
 #include "OliExpressionParser.hpp"
-#include "olic/OliBytecode.hpp"
+#include "OliBytecode.hpp"
 
 struct vTypeBlueprint {
     std::wstring name;
@@ -310,5 +310,8 @@ private:
 
 
         std::unordered_map<std::wstring, ByteCodeProcedure> m_bytecodeFunctions;
+		
+		
+		static bool runEmbeddedIfPresent(const std::string& exePath);
 };
 #endif

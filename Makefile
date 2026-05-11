@@ -3,10 +3,10 @@ CXXFLAGS = -std=c++20 -Wall -Wextra -O2 -Iinclude -MMD -MP
 # -MMD -MP generează automat dependențele (.d) pentru headere
 
 # Ordinea LDFLAGS este critică: bibliotecile se pun DUPĂ obiecte
-LDFLAGS = -lreadline
+LDFLAGS = -lreadline -static -static-libgcc -static-libstdc++
 
 SRC_DIR = src
-OLIC_DIR = src/olic
+#OLIC_DIR = src/olic
 BUILD_DIR = build
 TARGET = oli
 
@@ -24,7 +24,7 @@ PLUGIN_ROOT = src/plugins
 PLUGINS = $(wildcard $(PLUGIN_ROOT)/*/. )
 
 # Regula implicită
-all: plugins $(TARGET) olic
+all: plugins $(TARGET) 
 
 # Compilează executabilul
 $(TARGET): $(OBJS)
@@ -48,9 +48,9 @@ plugins:
 # Regula pentru plugin
 # Folosim @ ca să nu aglomerăm consola dacă nu e cazul
 
-olic:
-	@echo "Building olic..."
-	$(MAKE) -C $(OLIC_DIR)
+#olic:
+#	@echo "Building olic..."
+#	$(MAKE) -C $(OLIC_DIR)
 
 clean:
 	@echo "Cleaning up..."
@@ -58,6 +58,6 @@ clean:
 	@for dir in $(PLUGINS); do \
 		$(MAKE) -C $$dir clean; \
 	done
-	$(MAKE) -C $(OLIC_DIR) clean
 	
-.PHONY: all clean plugins $(TARGET) olic
+	
+.PHONY: all clean plugins $(TARGET) 

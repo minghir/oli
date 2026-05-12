@@ -1,12 +1,18 @@
 #version 120 
-uniform float time; 
-void main() { 
-	vec2 res = vec2(900.0, 700.0); 
-	vec2 I = gl_FragCoord.xy; 
-	I = I * 2.0 - res; 
-	float d = dot(I, I); 
-	float a = atan(I.x, I.y); 
-	vec4 O = vec4(sin(log(d) + a - time * 3.0) + 0.9); 
-	O = 0.5 + O / fwidth(O); 
-	gl_FragColor = vec4(O.rgb, 1.0);
+ uniform float iTime; 
+ uniform vec2 iResolution;
+ 
+
+#define rot(a) mat2(cos(a),-sin(a),sin(a),cos(a))
+void main() {
+	vec2 i = gl_FragCoord.xy; 
+    float j, t = iTime;
+    vec2 r = iResolution, c = vec2(-.7,.27015);
+    for(i = (i+i-r)/r.y/5.*rot(t/50.); j++<3e2 && dot(i,i)<4.;)
+      i = (vec2(i.x*i.x-i.y*i.y,2.*i.x*i.y)+c)*rot(t/3e3);
+    vec4 o = vec4(1.-j/3e2);
+	gl_FragColor = vec4(o.rgb, 1.0);
 }
+
+
+

@@ -55,6 +55,8 @@ PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog = nullptr;
 PFNGLGETPROGRAMIVPROC glGetProgramiv = nullptr;
 PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog = nullptr;
 
+PFNGLUNIFORM2FPROC glUniform2f = nullptr;
+
 // Tipurile tale
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
 
@@ -104,7 +106,7 @@ void LoadShaderFunctions() {
 
     GET_GL_PROC(glGetProgramiv, PFNGLGETPROGRAMIVPROC);
     GET_GL_PROC(glGetProgramInfoLog, PFNGLGETPROGRAMINFOLOGPROC);
-
+    GET_GL_PROC(glUniform2f, PFNGLUNIFORM2FPROC);
     // Notă: glUniform1f ar putea fi glUniform1fARB în funcție de vechimea plăcii
     glUniform1f = (PFNGLUNIFORM1FPROC)wglGetProcAddress("glUniform1f");
 
@@ -464,6 +466,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
     };
 
     // GL_SET_UNIFORM(program, name, value)
+    /*
     registry[L"GL_SET_UNIFORM"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 3) return vData{0LL};
 
@@ -477,6 +480,32 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
 
         return vData{1LL};
     };
+    */
+    // În proiectul plugin-ului tău (oli_opengl.cpp)
+    registry[L"GL_SET_UNIFORM"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 3) return vData{ 0LL };
+
+        GLuint program = (GLuint)toDouble(args[0]);
+        std::string name = wstr_to_str(args[1].toWString());
+        GLint loc = glGetUniformLocation(program, name.c_str());
+
+        if (loc == -1) return vData{ 0LL };
+
+        // Dacă avem 4 argumente: Program, Nume, X, Y -> vec2
+        if (args.size() == 4) {
+            if (glUniform2f) {
+                glUniform2f(loc, (float)toDouble(args[2]), (float)toDouble(args[3]));
+            }
+        }
+        // Dacă avem 3 argumente: Program, Nume, Valoare -> float
+        else if (args.size() == 3) {
+            if (glUniform1f) {
+                glUniform1f(loc, (float)toDouble(args[2]));
+            }
+        }
+
+        return vData{ 1LL };
+        };
 }
 
 

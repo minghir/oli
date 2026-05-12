@@ -31,8 +31,8 @@ set $fshader = GL_LOAD_SHADER(1, $fs_source)
 
 
 # 4. Compilare și Linkare
-set $vshader = GL_LOAD_SHADER(0, $vs)
-set $fshader = GL_LOAD_SHADER(1, $fs)
+#set $vshader = GL_LOAD_SHADER(0, $vs)
+#set $fshader = GL_LOAD_SHADER(1, $fs)
 set $prog = GL_LINK_PROGRAM($vshader, $fshader)
 
 echo "Shadere încărcate. Program ID: " + STR($prog)
@@ -47,12 +47,15 @@ while $c == 1 do
     
     # Calculăm timpul de la pornirea scriptului (valori mici: 0.1, 0.2...)
     set $localTime = TIME() - $startTime
-    GL_SET_UNIFORM($prog, "time", $localTime)
+    GL_SET_UNIFORM($prog, "iTime", $localTime)
+	GL_SET_UNIFORM($prog, "iResolution", 900, 700)
 
     GL_DRAW_FULLSCREEN()
     GL_PRESENT()
 
-    if KEY_STATE(27) == 1 then set $c = 0 endif
+    if KEY_STATE(27) == 1 then 
+		set $c = 0
+	endif
 endwhile
 
 GL_CLOSE()

@@ -227,8 +227,8 @@ OliChunk OliCompiler::compile(const std::wstring& source,
         for (const auto& rawT : nestingTokens) {
             std::wstring t = to_upper(rawT); // IMPORTANT: Lucrăm cu majuscule aici
 
-            if (t == L"IF" || t == L"WHILE" || t == L"FOR" || t == L"PROC" || t == L"FUNC" || t == L"REPEAT" || t == L"CYCLE" || t == L"SWITCH" || t == L"PROC") nestingLevel++;
-            if (t == L"ENDIF" || t == L"ENDWHILE" || t == L"ENDFOR" || t == L"ENDPROC" || t == L"ENDFUNC" || t == L"ENDREPEAT" || t == L"ENDCYCLE" || t == L"ENDSWITCH" || t == L"ENDPROC") nestingLevel--;
+            if (t == L"IF" || t == L"WHILE" || t == L"FOR" || t == L"PROC" || t == L"FUNC" || t == L"REPEAT" || t == L"CYCLE" || t == L"SWITCH" ) nestingLevel++;
+            if (t == L"ENDIF" || t == L"ENDWHILE" || t == L"ENDFOR" || t == L"ENDPROC" || t == L"ENDFUNC" || t == L"ENDREPEAT" || t == L"ENDCYCLE" || t == L"ENDSWITCH" ) nestingLevel--;
 
             if (rawT == L"{" || rawT == L"[") bracketDepth++;
             if (rawT == L"}" || rawT == L"]") bracketDepth--;
@@ -1240,57 +1240,8 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
                 }
             }
             }
-            // 2. FALLBACK PENTRU EXPRESII LIBERE ($a = 10 sau test())
-    
-            /*
-            else {
-                // 1. Reconstruim numele potențialei proceduri
-                std::wstring funcName = to_upper(sc.name);
-
-                // 2. Verificăm dacă numele este o procedură cunoscută (locală sau externă)
-                bool isUserProc = (chunk.procedures.count(funcName) > 0 || externalProcs.count(funcName) > 0);
-
-                if (isUserProc) {
-                    LOG_DEBUG(L"[VM] Detectat apel direct la procedura: " + funcName);
-
-                    // 3. Punem argumentele pe stivă
-                    for (const auto& arg : sc.args) {
-                        emitLoadOrConstant(arg, chunk);
-                    }
-
-                    // 4. Emitem OP_CALL cu numărul de argumente detectat
-                    uint16_t nameIdx = chunk.addConstant(vData(funcName));
-                    chunk.addByte((uint8_t)OpCode::OP_CALL, 0);
-                    chunk.addByte((uint8_t)(nameIdx >> 8), 0);
-                    chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
-                    chunk.addByte((uint8_t)sc.args.size(), 0);
-                }
-                else {
-                    // 5. Fallback pentru expresii libere (ex: $a = 10)
-                    std::vector<std::wstring> tokens;
-                    tokens.push_back(sc.name);
-                    for (const auto& arg : sc.args) tokens.push_back(arg);
-
-                    OliExpressionParser exprParser(tokens);
-                    ASTPtr exprAST = exprParser.parse();
-
-                    if (exprAST) {
-                        // Verificăm dacă AST-ul este o atribuire
-                        bool isAssignment = (exprAST->type == ASTNodeType::Operator &&
-                            (exprAST->value == L"=" || exprAST->value == L"set"));
-
-                        generateFromAST(exprAST, chunk, externalProcs);
-
-                        // Dacă NU este atribuire (ex: e doar un apel de funcție sau o adunare), 
-                        // atunci curățăm stiva de rezultatul nefolosit
-                        if (!isAssignment) {
-                            chunk.addByte((uint8_t)OpCode::OP_POP, 0);
-                        }
-                    }
-                }
-            }
-            */
-            else {
+           /*
+		   else {
                 // 1. Reconstruim toată linia într-un vector de tokeni pentru a fi parsați ca o expresie
                 std::vector<std::wstring> tokens;
                 tokens.push_back(sc.name);
@@ -1327,7 +1278,70 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
                 else {
                     LOG_ERROR(L"Eroare de sintaxa: Nu am putut interpreta linia: " + sc.name);
                 }
-}
+			}*/
+			else {
+				// 1. Încercăm mai întâi să vedem dacă este un apel de PROCEDURĂ (stil comandă: nume arg1 arg2)
+				// Procedurile au prioritate față de expresiile libere pentru a evita interpretarea eronată.
+				std::wstring procLookupName = to_upper(sc.name);
+				bool isKnownProc = (chunk.procedures.count(procLookupName) > 0 || externalProcs.count(procLookupName) > 0);
+
+				if (isKnownProc) {
+					LOG_DEBUG(L"[COMPILER] Apel procedură stil comandă detectat: " + procLookupName);
+
+					// A. Încărcăm argumentele pe stivă (fiecare argument este tratat ca o mini-expresie)
+					for (const auto& arg : sc.args) {
+						OliExpressionParser argParser({arg});
+						ASTPtr argAST = argParser.parse();
+						if (argAST) {
+							generateFromAST(argAST, chunk, externalProcs);
+						}
+					}
+
+					// B. Punem numele procedurii în tabela de constante și emitem OP_CALL
+					uint16_t nameIdx = chunk.addConstant(vData(procLookupName));
+					chunk.addByte((uint8_t)OpCode::OP_CALL, 0);
+					chunk.addByte((uint8_t)((nameIdx >> 8) & 0xFF), 0);
+					chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
+					chunk.addByte((uint8_t)sc.args.size(), 0); // Numărul de argumente pasate
+
+					// C. Curățăm stiva: procedurile tip comandă nu sunt folosite în expresii, 
+					// deci orice return (chiar și NIL) trebuie eliminat pentru a păstra stiva curată.
+					chunk.addByte((uint8_t)OpCode::OP_POP, 0);
+					LOG_DEBUG(L"[COMPILER] Bytecode generat pentru procedură: " + procLookupName + L" (POP inclus)");
+				} 
+				else {
+					// 2. Dacă nu este o procedură cunoscută, tratăm linia ca pe o EXPRESIE LIBERĂ (ex: $a = 10 sau func(args))
+					LOG_DEBUG(L"[COMPILER] Pasare către Parserul de Expresii pentru: " + sc.name);
+
+					std::vector<std::wstring> tokens;
+					tokens.push_back(sc.name);
+					for (const auto& arg : sc.args) tokens.push_back(arg);
+
+					OliExpressionParser exprParser(tokens);
+					ASTPtr exprAST = exprParser.parse();
+
+					if (exprAST) {
+						// Verificăm dacă expresia lasă o valoare pe stivă care trebuie curățată (managementul stivei)
+						bool isAssignment = (exprAST->type == ASTNodeType::Operator &&
+							(exprAST->value == L"=" || exprAST->value == L"+=" || exprAST->value == L"-="));
+
+						bool isCall = (exprAST->type == ASTNodeType::FunctionCall || exprAST->value == L"DYNAMIC_CALL");
+
+						// Generăm bytecode-ul din arborele sintactic (AST)
+						generateFromAST(exprAST, chunk, externalProcs);
+
+						// Dacă este un apel de funcție de sine stătător, curățăm rezultatul returnat.
+						if (isCall && !isAssignment) {
+							chunk.addByte((uint8_t)OpCode::OP_POP, 0);
+							LOG_DEBUG(L"[COMPILER] Management stivă: Adăugat OP_POP după apelul de funcție: " + sc.name);
+						}
+					}
+					else {
+						LOG_ERROR(L"[COMPILER] Eroare critică de sintaxă: Linia nu a putut fi interpretată: " + sc.name);
+					}
+				}
+			}
+			
 }
  
 void OliCompiler::emitConstant(const vData& value, OliChunk& chunk, int line) {

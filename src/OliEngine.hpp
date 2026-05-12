@@ -300,7 +300,8 @@ private:
         }
     
         ///bitecode
-        void executeBytecode(const OliChunk& chunk);
+        //void executeBytecode(const OliChunk& chunk);
+		void executeBytecode(const OliChunk& chunk, size_t framePtr);
         void loadAndRunBytecode(const std::string& path);
         vData* resolveVMPath(const std::wstring& rootName, const std::vector<std::wstring>& indexes, bool forceGlobal);
         bool internalLoadPlugin(std::wstring pluginName);
@@ -310,6 +311,7 @@ private:
 
 
         std::unordered_map<std::wstring, ByteCodeProcedure> m_bytecodeFunctions;
+		std::vector<vData> m_stack; // Aceasta este stiva globală a VM-ului
 		
 		
 		static bool runEmbeddedIfPresent(const std::string& exePath);

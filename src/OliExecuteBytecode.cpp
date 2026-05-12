@@ -7,17 +7,23 @@
 #include <cmath>
 
 
-void vOliEngine::executeBytecode(const OliChunk& chunk) {
-
-    // Înregistrăm funcțiile acestui chunk în motor înainte de rulare
+void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
+	// 1. Înregistrăm funcțiile (Logic deja existentă)
     for (auto const& [name, proc] : chunk.procedures) {
         this->m_bytecodeFunctions[name] = proc;
     }
 
     this->m_executionStatus = OliStatus::RUNNING;
     size_t ip = 0;
-    std::vector<vData> stack;
 
+    // ATENȚIE: NU mai declarăm std::vector<vData> stack aici!
+    // Folosim this->m_stack pentru a vedea ce a pregătit callUserByteCodeFunction
+	// --- MAGIA ESTE AICI ---
+    // Creăm o referință către m_stack. 
+    // Acum 'stack' este doar un alt nume pentru 'this->m_stack'.
+    std::vector<vData>& stack = this->m_stack;
+	
+	
     while (ip < chunk.code.size() && this->m_executionStatus == OliStatus::RUNNING) {
         OpCode instruction = static_cast<OpCode>(chunk.code[ip++]);
 
@@ -886,6 +892,38 @@ void vOliEngine::executeBytecode(const OliChunk& chunk) {
             stack.push_back(b);
             break;
         }
+		case OpCode::OP_GET_LOCAL: {
+			uint8_t slot = chunk.code[ip++];
+			size_t targetIdx = framePtr + slot;
+			
+			if (targetIdx < stack.size()) {
+				// Copiem valoarea într-o variabilă temporară pentru a evita 
+				// problemele de invalidare a referinței în timpul push_back
+				vData val = stack[targetIdx]; 
+				stack.push_back(val);
+			} else {
+				// Dacă slotul nu există, punem un NULL/Monostate implicit
+				stack.push_back(vData());
+				LOG_ERROR(L"VM: Încercare citire slot local neinițializat: " + std::to_wstring(slot));
+			}
+			break;
+		}
+
+		case OpCode::OP_SET_LOCAL: {
+			uint8_t slot = chunk.code[ip++];
+			vData val = stack.back(); 
+			stack.pop_back();
+			
+			size_t targetIdx = framePtr + slot;
+			
+			// Asigurăm că stiva are loc pentru acest slot local
+			if (targetIdx >= stack.size()) {
+				stack.resize(targetIdx + 1);
+			}
+			
+			stack[targetIdx] = val;
+			break;
+		}
 
         default:
             LOG_ERROR(L"VM Error: OpCode necunoscut [0x" + std::to_wstring((int)instruction) + L"] la IP: " + std::to_wstring(ip - 1));
@@ -915,7 +953,7 @@ void vOliEngine::loadAndRunBytecode(const std::string& path) {
 
     // Resetăm motorul și executăm Main
     this->m_executionStatus = OliStatus::RUNNING;
-    this->executeBytecode(mainChunk);
+    this->executeBytecode(mainChunk,0);
 }
 
 
@@ -979,94 +1017,7 @@ vData* vOliEngine::resolveVMPath(const std::wstring& rootName, const std::vector
 
     return current;
 }
-/*
-bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
-    if (pluginName.empty()) return false;
 
-    // 1. Curățăm ghilimelele
-    if (pluginName.size() >= 2 && pluginName.front() == L'"' && pluginName.back() == L'"') {
-        pluginName = pluginName.substr(1, pluginName.size() - 2);
-    }
-
-    // 2. Determinăm calea finală (Logica ta de Path)
-    std::wstring dllPath;
-    if (pluginName.find(L'/') == std::wstring::npos && pluginName.find(L'\\') == std::wstring::npos) {
-        dllPath = m_pluginsPath + pluginName;
-    }
-    else {
-        dllPath = pluginName;
-    }
-
-    // 3. Adăugăm extensia corectă (.dll / .so)
-    std::wstring ext = PortTools::getPluginExtension();
-    if (dllPath.size() < ext.size() ||
-        dllPath.substr(dllPath.size() - ext.size()) != ext)
-    {
-        dllPath += ext;
-    }
-
-    // 4. Încărcăm biblioteca
-    PortTools::LibHandle hLib = PortTools::loadDynamicLibrary(dllPath);
-
-    if (!hLib) {
-        LOG_ERROR(L"Could not load plugin: " + dllPath +
-            L" (Error: " + PortTools::getLastErrorString() + L")");
-        return false;
-    }
-
-    bool loadedAnything = false;
-
-    // --- A. Încărcare FUNCȚII (NATIVE CALLS) ---
-   
-    typedef void (*LoadFunctionsFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&, void*);
-    LoadFunctionsFunc regFuncs = (LoadFunctionsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliFunctionPlugin");
-
-    if (regFuncs) {
-        std::unordered_map<std::wstring, OliFunctionHandler> dummyFuncs;
-        try {
-            // Trimitem nullptr pentru context, compilatorul vrea doar cheile (numele)
-            regFuncs(dummyFuncs, nullptr);
-            for (auto const& [name, handler] : dummyFuncs) {
-                if (!name.empty()) {
-                    vOliKeyWords::registerNativeFunction(name);
-                    LOG_DEBUG(L"Compiler recognized native function: " + name);
-                }
-            }
-            
-        }
-        catch (...) {
-            LOG_ERROR(L"Failed to extract functions from plugin metadata.");
-        }
-        loadedAnything = true;
-    }
-
-    // --- B. Încărcare COMENZI (Sistem Nou) ---
-    LoadCommandsFunc regCmds = (LoadCommandsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliCommandPlugin");
-
-    if (regCmds) {
-        regCmds(this->m_commandHandlers, this);
-
-        // Înregistrăm noile chei în vOliKeyWords pentru a fi recunoscute de parser
-        for (auto const& [name, handler] : this->m_commandHandlers) {
-            vOliKeyWords::registerDynamicCommand(name);
-        }
-
-        LOG_SUCCESS(L"Commands injected and registered: " + dllPath);
-        loadedAnything = true;
-    }
-
-    // 5. Finalizare
-    if (loadedAnything) {
-        LOG_SUCCESS(L"Plugin '" + pluginName + L"' is fully operational.");
-        return true;
-    }
-    else {
-        LOG_ERROR(L"Invalid Plugin: No entry points found in " + dllPath);
-        PortTools::freeDynamicLibrary(hLib);
-        return false;
-    }
-}
-*/
 
 bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
     if (pluginName.empty()) return false;
@@ -1175,106 +1126,69 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
 }
 
 
-/*
-vData vOliEngine::callUserByteCodeFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context) {
-    LOG_INFO(L"[VM] Apel functia: " + funcName + L" cu " + std::to_wstring(args.size()) + L" argumente.");
-
-    auto it = m_bytecodeFunctions.find(funcName);
-    if (it == m_bytecodeFunctions.end()) {
-        LOG_ERROR(L"   -> EROARE: Functia " + funcName + L" nu este inregistrata!");
-        return vData();
-    }
-
-    const ByteCodeProcedure& func = it->second;
-    StackFrame frame;
-    frame.functionName = funcName;
-
-    for (size_t i = 0; i < func.params.size(); ++i) {
-        std::wstring cleanPName = this->cleanVariableName(func.params[i]);
-        vData argVal = (i < args.size()) ? args[i] : vData();
-        frame.localVariables[cleanPName] = argVal;
-
-        LOG_DEBUG(L"   -> Mapare Param: " + cleanPName + L" = " + argVal.toWString());
-    }
-
-    m_callStack.push_back(std::move(frame));
-
-    OliStatus oldStatus = m_executionStatus; // Salvăm statusul (ex: RUNNING)
-    m_executionStatus = OliStatus::RUNNING;  // Ne asigurăm că funcția pornește
-
-    this->executeBytecode(*(func.compiledBody));
-    m_executionStatus = oldStatus; // RESTAURĂM statusul pentru programul principal!
-
-
-    vData result = vData();
-    if (!m_callStack.empty()) {
-        result = m_callStack.back().localVariables[L"return"];
-        LOG_SUCCESS(L"   -> Functia " + funcName + L" a returnat: " + result.toWString());
-        m_callStack.pop_back();
-    }
-
-    return result;
-}
-*/
 
 vData vOliEngine::callUserByteCodeFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context) {
-    LOG_INFO(L"[VM] Apel functia: " + funcName + L" cu " + std::to_wstring(args.size()) + L" argumente.");
+    LOG_INFO(L"[VM] Pregătire apel funcție: " + funcName + L" (" + std::to_wstring(args.size()) + L" argumente)");
 
     // 1. Căutăm funcția în tabelul de bytecode
     auto it = m_bytecodeFunctions.find(funcName);
     if (it == m_bytecodeFunctions.end()) {
-        LOG_ERROR(L"   -> EROARE: Functia " + funcName + L" nu este inregistrata!");
-        // DEBUG: Listează ce avem în „meniu”
-        LOG_DEBUG(L"   -> Functii disponibile in VM:");
-        for (auto const& [name, proc] : m_bytecodeFunctions) {
-            LOG_DEBUG(L"      - [" + name + L"]");
-        }
+        LOG_ERROR(L"-> EROARE: Funcția " + funcName + L" nu este înregistrată!");
         return vData();
     }
 
     const ByteCodeProcedure& func = it->second;
 
-    // 2. Pregătim noul cadru de stivă (StackFrame)
-    StackFrame frame;
-    frame.functionName = funcName;
+    // --- LOGICA DE STIVĂ (VM MODE) ---
+    
+    // 2. Reținem baza noului cadru (Frame Pointer)
+    size_t newFramePtr = this->m_stack.size();
+    bool isMethod = (funcName.find(L"::") != std::wstring::npos);
 
-    // --- INJECTARE CONTEXT 'this' ---
-    // Aceasta permite funcției să acceseze obiectul apelant prin variabila $this
-    frame.localVariables[L"this"] = context;
-
-    // 3. Maparea parametrilor funcției
-    for (size_t i = 0; i < func.params.size(); ++i) {
-        std::wstring cleanPName = this->cleanVariableName(func.params[i]);
-        // Dacă argumentul lipsește la apel, folosim o valoare default (null)
-        vData argVal = (i < args.size()) ? args[i] : vData();
-        frame.localVariables[cleanPName] = argVal;
-
-        LOG_DEBUG(L"   -> Mapare Param: " + cleanPName + L" = " + argVal.toWString());
+    // 3. INJECTARE CONTEXT ($this) - CRITIC PENTRU METODE
+    // Dacă este o metodă, Compilatorul a rezervat Slotul 0 pentru $this.
+    if (isMethod) {
+        this->m_stack.push_back(context);
+        LOG_DEBUG(L"[VM] Context '$this' injectat la Slotul 0 pentru metoda: " + funcName);
     }
 
-    // Inițializăm variabila de return cu NULL pentru a evita accesul la memorie neinițializată
-    frame.localVariables[L"return"] = vData();
+    // 4. Maparea parametrilor funcției
+    // Aceștia vor ocupa sloturile imediat următoare (Slot 0+ pentru funcții, Slot 1+ pentru metode)
+    for (size_t i = 0; i < func.params.size(); ++i) {
+        if (i < args.size()) {
+            this->m_stack.push_back(args[i]);
+            LOG_DEBUG(L"[VM] Parametru mapat: " + func.params[i] + L" = " + args[i].toWString());
+        } else {
+            // Parametri lipsă primesc valoarea NULL (monostate)
+            this->m_stack.push_back(vData());
+            LOG_DEBUG(L"[VM] Parametru lipsă (default NULL): " + func.params[i]);
+        }
+    }
 
-    // 4. Gestionăm stiva și execuția
-    m_callStack.push_back(std::move(frame));
-
+    // 5. Execuția efectivă a Bytecode-ului
     OliStatus oldStatus = m_executionStatus;
     m_executionStatus = OliStatus::RUNNING;
 
-    // Executăm efectiv chunk-ul de bytecode al funcției
-    this->executeBytecode(*(func.compiledBody));
+    // Transmitem framePtr pentru ca OP_GET_LOCAL să știe de unde să citească
+    this->executeBytecode(*(func.compiledBody), newFramePtr);
 
-    // Restaurăm statusul (pentru a nu opri execuția principală dacă funcția a dat return)
     m_executionStatus = oldStatus;
 
-    // 5. Recuperăm rezultatul și curățăm stiva
+    // 6. Recuperăm rezultatul returnat (lăsat de OP_RETURN în vârful stivei)
     vData result = vData();
-    if (!m_callStack.empty()) {
-        result = m_callStack.back().localVariables[L"return"];
-        LOG_SUCCESS(L"   -> Functia " + funcName + L" a returnat: " + result.toWString());
-        m_callStack.pop_back();
+    if (this->m_executionStatus != OliStatus::ERR && !this->m_stack.empty()) {
+        result = this->m_stack.back();
+        // Nu facem pop aici încă, pentru a nu altera stiva în timpul unwinding-ului
     }
 
+    // 7. Stack Unwinding (Curățăm cadrul de stivă)
+    // Eliminăm tot ce a fost local (context, parametri, variabile locale create în interior)
+    while (this->m_stack.size() > newFramePtr) {
+        this->m_stack.pop_back();
+    }
+
+    LOG_SUCCESS(L"-> Funcția " + funcName + L" a returnat: " + result.toWString());
+    
     return result;
 }
 

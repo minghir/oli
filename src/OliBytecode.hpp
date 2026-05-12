@@ -15,6 +15,8 @@ enum class OpCode : uint8_t {
     OP_CONSTANT,
     OP_SET_GLOBAL,
     OP_GET_GLOBAL,
+	OP_GET_LOCAL,  // [OpCode] [Index] - Citeste de pe stiva
+    OP_SET_LOCAL,  // [OpCode] [Index] - Scrie pe stiva
     OP_SET_INDIRECT,
     OP_GET_INDIRECT,
     OP_DUP,
@@ -163,6 +165,16 @@ inline std::wstring disassembleChunk(const OliChunk& chunk, const std::wstring& 
             ss << L"OP_GET_GLOBAL   " << std::setw(4) << idx << L" (Name: " << chunk.constants[idx].toWString() << L")\n";
             break;
         }
+		case OpCode::OP_SET_LOCAL: {
+			uint8_t slot = chunk.code[ip++];
+			ss << L"OP_SET_LOCAL     " << std::setw(4) << (int)slot << L"\n";
+			break;
+		}
+		case OpCode::OP_GET_LOCAL: {
+			uint8_t slot = chunk.code[ip++];
+			ss << L"OP_GET_LOCAL     " << std::setw(4) << (int)slot << L"\n";
+			break;
+		}
         case OpCode::OP_GET_ADDR: {
             uint16_t idx = (chunk.code[ip] << 8) | chunk.code[ip + 1];
             ip += 2;

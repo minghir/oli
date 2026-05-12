@@ -8,6 +8,11 @@
 #include <unordered_map>
 #include <functional>
 
+struct Local {
+    std::wstring name;
+    int depth; // util pentru blocuri imbricate {}
+};
+
 // Definim tipul de handler pentru comenzi
 struct ShellCommand; // Forward declaration
 using OliCommandHandler = std::function<void(const ShellCommand&)>;
@@ -21,6 +26,9 @@ class OliCompiler {
     std::vector<std::vector<size_t>> breakStack;
     std::vector<std::vector<size_t>> continueStack;
     std::unordered_set<std::wstring> m_includedFiles;
+	
+	std::vector<Local> locals;    // Tabela de variabile locale pentru funcția curentă
+    bool isInFunction = false;    // Flag pentru a știi dacă folosim stiva sau globalul
 
 public:
     OliCompiler() = default;

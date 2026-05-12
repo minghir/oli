@@ -102,6 +102,7 @@ int main(int argc, char* argv[]) {
 
         // 3. COMPILE BYTECODE (-c) + GENERARE ASSEMBLY (.olia)
         if (cmd == "-c") {
+			ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
             if (argc < 3) return 1;
             std::string inputPath = argv[2];
             std::string outputPath = (argc > 3) ? argv[3] : inputPath + "c";
@@ -157,6 +158,7 @@ int main(int argc, char* argv[]) {
         std::string scriptPath = argv[1];
         vOliEngine engine;
         if (std::filesystem::path(scriptPath).extension() == ".olic") {
+			ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
             engine.loadAndRunBytecode(scriptPath);
         }
         else {

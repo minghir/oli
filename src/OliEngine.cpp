@@ -4881,12 +4881,14 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
   }
   
   
-  bool vOliEngine::runEmbeddedIfPresent(const std::string& exePath) {
+ bool vOliEngine::runEmbeddedIfPresent(const std::string& exePath) {
     std::ifstream file(exePath, std::ios::binary | std::ios::ate);
     if (!file.is_open()) return false;
 
     std::streamsize fileSize = file.tellg();
-    if (fileSize < sizeof(uint64_t)) return false;
+    
+    // FIX: static_cast pentru a elimina warning-ul de signed/unsigned comparison
+    if (fileSize < static_cast<std::streamsize>(sizeof(uint64_t))) return false;
 
     // 1. Citim ultimii 8 octeți (footer-ul cu dimensiunea)
     file.seekg(-8, std::ios::end);
@@ -4894,24 +4896,28 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
     file.read(reinterpret_cast<char*>(&bytecodeSize), sizeof(uint64_t));
 
     // 2. Verificăm dacă dimensiunea este plauzibilă
-    // (trebuie să fie mai mică decât fișierul total și mai mare de 0)
-    if (bytecodeSize == 0 || bytecodeSize > (uint64_t)fileSize - 1024) {
+    if (bytecodeSize == 0 || bytecodeSize > static_cast<uint64_t>(fileSize) - 1024) {
         return false; 
     }
 
     // 3. Ne poziționăm la începutul bytecode-ului
-    // Poziția = Final - 8 (footer) - bytecodeSize
-    file.seekg(fileSize - 8 - bytecodeSize);
+    file.seekg(static_cast<std::streamoff>(fileSize) - 8 - static_cast<std::streamoff>(bytecodeSize));
 
     // 4. Încărcăm și rulăm
     try {
-        // Folosim logica ta de deserializare existentă direct din stream
+        // Deserializăm chunk-ul din fișier
         OliChunk chunk = vDataSerialize::deserializeChunk(file);
         
+        // Creăm o instanță a motorului
         vOliEngine engine;
-        engine.executeBytecode(chunk); // Metoda care pornește VM-ul
+
+        // FIX: Transmitem și al doilea argument (framePtr = 0)
+        // Deoarece acesta este punctul de intrare (Main), stiva începe de la 0.
+        engine.executeBytecode(chunk, 0); 
+        
         return true;
     } catch (...) {
+        LOG_ERROR(L"Eroare critică la încărcarea bytecode-ului embedded.");
         return false;
     }
 }

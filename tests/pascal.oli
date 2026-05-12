@@ -1,74 +1,43 @@
-plugin oli_plugin.dll
-# 1. Resetăm totul pentru un test curat
+plugin oli_time.dll
+# 1. Resetare context
 unset all
-set $memo_pascal = {}
+set $memo_pascal = MAP()
 set $apeluri = 0
 
-# 2. Funcția recursivă pentru Combinări (n luate câte k)
-func PASCAL n k
-	echo  "Param n:" + $n + " tip: " + TYPE($n)
-	echo  "Param k:" + $k + " tip: " + TYPE($k)
+func PASCAL($n, $k)
+    # Folosim @ pentru a modifica variabila globală
     set @apeluri = @apeluri + 1
     
     # Condiții de bază
-    if $k == 0 then
-        return 1
-    endif
-    if $k == $n then
-        return 1
-    endif
+    if $k == 0 then return 1 endif
+    if $k == $n then return 1 endif
 
-    # Verificăm cache-ul (cheie compusă: "n,k")
-    #set key = $n + "," + $k
-	set $n_num = $n * 1
-	set $k_num = $k * 1
-	#set $key = "" + $n_num + "," + $k_num
-	set $key = "k" + $n_num + "_" + $k_num
-	
+    # Generăm cheia (string) pentru cache
+    set $key = "k" .. STR($n) .. "_" .. STR($k)
+    echo "CHEIE:" .. $key
+    # Verificăm cache-ul global
     if @memo_pascal[$key] != NULL then
-			echo  "am gasitt key:" + $key
-			return @memo_pascal[$key]
-		else
-			echo  "nu exista key:" + $key
+        return @memo_pascal[$key]
     endif
 
-    # Dacă am ajuns la un nivel adânc, tragem o privire la stivă
-    if $n == 4 then
-        if $k == 2 then
-            echo "--- Trace la n=4, k=2 ---"
-            trace
-        endif
-    endif
+    # Calcul recursiv (VM-ul gestionează automat cadrele de stivă)
+    set $val1 = PASCAL($n - 1, $k - 1)
+    set $val2 = PASCAL($n - 1, $k)
+    
+    # Rezultatul final al nodului curent
+    set $res = $val1 + $val2
 
-    # Calcul recursiv: C(n,k) = C(n-1, k-1) + C(n-1, k)
-    #set res = PASCAL($n - 1, $k - 1) + PASCAL($n - 1, $k)
-	
-	set $val1 = PASCAL($n - 1, $k - 1)
-	set $val2 = PASCAL($n - 1, $k)
-	set $res = $val1 - (0 - $val2)
-
-    # Salvăm în cache-ul global
-	echo "setez:" + $key + " tipul: " + TYPE($key)
+    # Salvăm în cache înainte de return
     set @memo_pascal[$key] = $res
     return $res
 endfunc
 
-# 3. Execuție
-echo "--- Test Complex: Triunghiul lui Pascal ---"
+echo "--- Test Recursivitate cu Memoization ---"
 set $start = TICKS()
-
-# Calculăm C(10, 5) - necesită multe ramificații recursive
 set $valoare = PASCAL(10, 5)
-
 set $end = TICKS()
-set $durata = $end - $start
 
-echo ""
 echo "Rezultat C(10, 5) = " + $valoare
-echo "Total apeluri recursive: " + $apeluri
-echo "Timp execuție: " + $durata + " ms"
-
-# 4. Verificăm memoria
-echo ""
-echo "--- Verificare Memorie ---"
-dm
+echo "Total apeluri: " + $apeluri
+echo "Durata: " + ($end - $start) + " ms"
+echo $memo_pascal

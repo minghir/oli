@@ -1,0 +1,81 @@
+--- OLI ASSEMBLY LISTING ---
+Source: ./tests/gl3.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_PLUGIN       0000 (Path: oli_opengl)
+0003: OP_PLUGIN       0001 (Path: oli_keyboard)
+0006: OP_PLUGIN       0002 (Path: oli_math)
+0009: OP_CONSTANT     0003 (Value: 900)
+0012: OP_CONSTANT     0004 (Value: 700)
+0015: OP_CONSTANT     0005 (Value: OLI Shader Demo)
+0018: OP_CALL_NATIVE  0006 (Name: GL_INIT, Args: 3)
+0022: OP_SET_GLOBAL   0007 (Name: $v)
+0025: OP_CONSTANT     0008 (Value: #version 120\n)
+0028: OP_CONCAT
+0029: OP_SET_GLOBAL   0009 (Name: $vs)
+0032: OP_CONSTANT     0010 (Value: void main() {\n)
+0035: OP_CONCAT
+0036: OP_CONSTANT     0011 (Value:     gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n)
+0039: OP_CONCAT
+0040: OP_CONSTANT     0012 (Value: }\n)
+0043: OP_CONSTANT     0008 (Value: #version 120\n)
+0046: OP_CONCAT
+0047: OP_SET_GLOBAL   0013 (Name: $fs)
+0050: OP_CONSTANT     0014 (Value: uniform float time;\n)
+0053: OP_CONCAT
+0054: OP_CONSTANT     0010 (Value: void main() {\n)
+0057: OP_CONCAT
+0058: OP_CONSTANT     0015 (Value:     vec2 uv = gl_FragCoord.xy / vec2(900.0, 700.0);\n)
+0061: OP_CONCAT
+0062: OP_CONSTANT     0016 (Value:     float v = 0.5 + 0.5 * sin(uv.x * 10.0 + time);\n)
+0065: OP_CONCAT
+0066: OP_CONSTANT     0017 (Value:     gl_FragColor = vec4(v, v * 0.2, 1.0 - v, 1.0);\n)
+0069: OP_CONCAT
+0070: OP_CONSTANT     0012 (Value: }\n)
+0073: OP_CONSTANT     0018 (Value: Aici:)
+0076: OP_GET_GLOBAL   0013 (Name: $fs)
+0079: OP_CONCAT
+0080: OP_CONSTANT     0019 (Value:  Gata)
+0083: OP_CONCAT
+0084: OP_ECHO
+0085: OP_CONSTANT     0020 (Value: 0)
+0088: OP_GET_GLOBAL   0009 (Name: $vs)
+0091: OP_CALL_NATIVE  0021 (Name: GL_LOAD_SHADER, Args: 2)
+0095: OP_SET_GLOBAL   0022 (Name: $vshader)
+0098: OP_CONSTANT     0023 (Value: 1)
+0101: OP_GET_GLOBAL   0013 (Name: $fs)
+0104: OP_CALL_NATIVE  0021 (Name: GL_LOAD_SHADER, Args: 2)
+0108: OP_SET_GLOBAL   0024 (Name: $fshader)
+0111: OP_GET_GLOBAL   0022 (Name: $vshader)
+0114: OP_GET_GLOBAL   0024 (Name: $fshader)
+0117: OP_CALL_NATIVE  0025 (Name: GL_LINK_PROGRAM, Args: 2)
+0121: OP_SET_GLOBAL   0026 (Name: $prog)
+0124: OP_CONSTANT     0027 (Value: true)
+0127: OP_JUMP_IF_FALSE 0061 (Sari la: 191)
+0130: OP_CONSTANT     0020 (Value: 0)
+0133: OP_CALL_NATIVE  0028 (Name: GL_CLEAR, Args: 1)
+0137: OP_POP
+0138: OP_GET_GLOBAL   0026 (Name: $prog)
+0141: OP_CALL_NATIVE  0029 (Name: GL_USE_PROGRAM, Args: 1)
+0145: OP_POP
+0146: OP_GET_GLOBAL   0026 (Name: $prog)
+0149: OP_CONSTANT     0030 (Value: time)
+0152: OP_CALL_NATIVE  0031 (Name: TIME, Args: 0)
+0156: OP_CALL_NATIVE  0032 (Name: GL_SET_UNIFORM, Args: 3)
+0160: OP_POP
+0161: OP_CALL_NATIVE  0033 (Name: GL_DRAW_FULLSCREEN, Args: 0)
+0165: OP_POP
+0166: OP_CALL_NATIVE  0034 (Name: GL_PRESENT, Args: 0)
+0170: OP_POP
+0171: OP_CONSTANT     0035 (Value: 27)
+0174: OP_CALL_NATIVE  0036 (Name: KEY_STATE, Args: 1)
+0178: OP_CONSTANT     0023 (Value: 1)
+0181: OP_EQUAL
+0182: OP_JUMP_IF_FALSE 0003 (Sari la: 188)
+0185: OP_JUMP          0003 (Sari la: 191)
+0188: OP_LOOP          0067 (Sari inapoi la: 124)
+0191: OP_CALL_NATIVE  0037 (Name: GL_CLOSE, Args: 0)
+0195: OP_POP
+0196: OP_RETURN

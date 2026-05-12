@@ -1,0 +1,44 @@
+plugin oli_opengl
+plugin oli_keyboard
+plugin oli_math
+
+# Inițializare OpenGL
+set $v = GL_INIT(900, 700, "OLI Shader Demo")
+
+# Vertex shader fixat
+set $vs = "#version 120\n" ..
+"void main() {\n" ..
+"    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;\n" ..
+"}\n"
+
+# Fragment shader fixat
+set $fs = "#version 120\n" ..
+"uniform float time;\n" ..
+"void main() {\n" ..
+"    vec2 uv = gl_FragCoord.xy / vec2(900.0, 700.0);\n" ..
+"    float v = 0.5 + 0.5 * sin(uv.x * 10.0 + time);\n" ..
+"    gl_FragColor = vec4(v, v * 0.2, 1.0 - v, 1.0);\n" ..
+"}\n"
+
+echo "Aici:" .. $fs .. " Gata"
+# Compilare shadere
+set $vshader = GL_LOAD_SHADER(0, $vs)
+set $fshader = GL_LOAD_SHADER(1, $fs)
+
+# Linkare program
+set $prog = GL_LINK_PROGRAM($vshader, $fshader)
+
+# Loop principal
+while true do
+    GL_CLEAR(0x000000)
+
+    GL_USE_PROGRAM($prog)
+    GL_SET_UNIFORM($prog, "time", TIME())
+
+    GL_DRAW_FULLSCREEN()
+    GL_PRESENT()
+
+    if KEY_STATE(27) == 1 then break endif  # ESC
+endwhile
+
+GL_CLOSE()

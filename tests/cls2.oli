@@ -1,8 +1,10 @@
 def class Inamic { hp, x, y, ataca() }
 
 func Inamic::ataca()
-    echo "Inamicul de la " .. $this.x .. " te ataca!"
+    echo "Inamicul de la " .. $this.x .. @str
 endfunc
+
+set $str = " te ataca!"
 
 $i = new("Inamic")
 $i.hp = 10

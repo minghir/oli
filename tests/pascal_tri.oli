@@ -1,5 +1,5 @@
 # Pascal's Triangle in Oli
-proc pascaltriangle n
+proc pascaltriangle $n
 	
     set $i = 0
     while $i < $n do

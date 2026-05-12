@@ -18,7 +18,7 @@ static std::vector<std::wstring> splitW(const std::wstring& s, const std::wstrin
     }
     return tokens;
 }
-
+/*
 std::vector<std::wstring> splitStatementsSmart(const std::wstring& input) {
     std::vector<std::wstring> result;
     std::wstring current;
@@ -56,6 +56,98 @@ std::vector<std::wstring> splitStatementsSmart(const std::wstring& input) {
     if (!trim(current).empty()) result.push_back(trim(current));
     return result;
 }
+*/
+std::vector<std::wstring> splitStatementsSmart(const std::wstring& input) {
+    std::vector<std::wstring> result;
+    std::wstring current;
+
+    int depth = 0;      // Nivelul de blocuri (IF, WHILE, PROC etc.)
+    int bDepth = 0;     // Nivelul de paranteze ( [ { )
+    bool inQuotes = false;
+
+    LOG_DEBUG(L"[SPLIT] Incepe procesarea blocului de dimensiune: " + std::to_wstring(input.length()));
+
+    for (size_t i = 0; i < input.length(); ++i) {
+        wchar_t c = input[i];
+
+        // 1. GESTIONARE GHILIMELE (State Machine)
+        // Verificăm ghilimelele și ignorăm escape-ul (ex: \" nu închide string-ul)
+        if (c == L'"' && (i == 0 || input[i - 1] != L'\\')) {
+            inQuotes = !inQuotes;
+            // LOG_DEBUG(inQuotes ? L"[SPLIT] Intrat in mod STRING" : L"[SPLIT] Iesit din mod STRING");
+        }
+
+        // 2. LOGICĂ DE SEPARARE (Activă doar în afara ghilimelelor)
+        if (!inQuotes) {
+
+            // Lambda pentru a verifica dacă la poziția curentă începe un keyword
+            auto isKeyword = [&](const std::wstring& targetUpper, size_t pos) {
+                if (pos + targetUpper.length() > input.length()) return false;
+
+                // Extragem bucata și o facem Upper pentru comparație case-insensitive
+                std::wstring sub = input.substr(pos, targetUpper.length());
+                for (auto& sc : sub) sc = std::towupper(sc);
+
+                if (sub != targetUpper) return false;
+
+                // Verificăm marginile (să nu fie parte dintr-un alt cuvânt, ex: "SHIFT" să nu fie "IF")
+                bool prevOk = (pos == 0 || iswspace(input[pos - 1]) || wcschr(L";()[]{}\"", input[pos - 1]));
+                size_t endPos = pos + targetUpper.length();
+                bool nextOk = (endPos >= input.length() || iswspace(input[endPos]) || wcschr(L";()[]{}\"", input[endPos]));
+
+                return prevOk && nextOk;
+                };
+
+            // Detectăm structurile care deschid blocuri
+            if (isKeyword(L"IF", i) || isKeyword(L"WHILE", i) || isKeyword(L"FOR", i) ||
+                isKeyword(L"PROC", i) || isKeyword(L"FUNC", i) || isKeyword(L"REPEAT", i) ||
+                isKeyword(L"CYCLE", i) || isKeyword(L"SWITCH", i)) {
+                depth++;
+                LOG_DEBUG(L"[SPLIT] Gasit Keyword Start. Depth: " + std::to_wstring(depth));
+            }
+            // Detectăm structurile care închid blocuri
+            else if (isKeyword(L"ENDIF", i) || isKeyword(L"ENDWHILE", i) || isKeyword(L"ENDFOR", i) ||
+                isKeyword(L"ENDPROC", i) || isKeyword(L"ENDFUNC", i) || isKeyword(L"ENDREPEAT", i) ||
+                isKeyword(L"ENDCYCLE", i) || isKeyword(L"ENDSWITCH", i)) {
+                if (depth > 0) depth--;
+                LOG_DEBUG(L"[SPLIT] Gasit Keyword End. Depth: " + std::to_wstring(depth));
+            }
+
+            // Gestionăm parantezele pentru Array/Map/Expresii
+            if (c == L'{' || c == L'[') {
+                bDepth++;
+                // LOG_DEBUG(L"[SPLIT] Bracket Open. bDepth: " + std::to_wstring(bDepth));
+            }
+            if (c == L'}' || c == L']') {
+                if (bDepth > 0) bDepth--;
+                // LOG_DEBUG(L"[SPLIT] Bracket Close. bDepth: " + std::to_wstring(bDepth));
+            }
+
+            // SEPARARE LA PUNCT ȘI VIRGULĂ
+            // Tăiem doar dacă suntem la nivelul "zero" (nu în interiorul unui IF/WHILE/Array)
+            if (c == L';' && depth == 0 && bDepth == 0) {
+                if (!trim(current).empty()) {
+                    LOG_DEBUG(L"[SPLIT] Statement finalizat la ';': " + (current.length() > 20 ? current.substr(0, 20) + L"..." : current));
+                    result.push_back(trim(current));
+                }
+                current.clear();
+                continue; // Sărim peste ';' pentru a nu-l include în instrucțiunea următoare
+            }
+        }
+
+        // Adăugăm caracterul la instrucțiunea curentă
+        current += c;
+    }
+
+    // Adăugăm și ultima parte dacă buffer-ul nu e gol
+    if (!trim(current).empty()) {
+        LOG_DEBUG(L"[SPLIT] Ultimul statement adaugat: " + (current.length() > 20 ? current.substr(0, 20) + L"..." : current));
+        result.push_back(trim(current));
+    }
+
+    return result;
+}
+
 
 OliChunk OliCompiler::compile(const std::wstring& source,
     const std::unordered_map<std::wstring, ByteCodeProcedure>& parentProcs,
@@ -83,9 +175,20 @@ OliChunk OliCompiler::compile(const std::wstring& source,
     int nestingLevel = 0;
     int bracketDepth = 0;
 
+    bool isMultilineString = false;
+
     while (std::getline(ss, line)) {
-        std::wstring cleanLine = trim(line);
-        if (cleanLine.empty()) continue;
+        //std::wstring cleanLine = trim(line);
+        std::wstring cleanLine = isMultilineString ? line : trim(line);
+        if (cleanLine.empty() && !isMultilineString) continue;
+
+        // --- 2. LOGICĂ DETECTARE GHILIMELE DESCHISE ---
+        // Verificăm dacă linia curentă lasă un string deschis pentru linia următoare
+        for (size_t i = 0; i < line.length(); ++i) {
+            if (line[i] == L'"' && (i == 0 || line[i - 1] != L'\\')) {
+                isMultilineString = !isMultilineString;
+            }
+        }
 
         // --- 0. PREPROCESARE: INCLUDE ---
         std::wstring upperLine = to_upper(cleanLine);
@@ -169,36 +272,7 @@ OliChunk OliCompiler::compile(const std::wstring& source,
             }
         }
 
-        // --- 1. MASCARE & COMENTARII ---
-        /*
-        bool inQuotes = false;
-        std::wstring maskedLine = cleanLine;
-        for (size_t i = 0; i < maskedLine.length(); ++i) {
-            if (maskedLine[i] == L'"' && (i == 0 || maskedLine[i - 1] != L'\\')) inQuotes = !inQuotes;
-            if (inQuotes) maskedLine[i] = L' ';
-        }
-
-        size_t commentPos = maskedLine.find(L'#');
-        if (commentPos != std::wstring::npos) {
-            cleanLine = trim(cleanLine.substr(0, commentPos));
-            maskedLine = trim(maskedLine.substr(0, commentPos));
-        }
-        if (cleanLine.empty()) continue;
-
-        // --- 2. ACTUALIZARE ADÂNCIME (Nesting) ---
-        //auto tokens = splitW(to_upper(maskedLine), L" \t\n\r();,");
-        auto nestingTokens = vOliCommandParser::tokenize(maskedLine);
-        for (const auto& t : nestingTokens) {
-            // Adăugăm REPEAT
-            if (t == L"IF" || t == L"WHILE" || t == L"FOR" || t == L"PROC" || t == L"FUNC" || t == L"REPEAT" || t == L"CYCLE") nestingLevel++;
-
-            // Adăugăm ENDREPEAT
-            if (t == L"ENDIF" || t == L"ENDWHILE" || t == L"ENDFOR" || t == L"ENDPROC" || t == L"ENDFUNC" || t == L"ENDREPEAT" || t == L"ENDCYCLE") nestingLevel--;
-
-            if (t == L"{" || t == L"[") bracketDepth++;
-            if (t == L"}" || t == L"]") bracketDepth--;
-        }
-        */
+        
 
         // --- 1. MASCARE & COMENTARII (Versiunea Corectă) ---
         bool lineInQuotes = false;
@@ -270,6 +344,10 @@ OliChunk OliCompiler::compile(const std::wstring& source,
     LOG_DEBUG(L"[DEBUG] End compile successfully.");
     return chunk;
 }
+
+
+
+
 
 
 

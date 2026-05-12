@@ -284,6 +284,10 @@ struct vData {
         // Returnăm valoarea așa cum e (chiar dacă e vData*)
         return *this;
     }
+
+    size_t type() const {
+        return getTrueData().value.index();
+    }
 };
 
 #endif

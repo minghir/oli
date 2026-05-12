@@ -14,8 +14,21 @@ set $startTime = TIME()
 
 # 3. Shadere (Scrise compact pentru a evita problemele de concatenare ale parserului)
 
-set $vs = "#version 120 \n void main() { gl_Position = gl_Vertex; }" 
-set $fs = "#version 120 \n uniform float time; void main() { vec2 res = vec2(900.0, 700.0); vec2 I = gl_FragCoord.xy; I = I * 2.0 - res; float d = dot(I, I); float a = atan(I.x, I.y); vec4 O = vec4(sin(log(d) + a - time * 3.0) + 0.9); O = 0.5 + O / fwidth(O); gl_FragColor = vec4(O.rgb, 1.0);}"
+# Citim conținutul fișierelor
+set $vs_source = readfile("examples/shaders/vertex.glsl")
+set $fs_source = readfile("examples/shaders/fragment.glsl")
+
+# Verificăm dacă fișierele au fost găsite
+if $vs_source == null || $fs_source == null then
+    echo "Eroare: Nu am putut incarca fisierele shader!"
+    exit
+endif
+
+# Încărcăm shaderele în OpenGL
+set $vshader = GL_LOAD_SHADER(0, $vs_source)
+set $fshader = GL_LOAD_SHADER(1, $fs_source)
+
+
 
 # 4. Compilare și Linkare
 set $vshader = GL_LOAD_SHADER(0, $vs)

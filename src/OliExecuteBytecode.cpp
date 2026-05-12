@@ -467,6 +467,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             }
             break;
         }
+                             /*
         case OpCode::OP_CALL_NATIVE: {
             // 1. Citim metadatele
             uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
@@ -513,8 +514,103 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             // 4. Executăm handler-ul nativ
             auto it = m_functionsHandlers.find(upperName);
             if (it != m_functionsHandlers.end()) {
+
                 vData result = it->second(args);
                 stack.push_back(result);
+            }
+            else {
+                LOG_ERROR(L"Runtime Error: Functia '" + funcName + L"' nu a fost gasita.");
+                this->m_executionStatus = OliStatus::ERR;
+                return;
+            }
+            break;
+        }
+        */
+        case OpCode::OP_CALL_NATIVE: {
+            // 1. Citim metadatele (indexul numelui funcției și numărul de argumente)
+            if (ip + 2 >= chunk.code.size()) {
+                LOG_ERROR(L"VM: Bytecode corupt la OP_CALL_NATIVE (lipsesc metadate).");
+                this->m_executionStatus = OliStatus::ERR;
+                return;
+            }
+
+            uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
+            ip += 2;
+            uint8_t argCount = chunk.code[ip++];
+
+            // Validăm indexul constantelor pentru a evita crash la citire
+            if (nameIdx >= chunk.constants.size()) {
+                LOG_ERROR(L"VM: Index constanta invalid pentru numele functiei.");
+                this->m_executionStatus = OliStatus::ERR;
+                return;
+            }
+
+            std::wstring rawName = chunk.constants[nameIdx].toWString();
+            std::wstring funcName = rawName;
+
+            // --- FIX CRITIC: DECOJIRE IERARHIE PENTRU APEL DINAMIC ---
+            if (!funcName.empty() && (funcName[0] == L'$' || funcName[0] == L'@')) {
+                std::wstring cleanVarName = funcName.substr(1);
+                vData varContent = this->getVar(rawName);
+
+                if (varContent.isMap()) {
+                    auto m = varContent.rawMap(); // Folosim helper-ul rawMap pentru siguranță
+                    if (m && m->count(cleanVarName)) {
+                        funcName = (*m).at(cleanVarName).toWString();
+                    }
+                    else {
+                        funcName = varContent.toWString();
+                    }
+                }
+                else {
+                    funcName = varContent.toWString();
+                }
+            }
+
+            // 2. Normalizăm numele pentru lookup (ex: "gl_init" -> "GL_INIT")
+            std::wstring upperName = funcName;
+            for (auto& c : upperName) c = std::towupper(c);
+
+            // 3. Colectăm argumentele (LIFO)
+            // IMPORTANT: Copiem valorile de pe stivă ÎNAINTE de a le scoate,
+            // pentru a evita pointeri suspendați (dangling pointers).
+            std::vector<vData> args;
+            args.reserve(argCount);
+
+            for (int i = 0; i < argCount; ++i) {
+                if (stack.empty()) {
+                    LOG_ERROR(L"Runtime Error: Stiva goala la colectarea argumentelor pentru " + funcName);
+                    this->m_executionStatus = OliStatus::ERR;
+                    return;
+                }
+
+                // Luăm elementul de sus, îl dereferențiem DE SALVARE și îl scoatem
+                vData topElement = stack.back();
+                stack.pop_back();
+
+                // Verificăm dacă nu cumva Bytecode-ul corupt ne dă un pointer bizar
+                if (topElement.isPointer()) {
+                    // Dacă e pointer, încercăm să extragem datele cu mare atenție
+                    args.insert(args.begin(), topElement.getTrueData());
+                }
+                else {
+                    args.insert(args.begin(), topElement);
+                }
+            }
+
+            // 4. Executăm handler-ul nativ
+            auto it = m_functionsHandlers.find(upperName);
+            if (it != m_functionsHandlers.end()) {
+                try {
+                    // Trimitem copia argumentelor către plugin
+                    vData result = it->second(args);
+                    stack.push_back(result);
+                }
+                catch (...) {
+                    LOG_ERROR(L"VM: Crash detectat in interiorul functiei native: " + funcName);
+                    this->m_executionStatus = OliStatus::ERR;
+                    return;
+                }
             }
             else {
                 LOG_ERROR(L"Runtime Error: Functia '" + funcName + L"' nu a fost gasita.");

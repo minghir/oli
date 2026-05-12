@@ -11,7 +11,7 @@ set $t = 0.0
 set $running = 1
 
 while $running == 1 do
-    set $v = GL_CLEAR(0x000015)
+    set $v = GL_CLEAR(0xFF0000)
 
     set $t = $t + 0.04
 

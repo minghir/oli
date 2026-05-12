@@ -1,6 +1,8 @@
 #ifndef VDATASERIALIZE_HPP
 #define VDATASERIALIZE_HPP
 
+#include <windows.h>
+
 #include "vData.hpp"
 #include <iostream>
 #include <variant>
@@ -22,7 +24,7 @@ namespace vDataSerialize {
     inline void serializeWString(const std::wstring& str, std::ostream& out);
     inline std::wstring deserializeWString(std::istream& in);
 
-
+    /*
     inline void serializeWString(const std::wstring& str, std::ostream& out) {
         uint32_t len = static_cast<uint32_t>(str.size());
         out.write(reinterpret_cast<const char*>(&len), sizeof(len));
@@ -40,7 +42,7 @@ namespace vDataSerialize {
         in.read(reinterpret_cast<char*>(str.data()), len * sizeof(wchar_t));
         return str;
     }
-
+    */
     inline void serializevData(const vData& data, std::ostream& out) {
         const vData& actual = data.getTrueData();
 
@@ -289,6 +291,45 @@ namespace vDataSerialize {
 
         return chunk;
     }
+
+
+    // Convertește WString (UTF-16) în String (UTF-8)
+    inline std::string to_utf8(const std::wstring& wstr) {
+        if (wstr.empty()) return "";
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+        std::string strTo(size_needed, 0);
+        WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+        return strTo;
+    }
+
+    // Convertește String (UTF-8) în WString (UTF-16)
+    inline std::wstring from_utf8(const std::string& str) {
+        if (str.empty()) return L"";
+        int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+        std::wstring wstrTo(size_needed, 0);
+        MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+        return wstrTo;
+    }
+
+    // 1. Forțăm scrierea string-ului ca octeți simpli
+    inline void serializeWString(const std::wstring& str, std::ostream& out) {
+        // Transformăm wstring (UTF-16) în string (UTF-8/ASCII) pentru disc
+        std::string utf8(str.begin(), str.end());
+        uint32_t len = (uint32_t)utf8.size();
+        out.write(reinterpret_cast<const char*>(&len), 4); // Scriem fix 4 octeți
+        if (len > 0) out.write(utf8.data(), len);
+    }
+
+    inline std::wstring deserializeWString(std::istream& in) {
+        uint32_t len = 0;
+        if (!in.read(reinterpret_cast<char*>(&len), 4)) return L"";
+        if (len == 0) return L"";
+
+        std::string utf8(len, '\0');
+        in.read(&utf8[0], len);
+        return std::wstring(utf8.begin(), utf8.end()); // Reconstruim wstring
+    }
+
 	
 } // end namespace vDataSerialize
 

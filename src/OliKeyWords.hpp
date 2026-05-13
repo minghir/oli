@@ -30,7 +30,7 @@ private:
         L"PROC",
         L"FUNC",
         L"PLUGIN",
-        L"QUIT", L"Q", L"EXIT",
+        L"QUIT", L"Q", 
         L"DUMP_MEM", L"DM", L"VARS",
         L"LIST",
         L"BREAK",
@@ -187,7 +187,8 @@ public:
             L"ASC",
             L"WRITE",
             L"WRITE_PLAIN",
-            L"CLS"
+            L"CLS",
+            L"EXIT"
             
         };
 

@@ -437,7 +437,6 @@ void vOliEngine::addToHistory(const std::wstring& command) {
 
         // --- COMENZI DE SISTEM ---
         m_commandHandlers[L"QUIT"] = wrap([this](const auto& sc) { handleQuitCommand(sc); });
-        m_commandHandlers[L"EXIT"] = m_commandHandlers[L"QUIT"];
         m_commandHandlers[L"Q"] = m_commandHandlers[L"QUIT"];
 
         // --- GESTIUNE VARIABILE ---

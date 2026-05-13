@@ -25,6 +25,10 @@ void vOliEngine::initializeFunctionsHandlers() {
         return vData(1LL);
         };
     vOliKeyWords::registerNativeFunction(L"INCLUDE");
+
+
+
+
     
     /*
     m_functionsHandlers[L"NEW"] = [this](const std::vector<vData>& args) -> vData {
@@ -50,6 +54,35 @@ void vOliEngine::initializeFunctionsHandlers() {
         return vData(std::monostate{});
         };
         */
+
+    m_functionsHandlers[L"EXIT"] = [this](const std::vector<vData>& args) -> vData {
+        int exitCode = 0;
+
+        if (!args.empty()) {
+            // Dacă primul parametru este un număr (Exit Code)
+            if (args[0].isNumber()) {
+                exitCode = (int)args[0].toDouble();
+                // Putem printa opțional motivul în consolă
+                // std::wcout << L"[Oli] System exit with code: " << exitCode << std::endl;
+            }
+            // Dacă primul parametru este un String (Mesaj de adio)
+            else if (args[1].isString()) {
+                LOG_RAW( L"Exit Message: " + args[0].toWString() );
+            }
+        }
+
+        // Oprim bucla principală a VM-ului
+        std::exit(exitCode);
+
+        // Dacă vrei ca Oli să returneze codul către sistemul de operare (Windows/Linux)
+        // poți stoca exitCode într-o variabilă din engine:
+        // this->m_finalExitCode = exitCode;
+
+        return vData((long long)exitCode);
+        };
+    vOliKeyWords::registerNativeFunction(L"EXIT");
+
+
     m_functionsHandlers[L"NEW"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData(std::monostate{});
 

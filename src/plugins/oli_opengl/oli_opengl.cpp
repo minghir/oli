@@ -17,6 +17,7 @@
     #define OLI_EXPORT extern "C" __attribute__((visibility("default")))
 #endif
 
+
 std::string wstr_to_str(const std::wstring& wstr) {
     std::string str;
     for (size_t i = 0; i < wstr.length(); ++i) {
@@ -37,6 +38,9 @@ std::string wstr_to_str(const std::wstring& wstr) {
     return str;
 }
 
+typedef bool (WINAPI* PFNWGLSWAPINTERVALEXTPROC)(int interval);
+PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = nullptr;
+
 
 // Funcții OpenGL moderne (GLSL)
 PFNGLCREATESHADERPROC      glCreateShader       = nullptr;
@@ -56,6 +60,9 @@ PFNGLGETPROGRAMIVPROC glGetProgramiv = nullptr;
 PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog = nullptr;
 
 PFNGLUNIFORM2FPROC glUniform2f = nullptr;
+PFNGLUNIFORM4FPROC glUniform4f = nullptr;
+
+PFNGLDELETESHADERPROC glDeleteShader = nullptr;
 
 // Tipurile tale
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
@@ -66,6 +73,10 @@ struct GLState {
     HWND  hwnd   = nullptr;
     HDC   hdc    = nullptr;
     HGLRC hrc    = nullptr;
+    GLuint fontBase = 0;
+    int mouseX = 0;
+    int mouseY = 0;
+    bool buttons[3] = { false, false, false }; // Stânga, Dreapta, Mijloc
 } g_GL;
 
 // Helper culoare
@@ -77,18 +88,72 @@ struct GLColor {
         b = ( hex        & 0xFF) / 255.0f;
     }
 };
-/*
-inline double toDouble(const vData& v) {
-    if (std::holds_alternative<double>(v.value))     return std::get<double>(v.value);
-    if (std::holds_alternative<long long>(v.value))  return (double)std::get<long long>(v.value);
-    return 0.0;
+
+
+std::string g_LastError = ""; // Aici vom stoca ultima eroare GLSL
+
+// Helper pentru conversie înapoi la wstring (necesar pentru GL_GET_ERROR)
+std::wstring str_to_wstr(const std::string& str) {
+    return std::wstring(str.begin(), str.end());
 }
-*/
+
+
+// 1. Creăm fontul (apelează asta în GL_INIT)
+void BuildFont() {
+    g_GL.fontBase = glGenLists(96);
+    HFONT font = CreateFontA(-18, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+        ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS,
+        ANTIALIASED_QUALITY, FF_DONTCARE | DEFAULT_PITCH, "Arial");
+    SelectObject(g_GL.hdc, font);
+    wglUseFontBitmapsA(g_GL.hdc, 32, 96, g_GL.fontBase);
+}
 
 inline double toDouble(const vData& v) {
     return v.toDouble(); // Folosește metoda din vData.hpp care are deja getTrueData() inclus!
 }
 
+
+LRESULT CALLBACK OliWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    switch (msg) {
+    case WM_MOUSEMOVE:
+        g_GL.mouseX = LOWORD(lParam);
+        g_GL.mouseY = HIWORD(lParam);
+        return 0;
+
+    case WM_LBUTTONDOWN: g_GL.buttons[0] = true;  return 0;
+    case WM_LBUTTONUP:   g_GL.buttons[0] = false; return 0;
+    case WM_RBUTTONDOWN: g_GL.buttons[1] = true;  return 0;
+    case WM_RBUTTONUP:   g_GL.buttons[1] = false; return 0;
+    case WM_SIZE: {
+        int newW = LOWORD(lParam);
+        int newH = HIWORD(lParam);
+
+        // Actualizăm starea globală
+        g_GL.width = newW;
+        g_GL.height = newH;
+
+        // Actualizăm Viewport-ul OpenGL
+        if (g_GL.hrc && g_GL.hdc) {
+            wglMakeCurrent(g_GL.hdc, g_GL.hrc);
+            glViewport(0, 0, newW, newH);
+
+            // Reconfigurăm proiecția 2D pentru a nu deforma desenele
+            glMatrixMode(GL_PROJECTION);
+            glLoadIdentity();
+            glOrtho(0, newW, newH, 0, -1, 1);
+            glMatrixMode(GL_MODELVIEW);
+        }
+        return 0;
+    }
+    case WM_CLOSE:
+        DestroyWindow(hwnd);
+        return 0;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        return 0;
+    }
+    return DefWindowProcW(hwnd, msg, wParam, lParam);
+}
 
 #define GET_GL_PROC(name, type) name = (type)wglGetProcAddress(#name);
 
@@ -107,10 +172,16 @@ void LoadShaderFunctions() {
     GET_GL_PROC(glGetProgramiv, PFNGLGETPROGRAMIVPROC);
     GET_GL_PROC(glGetProgramInfoLog, PFNGLGETPROGRAMINFOLOGPROC);
     GET_GL_PROC(glUniform2f, PFNGLUNIFORM2FPROC);
+    GET_GL_PROC(glUniform4f, PFNGLUNIFORM4FPROC);
+    GET_GL_PROC(glDeleteShader, PFNGLDELETESHADERPROC);
     // Notă: glUniform1f ar putea fi glUniform1fARB în funcție de vechimea plăcii
     glUniform1f = (PFNGLUNIFORM1FPROC)wglGetProcAddress("glUniform1f");
 
+    wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
+
 }
+
+
 
 
 // Punctul de intrare
@@ -133,7 +204,8 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         static bool classRegistered = false;
         if (!classRegistered) {
             WNDCLASSW wc = {0};
-            wc.lpfnWndProc   = DefWindowProcW;
+            //wc.lpfnWndProc   = DefWindowProcW;
+            wc.lpfnWndProc = OliWndProc;
             wc.hInstance     = hInst;
             wc.lpszClassName = L"OliGLClass";
             wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
@@ -156,6 +228,8 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         );
         if (!g_GL.hwnd) return vData{0LL};
 
+       
+
         // 4. DC
         g_GL.hdc = GetDC(g_GL.hwnd);
 
@@ -176,7 +250,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         wglMakeCurrent(g_GL.hdc, g_GL.hrc);
         
         LoadShaderFunctions();
-
+        if (wglSwapIntervalEXT) wglSwapIntervalEXT(0);
 
         // 7. Funcții moderne OpenGL (GLSL)
         glCreateShader       = (PFNGLCREATESHADERPROC)      wglGetProcAddress("glCreateShader");
@@ -205,6 +279,8 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
 
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_CULL_FACE);
+
+        BuildFont();
 
         return vData{1LL};
     };
@@ -362,7 +438,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
     #endif
         return vData{1LL};
     };
-
+    /*
     // GL_LOAD_SHADER(type, source)
     // type: 0 = vertex, 1 = fragment
     registry[L"GL_LOAD_SHADER"] = [](const std::vector<vData>& args) -> vData {
@@ -408,26 +484,112 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         glShaderSource(shader, 1, &csrc, NULL);
         glCompileShader(shader);
 
-        // 5. Verificare Compilare (Diagnostic crucial pentru Bytecode)
+        // 5. Verificare Compilare
         GLint success = 0;
-        if (glGetShaderiv != nullptr) {
-            glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-            if (!success) {
-                char infoLog[512];
-                if (glGetShaderInfoLog != nullptr) {
-                    glGetShaderInfoLog(shader, 512, NULL, infoLog);
-                   // printf("[OPENGL ERROR] Eroare compilare shader:\n%s\n", infoLog);
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 
-                    // Opțional: Printăm sursa primită ca să vedem dacă e "mutilată"
-                    // printf("Sursa primita a fost:\n%s\n", src.c_str());
-                }
+        if (!success) {
+            GLint logLength = 0;
+            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
+
+            if (logLength > 1) { // Verificăm să avem măcar 1 caracter
+                std::vector<GLchar> infoLog(logLength);
+                glGetShaderInfoLog(shader, logLength, NULL, infoLog.data());
+
+                // Salvăm în variabila globală (asigură-te că e definită sus)
+                g_LastError = std::string(infoLog.begin(), infoLog.end());
+
+                // Log în consola de sistem (nu crapă niciodată)
+                std::string finalMsg = "--- GLSL ERROR ---\n" + g_LastError + "\n------------------\n";
+                printf("%s", finalMsg.c_str());
+                OutputDebugStringA(finalMsg.c_str());
             }
             else {
-               // printf("[SUCCESS] Shader compilat cu succes. ID: %u\n", shader);
+                g_LastError = "Unknown GLSL error (empty log).";
             }
+
+            // DISTRUGEM shader-ul eșuat pentru a nu lăsa gunoi în memorie
+            glDeleteShader(shader);
+            return vData{ 0LL };
         }
 
         return vData{ (long long)shader };
+        };
+        */
+        // GL_LOAD_SHADER(type, source)
+    // type: 0 = vertex, 1 = fragment
+    registry[L"GL_LOAD_SHADER"] = [](const std::vector<vData>& args) -> vData {
+        // 1. Verificare argumente (Tip și Sursă)
+        if (args.size() < 2) return vData{ 0LL };
+
+        // 2. Verificăm validitatea sursei
+        if (!args[1].isString()) return vData{ 0LL };
+
+        // 3. Extragere și conversie wstring -> string
+        int shaderTypeIndex = (int)toDouble(args[0]);
+        std::wstring wsrc = args[1].toWString();
+
+        if (wsrc.empty()) return vData{ 0LL };
+
+        std::string src = wstr_to_str(wsrc);
+
+        // 4. Verificare Pointeri OpenGL (Prevenire Crash)
+        if (glCreateShader == nullptr || glShaderSource == nullptr ||
+            glCompileShader == nullptr || glGetShaderiv == nullptr ||
+            glGetShaderInfoLog == nullptr) {
+            g_LastError = "Critical: OpenGL shader functions not loaded!";
+            return vData{ 0LL };
+        }
+
+        // 5. Creare și Compilare Shader
+        GLenum glType = (shaderTypeIndex == 0) ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER;
+        GLuint shader = glCreateShader(glType);
+
+        const char* csrc = src.c_str();
+        glShaderSource(shader, 1, &csrc, NULL);
+        glCompileShader(shader);
+
+        // 6. Verificare Compilare (Diagnostic)
+        GLint success = 0;
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+
+        if (!success) {
+            GLint logLength = 0;
+            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
+
+            if (logLength > 1) {
+                // Folosim GLchar pentru vector conform standardului OpenGL
+                std::vector<GLchar> infoLog(logLength);
+                glGetShaderInfoLog(shader, logLength, NULL, infoLog.data());
+
+                // Convertim log-ul în string-ul global pentru Oli
+                g_LastError = std::string(infoLog.begin(), infoLog.end());
+
+                // Output pentru debug
+                std::string finalMsg = "\n--- GLSL COMPILE ERROR ---\n" + g_LastError + "--------------------------\n";
+                //printf("%s", finalMsg.c_str());
+                //OutputDebugStringA(finalMsg.c_str());
+            }
+            else {
+                g_LastError = "Unknown GLSL error: Driver returned empty log.";
+            }
+
+            // Curățăm resursele dacă a eșuat
+            if (glDeleteShader != nullptr) {
+                glDeleteShader(shader);
+            }
+
+            return vData{ 0LL }; // Returnăm 0 în Oli pentru a semnala eșecul
+        }
+
+        // Totul e OK
+        g_LastError = "No error";
+        return vData{ (long long)shader };
+        };
+
+    registry[L"GL_GET_ERROR"] = [](const std::vector<vData>&) -> vData {
+        // Folosim variabila globala si functia safe
+        return vData{ str_to_wstr(g_LastError) };
         };
 
     // GL_LINK_PROGRAM(vs, fs)
@@ -465,22 +627,6 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         return vData{1LL};
     };
 
-    // GL_SET_UNIFORM(program, name, value)
-    /*
-    registry[L"GL_SET_UNIFORM"] = [](const std::vector<vData>& args) -> vData {
-        if (args.size() < 3) return vData{0LL};
-
-        GLuint program   = (GLuint)toDouble(args[0]);
-        std::string name = wstr_to_str(args[1].toWString());
-        float value      = (float)toDouble(args[2]);
-
-        GLint loc = glGetUniformLocation(program, name.c_str());
-        if (loc >= 0)
-            glUniform1f(loc, value);
-
-        return vData{1LL};
-    };
-    */
     // În proiectul plugin-ului tău (oli_opengl.cpp)
     registry[L"GL_SET_UNIFORM"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 3) return vData{ 0LL };
@@ -491,20 +637,97 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
 
         if (loc == -1) return vData{ 0LL };
 
-        // Dacă avem 4 argumente: Program, Nume, X, Y -> vec2
-        if (args.size() == 4) {
-            if (glUniform2f) {
-                glUniform2f(loc, (float)toDouble(args[2]), (float)toDouble(args[3]));
-            }
+        if (args.size() == 6) { // Program, Nume, X, Y, Z, W
+            if (glUniform4f) glUniform4f(loc, (float)toDouble(args[2]), (float)toDouble(args[3]),
+                (float)toDouble(args[4]), (float)toDouble(args[5]));
         }
-        // Dacă avem 3 argumente: Program, Nume, Valoare -> float
-        else if (args.size() == 3) {
-            if (glUniform1f) {
-                glUniform1f(loc, (float)toDouble(args[2]));
-            }
+        else if (args.size() == 4) { // vec2
+            if (glUniform2f) glUniform2f(loc, (float)toDouble(args[2]), (float)toDouble(args[3]));
+        }
+        else if (args.size() == 3) { // float
+            if (glUniform1f) glUniform1f(loc, (float)toDouble(args[2]));
+        }
+        return vData{ 1LL };
+        };
+
+    registry[L"GL_WIDTH"] = [](const std::vector<vData>& args) -> vData {
+        return vData{ (long long)g_GL.width };
+        };
+
+    registry[L"GL_HEIGHT"] = [](const std::vector<vData>& args) -> vData {
+        return vData{ (long long)g_GL.height };
+        };
+
+    // 2. În registry, adăugăm GL_TEXT(x, y, string)
+    registry[L"GL_TEXT"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 3) return vData{ 0LL };
+
+        float x = (float)toDouble(args[0]);
+        float y = (float)toDouble(args[1]);
+        std::string text = wstr_to_str(args[2].toWString());
+
+        // 1. SALVĂM TOATE MATRICELE ȘI STĂRILE
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0, g_GL.width, g_GL.height, 0, -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        // 2. CONFIGURĂM STAREA PENTRU TEXT
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_TEXTURE_2D);
+        glUseProgram(0); // Ne asigurăm că shader-ul Julia e oprit
+
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glRasterPos2f(x, y);
+
+        if (g_GL.fontBase > 0) {
+            glListBase(g_GL.fontBase - 32);
+            glCallLists((GLsizei)text.length(), GL_UNSIGNED_BYTE, text.c_str());
         }
 
+        // 3. RESTAURĂM TOTUL EXACT CUM A FOST
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glPopAttrib();
+
         return vData{ 1LL };
+        };
+
+    registry[L"GL_SET_VSYNC"] = [](const std::vector<vData>& args) -> vData {
+        if (args.empty()) return vData{ 0LL };
+
+        int interval = (int)toDouble(args[0]); // 1 pentru ON, 0 pentru OFF
+
+        if (wglSwapIntervalEXT) {
+            wglSwapIntervalEXT(interval);
+            return vData{ 1LL };
+        }
+
+        return vData{ 0LL }; // Returnăm 0 dacă extensia nu e suportată de placă
+        };
+
+    registry[L"GL_MOUSE_X"] = [](const std::vector<vData>&) -> vData {
+        return vData{ (long long)g_GL.mouseX };
+        };
+
+    registry[L"GL_MOUSE_Y"] = [](const std::vector<vData>&) -> vData {
+        return vData{ (long long)g_GL.mouseY };
+        };
+
+    registry[L"GL_MOUSE_BTN"] = [](const std::vector<vData>& args) -> vData {
+        if (args.empty()) return vData{ 0LL };
+        int btn = (int)toDouble(args[0]); // 0=stânga, 1=dreapta
+        if (btn >= 0 && btn < 3) return vData{ g_GL.buttons[btn] ? 1LL : 0LL };
+        return vData{ 0LL };
         };
 }
 

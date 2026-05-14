@@ -1,0 +1,52 @@
+config max_iterations 0
+config echo off
+
+plugin oli_opengl
+plugin oli_keyboard
+
+set $v = GL_INIT(1024, 768, "Oli 3D - Mouse Rotate")
+set $mesh = GL_LOAD_MODEL("examples/wavefront/cube.obj")
+
+# Variabile de rotație
+set $rotX = 0.0
+set $rotY = 0.0
+
+# Pentru a calcula "delta" mouse-ului
+set $lastMX = 0
+set $lastMY = 0
+
+set $running = 1
+while $running == 1 do
+    set $v = GL_CLEAR(0x050505)
+    
+    # Citim starea mouse-ului
+    set $mx = GL_MOUSE_X()
+    set $my = GL_MOUSE_Y()
+    set $btn = GL_MOUSE_BTN(0) # 0 = Stânga
+    
+    # Dacă butonul este apăsat, actualizăm rotația
+    if $btn == 1 then
+        # Calculăm cât s-a mișcat mouse-ul de la ultimul cadru
+        set $dx = $mx - $lastMX
+        set $dy = $my - $lastMY
+        
+        # Ajustăm unghiurile (0.5 este sensibilitatea)
+        set $rotY = $rotY + $dx * 0.5
+        set $rotX = $rotX + $dy * 0.5
+    endif
+    
+    # Salvăm poziția curentă pentru cadrul următor
+    set $lastMX = $mx
+    set $lastMY = $my
+    
+    # Desenăm cubul cu noile unghiuri
+    # Parametri: (id, x, y, z, rx, ry, rz, scale)
+    set $v = GL_DRAW_MODEL($mesh, 0, 0, -10, $rotX, $rotY, 0, 1.5)
+    
+    set $v = GL_PRESENT()
+    set $v = WAIT(16)
+    
+    if KEY_STATE(27) == 1 then break endif
+endwhile
+
+GL_CLOSE()

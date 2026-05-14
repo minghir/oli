@@ -1,0 +1,57 @@
+# --- TEST VM OLI: OOP & ARRAYS ---
+config echo off
+
+# 1. Definim o clasă simplă cu o metodă
+def class TestBot { id, x, salute() }
+
+func TestBot::salute()
+    echo "Salut! Eu sunt Bot #" .. $this.id .. " si ma aflu la X: " .. $this.x
+endfunc
+
+echo "--- START TEST ---"
+
+# 2. Creăm un obiect de test
+set $b = new("TestBot")
+$b.id = 1
+$b.x = 100
+
+echo "[1] Test apel direct (fara array):"
+$b.salute() # Ar trebui să meargă fără probleme
+
+# 3. Punem obiectul într-un array
+echo ""
+echo "[2] Test apel din array:"
+set $lista = array(2)
+set $lista[0] = $b
+
+# Încercăm să apelăm metoda direct din slotul array-ului
+# AICI este punctul critic unde VM-ul ar putea da eroare
+$lista[0].salute()
+
+# 4. Test referință intermediară
+echo ""
+echo "[3] Test apel via referinta din array:"
+set $ref = $lista[0]
+$ref.salute()
+
+echo "[4] Test apel via referinta din array prin pointer:"
+$ref2 = &$lista
+*$ref.salute()
+
+
+set $d = new("TestBot")
+$d.id = 2
+$d.x = 200
+set $lista[1] = $d
+
+
+echo "[5] Test apel via referinta din array prin pointer:"
+$ref2 = &$lista
+*$ref2[1].salute()
+set $ref2[1].x = 300
+$ref2[1].salute()
+
+$lista[1].x=400
+$lista[1].salute()
+echo ""
+echo "--- TEST FINALIZAT ---"

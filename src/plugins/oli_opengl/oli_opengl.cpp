@@ -1,14 +1,15 @@
 #include "../../OliEngine.hpp"
 //#include <GL/glew.h>
 #include <GL/gl.h>
+#include <GL/glu.h>
 #include <GL/glext.h>
 #include <vector>
 #include <string>
 #include <algorithm>
 #include <cmath>
-
-
-
+#include <fstream>
+#include <sstream>
+#include <iostream>
 
 #ifdef _WIN32
     #include <windows.h>
@@ -16,6 +17,152 @@
 #else
     #define OLI_EXPORT extern "C" __attribute__((visibility("default")))
 #endif
+
+struct Vertex {
+    float x, y, z;
+};
+
+struct Normal {
+    float x, y, z;
+};
+
+struct FaceVertex {
+    int vIdx; // Index Vertex
+    int nIdx; // Index Normală
+};
+
+struct Material {
+    float r, g, b;
+};
+
+struct Face {
+    std::vector<FaceVertex> points;
+    std::string matName;
+};
+
+struct Model {
+    std::vector<Vertex> vertices;
+    std::vector<Normal> normals;
+    std::vector<Face> faces;
+    std::map<std::string, Material> materials;
+};
+
+// Mapă globală pentru a stoca modelele încărcate (ID -> Model)
+std::unordered_map<int, Model> g_Models;
+int g_NextModelID = 1;
+
+
+std::map<std::string, Material> LoadMTL(const std::string& path) {
+    std::map<std::string, Material> materials;
+    std::ifstream file(path);
+    if (!file.is_open()) return materials;
+
+    std::string line, currentMat;
+    while (std::getline(file, line)) {
+        std::stringstream ss(line);
+        std::string prefix;
+        ss >> prefix;
+
+        if (prefix == "newmtl") {
+            ss >> currentMat;
+        }
+        else if (prefix == "Kd") {
+            Material m;
+            ss >> m.r >> m.g >> m.b;
+            materials[currentMat] = m;
+        }
+    }
+    return materials;
+}
+
+
+int LoadOBJ(const std::string& path) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        return 0;
+    }
+
+    Model model;
+    std::string line;
+    std::string activeMaterial = ""; // Reține materialul curent setat prin 'usemtl'
+
+    // Determinăm directorul în care se află fișierul .obj pentru a căuta .mtl în același loc
+    std::string folder = "";
+    size_t lastSlash = path.find_last_of("\\/");
+    if (lastSlash != std::string::npos) {
+        folder = path.substr(0, lastSlash + 1);
+    }
+
+    while (std::getline(file, line)) {
+        if (line.empty() || line[0] == '#') continue;
+
+        std::stringstream ss(line);
+        std::string prefix;
+        ss >> prefix;
+
+        // 0. MATERIAL LIBRARY - Încarcă definițiile de culori
+        if (prefix == "mtllib") {
+            std::string mtlFileName;
+            ss >> mtlFileName;
+            // Încărcăm fișierul .mtl folosind calea completă
+            model.materials = LoadMTL(folder + mtlFileName);
+        }
+        // 1. USE MATERIAL - Schimbă materialul activ pentru următoarele fețe
+        else if (prefix == "usemtl") {
+            ss >> activeMaterial;
+        }
+        // 2. VÂRFURI
+        else if (prefix == "v") {
+            Vertex v;
+            ss >> v.x >> v.y >> v.z;
+            model.vertices.push_back(v);
+        }
+        // 3. NORMALE
+        else if (prefix == "vn") {
+            Normal n;
+            ss >> n.x >> n.y >> n.z;
+            model.normals.push_back(n);
+        }
+        // 4. FEȚE
+        else if (prefix == "f") {
+            Face face;
+            face.matName = activeMaterial; // Atribuim materialul activ acestei fețe
+            
+            std::string segment;
+            while (ss >> segment) {
+                FaceVertex fv = { -1, -1 };
+
+                try {
+                    size_t firstSlash = segment.find('/');
+                    size_t lastSlash = segment.rfind('/');
+
+                    // Index Vertex
+                    fv.vIdx = std::stoi(segment.substr(0, firstSlash)) - 1;
+
+                    // Index Normală (v/t/n sau v//n)
+                    if (firstSlash != std::string::npos && lastSlash != firstSlash) {
+                        fv.nIdx = std::stoi(segment.substr(lastSlash + 1)) - 1;
+                    }
+                }
+                catch (...) {
+                    continue;
+                }
+                face.points.push_back(fv);
+            }
+
+            if (!face.points.empty()) {
+                model.faces.push_back(face);
+            }
+        }
+    }
+
+    if (model.vertices.empty()) return 0;
+
+    int id = g_NextModelID++;
+    g_Models[id] = model;
+
+    return id;
+}
 
 
 std::string wstr_to_str(const std::wstring& wstr) {
@@ -264,23 +411,35 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         glUniform1f          = (PFNGLUNIFORM1FPROC)         wglGetProcAddress("glUniform1f");
 
         // 8. Setup pentru shadere (screen-space)
-        glViewport(0, 0, w, h);
+       // 8. Setup pentru 3D
+		glViewport(0, 0, w, h);
 
-        glMatrixMode(GL_PROJECTION);
-        glLoadIdentity();
+		// Trecem pe Proiecție pentru a seta lentila camerei (Perspectiva)
+		glMatrixMode(GL_PROJECTION);
+		glLoadIdentity();
 
-        glOrtho(0, w, h, 0, -1, 1);
+		// Setează perspectiva (FOV, Aspect Ratio, Near, Far)
+		gluPerspective(45.0f, (float)w / (float)h, 0.1f, 1000.0f);
 
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
+		// REVENIM pe ModelView pentru a desena obiectele
+		glMatrixMode(GL_MODELVIEW);
+		glLoadIdentity();
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LESS);
+		glDisable(GL_CULL_FACE);
 
-        glDisable(GL_DEPTH_TEST);
-        glDisable(GL_CULL_FACE);
+		glEnable(GL_LIGHTING);   // Activăm sistemul de iluminare
+		glEnable(GL_LIGHT0);     // Activăm prima sursă de lumină
+		glEnable(GL_COLOR_MATERIAL); // Permite culorilor glColor să interacționeze cu lumina
 
-        BuildFont();
+		// Poziția luminii (deasupra și în lateral)
+		float lightPos[] = { 5.0f, 5.0f, 5.0f, 1.0f };
+		glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+
+		BuildFont();
 
         return vData{1LL};
     };
@@ -303,7 +462,8 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
             glClearColor(c.r, c.g, c.b, 1.0f);
         }
 
-        glClear(GL_COLOR_BUFFER_BIT);
+        //glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         return vData{ 1LL };
     };
 
@@ -619,13 +779,40 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
 
     // GL_DRAW_FULLSCREEN()
     registry[L"GL_DRAW_FULLSCREEN"] = [](const std::vector<vData>&) -> vData {
-        glBegin(GL_TRIANGLES);
-            glVertex2f(-1.0f, -1.0f);
-            glVertex2f( 3.0f, -1.0f);
-            glVertex2f(-1.0f,  3.0f);
-        glEnd();
-        return vData{1LL};
-    };
+		// 1. Salvăm atributele actuale (ca să nu stricăm setările de la 3D)
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+		
+		// 2. Dezactivăm ce nu ne trebuie pentru un shader full-screen
+		glDisable(GL_DEPTH_TEST); 
+		glDisable(GL_LIGHTING);   
+		
+		// 3. Resetăm matricile la "Identity" (fără perspectivă, fără translație)
+		// Asta face ca coordonatele -1...1 să fie fix marginile ecranului
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glLoadIdentity();
+		
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glLoadIdentity();
+
+		// 4. Desenăm triunghiul imens care acoperă ecranul
+		glBegin(GL_TRIANGLES);
+			glVertex2f(-1.0f, -1.0f);
+			glVertex2f( 3.0f, -1.0f);
+			glVertex2f(-1.0f,  3.0f);
+		glEnd();
+
+		// 5. Restaurăm matricile și atributele anterioare (revenim la 3D-ul nostru)
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+		glPopMatrix();
+		
+		glPopAttrib();
+
+		return vData{1LL};
+	};
 
     // În proiectul plugin-ului tău (oli_opengl.cpp)
     registry[L"GL_SET_UNIFORM"] = [](const std::vector<vData>& args) -> vData {
@@ -729,6 +916,89 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         if (btn >= 0 && btn < 3) return vData{ g_GL.buttons[btn] ? 1LL : 0LL };
         return vData{ 0LL };
         };
+		
+		// În LoadOliPlugin:
+
+	// GL_LOAD_MODEL(path) -> returnează ID-ul modelului
+	registry[L"GL_LOAD_MODEL"] = [](const std::vector<vData>& args) -> vData {
+		if (args.empty()) return vData{ 0LL };
+		std::string path = wstr_to_str(args[0].toWString());
+		return vData{ (long long)LoadOBJ(path) };
+	};
+
+	// GL_DRAW_MODEL(id, x, y, z, scale)
+	registry[L"GL_DRAW_MODEL"] = [](const std::vector<vData>& args) -> vData {
+		// Așteptăm 8 argumente: id, x, y, z, rx, ry, rz, scale
+		if (args.size() < 8) return vData{ 0LL };
+		
+		int id = (int)toDouble(args[0]);
+		if (g_Models.find(id) == g_Models.end()) return vData{ 0LL };
+
+		float tx = (float)toDouble(args[1]);
+		float ty = (float)toDouble(args[2]);
+		float tz = (float)toDouble(args[3]);
+		float rx = (float)toDouble(args[4]); 
+		float ry = (float)toDouble(args[5]); 
+		float rz = (float)toDouble(args[6]); 
+		float scale = (float)toDouble(args[7]);
+
+		const Model& m = g_Models[id];
+
+		glPushMatrix();
+		
+		// 1. Transformări de bază
+		glTranslatef(tx, ty, tz);
+		glRotatef(rx, 1.0f, 0.0f, 0.0f);
+		glRotatef(ry, 0.0f, 1.0f, 0.0f);
+		glRotatef(rz, 0.0f, 0.0f, 1.0f);
+		glScalef(scale, scale, scale);
+
+		glEnable(GL_NORMALIZE);
+
+		// 2. Variabilă pentru optimizarea schimbării de materiale
+		std::string lastMat = "";
+
+		// 3. Iterăm prin fiecare față (care acum conține puncte și un nume de material)
+		for (const auto& face : m.faces) {
+			
+			// Aplicăm materialul doar dacă s-a schimbat față de fața anterioară
+			if (face.matName != lastMat) {
+				auto it = m.materials.find(face.matName);
+				if (it != m.materials.end()) {
+					const Material& mat = it->second;
+					float diffuse[] = { mat.r, mat.g, mat.b, 1.0f };
+					
+					// Setăm culoarea pentru sistemul de iluminare
+					glMaterialfv(GL_FRONT, GL_DIFFUSE, diffuse);
+					// Fallback în cazul în care iluminarea este oprită
+					glColor3f(mat.r, mat.g, mat.b);
+				}
+				lastMat = face.matName;
+			}
+
+			glBegin(GL_POLYGON); 
+			for (const auto& fv : face.points) {
+				
+				// SIGURANȚĂ 1: Verificăm indicii de normale
+				if (fv.nIdx >= 0 && fv.nIdx < (int)m.normals.size()) {
+					const Normal& n = m.normals[fv.nIdx];
+					glNormal3f(n.x, n.y, n.z);
+				}
+
+				// SIGURANȚĂ 2: Verificăm indicii de vîrfuri
+				if (fv.vIdx >= 0 && fv.vIdx < (int)m.vertices.size()) {
+					const Vertex& v = m.vertices[fv.vIdx];
+					glVertex3f(v.x, v.y, v.z);
+				}
+			}
+			glEnd();
+		}
+
+		glDisable(GL_NORMALIZE);
+		glPopMatrix();
+		
+		return vData{ 1LL };
+	};
 }
 
 

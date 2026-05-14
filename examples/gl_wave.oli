@@ -31,8 +31,9 @@ while $running == 1 do
         set $dy = $my - $lastMY
         
         # Ajustăm unghiurile (0.5 este sensibilitatea)
-        set $rotY = $rotY + $dx * 0.5
-        set $rotX = $rotX + $dy * 0.5
+		set $sens = 500.0 / GL_WIDTH()
+        set $rotY = $rotY + $dx * $sens
+        set $rotX = $rotX + $dy * $sens
     endif
     
     # Salvăm poziția curentă pentru cadrul următor

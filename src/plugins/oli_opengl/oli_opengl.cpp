@@ -275,19 +275,19 @@ LRESULT CALLBACK OliWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         int newW = LOWORD(lParam);
         int newH = HIWORD(lParam);
 
-        // Actualizăm starea globală
         g_GL.width = newW;
         g_GL.height = newH;
 
-        // Actualizăm Viewport-ul OpenGL
         if (g_GL.hrc && g_GL.hdc) {
             wglMakeCurrent(g_GL.hdc, g_GL.hrc);
             glViewport(0, 0, newW, newH);
 
-            // Reconfigurăm proiecția 2D pentru a nu deforma desenele
+            // RE-CALCULĂM PERSPECTIVA 3D AICI!
             glMatrixMode(GL_PROJECTION);
             glLoadIdentity();
-            glOrtho(0, newW, newH, 0, -1, 1);
+            if (newH > 0) {
+                gluPerspective(45.0f, (float)newW / (float)newH, 0.1f, 1000.0f);
+            }
             glMatrixMode(GL_MODELVIEW);
         }
         return 0;
@@ -945,7 +945,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
 		const Model& m = g_Models[id];
 
 		glPushMatrix();
-		
+        glLoadIdentity();
 		// 1. Transformări de bază
 		glTranslatef(tx, ty, tz);
 		glRotatef(rx, 1.0f, 0.0f, 0.0f);

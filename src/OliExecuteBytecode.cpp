@@ -732,13 +732,23 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             stack.push_back(vData(typeStr));
             break;
         }
+		/*
         case OpCode::OP_ITER_START: {
             // Stiva are sursa (Array/Map/String). 
             // Mai adăugăm un index de pornire (0).
             stack.push_back(vData(0LL));
             break;
         }
-
+		*/
+		
+		case OpCode::OP_ITER_FREE: {
+			if (!m_iterStack.empty()) {
+				m_iterStack.pop_back();
+			}
+			break;
+		}
+		
+		/*
         case OpCode::OP_ITER_NEXT: {
             // Calculăm pozițiile
             size_t idxPos = stack.size() - 1;
@@ -786,13 +796,75 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             stack.push_back(vData(isDone)); // Flag-ul pentru JUMP_IF_TRUE
             break;
         }
+		*/
+		
+		case OpCode::OP_ITER_NEXT: {
+			if (m_iterStack.empty()) {
+				// Safe-guard: nu ar trebui să se întâmple cu un compilator corect
+				this->m_executionStatus = OliStatus::ERR;
+				break;
+			}
 
+			// Luăm referință la starea curentă a iterației de pe stiva dedicată
+			vmIterState& itState = m_iterStack.back();
+			
+			vData nextValue;
+			bool isDone = true;
+
+			// 1. Verificăm sursa (itState.source) folosind indexul (itState.index)
+			if (itState.source.isArray()) {
+				auto& arr = *std::get<vDataArray>(itState.source.value);
+				if (itState.index >= 0 && itState.index < (long long)arr.size()) {
+					nextValue = arr[itState.index];
+					isDone = false;
+				}
+			}
+			else if (itState.source.isMap()) {
+				auto& m = *std::get<vDataMap>(itState.source.value);
+				if (itState.index >= 0 && itState.index < (long long)m.size()) {
+					auto it = m.begin();
+					std::advance(it, itState.index);
+					nextValue = vData(it->first); // Cheia (pentru obiecte/map)
+					isDone = false;
+				}
+			}
+			else if (itState.source.isString()) {
+				const std::wstring& str = std::get<std::wstring>(itState.source.value);
+				if (itState.index >= 0 && itState.index < (long long)str.size()) {
+					nextValue = vData(std::wstring(1, str[itState.index]));
+					isDone = false;
+				}
+			}
+
+			// 2. Incrementăm indexul în starea izolată
+			itState.index++;
+
+			// 3. Punem rezultatele pe stiva de date principală
+			if (!isDone) {
+				stack.push_back(nextValue); // Valoarea pentru $obj
+			}
+			
+			// Flag-ul pentru JUMP_IF_TRUE (0 = continuă, 1 = ieși/isDone)
+			stack.push_back(vData(isDone)); 
+			break;
+		}
+		/*
         case OpCode::OP_ITER_FREE: {
             // Scoatem Indexul și Sursa de pe stivă la finalul buclei
             stack.pop_back();
             stack.pop_back();
             break;
         }
+		*/
+		case OpCode::OP_ITER_START: {
+			vData source = stack.back(); 
+			stack.pop_back(); // Scoatem sursa de pe stiva de date
+
+			// O mutăm pe stiva izolată de iteratoare
+			m_iterStack.push_back({ source, 0 }); 
+			break;
+		}
+		
         /*
         case OpCode::OP_DEF_TYPE: {
             // 1. Citim numele tipului

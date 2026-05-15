@@ -15,21 +15,15 @@ func TestBot::salute()
 endfunc
 
 
-def class TestBot2 { bots, salutes(), salutes2(), assign_bots($b) }
-
-func TestBot2::assign_bots($b)
-	$this.bots = array(len($b))
-	$i = 0
-	cycle $b as $val do
-		$this.bots[$i] = $val
-		$i +=1
-	endcycle
-endfunc
+def class TestBot2 { $bots, $ptr_b, salutes(), salutes2() }
 
 
 func TestBot2::salutes() 
+	echo "Type:" .. TYPE($this.bots)
+	
 	cycle $this.bots as $obj do
 		$obj.salute()
+		echo "Obiect de tip:" .. TYPE($obj)
 	endcycle
 endfunc
 
@@ -96,7 +90,7 @@ echo "--- TEST FINALIZAT ---"
 
 set $tb2 = new("TestBot2")
 
-$tb2.bots = $lista 
+$tb2.bots = &$lista 
 echo "Rulez salutes2"
 $tb2.salutes2()
 echo "Rulez salutes"

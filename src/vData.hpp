@@ -288,6 +288,10 @@ struct vData {
     size_t type() const {
         return getTrueData().value.index();
     }
+	
+	vData resolve() const {
+        return getTrueData();
+    }
 };
 
 #endif

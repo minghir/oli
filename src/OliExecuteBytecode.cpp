@@ -740,13 +740,19 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             break;
         }
 		*/
-		
-		case OpCode::OP_ITER_FREE: {
-			if (!m_iterStack.empty()) {
-				m_iterStack.pop_back();
-			}
+		case OpCode::OP_ITER_START: {
+			vData source = stack.back(); 
+			stack.pop_back(); 
+
+			// Folosim resolve() pe care l-am reparat la pasul 1
+			vData realSource = source.resolve();
+
+			// Adăugăm în stiva de iteratoare
+			m_iterStack.push_back({ realSource, 0 }); 
 			break;
 		}
+		
+		
 		
 		/*
         case OpCode::OP_ITER_NEXT: {
@@ -800,51 +806,56 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
 		
 		case OpCode::OP_ITER_NEXT: {
 			if (m_iterStack.empty()) {
-				// Safe-guard: nu ar trebui să se întâmple cu un compilator corect
+				LOG_ERROR(L"Runtime Error: OP_ITER_NEXT fără un context de iterație activ.");
 				this->m_executionStatus = OliStatus::ERR;
 				break;
 			}
 
-			// Luăm referință la starea curentă a iterației de pe stiva dedicată
-			vmIterState& itState = m_iterStack.back();
+			// 1. Accesăm starea izolată a iterației
+			IterState& itState = m_iterStack.back();
+			
+			// 2. DEREFERENȚIERE: Obținem sursa reală (Array, Map sau String)
+			// Chiar dacă în itState.source avem un Pointer, getTrueData ne dă obiectul final.
+			vData& trueSource = itState.source.getTrueData();
 			
 			vData nextValue;
 			bool isDone = true;
 
-			// 1. Verificăm sursa (itState.source) folosind indexul (itState.index)
-			if (itState.source.isArray()) {
-				auto& arr = *std::get<vDataArray>(itState.source.value);
+			// 3. Logica de extragere a valorii în funcție de tipul REAL al sursei
+			if (trueSource.isArray()) {
+				// Acum std::get este sigur, deoarece trueSource nu mai este un Pointer
+				auto& arr = *std::get<vDataArray>(trueSource.value);
 				if (itState.index >= 0 && itState.index < (long long)arr.size()) {
 					nextValue = arr[itState.index];
 					isDone = false;
 				}
 			}
-			else if (itState.source.isMap()) {
-				auto& m = *std::get<vDataMap>(itState.source.value);
+			else if (trueSource.isMap()) {
+				auto& m = *std::get<vDataMap>(trueSource.value);
 				if (itState.index >= 0 && itState.index < (long long)m.size()) {
 					auto it = m.begin();
 					std::advance(it, itState.index);
-					nextValue = vData(it->first); // Cheia (pentru obiecte/map)
+					nextValue = vData(it->first); // Returnăm cheia pentru Map-uri
 					isDone = false;
 				}
 			}
-			else if (itState.source.isString()) {
-				const std::wstring& str = std::get<std::wstring>(itState.source.value);
+			else if (trueSource.isString()) {
+				const std::wstring& str = std::get<std::wstring>(trueSource.value);
 				if (itState.index >= 0 && itState.index < (long long)str.size()) {
 					nextValue = vData(std::wstring(1, str[itState.index]));
 					isDone = false;
 				}
 			}
 
-			// 2. Incrementăm indexul în starea izolată
+			// 4. Actualizăm indexul în starea izolată (nu pe stiva de date!)
 			itState.index++;
 
-			// 3. Punem rezultatele pe stiva de date principală
+			// 5. Punem rezultatele pe stiva principală pentru restul scriptului
 			if (!isDone) {
-				stack.push_back(nextValue); // Valoarea pentru $obj
+				stack.push_back(nextValue); // Valoarea care ajunge în $obj
 			}
 			
-			// Flag-ul pentru JUMP_IF_TRUE (0 = continuă, 1 = ieși/isDone)
+			// Flag-ul pentru JUMP_IF_TRUE (1/true oprește bucla, 0/false continuă)
 			stack.push_back(vData(isDone)); 
 			break;
 		}
@@ -856,14 +867,14 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             break;
         }
 		*/
-		case OpCode::OP_ITER_START: {
-			vData source = stack.back(); 
-			stack.pop_back(); // Scoatem sursa de pe stiva de date
-
-			// O mutăm pe stiva izolată de iteratoare
-			m_iterStack.push_back({ source, 0 }); 
+		
+		case OpCode::OP_ITER_FREE: {
+			if (!m_iterStack.empty()) {
+				m_iterStack.pop_back();
+			}
 			break;
 		}
+		
 		
         /*
         case OpCode::OP_DEF_TYPE: {

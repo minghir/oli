@@ -23,7 +23,7 @@
 #include "OliExpressionParser.hpp"
 #include "OliBytecode.hpp"
 
-struct vmIterState {
+struct IterState {
     vData source;
     long long index;
 };
@@ -318,7 +318,7 @@ private:
 
         std::unordered_map<std::wstring, ByteCodeProcedure> m_bytecodeFunctions;
 		std::vector<vData> m_stack; // Aceasta este stiva globală a VM-ului
-		std::vector<vmIterState> m_iterStack;
+		std::vector<IterState> m_iterStack;
 		
 		static bool runEmbeddedIfPresent(const std::string& exePath);
 };

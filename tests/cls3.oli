@@ -1,6 +1,12 @@
 # --- TEST VM OLI: OOP & ARRAYS ---
 config echo off
 
+def class mini { nm, out() }
+
+func mini::out()
+	echo "Mini: " .. $this.nm
+endfunc
+
 # 1. Definim o clasă simplă cu o metodă
 def class TestBot { id, x, salute() }
 
@@ -8,7 +14,39 @@ func TestBot::salute()
     echo "Salut! Eu sunt Bot #" .. $this.id .. " si ma aflu la X: " .. $this.x
 endfunc
 
+
+def class TestBot2 { bots, salutes(), salutes2(), assign_bots($b) }
+
+func TestBot2::assign_bots($b)
+	$this.bots = array(len($b))
+	$i = 0
+	cycle $b as $val do
+		$this.bots[$i] = $val
+		$i +=1
+	endcycle
+endfunc
+
+
+func TestBot2::salutes() 
+	cycle $this.bots as $obj do
+		$obj.salute()
+	endcycle
+endfunc
+
+func TestBot2::salutes2() 
+    echo "Numar bots in lista: " .. LEN($this.bots)
+    set $b1 = $this.bots[0]
+    set $b2 = $this.bots[1]
+    
+    echo "Test manual Bot 1:"
+    $b1.salute()
+    
+    echo "Test manual Bot 2:"
+    $b2.salute()
+endfunc
+
 echo "--- START TEST ---"
+
 
 # 2. Creăm un obiect de test
 set $b = new("TestBot")
@@ -55,3 +93,11 @@ $lista[1].x=400
 $lista[1].salute()
 echo ""
 echo "--- TEST FINALIZAT ---"
+
+set $tb2 = new("TestBot2")
+
+$tb2.bots = $lista 
+echo "Rulez salutes2"
+$tb2.salutes2()
+echo "Rulez salutes"
+$tb2.salutes()

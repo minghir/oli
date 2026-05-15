@@ -26,26 +26,26 @@ func Bullet::update($dt)
 endfunc
 
 # Inamicul: Mișcare și Desenare Sprite
-def class Enemy extends Entity { move($d, $s, $dt), draw() }
+def class Enemy extends Entity { move($d, $s, $dt), draw($dt) }
 func Enemy::move($d, $s, $dt)
     set $this.x = $this.x + ($d * $s * $dt)
 endfunc
 
-func Enemy::draw()
+func Enemy::draw($dt)
     GL_DRAW_SPRITE($this.tex, $this.x, $this.y, $this.w, $this.h, 0)
 endfunc
 
 # Boss-ul: Moștenește Enemy, dar se rotește și e mai mare
-def class Boss extends Enemy { angle, draw() }
-func Boss::draw()
-    set $this.angle = $this.angle + 1.5
+def class Boss extends Enemy { angle, draw($dt) }
+func Boss::draw($dt)
+    set $this.angle = $this.angle + (180 * $dt)
     GL_DRAW_SPRITE($this.tex, $this.x, $this.y, $this.w, $this.h, $this.angle)
 endfunc
 
 # --- 2. INIȚIALIZARE JOC ---
 
 GL_INIT(800, 600, "Oli Invaders - Legacy of OOP")
-GL_SET_VSYNC(1) # Să nu "zboare" inamicii prea repede
+#GL_SET_VSYNC(1) # Să nu "zboare" inamicii prea repede
 
 # Încărcare resurse
 set $texShip  = GL_LOAD_TEXTURE("./examples/games/winvaders/ship.png")
@@ -140,7 +140,7 @@ while true do
     cycle $bullets as $b do
         if $b.active == 1 then
 			$b.update($dt) # FOARTE IMPORTANT: pasăm $dt aici
-			echo $b.x
+			#echo $b.x
 			GL_POINT($b.x, $b.y, 8, 0x00FFFF)
 		endif
     endcycle
@@ -150,7 +150,7 @@ while true do
     cycle $enemies as $en do
         if $en.active == 1 then
             $en.move($eDir, $eSpeed, $dt)
-            $en.draw() # Enemy desenează fix, Boss se rotește!
+            $en.draw($dt) # Enemy desenează fix, Boss se rotește!
 
             # Verificare margine ecran
             if ABS($en.x) > $limitX then set $edgeReached = 1 endif

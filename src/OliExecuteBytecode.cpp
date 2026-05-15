@@ -37,44 +37,16 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
         }
 
         case OpCode::OP_SET_GLOBAL: {
-            vData val = stack.back(); stack.pop_back();
+            //vData val = stack.back().getTrueData(); 
+            vData val = stack.back().getScalarValue();
+            stack.pop_back();
             uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
             ip += 2;
             vData nameConst = chunk.constants[nameIdx].getTrueData();
             this->setVar(nameConst.toWString(), val);
             break;
         }
-        /*
-        case OpCode::OP_GET_GLOBAL: {
-            uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
-            ip += 2;
-            std::wstring rawName = chunk.constants[nameIdx].toWString();
-            std::wstring cleanName = this->cleanVariableName(rawName);
-
-            LOG_DEBUG(L"[VM] OP_GET_GLOBAL: Caut '" + rawName + L"' (Clean: '" + cleanName + L"')");
-
-            vData val;
-            bool found = false;
-
-            if (!m_callStack.empty()) {
-                auto& locals = m_callStack.back().localVariables;
-                if (locals.count(cleanName)) {
-                    val = locals[cleanName];
-                    found = true;
-                    LOG_DEBUG(L"   -> Gasit in LOCALS: " + val.toWString());
-                }
-            }
-
-            if (!found) {
-                val = this->getVar(rawName);
-                LOG_DEBUG(L"   -> Gasit in GLOBALS: " + val.toWString());
-            }
-
-            stack.push_back(val);
-            
-            break;
-        }
-        */
+        
 
         case OpCode::OP_GET_GLOBAL: {
             uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
@@ -95,6 +67,128 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             stack.push_back(val);
             break;
         }
+
+        case OpCode::OP_GET_INDIRECT: {
+            if (stack.size() < 1) break;
+
+            vData indexOrPtr = stack.back();
+            stack.pop_back();
+
+            // 1. Cazul ACCES CONTAINER: [Container, Index]
+            if (!stack.empty() && (stack.back().isArray() || stack.back().isMap())) {
+                vData container = stack.back();
+                stack.pop_back();
+
+                if (container.isArray()) {
+                    auto* arr = container.rawArray();
+                    long long idx = indexOrPtr.toInt();
+                    if (arr && idx >= 0 && idx < (long long)arr->size()) {
+                        stack.push_back((*arr)[idx]);
+                    }
+                    else {
+                        stack.push_back(vData{ std::monostate{} });
+                    }
+                }
+                else if (container.isMap()) {
+                    auto* m = container.rawMap();
+                    std::wstring key = indexOrPtr.toWString();
+                    if (m && m->count(key)) {
+                        stack.push_back((*m)[key]);
+                    }
+                    else {
+                        stack.push_back(vData{ std::monostate{} });
+                    }
+                }
+            }
+            // 2. Cazul DEREFERENȚIERE POINTER (*$ptr)
+            else {
+                // Folosim DOAR getTrueData(). Dacă e pointer, obținem spre ce arată.
+                // Dacă e un Map cu un element, RĂMÂNE un Map cu un element.
+                stack.push_back(indexOrPtr.getTrueData());
+            }
+            break;
+        }
+
+        case OpCode::OP_SET_INDIRECT: {
+            if (stack.size() < 3) {
+                LOG_ERROR(L"OP_SET_INDIRECT Error: Stack underflow (nevoie de 3 elemente, are " + std::to_wstring(stack.size()) + L")");
+                break;
+            }
+            LOG_DEBUG(L"VM_DEBUG: SET_INDIRECT pe " + stack[stack.size() - 3].toWString());
+            // 1. Extragem argumentele în ordinea LIFO (Last In, First Out)
+            // Stiva la intrare: [Container, Index, Value] <- top
+            vData value = stack.back(); stack.pop_back();
+            vData index = stack.back(); stack.pop_back();
+            vData container = stack.back(); stack.pop_back();
+
+            //vData finalValue = value.getTrueData();
+            vData finalValue = value.getScalarValue();
+
+            // 2. Operăm pe Map (folosim rawMap() care face automat getTrueData())
+            LOG_DEBUG(L"VM: Executing SET_INDIRECT. Container Type: " + getVariantTypeName(container));
+            if (container.isMap()) {
+                auto* m = container.rawMap();
+                if (m) {
+                    // Conversia indexului la string este vitală pentru cheile de Map
+                    (*m)[index.toWString()] = finalValue;
+                }
+            }
+            // 3. Operăm pe Array
+            else if (container.isArray()) {
+                auto* arr = container.rawArray();
+                long long idx = index.toInt();
+                if (arr && idx >= 0 && idx < (long long)arr->size()) {
+                    (*arr)[(size_t)idx] = finalValue;
+                }
+                else {
+                    LOG_ERROR(L"OP_SET_INDIRECT Error: Index out of bounds: " + std::to_wstring(idx));
+                }
+            }
+            // 4. Cazul în care containerul a fost corupt (devenit string sau null)
+            else {
+                LOG_ERROR(L"OP_SET_INDIRECT Error: Obiectul nu este Map/Array! Tip actual: " + container.toWString());
+                LOG_ERROR(L"DEZASTRU: Containerul a ajuns pe stiva ca fiind de tip: " + getVariantTypeName(container));
+            }
+            break;
+        }
+        
+
+
+        case OpCode::OP_GET_LOCAL: {
+            uint8_t slot = chunk.code[ip++];
+            size_t targetIdx = framePtr + slot;
+
+            if (targetIdx < stack.size()) {
+                // Copiem valoarea într-o variabilă temporară pentru a evita 
+                // problemele de invalidare a referinței în timpul push_back
+                vData val = stack[targetIdx];
+                stack.push_back(val);
+            }
+            else {
+                // Dacă slotul nu există, punem un NULL/Monostate implicit
+                stack.push_back(vData());
+                LOG_ERROR(L"VM: Încercare citire slot local neinițializat: " + std::to_wstring(slot));
+            }
+            break;
+        }
+
+        case OpCode::OP_SET_LOCAL: {
+            uint8_t slot = chunk.code[ip++];
+            //vData val = stack.back().getTrueData();
+            vData val = stack.back().getScalarValue();
+            stack.pop_back();
+
+            size_t targetIdx = framePtr + slot;
+
+            // Asigurăm că stiva are loc pentru acest slot local
+            if (targetIdx >= stack.size()) {
+                stack.resize(targetIdx + 1);
+            }
+
+            stack[targetIdx] = val;
+            break;
+        }
+
         case OpCode::OP_GET_ADDR: {
             uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
             ip += 2;
@@ -109,27 +203,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             stack.push_back(addr);
             break;
         }
-        /*
-        case OpCode::OP_ADD: {
-            vData b = stack.back(); stack.pop_back();
-            vData a = stack.back(); stack.pop_back();
-
-            vData rA = a.getScalarValue().getTrueData();
-            vData rB = b.getScalarValue().getTrueData();
-
-            // Dacă unul e string, facem concatenare string
-            if (rA.isString() || rB.isString()) {
-                stack.push_back(vData(rA.toWString() + rB.toWString()));
-            }
-            else if (rA.isInt() && rB.isInt()) {
-                stack.push_back(vData(rA.toInt() + rB.toInt()));
-            }
-            else {
-                stack.push_back(vData(vDataToDouble(rA) + vDataToDouble(rB)));
-            }
-            break;
-        }
-        */
+        
         case OpCode::OP_ADD: {
             vData b = stack.back(); stack.pop_back();
             vData a = stack.back(); stack.pop_back();
@@ -253,144 +327,10 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
         }
 
         
-        /*
-        case OpCode::OP_GET_INDIRECT: {
-            if (stack.size() < 1) break;
-
-            // 1. Scoatem indexul (sau pointerul)
-            vData indexOrPtr = stack.back();
-            stack.pop_back();
-
-            // 2. Verificăm dacă avem un container sub el pe stivă
-            // Exemplu: [Array, Index] -> OP_GET_INDIRECT
-            if (!stack.empty() && (stack.back().isArray() || stack.back().isMap())) {
-                vData container = stack.back();
-                stack.pop_back();
-
-                if (container.isArray()) {
-                    auto* arr = container.rawArray();
-                    int idx = (int)indexOrPtr.toInt();
-                    if (arr && idx >= 0 && idx < (int)arr->size()) {
-                        stack.push_back((*arr)[idx]);
-                    }
-                    else {
-                        stack.push_back(vData{ std::monostate{} }); // null dacă e out of bounds
-                    }
-                }
-                else if (container.isMap()) {
-                    auto* m = container.rawMap();
-                    std::wstring key = indexOrPtr.toWString();
-                    if (m && m->count(key)) {
-                        stack.push_back((*m)[key]);
-                    }
-                    else {
-                        stack.push_back(vData{ std::monostate{} });
-                    }
-                }
-            }
-            // 3. Altfel, este o dereferențiere simplă (*$ptr)
-            else {
-                // Folosim getScalarValue() din vData.hpp pentru a trece prin ierarhii
-                stack.push_back(indexOrPtr.getScalarValue());
-            }
-            break;
-        }
-        */
-
-        case OpCode::OP_GET_INDIRECT: {
-            if (stack.size() < 1) break;
-
-            vData indexOrPtr = stack.back();
-            stack.pop_back();
-
-            // 1. Cazul ACCES CONTAINER: [Container, Index]
-            if (!stack.empty() && (stack.back().isArray() || stack.back().isMap())) {
-                vData container = stack.back();
-                stack.pop_back();
-
-                if (container.isArray()) {
-                    auto* arr = container.rawArray();
-                    long long idx = indexOrPtr.toInt();
-                    if (arr && idx >= 0 && idx < (long long)arr->size()) {
-                        stack.push_back((*arr)[idx]);
-                    }
-                    else {
-                        stack.push_back(vData{ std::monostate{} });
-                    }
-                }
-                else if (container.isMap()) {
-                    auto* m = container.rawMap();
-                    std::wstring key = indexOrPtr.toWString();
-                    if (m && m->count(key)) {
-                        stack.push_back((*m)[key]);
-                    }
-                    else {
-                        stack.push_back(vData{ std::monostate{} });
-                    }
-                }
-            }
-            // 2. Cazul DEREFERENȚIERE POINTER (*$ptr)
-            else {
-                // Folosim DOAR getTrueData(). Dacă e pointer, obținem spre ce arată.
-                // Dacă e un Map cu un element, RĂMÂNE un Map cu un element.
-                stack.push_back(indexOrPtr.getTrueData());
-            }
-            break;
-        }
-
-        case OpCode::OP_SET_INDIRECT: {
-            if (stack.size() < 3) {
-                LOG_ERROR(L"OP_SET_INDIRECT Error: Stack underflow (nevoie de 3 elemente, are " + std::to_wstring(stack.size()) + L")");
-                break;
-            }
-            LOG_DEBUG(L"VM_DEBUG: SET_INDIRECT pe " + stack[stack.size() - 3].toWString());
-            // 1. Extragem argumentele în ordinea LIFO (Last In, First Out)
-            // Stiva la intrare: [Container, Index, Value] <- top
-            vData value = stack.back(); stack.pop_back();
-            vData index = stack.back(); stack.pop_back();
-            vData container = stack.back(); stack.pop_back();
-
-            // 2. Operăm pe Map (folosim rawMap() care face automat getTrueData())
-            LOG_DEBUG(L"VM: Executing SET_INDIRECT. Container Type: " + getVariantTypeName( container));
-            if (container.isMap()) {
-                auto* m = container.rawMap();
-                if (m) {
-                    // Conversia indexului la string este vitală pentru cheile de Map
-                    (*m)[index.toWString()] = value;
-                }
-            }
-            // 3. Operăm pe Array
-            else if (container.isArray()) {
-                auto* arr = container.rawArray();
-                long long idx = index.toInt();
-                if (arr && idx >= 0 && idx < (long long)arr->size()) {
-                    (*arr)[(size_t)idx] = value;
-                }
-                else {
-                    LOG_ERROR(L"OP_SET_INDIRECT Error: Index out of bounds: " + std::to_wstring(idx));
-                }
-            }
-            // 4. Cazul în care containerul a fost corupt (devenit string sau null)
-            else {
-                LOG_ERROR(L"OP_SET_INDIRECT Error: Obiectul nu este Map/Array! Tip actual: " + container.toWString());
-                LOG_ERROR(L"DEZASTRU: Containerul a ajuns pe stiva ca fiind de tip: " + getVariantTypeName(container));
-            }
-            break;
-        }
+        
+        
         // --- 8. SYSTEM & STRING ---
-        /*
-        case OpCode::OP_ECHO: {
-            if (stack.empty()) break;
-            vData val = stack.back();
-            stack.pop_back();
-
-            // Folosim getScalarValue() pentru a „aplatiza” ierarhia înainte de afișare
-            //std::wcout << val.getScalarValue().toWString() << std::endl;
-            //std::wcout.flush();
-            LOG_RAW(val.getScalarValue().toWString());
-            break;
-        }
-        */
+       
         case OpCode::OP_ECHO: {
             if (stack.empty()) break;
             vData val = stack.back();
@@ -467,65 +407,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             }
             break;
         }
-                             /*
-        case OpCode::OP_CALL_NATIVE: {
-            // 1. Citim metadatele
-            uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
-            ip += 2;
-            uint8_t argCount = chunk.code[ip++];
-
-            std::wstring rawName = chunk.constants[nameIdx].toWString();
-            std::wstring funcName = rawName;
-
-            // --- FIX CRITIC: DECOJIRE IERARHIE PENTRU APEL DINAMIC ---
-            if (!funcName.empty() && (funcName[0] == L'$' || funcName[0] == L'@')) {
-                // Numele curat pentru a căuta în interiorul Map-ului (ex: "funcName")
-                std::wstring cleanVarName = funcName.substr(1);
-                vData varContent = this->getVar(rawName);
-
-                if (varContent.isMap()) {
-                    auto m = std::get<vDataMap>(varContent.value);
-                    // Dacă găsim cheia în ierarhie, extragem string-ul real ("RANDOM")
-                    if (m && m->count(cleanVarName)) {
-                        funcName = (*m)[cleanVarName].toWString();
-                    }
-                    else {
-                        funcName = varContent.getTrueData().toWString();
-                    }
-                }
-                else {
-                    funcName = varContent.toWString();
-                }
-            }
-
-            // 2. Normalizăm numele pentru lookup (ex: "random" -> "RANDOM")
-            std::wstring upperName = funcName;
-            for (auto& c : upperName) c = std::towupper(c);
-
-            // 3. Colectăm argumentele (LIFO)
-            std::vector<vData> args(argCount);
-            for (int i = argCount - 1; i >= 0; --i) {
-                if (!stack.empty()) {
-                    args[i] = stack.back().getTrueData();
-                    stack.pop_back();
-                }
-            }
-
-            // 4. Executăm handler-ul nativ
-            auto it = m_functionsHandlers.find(upperName);
-            if (it != m_functionsHandlers.end()) {
-
-                vData result = it->second(args);
-                stack.push_back(result);
-            }
-            else {
-                LOG_ERROR(L"Runtime Error: Functia '" + funcName + L"' nu a fost gasita.");
-                this->m_executionStatus = OliStatus::ERR;
-                return;
-            }
-            break;
-        }
-        */
+        
         case OpCode::OP_CALL_NATIVE: {
             // 1. Citim metadatele (indexul numelui funcției și numărul de argumente)
             if (ip + 2 >= chunk.code.size()) {
@@ -732,14 +614,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             stack.push_back(vData(typeStr));
             break;
         }
-		/*
-        case OpCode::OP_ITER_START: {
-            // Stiva are sursa (Array/Map/String). 
-            // Mai adăugăm un index de pornire (0).
-            stack.push_back(vData(0LL));
-            break;
-        }
-		*/
+		
 		case OpCode::OP_ITER_START: {
 			vData source = stack.back(); 
 			stack.pop_back(); 
@@ -752,57 +627,6 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
 			break;
 		}
 		
-		
-		
-		/*
-        case OpCode::OP_ITER_NEXT: {
-            // Calculăm pozițiile
-            size_t idxPos = stack.size() - 1;
-            size_t srcPos = stack.size() - 2;
-
-            // EXTRAGEM VALORILE PRIN COPIE (sau accesăm direct via index mai târziu)
-            long long idx = std::get<long long>(stack[idxPos].value);
-
-            // Nu folosim referință la srcData dacă urmează push_back!
-            vData nextValue;
-            bool isDone = true;
-
-            // Accesăm sursa în siguranță (înainte de push_back)
-            if (stack[srcPos].isArray()) {
-                auto& arr = *std::get<vDataArray>(stack[srcPos].value);
-                if (idx >= 0 && idx < (long long)arr.size()) {
-                    nextValue = arr[idx];
-                    isDone = false;
-                }
-            }
-            else if (stack[srcPos].isMap()) {
-                auto& m = *std::get<vDataMap>(stack[srcPos].value);
-                if (idx >= 0 && idx < (long long)m.size()) {
-                    auto it = m.begin();
-                    std::advance(it, idx);
-                    nextValue = vData(it->first);
-                    isDone = false;
-                }
-            }
-            else if (stack[srcPos].isString()) {
-                const std::wstring& str = std::get<std::wstring>(stack[srcPos].value);
-                if (idx >= 0 && idx < (long long)str.size()) {
-                    nextValue = vData(std::wstring(1, str[idx]));
-                    isDone = false;
-                }
-            }
-
-            // Actualizăm indexul numeric
-            stack[idxPos].value = idx + 1;
-
-            // PUNEM REZULTATELE PE STIVĂ
-            if (!isDone) {
-                stack.push_back(nextValue); // Valoarea pentru iterator ($cat/$tip)
-            }
-            stack.push_back(vData(isDone)); // Flag-ul pentru JUMP_IF_TRUE
-            break;
-        }
-		*/
 		
 		case OpCode::OP_ITER_NEXT: {
 			if (m_iterStack.empty()) {
@@ -859,14 +683,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
 			stack.push_back(vData(isDone)); 
 			break;
 		}
-		/*
-        case OpCode::OP_ITER_FREE: {
-            // Scoatem Indexul și Sursa de pe stivă la finalul buclei
-            stack.pop_back();
-            stack.pop_back();
-            break;
-        }
-		*/
+		
 		
 		case OpCode::OP_ITER_FREE: {
 			if (!m_iterStack.empty()) {
@@ -876,134 +693,90 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
 		}
 		
 		
-        /*
         case OpCode::OP_DEF_TYPE: {
-            // 1. Citim numele tipului
-            uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
-            ip += 2;
-            std::wstring typeName = chunk.constants[nameIdx].toWString();
-
-            // 2. Citim restul metadatelor
-            bool isClass = (chunk.code[ip++] == 1);
-            uint8_t fieldCount = chunk.code[ip++];
-
-            vTypeBlueprint bp;
-            bp.name = typeName;
-            bp.isClass = isClass;
-
-            // 3. Citim indexul fiecărui câmp
-            for (int i = 0; i < (int)fieldCount; ++i) {
-                uint16_t fIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
-                ip += 2;
-                bp.fields.push_back(chunk.constants[fIdx].toWString());
-            }
-
-            // 4. Înregistrăm în Motor
-            this->m_blueprints[typeName] = bp;
-            LOG_SUCCESS(L"[VM] Blueprint registered: " + typeName);
-            break;
-        }
-        */
-        case OpCode::OP_DEF_TYPE: {
-            // 1. Citim numele tipului (2 bytes)
+            // 1. Citim numele tipului curent (2 bytes)
             uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
             ip += 2;
             std::wstring typeName = to_upper(chunk.constants[nameIdx].toWString());
 
+            // 2. NOU: Citim numele părintelui (2 bytes)
+            uint16_t parentIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
+            ip += 2;
+            std::wstring parentName = to_upper(chunk.constants[parentIdx].toWString());
+
             vTypeBlueprint bp;
             bp.name = typeName;
+            bp.parentName = parentName; // Ar fi util să adaugi acest câmp în structura vTypeBlueprint
 
-            // 2. Citim metadatele (isClass, counts) - ORDINEA TREBUIE SĂ FIE IDENTICĂ CU COMPILATORUL
+            // --- LOGICA DE MOȘTENIRE (HYDRATION) ---
+            if (!parentName.empty()) {
+                if (m_blueprints.count(parentName)) {
+                    const vTypeBlueprint& parentBp = m_blueprints[parentName];
+
+                    // Moștenim câmpurile
+                    bp.fields = parentBp.fields;
+
+                    // Moștenim metodele (inițial Boss::move va pointa către Inamic::move)
+                    bp.methods = parentBp.methods;
+
+                    LOG_DEBUG(L"[VM] " + typeName + L" mosteneste de la " + parentName);
+                }
+                else {
+                    LOG_ERROR(L"[VM] Eroare: Clasa parinte '" + parentName + L"' nu a fost gasita!");
+                }
+            }
+
+            // 3. Citim metadatele
             bp.isClass = (chunk.code[ip++] == 1);
             uint8_t fieldCount = chunk.code[ip++];
-            uint8_t methodCount = chunk.code[ip++]; // <--- MUTAT AICI (Citit în header)
+            uint8_t methodCount = chunk.code[ip++];
 
             LOG_DEBUG(L"[VM] Inregistrare " + std::wstring(bp.isClass ? L"CLASS: " : L"STRUCT: ") + typeName);
 
-            // 3. Citim indicii Câmpurilor
+            // 4. Citim indicii Câmpurilor (Adăugare sau Overlap)
             for (int i = 0; i < fieldCount; ++i) {
                 uint16_t fIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
                 ip += 2;
                 std::wstring fieldName = to_lower(chunk.constants[fIdx].toWString());
-                bp.fields.push_back(fieldName);
+
+                // Evităm duplicatele dacă câmpul există deja de la părinte
+                if (std::find(bp.fields.begin(), bp.fields.end(), fieldName) == bp.fields.end()) {
+                    bp.fields.push_back(fieldName);
+                }
                 LOG_DEBUG(L"    -> Field[" + std::to_wstring(i) + L"]: " + fieldName);
             }
 
-            // 4. Citim indicii Metodelor
+            // 5. Citim indicii Metodelor (Overriding magic happens here!)
             for (int i = 0; i < methodCount; ++i) {
                 uint16_t mIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
                 ip += 2;
                 std::wstring methodName = to_upper(chunk.constants[mIdx].toWString());
 
-                // Mapăm metoda pentru Dispatch-ul din v0.2
+                // Mapăm metoda nouă. Dacă methodName exista deja în bp.methods (de la părinte),
+                // acum va fi suprascrisă cu noua cale (typeName::methodName).
                 std::wstring internalFuncName = typeName + L"::" + methodName;
                 bp.methods[methodName] = internalFuncName;
 
                 LOG_DEBUG(L"    -> Method[" + std::to_wstring(i) + L"]: " + methodName + L" (Target: " + internalFuncName + L")");
             }
 
-            // 5. Salvare Blueprint
+            // 6. Salvare Blueprint final
             m_blueprints[typeName] = bp;
 
-            LOG_SUCCESS(L"Blueprint " + typeName + L" gata! (" +
-                std::to_wstring(fieldCount) + L" proprietati, " +
-                std::to_wstring(methodCount) + L" metode).");
+            LOG_SUCCESS(L"Blueprint " + typeName + L" gata! " +
+                (parentName.empty() ? L"" : L"(Mostenit din " + parentName + L")"));
             break;
         }
-        /*
-        case OpCode::OP_CALL_METHOD: {
-            // 1. Citim numărul de argumente (1 byte conform noului format de apel dinamic)
-            uint8_t argCount = chunk.code[ip++];
-
-            // 2. Extragem Numele Metodei de pe stivă (pus de OP_GET_INDIRECT anterior)
-            vData funcNameData = stack.back();
-            stack.pop_back();
-            std::wstring funcName = to_upper(funcNameData.toWString());
-
-            // 3. Extragem Obiectul Context ($p) care va deveni $this
-            // Acesta a fost păstrat pe stivă prin OP_DUP înainte de a extrage numele metodei
-            vData contextObj = stack.back();
-            stack.pop_back();
-
-            // 4. Colectăm argumentele (LIFO)
-            std::vector<vData> args(argCount);
-            for (int i = argCount - 1; i >= 0; --i) {
-                if (!stack.empty()) {
-                    args[i] = stack.back().getTrueData();
-                    stack.pop_back();
-                }
-            }
-
-            LOG_DEBUG(L"[VM] Apel Metoda: " + funcName + L" pe obiect de tip " + getVariantTypeName(contextObj));
-
-            // 5. Executăm apelul căutând în ambele tabele
-            if (m_bytecodeFunctions.count(funcName)) {
-                // --- APEL USER FUNCTION (BYTECODE) ---
-                // Transmitem contextObj care va fi mapat la $this în callUserByteCodeFunction
-                vData result = this->callUserByteCodeFunction(funcName, args, contextObj);
-                stack.push_back(result);
-            }
-            else if (m_functionsHandlers.count(funcName)) {
-                // --- APEL NATIVE (C++) ---
-                // Notă: Dacă vrei ca și funcțiile native să vadă 'this', 
-                // ar trebui să modifici signatura OliFunctionHandler să accepte context.
-                vData result = m_functionsHandlers[funcName](args);
-                stack.push_back(result);
-            }
-            else {
-                LOG_ERROR(L"Runtime Error: Metoda '" + funcName + L"' nu a fost găsită.");
-                this->m_executionStatus = OliStatus::ERR;
-                return;
-            }
-            break;
-        }
-        */
+        
         case OpCode::OP_CALL_METHOD: {
             uint8_t argCount = chunk.code[ip++];
+
+            // 1. Scoatem numele metodei
             vData methodNameData = stack.back(); stack.pop_back();
             std::wstring methodName = to_upper(methodNameData.toWString());
 
-            vData contextObj = stack.back(); // Nu dăm pop, rămâne pentru $this
+            // 2. Scoatem OBIECTUL (Contextul) - ACUM îi dăm pop!
+            vData contextObj = stack.back(); stack.pop_back();
 
             LOG_DEBUG(L"[VM] Apel metoda: " + methodName + L" pe obiect de tip " + getVariantTypeName(contextObj));
 
@@ -1011,24 +784,24 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
                 auto m = contextObj.rawMap();
                 if (m->count(L"__type__")) {
                     std::wstring typeName = (*m)[L"__type__"].toWString();
-                    LOG_DEBUG(L"[VM] Caut metoda " + methodName + L" in Blueprint-ul " + typeName);
 
                     if (m_blueprints.count(typeName)) {
                         auto& bp = m_blueprints[typeName];
                         if (bp.methods.count(methodName)) {
                             std::wstring finalFunc = bp.methods[methodName];
-                            LOG_DEBUG(L"    -> Metoda gasita in Blueprint! Apelam: " + finalFunc);
 
-                            // Colectăm argumentele...
+                            // 3. Colectăm argumentele (care acum sunt în vârful stivei)
                             std::vector<vData> args(argCount);
                             for (int i = argCount - 1; i >= 0; --i) {
-                                args[i] = stack.back(); stack.pop_back();
+                                args[i] = stack.back();
+                                stack.pop_back();
                             }
-                            stack.pop_back(); // Scoatem obiectul context acum
 
+                            // 4. Executăm
                             vData result = this->callUserByteCodeFunction(finalFunc, args, contextObj);
                             stack.push_back(result);
-                            LOG_SUCCESS(L"[VM] Metoda gasita! Executam: " + finalFunc);
+
+                            LOG_SUCCESS(L"[VM] Metoda executata: " + finalFunc);
                             break;
                         }
                     }
@@ -1039,6 +812,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             this->m_executionStatus = OliStatus::ERR;
             break;
         }
+
         case OpCode::OP_SET_PTR: {
             // Stiva la noi este: [Valoare_Noua, Adresa]
             if (stack.size() < 2) {
@@ -1071,39 +845,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             stack.push_back(b);
             break;
         }
-		case OpCode::OP_GET_LOCAL: {
-			uint8_t slot = chunk.code[ip++];
-			size_t targetIdx = framePtr + slot;
-			
-			if (targetIdx < stack.size()) {
-				// Copiem valoarea într-o variabilă temporară pentru a evita 
-				// problemele de invalidare a referinței în timpul push_back
-				vData val = stack[targetIdx]; 
-				stack.push_back(val);
-			} else {
-				// Dacă slotul nu există, punem un NULL/Monostate implicit
-				stack.push_back(vData());
-				LOG_ERROR(L"VM: Încercare citire slot local neinițializat: " + std::to_wstring(slot));
-			}
-			break;
-		}
-
-		case OpCode::OP_SET_LOCAL: {
-			uint8_t slot = chunk.code[ip++];
-			vData val = stack.back(); 
-			stack.pop_back();
-			
-			size_t targetIdx = framePtr + slot;
-			
-			// Asigurăm că stiva are loc pentru acest slot local
-			if (targetIdx >= stack.size()) {
-				stack.resize(targetIdx + 1);
-			}
-			
-			stack[targetIdx] = val;
-			break;
-		}
-
+		
         default:
             LOG_ERROR(L"VM Error: OpCode necunoscut [0x" + std::to_wstring((int)instruction) + L"] la IP: " + std::to_wstring(ip - 1));
             this->m_executionStatus = OliStatus::ERR; return;

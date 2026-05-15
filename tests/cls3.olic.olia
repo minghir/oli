@@ -1,0 +1,238 @@
+--- OLI ASSEMBLY LISTING ---
+Source: ./tests/cls3.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_GET_GLOBAL   0000 (Name: config)
+0003: OP_DEF_TYPE      0001 (Type: MINI, CLASS, Fields: 1, Methods: 1)
+    Field [0]: 0002 (Name: nm)
+    Method [0]: 0003 (Name: OUT)
+0013: OP_DEF_TYPE      0004 (Type: TESTBOT, CLASS, Fields: 2, Methods: 1)
+    Field [0]: 0005 (Name: id)
+    Field [1]: 0006 (Name: x)
+    Method [0]: 0007 (Name: SALUTE)
+0025: OP_DEF_TYPE      0008 (Type: TESTBOT2, CLASS, Fields: 2, Methods: 2)
+    Field [0]: 0009 (Name: $bots)
+    Field [1]: 0010 (Name: $ptr_b)
+    Method [0]: 0011 (Name: SALUTES)
+    Method [1]: 0012 (Name: SALUTES2)
+0039: OP_CONSTANT     0013 (Value: --- START TEST ---)
+0042: OP_ECHO
+0043: OP_CONSTANT     0014 (Value: TestBot)
+0046: OP_CALL_NATIVE  0015 (Name: NEW, Args: 1)
+0050: OP_SET_GLOBAL   0016 (Name: $b)
+0053: OP_GET_GLOBAL   0016 (Name: $b)
+0056: OP_CONSTANT     0005 (Value: id)
+0059: OP_CONSTANT     0017 (Value: 1)
+0062: OP_SET_INDIRECT
+0063: OP_GET_GLOBAL   0016 (Name: $b)
+0066: OP_CONSTANT     0006 (Value: x)
+0069: OP_CONSTANT     0018 (Value: 100)
+0072: OP_SET_INDIRECT
+0073: OP_CONSTANT     0019 (Value: [1] Test apel direct (fara array):)
+0076: OP_ECHO
+0077: OP_GET_GLOBAL   0016 (Name: $b)
+0080: OP_CONSTANT     0020 (Value: salute)
+0083: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0085: OP_POP
+0086: OP_CONSTANT     0021 (Value: )
+0089: OP_ECHO
+0090: OP_CONSTANT     0022 (Value: [2] Test apel din array:)
+0093: OP_ECHO
+0094: OP_CONSTANT     0023 (Value: 2)
+0097: OP_CALL_NATIVE  0024 (Name: ARRAY, Args: 1)
+0101: OP_SET_GLOBAL   0025 (Name: $lista)
+0104: OP_GET_GLOBAL   0025 (Name: $lista)
+0107: OP_CONSTANT     0026 (Value: 0)
+0110: OP_GET_GLOBAL   0016 (Name: $b)
+0113: OP_SET_INDIRECT
+0114: OP_GET_GLOBAL   0025 (Name: $lista)
+0117: OP_CONSTANT     0026 (Value: 0)
+0120: OP_GET_INDIRECT
+0121: OP_CONSTANT     0020 (Value: salute)
+0124: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0126: OP_POP
+0127: OP_CONSTANT     0021 (Value: )
+0130: OP_ECHO
+0131: OP_CONSTANT     0027 (Value: [3] Test apel via referinta din array:)
+0134: OP_ECHO
+0135: OP_GET_GLOBAL   0025 (Name: $lista)
+0138: OP_CONSTANT     0026 (Value: 0)
+0141: OP_GET_INDIRECT
+0142: OP_SET_GLOBAL   0028 (Name: $ref)
+0145: OP_GET_GLOBAL   0028 (Name: $ref)
+0148: OP_CONSTANT     0020 (Value: salute)
+0151: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0153: OP_POP
+0154: OP_CONSTANT     0029 (Value: [4] Test apel via referinta din array prin pointer:)
+0157: OP_ECHO
+0158: OP_GET_ADDR      0025 (Variable: $lista)
+0161: OP_SET_GLOBAL   0030 (Name: $ref2)
+0164: OP_GET_GLOBAL   0028 (Name: $ref)
+0167: OP_CONSTANT     0020 (Value: salute)
+0170: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0172: OP_GET_INDIRECT
+0173: OP_CONSTANT     0014 (Value: TestBot)
+0176: OP_CALL_NATIVE  0015 (Name: NEW, Args: 1)
+0180: OP_SET_GLOBAL   0031 (Name: $d)
+0183: OP_GET_GLOBAL   0031 (Name: $d)
+0186: OP_CONSTANT     0005 (Value: id)
+0189: OP_CONSTANT     0023 (Value: 2)
+0192: OP_SET_INDIRECT
+0193: OP_GET_GLOBAL   0031 (Name: $d)
+0196: OP_CONSTANT     0006 (Value: x)
+0199: OP_CONSTANT     0032 (Value: 200)
+0202: OP_SET_INDIRECT
+0203: OP_GET_GLOBAL   0025 (Name: $lista)
+0206: OP_CONSTANT     0017 (Value: 1)
+0209: OP_GET_GLOBAL   0031 (Name: $d)
+0212: OP_SET_INDIRECT
+0213: OP_CONSTANT     0033 (Value: [5] Test apel via referinta din array prin pointer:)
+0216: OP_ECHO
+0217: OP_GET_ADDR      0025 (Variable: $lista)
+0220: OP_SET_GLOBAL   0030 (Name: $ref2)
+0223: OP_GET_GLOBAL   0030 (Name: $ref2)
+0226: OP_CONSTANT     0017 (Value: 1)
+0229: OP_GET_INDIRECT
+0230: OP_CONSTANT     0020 (Value: salute)
+0233: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0235: OP_GET_INDIRECT
+0236: OP_GET_GLOBAL   0030 (Name: $ref2)
+0239: OP_CONSTANT     0017 (Value: 1)
+0242: OP_GET_INDIRECT
+0243: OP_CONSTANT     0006 (Value: x)
+0246: OP_CONSTANT     0034 (Value: 300)
+0249: OP_SET_INDIRECT
+0250: OP_GET_GLOBAL   0030 (Name: $ref2)
+0253: OP_CONSTANT     0017 (Value: 1)
+0256: OP_GET_INDIRECT
+0257: OP_CONSTANT     0020 (Value: salute)
+0260: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0262: OP_POP
+0263: OP_GET_GLOBAL   0025 (Name: $lista)
+0266: OP_CONSTANT     0017 (Value: 1)
+0269: OP_GET_INDIRECT
+0270: OP_CONSTANT     0006 (Value: x)
+0273: OP_CONSTANT     0035 (Value: 400)
+0276: OP_SET_INDIRECT
+0277: OP_GET_GLOBAL   0025 (Name: $lista)
+0280: OP_CONSTANT     0017 (Value: 1)
+0283: OP_GET_INDIRECT
+0284: OP_CONSTANT     0020 (Value: salute)
+0287: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0289: OP_POP
+0290: OP_CONSTANT     0021 (Value: )
+0293: OP_ECHO
+0294: OP_CONSTANT     0036 (Value: --- TEST FINALIZAT ---)
+0297: OP_ECHO
+0298: OP_CONSTANT     0037 (Value: TestBot2)
+0301: OP_CALL_NATIVE  0015 (Name: NEW, Args: 1)
+0305: OP_SET_GLOBAL   0038 (Name: $tb2)
+0308: OP_GET_GLOBAL   0038 (Name: $tb2)
+0311: OP_CONSTANT     0039 (Value: bots)
+0314: OP_GET_ADDR      0025 (Variable: $lista)
+0317: OP_SET_INDIRECT
+0318: OP_CONSTANT     0040 (Value: Rulez salutes2)
+0321: OP_ECHO
+0322: OP_GET_GLOBAL   0038 (Name: $tb2)
+0325: OP_CONSTANT     0041 (Value: salutes2)
+0328: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0330: OP_POP
+0331: OP_CONSTANT     0042 (Value: Rulez salutes)
+0334: OP_ECHO
+0335: OP_GET_GLOBAL   0038 (Name: $tb2)
+0338: OP_CONSTANT     0043 (Value: salutes)
+0341: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0343: OP_POP
+0344: OP_RETURN
+
+--- FUNCTION: TESTBOT::SALUTE (Params: ) ---
+=== DISASSEMBLY: TESTBOT::SALUTE ===
+0000: OP_CONSTANT     0000 (Value: Salut! Eu sunt Bot #)
+0003: OP_GET_LOCAL     0000
+0005: OP_CONSTANT     0001 (Value: id)
+0008: OP_GET_INDIRECT
+0009: OP_CONCAT
+0010: OP_CONSTANT     0002 (Value:  si ma aflu la X: )
+0013: OP_CONCAT
+0014: OP_GET_LOCAL     0000
+0016: OP_CONSTANT     0003 (Value: x)
+0019: OP_GET_INDIRECT
+0020: OP_CONCAT
+0021: OP_ECHO
+0022: OP_RETURN
+
+--- FUNCTION: MINI::OUT (Params: ) ---
+=== DISASSEMBLY: MINI::OUT ===
+0000: OP_CONSTANT     0000 (Value: Mini: )
+0003: OP_GET_LOCAL     0000
+0005: OP_CONSTANT     0001 (Value: nm)
+0008: OP_GET_INDIRECT
+0009: OP_CONCAT
+0010: OP_ECHO
+0011: OP_RETURN
+
+--- FUNCTION: TESTBOT2::SALUTES (Params: ) ---
+=== DISASSEMBLY: TESTBOT2::SALUTES ===
+0000: OP_CONSTANT     0000 (Value: Type:)
+0003: OP_GET_LOCAL     0000
+0005: OP_CONSTANT     0001 (Value: bots)
+0008: OP_GET_INDIRECT
+0009: OP_TYPE
+0010: OP_CONCAT
+0011: OP_ECHO
+0012: OP_GET_LOCAL     0000
+0014: OP_CONSTANT     0001 (Value: bots)
+0017: OP_GET_INDIRECT
+0018: OP_ITER_START
+0019: OP_ITER_NEXT
+0020: OP_JUMP_IF_TRUE  0021 (Sari la: 44)
+0023: OP_SET_LOCAL     0001
+0025: OP_GET_LOCAL     0001
+0027: OP_CONSTANT     0002 (Value: salute)
+0030: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0032: OP_POP
+0033: OP_CONSTANT     0003 (Value: Obiect de tip:)
+0036: OP_GET_LOCAL     0001
+0038: OP_TYPE
+0039: OP_CONCAT
+0040: OP_ECHO
+0041: OP_LOOP          0025 (Sari inapoi la: 19)
+0044: OP_ITER_FREE
+0045: OP_RETURN
+
+--- FUNCTION: TESTBOT2::SALUTES2 (Params: ) ---
+=== DISASSEMBLY: TESTBOT2::SALUTES2 ===
+0000: OP_CONSTANT     0000 (Value: Numar bots in lista: )
+0003: OP_GET_LOCAL     0000
+0005: OP_CONSTANT     0001 (Value: bots)
+0008: OP_GET_INDIRECT
+0009: OP_CALL_NATIVE  0002 (Name: LEN, Args: 1)
+0013: OP_CONCAT
+0014: OP_ECHO
+0015: OP_GET_LOCAL     0000
+0017: OP_CONSTANT     0001 (Value: bots)
+0020: OP_GET_INDIRECT
+0021: OP_CONSTANT     0003 (Value: 0)
+0024: OP_GET_INDIRECT
+0025: OP_SET_LOCAL     0001
+0027: OP_GET_LOCAL     0000
+0029: OP_CONSTANT     0001 (Value: bots)
+0032: OP_GET_INDIRECT
+0033: OP_CONSTANT     0004 (Value: 1)
+0036: OP_GET_INDIRECT
+0037: OP_SET_LOCAL     0002
+0039: OP_CONSTANT     0005 (Value: Test manual Bot 1:)
+0042: OP_ECHO
+0043: OP_GET_LOCAL     0001
+0045: OP_CONSTANT     0006 (Value: salute)
+0048: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0050: OP_POP
+0051: OP_CONSTANT     0007 (Value: Test manual Bot 2:)
+0054: OP_ECHO
+0055: OP_GET_LOCAL     0002
+0057: OP_CONSTANT     0006 (Value: salute)
+0060: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0062: OP_POP
+0063: OP_RETURN

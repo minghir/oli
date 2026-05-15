@@ -1,107 +1,178 @@
-# --- SETUP ---
+# --- CONFIGURARE ---
 config echo off
+config max_iterations 0
+
 plugin oli_opengl
 plugin oli_keyboard
+plugin oli_math
 
-# 1. DEFINIRE CLASE (La începutul scriptului)
-def class Bullet { x, y, active, speed, move() }
-func Bullet::move()
+# --- 1. IERARHIA DE CLASE ---
+
+# Clasa de bază pentru tot ce are coordonate și imagine
+def class Entity { x, y, active, tex, w, h }
+
+# Gloanțele: simple, galbene (sau poți pune și aici textură)
+def class Bullet extends Entity { speed, update() }
+func Bullet::update()
     if $this.active == 1 then
         set $this.y = $this.y + $this.speed
         if $this.y > 350 then set $this.active = 0 endif
     endif
 endfunc
 
-def class Enemy { x, y, alive, move($d, $s) }
+# Inamicul: folosește GL_DRAW_SPRITE
+def class Enemy extends Entity { move($d, $s), draw() }
 func Enemy::move($d, $s)
-    if $this.alive == 1 then
-        set $this.x = $this.x + ($s * $d)
-    endif
+    set $this.x = $this.x + ($s * $d)
 endfunc
 
-# 2. INIȚIALIZARE MOTOR
-GL_INIT(800, 600, "Oli Invaders - OOP Fixed")
+func Enemy::draw()
+    # GL_DRAW_SPRITE(id, x, y, w, h, rot)
+    GL_DRAW_SPRITE($this.tex, $this.x, $this.y, $this.w, $this.h, 0)
+endfunc
 
-# 3. INSTANȚIERE OBIECTE
+# Boss-ul: moștenește Enemy, dar e mai mare și se rotește (pentru efect)
+def class Boss extends Enemy { angle, draw() }
+func Boss::draw()
+    set $this.angle = $this.angle + 2 # Rotație continuă
+    GL_DRAW_SPRITE($this.tex, $this.x, $this.y, $this.w, $this.h, $this.angle)
+endfunc
+
+# --- 2. INIȚIALIZARE JOC ---
+
+GL_INIT(800, 600, "Oli Invaders - Hardware Accelerated")
+GL_SET_VSYNC(1) # Forțează jocul să ruleze la 60 FPS
+
+# Încărcăm texturile (O singură dată!)
+set $texPlayer = GL_LOAD_TEXTURE("./examples/games/winvaders/ship.png")
+set $texEnemy  = GL_LOAD_TEXTURE("./examples/games/winvaders/small_e.png")
+set $texBoss   = GL_LOAD_TEXTURE("./examples/games/winvaders/boss.png") # Presupunem că ai un boss.png
+
+# Inițializare Jucător
+set $px = 0
+set $py = -250
+
+# Creăm armata de inamici
 set $numE = 6
 set $enemies = array($numE)
 for $i = 0 to $numE - 1 do
-    set $e = new("Enemy")
-    $e.x = ($i * 100) - 250
-    $e.y = 200
-    $e.alive = 1
-    set $enemies[$i] = $e
+    if $i == 3 then
+        set $enemies[$i] = new("Boss")
+        $enemies[$i].tex = $texBoss
+        $enemies[$i].w = 80
+        $enemies[$i].h = 80
+    else
+        set $enemies[$i] = new("Enemy")
+        $enemies[$i].tex = $texEnemy
+        $enemies[$i].w = 40
+        $enemies[$i].h = 40
+    endif
+    set $enemies[$i].x = ($i * 100) - 250
+    set $enemies[$i].y = 200
+    set $enemies[$i].active = 1
 endfor
 
-set $maxB = 3
+# Rezervăm sloturi pentru gloanțe
+set $maxB = 5
 set $bullets = array($maxB)
 for $i = 0 to $maxB - 1 do
-    set $b = new("Bullet")
-    $b.active = 0
-    $b.speed = 15
-    set $bullets[$i] = $b
+    set $bullets[$i] = new("Bullet")
+    $bullets[$i].active = 0
+    $bullets[$i].speed = 12
 endfor
 
-set $px = 0
 set $eDir = 1
 
-# --- LOOP PRINCIPAL ---
-while true do
-    GL_CLEAR(0x050515)
 
-    # Control Jucător
+set $eSpeed = 0.5   # Inamicii se mișcă mult mai fin
+set $pSpeed = 4.0   # Viteza jucătorului ajustată
+set $bulletSpeed = 8.0
+
+# --- 3. LOOP PRINCIPAL ---
+
+while true do
+    GL_CLEAR(0x050510) # Fundal spațial închis
+
+	# Aflăm limitele ferestrei în acest moment
+    set $limitX = (GL_WIDTH() / 2) - ($shipW / 2)
+    set $limitY = (GL_HEIGHT() / 2) - ($shipW / 2) # Opțional, dacă vrei limită și pe verticală
+
+    # A. Control Jucător
     if KEY_STATE(37) == 1 then set $px = $px - 7 endif
     if KEY_STATE(39) == 1 then set $px = $px + 7 endif
-    GL_POINT($px, -250, 40, 0x00FF00)
+    
+	
+	# Limitare Dinamică
+    if $px < -$limitX then set $px = -$limitX endif
+    if $px > $limitX  then set $px = $limitX endif
+	
+    # Desenăm nava jucătorului cu textură
+    GL_DRAW_SPRITE($texPlayer, $px, $py, 50, 50, 0)
 
-    # Tragere
+    # B. Tragere (Space)
     if KEY_STATE(32) == 1 then
         for $i = 0 to $maxB - 1 do
             if $bullets[$i].active == 0 then
                 set $bullets[$i].active = 1
                 set $bullets[$i].x = $px
-                set $bullets[$i].y = -230
+                set $bullets[$i].y = $py + 20
                 break
             endif
         endfor
     endif
 
-    # Update Gloanțe (Acum folosim metoda move)
-    for $i = 0 to $maxB - 1 do
-        if $bullets[$i].active == 1 then
-            $bullets[$i].move()
-            GL_POINT($bullets[$i].x, $bullets[$i].y, 10, 0xFFFF00)
+    # C. Update & Desenare Gloanțe
+    cycle $bullets as $b do
+        if $b.active == 1 then
+            $b.update()
+            # Glonțul poate rămâne un punct luminos sau îi poți pune o mică textură de laser
+            GL_POINT($b.x, $b.y, 8, 0x00FFFF) 
         endif
-    endfor
+    endcycle
 
-    # Update Inamici
+    # D. Update & Desenare Inamici (Polimorfism pur)
     set $edge = 0
-    for $i = 0 to $numE - 1 do
-        if $enemies[$i].alive == 1 then
-            $enemies[$i].move($eDir, 3)
-            if $enemies[$i].x > 350 || $enemies[$i].x < -350 then set $edge = 1 endif
-            GL_POINT($enemies[$i].x, $enemies[$i].y, 45, 0xFF0000)
-            
-            # Coliziune
-            for $j = 0 to $maxB - 1 do
-                if $bullets[$j].active == 1 then
-                    if ABS($bullets[$j].x - $enemies[$i].x) < 30 then
-                        if ABS($bullets[$j].y - $enemies[$i].y) < 30 then
-                            set $enemies[$i].alive = 0
-                            set $bullets[$j].active = 0
+    cycle $enemies as $en do
+        if $en.active == 1 then
+            $en.move($eDir, $eSpeed)
+            $en.draw()
+
+            if $en.x > 360 || $en.x < -360 then set $edge = 1 endif
+
+            # Verificare Coliziune (Glonț -> Inamic)
+            cycle $bullets as $blt do
+                if $blt.active == 1 then
+                    # Hitbox dinamic bazat pe dimensiunea sprite-ului
+                    if ABS($blt.x - $en.x) < ($en.w / 2) then
+                        if ABS($blt.y - $en.y) < ($en.h / 2) then
+                            set $en.active = 0
+                            set $blt.active = 0
                         endif
                     endif
                 endif
-            endfor
+            endcycle
         endif
-    endfor
+    endcycle
 
+    # E. Logică de coborâre a inamicilor
     if $edge == 1 then
         set $eDir = $eDir * -1
-        for $k = 0 to $numE - 1 do set $enemies[$k].y = $enemies[$k].y - 30 endfor
+        cycle $enemies as $e2 do 
+            set $e2.y = $e2.y - 20 
+        endcycle
     endif
+
+
+# --- BONUS: UI care se mișcă cu fereastra ---
+    # Putem pune scorul mereu în colțul din stânga sus, indiferent de mărime
+    set $textX = -(GL_WIDTH() / 2) + 20
+    set $textY = (GL_HEIGHT() / 2) - 20
+    GL_TEXT($textX, $textY, "REZOLUTIE: " + STR(GL_WIDTH()) + "x" + STR(GL_HEIGHT()))
+
+
 
     GL_PRESENT()
     if KEY_STATE(27) == 1 then break endif
 endwhile
+
 GL_CLOSE()

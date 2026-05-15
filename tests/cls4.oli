@@ -1,0 +1,48 @@
+# --- TEST MOȘTENIRE (INHERITANCE) ---
+config echo off
+
+# 1. Clasa de bază (Părinte)
+def class Entitate { x, y, id, set_pos($nx, $ny) }
+
+func Entitate::set_pos($nx, $ny)
+    set $this.x = $nx
+    set $this.y = $ny
+    echo "Entitate mutata la: " .. $this.x .. ", " .. $this.y
+endfunc
+
+# 2. Clasa derivată (Copil) - Moștenește tot de la Entitate
+def class Inamic extends Entitate { hp, damage, ataca() }
+
+func Inamic::ataca()
+    echo "Inamicul #" .. $this.id .. " ataca cu " .. $this.damage .. " DMG!"
+endfunc
+
+# 3. Clasa specializată (Boss) - Moștenește de la Inamic (Ierarhie dublă)
+def class Boss extends Inamic { scut, ataca() }
+
+# Suprascriem metoda ataca() special pentru Boss
+func Boss::ataca()
+    echo "!!! BOSS-UL #" .. $this.id .. " LANSEAZA SUPER-ATAC (" .. $this.damage * 2 .. " DMG) !!!"
+endfunc
+
+echo "--- START TEST MOȘTENIRE ---"
+
+# TEST 1: Moștenire simplă
+echo "[1] Test Inamic (moștenește set_pos de la Entitate):"
+set $mob = new("Inamic")
+$mob.id = 10
+$mob.damage = 15
+$mob.set_pos(100, 200) # Metodă moștenită
+$mob.ataca()          # Metodă proprie
+
+# TEST 2: Ierarhie și Overriding
+echo ""
+echo "[2] Test Boss (moștenește de la Inamic, dar suprascrie ataca):"
+set $boss = new("Boss")
+$boss.id = 99
+$boss.damage = 50
+$boss.set_pos(0, 0)   # Metodă moștenită de la bunicul (Entitate)
+$boss.ataca()         # Metodă suprascrisă (Overridden)
+
+echo ""
+echo "--- TEST FINALIZAT ---"

@@ -111,7 +111,18 @@ void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vD
         };
 
     registry[L"KBD_RESTORE"] = [=](const std::vector<vData>&) -> vData {
-        return vData{ true };
+#ifdef _WIN32
+        // Luăm handle-ul pentru buffer-ul de intrare al consolei
+        HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);
+        if (hStdIn != INVALID_HANDLE_VALUE) {
+            // Golim toate evenimentele de tastatură/mouse rămase în buffer
+            FlushConsoleInputBuffer(hStdIn);
+        }
+#else
+        // Pe Linux, putem pur și simplu să golim map-ul nostru
+        g_linuxKeyMap.clear();
+#endif
+        return vData{ 1LL };
         };
 }
 

@@ -72,6 +72,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         }
 
         // Oprim bucla principală a VM-ului
+        ConsoleManager::getInstance().shutdown();
         std::exit(exitCode);
 
         // Dacă vrei ca Oli să returneze codul către sistemul de operare (Windows/Linux)
@@ -258,10 +259,15 @@ void vOliEngine::initializeFunctionsHandlers() {
         };
 
     vOliKeyWords::registerNativeFunction(L"HASH");
+
     m_functionsHandlers[L"WAIT"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleWaitFunc(args);
         };
+    
     vOliKeyWords::registerNativeFunction(L"WAIT");
+    m_functionsHandlers[L"SLEEP"] = m_functionsHandlers[L"WAIT"];
+    vOliKeyWords::registerNativeFunction(L"SLEEP");
+
     m_functionsHandlers[L"SYS"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleSysFunc(args);
         };

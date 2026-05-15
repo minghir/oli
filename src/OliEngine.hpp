@@ -34,6 +34,7 @@ struct vTypeBlueprint {
     std::vector<std::wstring> fields;             // x, y, hp, mana
     std::unordered_map<std::wstring, std::wstring> methods; // attack -> "PLAYER_ATTACK_FUNC"
     bool isClass = false;                         // Doar pentru validare semantică
+    std::wstring parentName;
 };
 
 struct Procedure {

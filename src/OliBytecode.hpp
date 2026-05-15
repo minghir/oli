@@ -281,24 +281,35 @@ inline std::wstring disassembleChunk(const OliChunk& chunk, const std::wstring& 
         }
         case OpCode::OP_HALT:   ss << L"OP_HALT\n"; break;
         case OpCode::OP_DEF_TYPE: {
-            if (ip + 2 > chunk.code.size()) break;
+            if (ip + 4 > chunk.code.size()) break; // Verificăm să avem măcar header-ul (name + parent)
 
+            // 1. Citim numele tipului (2 bytes)
             uint16_t nameIdx = (chunk.code[ip] << 8) | chunk.code[ip + 1];
             ip += 2;
 
+            // 2. NOU: Citim numele părintelui (2 bytes)
+            uint16_t parentIdx = (chunk.code[ip] << 8) | chunk.code[ip + 1];
+            ip += 2;
+            std::wstring parentName = chunk.constants[parentIdx].toWString();
+
+            // 3. Citim flag-ul și numărul de membri
             uint8_t isClass = chunk.code[ip++];
             uint8_t fieldCount = chunk.code[ip++];
+            uint8_t methodCount = chunk.code[ip++];
 
             ss << L"OP_DEF_TYPE      " << std::setw(4) << nameIdx
-                << L" (Type: " << chunk.constants[nameIdx].toWString()
-                << L", " << (isClass ? L"CLASS" : L"STRUCT")
-                << L", Fields: " << (int)fieldCount;
+                << L" (Type: " << chunk.constants[nameIdx].toWString();
 
-            // NOU: Citim și numărul de metode din bytecode
-            uint8_t methodCount = chunk.code[ip++];
-            ss << L", Methods: " << (int)methodCount << L")\n";
+            // Afișăm părintele dacă există
+            if (!parentName.empty()) {
+                ss << L" EXTENDS " << parentName;
+            }
 
-            // Afișăm câmpurile
+            ss << L", " << (isClass ? L"CLASS" : L"STRUCT")
+                << L", Fields: " << (int)fieldCount
+                << L", Methods: " << (int)methodCount << L")\n";
+
+            // 4. Afișăm câmpurile (2 bytes per field)
             for (int i = 0; i < (int)fieldCount; ++i) {
                 uint16_t fIdx = (chunk.code[ip] << 8) | chunk.code[ip + 1];
                 ip += 2;
@@ -306,7 +317,7 @@ inline std::wstring disassembleChunk(const OliChunk& chunk, const std::wstring& 
                     << L" (Name: " << chunk.constants[fIdx].toWString() << L")\n";
             }
 
-            // NOU: Afișăm și metodele pentru a păstra sincronizarea cu bytecode-ul
+            // 5. Afișăm metodele (2 bytes per method)
             for (int i = 0; i < (int)methodCount; ++i) {
                 uint16_t mIdx = (chunk.code[ip] << 8) | chunk.code[ip + 1];
                 ip += 2;

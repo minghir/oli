@@ -329,7 +329,7 @@ func tbasic_exec_line($line_content)
 		else
 			#echo "EROARE la salvarea fisierului!"
 		endif
-		continue
+		#continue
 	endif
 
 	if SUBSTR($up_in, 0, 4) == "LOAD" then

@@ -370,7 +370,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
             generateFromAST(exprAST, chunk, externalProcs);
         }
     }
-    
+    /*
     else if (cmdName == L"DEF") {
         if (sc.args.size() < 3) return;
 
@@ -445,74 +445,99 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
             L" - Câmpuri: " + std::to_wstring(fieldIndices.size()) +
             L", Metode: " + std::to_wstring(methodIndices.size()));
     }
+    */
 
-/*
-    else if (cmdName == L"PROC") {
-        if (sc.args.empty()) return;
+    else if (cmdName == L"DEF") {
+        if (sc.args.size() < 3) return;
 
-        // 1. Identificăm Numele (Primul argument)
-        std::wstring procName = to_upper(sc.args[0]);
+        std::wstring subType = to_lower(sc.args[0]);
+        bool isClass = (subType == L"class");
+        std::wstring typeName = sc.args[1];
+        std::wstring typeNameUpper = to_upper(typeName);
 
-        // Eliminăm eventuale caractere reziduale (curățare similară cu interpretorul)
-        procName.erase(std::remove_if(procName.begin(), procName.end(), [](wchar_t c) {
-            return c == L'(' || c == L')' || c == L':';
-            }), procName.end());
+        // --- LOGICA NOUĂ: DETECȚIE MOȘTENIRE (EXTENDS) ---
+        std::wstring parentName = L""; // Gol dacă nu are părinte
+        size_t bodyStartIndex = 2;
 
-        // 2. Delimităm corpul căutând ENDPROC (Nesting Universal)
-        int bodyEnd = -1;
-        int depth = 1;
-        for (int i = 1; i < (int)sc.args.size(); ++i) {
-            std::wstring argU = to_upper(sc.args[i]);
-            if (argU == L"PROC") depth++;
-            if (argU == L"ENDPROC") {
-                depth--;
-                if (depth == 0) { bodyEnd = i; break; }
-            }
+        // Verificăm dacă al treilea argument este "extends"
+        if (sc.args.size() > 4 && to_lower(sc.args[2]) == L"extends") {
+            parentName = to_upper(sc.args[3]);
+            bodyStartIndex = 4; // Trecem peste 'extends' și numele părintelui
         }
-        if (bodyEnd == -1) bodyEnd = (int)sc.args.size();
 
-        // 3. Pregătim obiectul procedurii
-        ByteCodeProcedure proc;
-        proc.name = procName;
-        proc.compiledBody = std::make_shared<OliChunk>();
+        uint16_t nameIdx = chunk.addConstant(vData(typeNameUpper));
+        uint16_t parentIdx = chunk.addConstant(vData(parentName));
 
-        // 4. Extragem Parametrii
-        // Mergem de la indexul 1 până când dăm de prima instrucțiune sau un marker de start
-        int bodyStart = 1;
-        for (int i = 1; i < bodyEnd; ++i) {
-            std::wstring arg = sc.args[i];
-            // Dacă token-ul începe cu $ sau @, e un parametru
-            if (arg[0] == L'$' || arg[0] == L'@' || arg.find(L',') != std::wstring::npos) {
-                std::wstring cleaned = this->cleanVariableName(arg);
-                if (!cleaned.empty()) {
-                    proc.params.push_back(cleaned);
+        std::vector<uint16_t> fieldIndices;
+        std::vector<uint16_t> methodIndices;
+        bool inBraces = false;
+
+        // Începem scanarea corpului de la indexul determinat (2 sau 4)
+        for (size_t i = bodyStartIndex; i < sc.args.size(); ++i) {
+            std::wstring token = sc.args[i];
+            if (token == L"{") { inBraces = true; continue; }
+            if (token == L"}") { inBraces = false; break; }
+
+            while (!token.empty() && (token.back() == L',' || token.back() == L' ')) token.pop_back();
+            if (!inBraces || token.empty()) continue;
+
+            // --- LOGICA DE DETECȚIE METODĂ ---
+            size_t openParen = token.find(L'(');
+            if (openParen != std::wstring::npos) {
+                std::wstring methodName = to_upper(trim(token.substr(0, openParen)));
+                if (!methodName.empty()) {
+                    methodIndices.push_back(chunk.addConstant(vData(methodName)));
                 }
-                bodyStart = i + 1;
+            }
+            else if (i + 1 < sc.args.size() && sc.args[i + 1][0] == L'(') {
+                std::wstring methodName = to_upper(trim(token));
+                methodIndices.push_back(chunk.addConstant(vData(methodName)));
+                while (i < sc.args.size() && sc.args[i].find(L')') == std::wstring::npos) {
+                    i++;
+                }
             }
             else {
-                // Am dat de cod (instrucțiune), aici se opresc parametrii
-                bodyStart = i;
-                break;
+                // Este un câmp (proprietate)
+                fieldIndices.push_back(chunk.addConstant(vData(to_lower(token))));
             }
         }
 
-        LOG_DEBUG(L"[PROC] Înregistrare: " + procName + L" cu " + std::to_wstring(proc.params.size()) + L" parametri.");
+        // --- EMITERE BYTECODE ACTUALIZAT ---
+        chunk.addByte((uint8_t)OpCode::OP_DEF_TYPE, 0);
 
-        // 5. Compilare Corp (Recursiv)
-        // Pasăm chunk.procedures pentru a permite recursivitatea (procedura se vede pe ea însăși)
-        chunk.procedures[procName] = proc;
+        // 1. Indice Nume Clasă Curentă (2 bytes)
+        chunk.addByte((uint8_t)(nameIdx >> 8), 0);
+        chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
 
-        compileSubBlock(sc.args, bodyStart, bodyEnd, *(proc.compiledBody), chunk.procedures);
+        // 2. NOU: Indice Nume Clasă Părinte (2 bytes)
+        chunk.addByte((uint8_t)(parentIdx >> 8), 0);
+        chunk.addByte((uint8_t)(parentIdx & 0xFF), 0);
 
-        // 6. Return implicit pentru siguranță
-        if (proc.compiledBody->code.empty() || proc.compiledBody->code.back() != (uint8_t)OpCode::OP_RETURN) {
-            proc.compiledBody->addByte((uint8_t)OpCode::OP_RETURN, 0);
+        // 3. Tip (Class/Struct)
+        chunk.addByte(isClass ? 1 : 0, 0);
+
+        // 4. METADATE (Număr câmpuri și metode)
+        chunk.addByte((uint8_t)fieldIndices.size(), 0);
+        chunk.addByte((uint8_t)methodIndices.size(), 0);
+
+        // 5. DATE (Indicii pentru câmpuri)
+        for (uint16_t fIdx : fieldIndices) {
+            chunk.addByte((uint8_t)(fIdx >> 8), 0);
+            chunk.addByte((uint8_t)(fIdx & 0xFF), 0);
         }
 
-        // Actualizăm varianta finală în map
-        chunk.procedures[procName] = proc;
+        // 6. DATE (Indicii pentru metode)
+        for (uint16_t mIdx : methodIndices) {
+            chunk.addByte((uint8_t)(mIdx >> 8), 0);
+            chunk.addByte((uint8_t)(mIdx & 0xFF), 0);
+        }
+
+        LOG_DEBUG(L"[COMPILER] DEF " + typeNameUpper +
+            (parentName.empty() ? L"" : L" EXTENDS " + parentName) +
+            L" - Câmpuri: " + std::to_wstring(fieldIndices.size()) +
+            L", Metode: " + std::to_wstring(methodIndices.size()));
     }
-*/
+
 
 
 

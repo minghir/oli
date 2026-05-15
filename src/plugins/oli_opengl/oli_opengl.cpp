@@ -11,6 +11,10 @@
 #include <sstream>
 #include <iostream>
 
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #ifdef _WIN32
     #include <windows.h>
     #define OLI_EXPORT extern "C" __declspec(dllexport)
@@ -184,6 +188,40 @@ std::string wstr_to_str(const std::wstring& wstr) {
     }
     return str;
 }
+
+
+// Mapă globală pentru texturi (ID -> OpenGL Texture Handle)
+std::unordered_map<int, GLuint> g_Textures;
+int g_NextTexID = 1;
+
+// Helper pentru încărcare textură
+int LoadTexture(const std::string& path) {
+    int width, height, nrChannels;
+    // Forțăm încărcarea cu 4 canale (RGBA) pentru a suporta transparența
+    unsigned char* data = stbi_load(path.c_str(), &width, &height, &nrChannels, 4);
+
+    if (!data) return 0;
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    // Parametri de filtrare (Pixel-art style sau Smooth)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+    // Încărcăm datele în GPU
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+    stbi_image_free(data);
+
+    int id = g_NextTexID++;
+    g_Textures[id] = texture;
+    return id;
+}
+
 
 typedef bool (WINAPI* PFNWGLSWAPINTERVALEXTPROC)(int interval);
 PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = nullptr;
@@ -444,6 +482,21 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         return vData{1LL};
     };
 
+    // GL_PRESENT()
+    registry[L"GL_PRESENT"] = [](const std::vector<vData>&) -> vData {
+        if (g_GL.hdc) {
+            SwapBuffers(g_GL.hdc);
+        }
+
+        // Pompa de mesaje (obligatorie ca Windows să nu creadă că aplicația e blocată)
+        MSG msg;
+        while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
+            TranslateMessage(&msg);
+            DispatchMessageW(&msg);
+        }
+        return vData{ 1LL };
+        };
+
     // GL_CLEAR(colorHex)
     registry[L"GL_CLEAR"] = [](const std::vector<vData>& args) -> vData {
         // FORȚĂM contextul să fie curent pe acest thread
@@ -501,39 +554,50 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         return vData{1LL};
     };
 
-    // GL_PRESENT()
-    registry[L"GL_PRESENT"] = [](const std::vector<vData>&) -> vData {
-        if (g_GL.hdc) {
-            SwapBuffers(g_GL.hdc);
-        }
-
-        // Pompa de mesaje (obligatorie ca Windows să nu creadă că aplicația e blocată)
-        MSG msg;
-        while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
-            TranslateMessage(&msg);
-            DispatchMessageW(&msg);
-        }
-        return vData{ 1LL };
-     };
+    
 
     // GL_POINT(x, y, size, color)
     registry[L"GL_POINT"] = [](const std::vector<vData>& args) -> vData {
-        if (args.size() < 4) return vData{0LL};
+        if (args.size() < 4) return vData{ 0LL };
 
-        float x   = (float)toDouble(args[0]);
-        float y   = (float)toDouble(args[1]);
-        float sz  = (float)toDouble(args[2]);
+        float x = (float)toDouble(args[0]);
+        float y = (float)toDouble(args[1]);
+        float sz = (float)toDouble(args[2]);
         GLColor c((unsigned int)toDouble(args[3]));
 
+        // 1. SALVĂM ȘI RESETĂM TOTUL
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glDisable(GL_TEXTURE_2D);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_DEPTH_TEST);
+
+        // 2. PROIECȚIA (Spațiul 2D)
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(-g_GL.width / 2.0, g_GL.width / 2.0, -g_GL.height / 2.0, g_GL.height / 2.0, -1, 1);
+
+        // 3. MODELVIEW (Aici e buba!)
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity(); // <--- ACEASTA este linia care "taie firul" cu nava!
+
+        // 4. DESENARE
         glColor3f(c.r, c.g, c.b);
         glPointSize(sz);
-
         glBegin(GL_POINTS);
-            glVertex2f(x, y);
+        glVertex2f(x, y); // Acum x este ABSOLUT față de centrul ecranului
         glEnd();
 
-        return vData{1LL};
-    };
+        // 5. RESTAURARE
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW); // Revenim la modul standard
+        glPopAttrib();
+
+        return vData{ 1LL };
+        };
 
     // GL_CIRCLE(x, y, radius, color)
     registry[L"GL_CIRCLE"] = [](const std::vector<vData>& args) -> vData {
@@ -596,86 +660,18 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
             g_GL.hwnd = nullptr;
         }
     #endif
+
+        MSG msg;
+        while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
+            DispatchMessageW(&msg);
+        }
+
+        // Dacă procesul principal nu se închide, poți forța un flush la stdout
+        fflush(stdout);
+
         return vData{1LL};
     };
-    /*
-    // GL_LOAD_SHADER(type, source)
-    // type: 0 = vertex, 1 = fragment
-    registry[L"GL_LOAD_SHADER"] = [](const std::vector<vData>& args) -> vData {
-        //printf("[INFO] in GL_LOAD_SHADER\n");
-        // 1. Verificare argumente (trebuie să avem Tip și Sursă)
-        if (args.size() < 2) {
-            //printf("[ERROR] GL_LOAD_SHADER: Lipsesc argumente (necesar: tip, sursa)\n");
-            return vData{ 0LL };
-        }
-
-        // 2. Verificăm dacă sursa este validă (prevenim crash la interpretare/bytecode)
-        if (!args[1].isString()) {
-           // printf("[ERROR] GL_LOAD_SHADER: Argumentul 2 (sursa) nu este String! Index tip detectat: %zu\n",
-               // args[1].type());
-            return vData{ 0LL };
-        }
-
-        // 3. Extragere și conversie
-        int shaderTypeIndex = (int)args[0].toDouble(); // 0 = Vertex, 1 = Fragment
-        std::wstring wsrc = args[1].toWString();
-
-        if (wsrc.empty()) {
-           // printf("[WARNING] GL_LOAD_SHADER: Sursa shaderului este goala!\n");
-            return vData{ 0LL };
-        }
-
-        // Convertim wstring în string (folosește funcția ta wstr_to_str)
-        std::string src = wstr_to_str(wsrc);
-
-       // std::cout << "[DEBUG] Adresa string: " << (void*)src.data() << " Lungime: " << src.length() << std::endl;
-
-        // 4. Secțiunea OpenGL (Verificăm dacă pointerii sunt încărcați)
-        if (glCreateShader == nullptr || glShaderSource == nullptr || glCompileShader == nullptr) {
-          //  printf("[CRITICAL ERROR] Functiile OpenGL moderne nu sunt incarcate! (wglGetProcAddress failed)\n");
-            return vData{ 0LL };
-        }
-
-        // Decidem tipul de shader
-        GLenum glType = (shaderTypeIndex == 0) ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER;
-        GLuint shader = glCreateShader(glType);
-
-        const char* csrc = src.c_str();
-        glShaderSource(shader, 1, &csrc, NULL);
-        glCompileShader(shader);
-
-        // 5. Verificare Compilare
-        GLint success = 0;
-        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-
-        if (!success) {
-            GLint logLength = 0;
-            glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
-
-            if (logLength > 1) { // Verificăm să avem măcar 1 caracter
-                std::vector<GLchar> infoLog(logLength);
-                glGetShaderInfoLog(shader, logLength, NULL, infoLog.data());
-
-                // Salvăm în variabila globală (asigură-te că e definită sus)
-                g_LastError = std::string(infoLog.begin(), infoLog.end());
-
-                // Log în consola de sistem (nu crapă niciodată)
-                std::string finalMsg = "--- GLSL ERROR ---\n" + g_LastError + "\n------------------\n";
-                printf("%s", finalMsg.c_str());
-                OutputDebugStringA(finalMsg.c_str());
-            }
-            else {
-                g_LastError = "Unknown GLSL error (empty log).";
-            }
-
-            // DISTRUGEM shader-ul eșuat pentru a nu lăsa gunoi în memorie
-            glDeleteShader(shader);
-            return vData{ 0LL };
-        }
-
-        return vData{ (long long)shader };
-        };
-        */
+    
         // GL_LOAD_SHADER(type, source)
     // type: 0 = vertex, 1 = fragment
     registry[L"GL_LOAD_SHADER"] = [](const std::vector<vData>& args) -> vData {
@@ -858,21 +854,23 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glLoadIdentity();
-        glOrtho(0, g_GL.width, g_GL.height, 0, -1, 1);
+
+        // SCHIMBARE: Folosim coordonate centrate ca la Sprite-uri
+        // Asta permite folosirea valorilor negative pentru stânga/jos
+        glOrtho(-g_GL.width / 2.0, g_GL.width / 2.0, -g_GL.height / 2.0, g_GL.height / 2.0, -1, 1);
 
         glMatrixMode(GL_MODELVIEW);
         glPushMatrix();
         glLoadIdentity();
 
-        // 2. CONFIGURĂM STAREA PENTRU TEXT
+        // 2. CONFIGURĂM STAREA
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_LIGHTING);
-        glDisable(GL_CULL_FACE);
         glDisable(GL_TEXTURE_2D);
-        glUseProgram(0); // Ne asigurăm că shader-ul Julia e oprit
+        glUseProgram(0);
 
-        glColor3f(1.0f, 1.0f, 1.0f);
-        glRasterPos2f(x, y);
+        glColor3f(1.0f, 1.0f, 1.0f); // Alb stralucitor
+        glRasterPos2f(x, y);         // Acum x=0, y=0 e centrul ecranului!
 
         if (g_GL.fontBase > 0) {
             glListBase(g_GL.fontBase - 32);
@@ -884,6 +882,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         glPopMatrix();
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
+
         glPopAttrib();
 
         return vData{ 1LL };
@@ -999,6 +998,67 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
 		
 		return vData{ 1LL };
 	};
+
+    // GL_LOAD_TEXTURE(path) -> returnează ID-ul texturii
+    registry[L"GL_LOAD_TEXTURE"] = [](const std::vector<vData>& args) -> vData {
+        if (args.empty()) return vData{ 0LL };
+        std::string path = wstr_to_str(args[0].toWString());
+        return vData{ (long long)LoadTexture(path) };
+        };
+
+    // GL_DRAW_SPRITE(id, x, y, w, h, rot)
+    registry[L"GL_DRAW_SPRITE"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 6) return vData{ 0LL };
+
+        int id = (int)toDouble(args[0]);
+        if (g_Textures.find(id) == g_Textures.end()) return vData{ 0LL };
+
+        float x = (float)toDouble(args[1]);
+        float y = (float)toDouble(args[2]);
+        float w = (float)toDouble(args[3]);
+        float h = (float)toDouble(args[4]);
+        float rot = (float)toDouble(args[5]);
+
+        // --- SETUP 2D OVER 3D ---
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, g_Textures[id]);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_DEPTH_TEST);
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        // Folosim glOrtho pentru coordonate de ecran (ca în GL_TEXT)
+        glOrtho(-g_GL.width / 2, g_GL.width / 2, -g_GL.height / 2, g_GL.height / 2, -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        // --- DESENARE ---
+        glTranslatef(x, y, 0);
+        glRotatef(rot, 0, 0, 1);
+        glColor4f(1, 1, 1, 1); // Culoare albă (păstrează culorile originale ale imaginii)
+
+        glBegin(GL_QUADS);
+        glTexCoord2f(0, 1); glVertex2f(-w / 2, -h / 2);
+        glTexCoord2f(1, 1); glVertex2f(w / 2, -h / 2);
+        glTexCoord2f(1, 0); glVertex2f(w / 2, h / 2);
+        glTexCoord2f(0, 0); glVertex2f(-w / 2, h / 2);
+        glEnd();
+
+        // --- RESTORE ---
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopAttrib();
+
+        return vData{ 1LL };
+        };
 }
 
 

@@ -1,0 +1,192 @@
+# --- CONFIGURARE MOTOR ---
+config echo off
+config max_iterations 0
+
+plugin oli_opengl
+plugin oli_keyboard
+plugin oli_math
+plugin oli_time
+
+# --- 1. DEFINIRE CLASE (IERARHIE) ---
+
+# Clasa de bază: Tot ce există în spațiu
+def class Entity { x, y, active, tex, w, h }
+
+# Gloanțele: Moștenesc Entity
+def class Bullet extends Entity { speed, update() }
+func Bullet::update($dt)
+    if $this.active == 1 then
+        # Viteza acum trebuie să fie mare (pixeli pe secundă)
+        # 600-800 e o viteză bună pentru un laser
+        set $this.y = $this.y + ($this.speed * $dt)
+        
+        # Limitare ecran
+        if $this.y > 300 then set $this.active = 0 endif
+    endif
+endfunc
+
+# Inamicul: Mișcare și Desenare Sprite
+def class Enemy extends Entity { move($d, $s, $dt), draw() }
+func Enemy::move($d, $s, $dt)
+    set $this.x = $this.x + ($d * $s * $dt)
+endfunc
+
+func Enemy::draw()
+    GL_DRAW_SPRITE($this.tex, $this.x, $this.y, $this.w, $this.h, 0)
+endfunc
+
+# Boss-ul: Moștenește Enemy, dar se rotește și e mai mare
+def class Boss extends Enemy { angle, draw() }
+func Boss::draw()
+    set $this.angle = $this.angle + 1.5
+    GL_DRAW_SPRITE($this.tex, $this.x, $this.y, $this.w, $this.h, $this.angle)
+endfunc
+
+# --- 2. INIȚIALIZARE JOC ---
+
+GL_INIT(800, 600, "Oli Invaders - Legacy of OOP")
+GL_SET_VSYNC(1) # Să nu "zboare" inamicii prea repede
+
+# Încărcare resurse
+set $texShip  = GL_LOAD_TEXTURE("./examples/games/winvaders/ship.png")
+set $texEnemy = GL_LOAD_TEXTURE("./examples/games/winvaders/small_e.png")
+set $texBoss  = GL_LOAD_TEXTURE("./examples/games/winvaders/boss.png")
+
+# Configurare Jucător
+set $lastTime = TIME()
+set $px = 0
+set $py = -240
+set $pW = 50
+set $pSpeed = 300
+
+# Creăm Armata de Inamici (6 de rând, 1 Boss în mijloc)
+set $numE = 6
+set $enemies = array($numE)
+for $i = 0 to $numE - 1 do
+    if $i == 3 then
+        set $enemies[$i] = new("Boss")
+        $enemies[$i].tex = $texBoss
+        $enemies[$i].w = 90
+        $enemies[$i].h = 90
+    else
+        set $enemies[$i] = new("Enemy")
+        $enemies[$i].tex = $texEnemy
+        $enemies[$i].w = 45
+        $enemies[$i].h = 45
+    endif
+    set $enemies[$i].x = ($i * 110) - 270
+    set $enemies[$i].y = 180
+    set $enemies[$i].active = 1
+endfor
+
+# Rezervăm sloturi pentru gloanțe (Bullet Pool)
+set $maxB = 5
+set $bullets = array($maxB)
+for $i = 0 to $maxB - 1 do
+    set $bullets[$i] = new("Bullet")
+    $bullets[$i].active = 0
+    $bullets[$i].speed = 700
+endfor
+
+set $eDir = 1
+set $eSpeed = 150
+
+# --- 3. LOOP-UL PRINCIPAL ---
+
+while true do
+    GL_CLEAR(0x0a0a1a) # Negru spre albastru închis
+
+    # A. Limitare Dinamică Ecran
+    set $limitX = (GL_WIDTH() / 2) - ($pW / 2)
+	
+	# 1. Calculăm Delta Time
+    set $currentTime = TIME()
+    set $dt = $currentTime - $lastTime
+    set $lastTime = $currentTime
+
+    # 2. Mișcare bazată pe timp
+    # Formula: Pozitie = Pozitie + (Viteza * Timp_Scurs)
+    if KEY_STATE(37) == 1 then 
+        set $px = $px - ($pSpeed * $dt) 
+    endif
+    if KEY_STATE(39) == 1 then 
+        set $px = $px + ($pSpeed * $dt) 
+    endif
+
+      
+    if $px < -$limitX then set $px = -$limitX endif
+    if $px > $limitX  then set $px = $limitX endif
+
+    GL_DRAW_SPRITE($texShip, $px, $py, $pW, $pW, 0)
+
+    # C. Tragere (Space)
+    if KEY_STATE(32) == 1 then
+        if $canFire == 1 then
+            for $i = 0 to $maxB - 1 do
+                if $bullets[$i].active == 0 then
+                    set $bullets[$i].active = 1
+                    set $bullets[$i].x = $px + 0.0
+                    set $bullets[$i].y = $py + 30
+                    set $canFire = 0 # Blocăm tragerea până la eliberarea tastei
+                    break
+                endif
+            endfor
+        endif
+    else
+        set $canFire = 1 # Jucătorul a ridicat degetul, poate trage iar
+    endif
+
+    # D. Update & Desenare Gloanțe (Neon Effect)
+    cycle $bullets as $b do
+        if $b.active == 1 then
+			$b.update($dt) # FOARTE IMPORTANT: pasăm $dt aici
+			echo $b.x
+			GL_POINT($b.x, $b.y, 8, 0x00FFFF)
+		endif
+    endcycle
+
+    # E. Logică Inamici (POLIMORFISM)
+    set $edgeReached = 0
+    cycle $enemies as $en do
+        if $en.active == 1 then
+            $en.move($eDir, $eSpeed, $dt)
+            $en.draw() # Enemy desenează fix, Boss se rotește!
+
+            # Verificare margine ecran
+            if ABS($en.x) > $limitX then set $edgeReached = 1 endif
+
+            # Coliziune cu gloanțele
+            cycle $bullets as $blt do
+                if $blt.active == 1 then
+                    # Formula distanței absolute (AABB)
+                    if ABS($blt.x - $en.x) < ($en.w / 2) then
+                        if ABS($blt.y - $en.y) < ($en.h / 2) then
+                            set $en.active = 0
+                            set $blt.active = 0
+                        endif
+                    endif
+                endif
+            endcycle
+        endif
+    endcycle
+
+    # F. Logică de perete (Coborâre)
+    if $edgeReached == 1 then
+        set $eDir = $eDir * -1
+        cycle $enemies as $en2 do 
+            set $en2.y = $en2.y - 25 
+        endcycle
+    endif
+
+    # G. UI (Responsive)
+    GL_TEXT(-$limitX + 20, (GL_HEIGHT()/2) - 30, "OLI ENGINE - FPS: 60")
+
+    GL_PRESENT()
+    if KEY_STATE(27) == 1 then break endif
+endwhile
+
+
+KBD_RESTORE()
+GL_CLOSE()
+echo "Joc inchis corect."
+exit()

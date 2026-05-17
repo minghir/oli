@@ -1,0 +1,58 @@
+plugin oli_math
+
+# 1. Configurare
+set $w = 512
+set $h = 512
+set $iTime = 1.5 # Schimbă asta pentru a "mișca" plasma
+
+set $data = array(1 + ($w * $h * 3))
+set $data[0] = "P6 512 512 255\n"
+
+echo "Randare Plasma Effect... folosind functii trigonometrice."
+
+for $py = 0 to $h - 1 do
+    for $px = 0 to $w - 1 do
+        
+        # Coordonate normalizate (0.0 - 1.0)
+        set $ux = 1.0 * $px / $w
+        set $uy = 1.0 * $py / $h
+        
+        # --- ALGORITM PLASMA (Suma de unde) ---
+        # Folosim SINR/COSR pentru ca lucram in unitati mici (0-10)
+        
+        # Unda 1: Orizontala
+        set $v = sinr($ux * 10.0 + $iTime)
+        
+        # Unda 2: Verticala
+        $v = $v + sinr($uy * 10.0 + $iTime * 0.5)
+        
+        # Unda 3: Diagonala
+        $v = $v + sinr(($ux + $uy) * 10.0 + $iTime)
+        
+        # Unda 4: Circulara (centrata)
+        set $cx = $ux - 0.5
+        set $cy = $uy - 0.5
+        set $dist = sqrt(($cx * $cx) + ($cy * $cy))
+        $v = $v + sinr($dist * 20.0 - $iTime)
+        
+        # Normalizam rezultatul (din -4.0...4.0 in 0.0...1.0)
+        set $finalV = ($v + 4.0) / 8.0
+        
+        # --- COLORARE (Palette) ---
+        # Folosim COSR (radiani) pentru culori fluide
+        set $r = 0.5 + 0.5 * cosr($finalV * 6.28 + 0.0)
+        set $g = 0.5 + 0.5 * cosr($finalV * 6.28 + 2.0)
+        set $b = 0.5 + 0.5 * cosr($finalV * 6.28 + 4.0)
+        
+        # Scrierea binară
+        set $idx = 1 + (($py * $w + $px) * 3)
+        set $data[$idx]     = $r * 255
+        set $data[$idx + 1] = $g * 255
+        set $data[$idx + 2] = $b * 255
+        
+    endfor
+    if ($py % 128) == 0 then echo "Progres: " + (($py / $h) * 100) + "%" endif
+endfor
+
+writefile("plasma.ppm", $data)
+echo "Plasma generata in plasma.ppm!"

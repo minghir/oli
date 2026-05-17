@@ -1,0 +1,15 @@
+set $str = "Hello, World."
+
+
+
+func test2()
+	set $str = "FIFI"
+	set @str += "LILI"
+	echo "in func local:" .. $str
+	echo "in func global:" .. @str
+endfunc
+
+test2()
+
+echo "dupa func:" .. $str
+

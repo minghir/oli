@@ -1,0 +1,33 @@
+--- OLI ASSEMBLY LISTING ---
+Source: ./tests/str.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_CONSTANT     0000 (Value: Hello, World.)
+0003: OP_SET_GLOBAL   0001 (Name: $str)
+0006: OP_CALL         0002 (Name: TEST2, Args: 0)
+0010: OP_POP
+0011: OP_CONSTANT     0003 (Value: dupa func:)
+0014: OP_GET_GLOBAL   0001 (Name: $str)
+0017: OP_CONCAT
+0018: OP_ECHO
+0019: OP_RETURN
+
+--- FUNCTION: TEST2 (Params: ) ---
+=== DISASSEMBLY: TEST2 ===
+0000: OP_CONSTANT     0000 (Value: FIFI)
+0003: OP_SET_LOCAL     0000
+0005: OP_GET_GLOBAL   0001 (Name: $str)
+0008: OP_CONSTANT     0002 (Value: LILI)
+0011: OP_ADD
+0012: OP_SET_GLOBAL   0001 (Name: $str)
+0015: OP_CONSTANT     0003 (Value: in func local:)
+0018: OP_GET_LOCAL     0000
+0020: OP_CONCAT
+0021: OP_ECHO
+0022: OP_CONSTANT     0004 (Value: in func global:)
+0025: OP_GET_GLOBAL   0001 (Name: $str)
+0028: OP_CONCAT
+0029: OP_ECHO
+0030: OP_RETURN

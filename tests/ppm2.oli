@@ -1,0 +1,62 @@
+plugin oli_math
+# 1. Configurare
+set $w = 512
+set $h = 512
+set $PI = 3.14159265
+set $scale = 128.0
+set $iTime = 1.0 # Poți schimba asta pentru a "anima" imaginea
+set $data = array(1 + ($w * $h * 3))
+set $data[0] = "P6 512 512 255\n"
+
+# Calculăm iTime-ul shader-ului
+set $time = 2.0 * $PI * ($iTime / 2.5)
+
+echo "Randare shader GLSL... te rog asteapta."
+
+for $y = 0 to $h - 1 do
+    for $x = 0 to $w - 1 do
+        
+        # 2. Mapare UV (Normalizare coordonate ca în GLSL)
+        # Atenție la fragCoord.yx - shader-ul tău inversează axele
+        set $uvX = ($y - 0.5 * $h) / $w
+        set $uvY = ($x - 0.5 * $w) / $w
+        
+        # Crop (if abs(uv) > .5 return)
+        set $total = 0.0
+        
+        # 3. Bucla de interferență (cele 7 unde)
+        for $i = 0 to 6 do
+            set $angle = $PI * (1.0 * $i) / 7.0
+            
+            # dot(uv, vec2(cos, sin))
+            set $dirX = cos($angle)
+            set $dirY = sin($angle)
+            set $len = ($uvX * $dirX) + ($uvY * $dirY)
+            
+            # total += (cos(2.*scale*len + time)+1.)/2.
+            set $wave = (cos(2.0 * $scale * $len + $time) + 1.0) / 2.0
+            set $total = $total + $wave
+        endfor
+        
+        # 4. Calcul Color (Triangular wave / fract)
+        # fract(.5 * total)
+        set $val = 0.5 * $total
+        set $fractVal = $val - floor($val)
+        
+        # 1. - abs(2. * fractVal - 1.)
+        set $finalC = 1.0 - abs(2.0 * $fractVal - 1.0)
+        
+        # 5. Salvare în array-ul binar
+        set $idx = 1 + (($y * $w + $x) * 3)
+        set $pixelColor = $finalC * 255
+        
+        set $data[$idx]     = $pixelColor # R
+        set $data[$idx + 1] = $pixelColor # G
+        set $data[$idx + 2] = $pixelColor # B
+    endfor
+    
+    if ($y % 64) == 0 then echo "Progres: " + (($y / $h) * 100) + "%" endif
+endfor
+
+writefile("shader_pattern.ppm", $data)
+echo "Shader randat cu succes în shader_pattern.ppm!"

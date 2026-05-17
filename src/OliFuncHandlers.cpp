@@ -1124,6 +1124,14 @@ vData vOliEngine::handleSplitFunc(const std::vector<vData>& args) {
     // 2. Alocăm vectorul în HEAP
     auto result = std::make_shared<std::vector<vData>>();
 
+    // --- CAZ SPECIAL: Split pe string gol "" (spargere în caractere) ---
+    if (delims.empty()) {
+        for (wchar_t c : text) {
+            result->push_back(vData{ std::wstring(1, c) });
+        }
+        return vData{ result };
+    }
+
     size_t lastPos = 0;
     size_t pos = text.find(delims);
     bool isWhitespaceSplit = (delims == L" ");
@@ -1266,6 +1274,7 @@ vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
     }
 
     std::string path = PortTools::wstring_to_utf8(args[0].toWString());
+    // ios::binary este crucial aici
     std::ofstream file(path, std::ios::binary | std::ios::trunc);
 
     if (!file.is_open()) return vData(0LL);
@@ -1275,21 +1284,28 @@ vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
             auto* arr = args[1].rawArray();
             if (arr) {
                 for (const auto& item : *arr) {
-                    // Dacă elementul din array este STRING (ex: header-ul)
                     if (item.isString()) {
                         std::string s = PortTools::wstring_to_utf8(item.toWString());
-                        file.write(s.data(), s.size());
+
+                        // REPARAȚIE: Eliminăm manual orice \r care s-ar fi putut strecura
+                        // pentru a păstra header-ul PPM curat (doar \n)
+                        std::string cleanHeader;
+                        for (char c : s) {
+                            if (c != '\r') cleanHeader += c;
+                        }
+
+                        file.write(cleanHeader.data(), cleanHeader.size());
                     }
-                    // Dacă elementul este NUMĂR (ex: un canal de culoare R, G sau B)
                     else {
-                        unsigned char b = static_cast<unsigned char>(item.toInt() & 0xFF);
+                        // REPARAȚIE: Ne asigurăm că toInt() funcționează și dacă 
+                        // numărul este stocat ca Double în vData
+                        unsigned char b = static_cast<unsigned char>((int)item.toDouble() & 0xFF);
                         file.write(reinterpret_cast<char*>(&b), 1);
                     }
                 }
             }
         }
         else {
-            // Logica veche pentru scriere text simplu
             std::string content = PortTools::wstring_to_utf8(args[1].toWString());
             file.write(content.data(), content.size());
         }
@@ -1298,7 +1314,7 @@ vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
         return vData(1LL);
     }
     catch (...) {
-        file.close();
+        if (file.is_open()) file.close();
         return vData(0LL);
     }
 }

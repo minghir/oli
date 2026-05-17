@@ -132,7 +132,14 @@ void RegisterMathFunctions(std::unordered_map<std::wstring, std::function<vData(
         return vData{ E_VAL };
         };
     
+
+    registry[L"FLOOR"] = [](const std::vector<vData>& args) -> vData {
+        if (args.empty()) return vData(0.0);
+        return vData(std::floor(args[0].toDouble()));
+        };
+
     //lerp(a, b, t) = a + t \times(b - a)$$
+    /*
     registry[L"LERP"] = [=](const std::vector<vData>& args) -> vData {
         // Avem nevoie de 3 argumente: start, end, t
         if (args.size() < 3) return vData{ 0.0 };
@@ -146,6 +153,25 @@ void RegisterMathFunctions(std::unordered_map<std::wstring, std::function<vData(
         if (t > 1.0) t = 1.0;
 
         return vData{ a + t * (b - a) };
+        };
+        */
+    registry[L"LERP"] = [=](const std::vector<vData>& a) -> vData {
+        if (a.size() < 3) return vData{ 0.0 };
+        // std::lerp(start, end, t) - disponibil în C++20
+        return vData{ std::lerp(toDouble(a[0]), toDouble(a[1]), toDouble(a[2])) };
+        };
+
+    // --- Utilități de limitare (C++20) ---
+    registry[L"CLAMP"] = [=](const std::vector<vData>& a) -> vData {
+        // Avem nevoie de: valoare, minim, maxim
+        if (a.size() < 3) return vData{ 0.0 };
+
+        double val = toDouble(a[0]);
+        double low = toDouble(a[1]);
+        double high = toDouble(a[2]);
+
+        // std::clamp se află în <algorithm>
+        return vData{ std::clamp(val, low, high) };
         };
 }
 

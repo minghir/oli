@@ -1,0 +1,68 @@
+plugin oli_math
+
+# 1. Structuri 3D
+def struct vec3 {x, y, z}
+
+# 2. Configurare
+set $w = 1024
+set $h = 1024
+set $data = array(1 + ($w * $h * 3))
+set $data[0] = "P6 "..$w.." "..$h.." 255\n"
+
+# Poziția luminii în spațiu
+set $lightDir = new("vec3")
+$lightDir.x = 0.577
+$lightDir.y = 0.577
+$lightDir.z = -0.577
+
+echo "Randare 3D Raycaster... Te rog asteapta."
+
+for $py = 0 to $h - 1 do
+    for $px = 0 to $w - 1 do
+        
+        # Coordonate UV centrate (-1.0 la 1.0)
+        set $uvX = (2.0 * $px / $w) - 1.0
+        set $uvY = (2.0 * $py / $h) - 1.0
+        
+        # Sfera are centrul la (0,0,1) si raza 0.5
+        set $radius = 0.5
+        set $distSq = ($uvX * $uvX) + ($uvY * $uvY)
+        
+        set $idx = 1 + (($py * $w + $px) * 3)
+        
+        if $distSq < ($radius * $radius) then
+            # Am lovit sfera! Calculam normala (Z prin Pitagora)
+            set $nz = sqrt(($radius * $radius) - $distSq)
+            
+            # Normala suprafetei (vectorul care "privește" spre noi)
+            set $nx = $uvX
+            set $ny = $uvY
+            # $nz e deja calculat
+            
+            # Calculăm intensitatea luminii (Dot Product manual)
+            # L = N . LightDir
+            set $diff = ($nx * $lightDir.x) + ($ny * $lightDir.y) + ($nz * $lightDir.z)
+            
+            # Clamp la 0 si adaugam putina lumina ambientala (0.1)
+            if $diff < 0.0 then set $diff = 0.0 endif
+            set $intensity = $diff + 0.1
+            if $intensity > 1.0 then set $intensity = 1.0 endif
+            
+            # Culoare "Moonlight" (Albastru-gri)
+            $data[$idx]     = $intensity * 180 # R
+            $data[$idx + 1] = $intensity * 20 # G
+            $data[$idx + 2] = $intensity * 255 # B
+        else
+            # Fundal (Gradient de spatiu)
+            set $bg = 0.1 * (1.0 - $uvY)
+            $data[$idx]     = $bg * 50
+            $data[$idx + 1] = $bg * 50
+            $data[$idx + 2] = $bg * 100
+        endif
+        
+    endfor
+    if ($py % 128) == 0 then echo "Progres: " + (($py / $h) * 100) + "%" endif
+endfor
+
+writefile("sphere_3d.ppm", $data)
+echo "Sfera 3D a fost randata cu succes!"

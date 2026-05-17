@@ -1,0 +1,53 @@
+# 1. Configurare
+set $w = 1024
+set $h = 768
+set $maxIter = 128 # Mai multe iterații = detalii mai fine
+set $data = array(1 + ($w * $h * 3))
+set $data[0] = "P6 ".. $w .." ".. $h .." 255" .. char(10)
+
+# 2. CONSTANTA MAGICĂ (Aici se schimbă totul!)
+# Încearcă aceste combinații pentru rezultate diferite:
+# set $cx = -0.7  set $cy = 0.27   (Spirale fine)
+# set $cx = 0.285 set $cy = 0.01   (Forme de nori)
+# set $cx = -0.8  set $cy = 0.156  (Linii electrice)
+set $cx = -0.4
+set $cy = 0.6
+
+echo "Generare Fractal Julia... Pregateste-te pentru psihedelic!"
+
+for $y = 0 to $h - 1 do
+    for $x = 0 to $w - 1 do
+        # Mapăm pixelii în planul complex (-1.5 la 1.5)
+        # La Julia, z începe de la coordonatele pixelului
+        set $zx = ($x - ($w / 2.0)) / ($w / 3.0)
+        set $zy = ($y - ($h / 2.0)) / ($h / 3.0)
+        
+        set $it = 0
+        
+        while ($zx * $zx + $zy * $zy < 4.0) && ($it < $maxIter) do
+            set $xt = $zx * $zx - $zy * $zy + $cx
+            set $zy = 2.0 * $zx * $zy + $cy
+            set $zx = $xt
+            set $it = $it + 1
+        endwhile
+        
+        set $idx = 1 + (($y * $w + $x) * 3)
+        
+        if $it == $maxIter then
+            set $data[$idx] = 0
+            set $data[$idx+1] = 0
+            set $data[$idx+2] = 0
+        else
+            # COLORARE PSIHEDELICĂ (Modulo)
+            # Schimbă numerele (15, 7, 11) pentru alte palete
+            set $data[$idx]   = ($it * 15) % 256
+            set $data[$idx+1] = ($it * 7) % 256
+            set $data[$idx+2] = ($it * 11) % 256
+        endif
+    endfor
+    
+    if ($y % 128) == 0 then echo "Progres: " + (($y / $h) * 100) + "%" endif
+endfor
+
+writefile("julia_set.ppm", $data)
+echo "Fractalul Julia a fost salvat in julia_set.ppm!"

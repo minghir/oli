@@ -1581,7 +1581,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
 				std::wstring procLookupName = to_upper(sc.name);
 				bool isKnownProc = (chunk.procedures.count(procLookupName) > 0 || externalProcs.count(procLookupName) > 0);
 
-				if (isKnownProc) {
+				if (  isKnownProc && (sc.args.empty() || sc.args[0] != L"(") ) {
 					LOG_DEBUG(L"[COMPILER] Apel procedură stil comandă detectat: " + procLookupName);
 
 					// A. Încărcăm argumentele pe stivă (fiecare argument este tratat ca o mini-expresie)

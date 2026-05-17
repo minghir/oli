@@ -158,7 +158,7 @@ int main(int argc, char* argv[]) {
         std::string scriptPath = argv[1];
         vOliEngine engine;
         if (std::filesystem::path(scriptPath).extension() == ".olic") {
-			ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
+			ConsoleManager::getInstance().setMinLogLevel(LogLevel::LOG_ERROR);
             engine.loadAndRunBytecode(scriptPath);
         }
         else {

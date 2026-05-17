@@ -1,0 +1,30 @@
+# 1. Configurare dimensiuni
+set $w = 256
+set $h = 256
+set $pixelCount = $w * $h
+set $totalSize = 1 + ($pixelCount * 3) # 1 pentru header + restul pentru RGB
+
+# 2. Alocare array gigant
+set $data = array($totalSize)
+
+# 3. Header-ul PPM
+set $data[0] = "P6\n" + $w + " " + $h + "\n255\n"
+
+# 4. Bucla de generare pixeli
+# Folosim $y pentru rânduri și $x pentru coloane
+for $y = 0 to $h - 1 do
+    for $x = 0 to $w - 1 do
+        # Calculăm indexul de start pentru pixelul curent
+        # +1 pentru că indexul 0 este ocupat de header
+        set $idx = 1 + (($y * $w + $x) * 3)
+        
+        # Generăm culori bazate pe poziție (Gradient)
+        set $data[$idx]     = $x        # Canal R (crește pe orizontală)
+        set $data[$idx + 1] = $y        # Canal G (crește pe verticală)
+        set $data[$idx + 2] = 128       # Canal B (fix la mijloc)
+    endfor
+endfor
+
+# 5. Salvare fișier
+writefile("gradient_256.ppm", $data)
+echo "Imagine gradient 256x256 salvată!"

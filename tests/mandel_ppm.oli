@@ -1,0 +1,67 @@
+# 1. Configurare dimensiuni
+set $w = 512
+set $h = 512
+set $pixelCount = $w * $h
+set $totalSize = 1 + ($pixelCount * 3)
+set $maxIter = 32
+
+# 2. Alocare array
+set $data = array($totalSize)
+
+# 3. FIX HEADER: Forțăm numere întregi (fără .000000)
+# Dacă motorul tău are funcția INT(), folosește-o. 
+# Dacă nu, concatenarea cu string-uri simple e ok, dar asigură-te că $w e 512.
+set $data[0] = "P6\n512 512\n255\n"
+
+# 4. Parametrii (Normalizare pătrată)
+set $viewSize = 3.0
+set $offsetX = -0.5
+set $offsetY = 0.0
+
+echo "Generare Mandelbrot 512x512... Te rog asteapta."
+
+for $y = 0 to $h - 1 do
+    for $x = 0 to $w - 1 do
+        # --- NORMALIZARE CORECTĂ ---
+        # (1.0 * $x / $w) ne dă o valoare între 0 și 1
+        set $normX = (1.0 * $x / $w) - 0.5
+        set $normY = (1.0 * $y / $h) - 0.5
+        
+        set $cx = ($normX * $viewSize) + $offsetX
+        set $cy = ($normY * $viewSize) + $offsetY
+        
+        set $zx = 0.0
+        set $zy = 0.0
+        set $iter = 0
+        
+        while ($zx * $zx + $zy * $zy < 4.0) && ($iter < $maxIter) do
+            set $xtemp = $zx * $zx - $zy * $zy + $cx
+            set $zy = 2.0 * $zx * $zy + $cy
+            set $zx = $xtemp
+            set $iter = $iter + 1
+        endwhile
+        
+        # --- CALCUL INDEX (Standard Row-Major) ---
+        # Indexul 0 este Header-ul, deci începem de la 1
+        set $idx = 1 + (($y * $w + $x) * 3)
+        
+        # Colorare
+        if $iter == $maxIter then
+            set $data[$idx]     = 0
+            set $data[$idx + 1] = 0
+            set $data[$idx + 2] = 0
+        else
+            # Un albastru electric mai clar
+            set $v = (1.0 * $iter / $maxIter) * 255
+            set $data[$idx]     = $v / 4
+            set $data[$idx + 1] = $v / 2
+            set $data[$idx + 2] = $v
+        endif
+    endfor
+    
+    if ($y % 64) == 0 then echo "Progres: " + (($y / $h) * 100) + "%" endif
+endfor
+
+# 5. Salvare fișier
+writefile("mandelbrot_512.ppm", $data)
+echo "Imagine 512x512 salvata! Daca e tot coloana, verifica vizualizatorul PPM."

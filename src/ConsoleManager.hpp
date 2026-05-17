@@ -122,6 +122,10 @@ public:
         minLevel = lvl;
     }
 
+    LogLevel getLogLevel() const {
+        return minLevel;
+    }
+
 private:
     // Mutex (dacă e necesar, scoate comentariul și pune-l la începutul clasei)
      //std::mutex mtxLog; 

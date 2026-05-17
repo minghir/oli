@@ -1220,7 +1220,7 @@ vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
         return vData(std::monostate{});
     }
 }
-
+/*
 vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
     // Validare: avem nevoie de cel puțin path (string) și ceva de scris (orice)
     if (args.size() < 2 || !args[0].isString()) {
@@ -1256,6 +1256,54 @@ vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
         return vData(0LL);
     }
 }
+*/
+
+//Cea mai bună metodă este să modificăm funcția C++ astfel încât, atunci când primește un Array, să verifice tipul fiecărui element din interior. Dacă elementul este un String, îl scrie ca text; dacă este un Număr, îl scrie ca un singur byte.
+vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
+    if (args.size() < 2 || !args[0].isString()) {
+        LOG_ERROR(L"[RUNTIME ERROR] writefile() requires (path, content).");
+        return vData(0LL);
+    }
+
+    std::string path = PortTools::wstring_to_utf8(args[0].toWString());
+    std::ofstream file(path, std::ios::binary | std::ios::trunc);
+
+    if (!file.is_open()) return vData(0LL);
+
+    try {
+        if (args[1].isArray()) {
+            auto* arr = args[1].rawArray();
+            if (arr) {
+                for (const auto& item : *arr) {
+                    // Dacă elementul din array este STRING (ex: header-ul)
+                    if (item.isString()) {
+                        std::string s = PortTools::wstring_to_utf8(item.toWString());
+                        file.write(s.data(), s.size());
+                    }
+                    // Dacă elementul este NUMĂR (ex: un canal de culoare R, G sau B)
+                    else {
+                        unsigned char b = static_cast<unsigned char>(item.toInt() & 0xFF);
+                        file.write(reinterpret_cast<char*>(&b), 1);
+                    }
+                }
+            }
+        }
+        else {
+            // Logica veche pentru scriere text simplu
+            std::string content = PortTools::wstring_to_utf8(args[1].toWString());
+            file.write(content.data(), content.size());
+        }
+
+        file.close();
+        return vData(1LL);
+    }
+    catch (...) {
+        file.close();
+        return vData(0LL);
+    }
+}
+
+
 
 vData vOliEngine::handleAppendFileFunc(const std::vector<vData>& args) {
     vData result;

@@ -114,7 +114,10 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
                 LOG_ERROR(L"OP_SET_INDIRECT Error: Stack underflow (nevoie de 3 elemente, are " + std::to_wstring(stack.size()) + L")");
                 break;
             }
-            LOG_DEBUG(L"VM_DEBUG: SET_INDIRECT pe " + stack[stack.size() - 3].toWString());
+            if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                LOG_DEBUG(L"VM_DEBUG: SET_INDIRECT pe " + stack[stack.size() - 3].toWString());
+            }
+
             // 1. Extragem argumentele în ordinea LIFO (Last In, First Out)
             // Stiva la intrare: [Container, Index, Value] <- top
             vData value = stack.back(); stack.pop_back();
@@ -125,7 +128,9 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             vData finalValue = value.getScalarValue();
 
             // 2. Operăm pe Map (folosim rawMap() care face automat getTrueData())
-            LOG_DEBUG(L"VM: Executing SET_INDIRECT. Container Type: " + getVariantTypeName(container));
+            if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                LOG_DEBUG(L"VM: Executing SET_INDIRECT. Container Type: " + getVariantTypeName(container));
+            }
             if (container.isMap()) {
                 auto* m = container.rawMap();
                 if (m) {
@@ -718,8 +723,9 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
 
                     // Moștenim metodele (inițial Boss::move va pointa către Inamic::move)
                     bp.methods = parentBp.methods;
-
-                    LOG_DEBUG(L"[VM] " + typeName + L" mosteneste de la " + parentName);
+                    if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                        LOG_DEBUG(L"[VM] " + typeName + L" mosteneste de la " + parentName);
+                    }
                 }
                 else {
                     LOG_ERROR(L"[VM] Eroare: Clasa parinte '" + parentName + L"' nu a fost gasita!");
@@ -731,7 +737,9 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             uint8_t fieldCount = chunk.code[ip++];
             uint8_t methodCount = chunk.code[ip++];
 
-            LOG_DEBUG(L"[VM] Inregistrare " + std::wstring(bp.isClass ? L"CLASS: " : L"STRUCT: ") + typeName);
+            if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                LOG_DEBUG(L"[VM] Inregistrare " + std::wstring(bp.isClass ? L"CLASS: " : L"STRUCT: ") + typeName);
+            }
 
             // 4. Citim indicii Câmpurilor (Adăugare sau Overlap)
             for (int i = 0; i < fieldCount; ++i) {
@@ -743,7 +751,9 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
                 if (std::find(bp.fields.begin(), bp.fields.end(), fieldName) == bp.fields.end()) {
                     bp.fields.push_back(fieldName);
                 }
-                LOG_DEBUG(L"    -> Field[" + std::to_wstring(i) + L"]: " + fieldName);
+                if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                    LOG_DEBUG(L"    -> Field[" + std::to_wstring(i) + L"]: " + fieldName);
+                }
             }
 
             // 5. Citim indicii Metodelor (Overriding magic happens here!)
@@ -757,7 +767,9 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
                 std::wstring internalFuncName = typeName + L"::" + methodName;
                 bp.methods[methodName] = internalFuncName;
 
-                LOG_DEBUG(L"    -> Method[" + std::to_wstring(i) + L"]: " + methodName + L" (Target: " + internalFuncName + L")");
+                if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                    LOG_DEBUG(L"    -> Method[" + std::to_wstring(i) + L"]: " + methodName + L" (Target: " + internalFuncName + L")");
+                }
             }
 
             // 6. Salvare Blueprint final
@@ -778,7 +790,9 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             // 2. Scoatem OBIECTUL (Contextul) - ACUM îi dăm pop!
             vData contextObj = stack.back(); stack.pop_back();
 
-            LOG_DEBUG(L"[VM] Apel metoda: " + methodName + L" pe obiect de tip " + getVariantTypeName(contextObj));
+            if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                LOG_DEBUG(L"[VM] Apel metoda: " + methodName + L" pe obiect de tip " + getVariantTypeName(contextObj));
+            }
 
             if (contextObj.isMap()) {
                 auto m = contextObj.rawMap();
@@ -826,7 +840,9 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             if (vData** addrPtr = std::get_if<vData*>(&ptrData.value)) {
                 if (*addrPtr) {
                     **addrPtr = newValue;
-                    LOG_DEBUG(L"[VM] Pointer Write SUCCESS: " + newValue.toWString());
+                    if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                        LOG_DEBUG(L"[VM] Pointer Write SUCCESS: " + newValue.toWString());
+                    }
                 }
                 else {
                     LOG_ERROR(L"Runtime Error: Null pointer write attempt.");
@@ -989,7 +1005,9 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
                 // Spunem și parserului/compilatorului din VM că e funcție nativă
                 vOliKeyWords::registerNativeFunction(upName);
 
-                LOG_DEBUG(L"Injected function: " + upName);
+                if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                    LOG_DEBUG(L"Injected function: " + upName);
+                }
             }
             loadedAnything = true;
             LOG_SUCCESS(L"Functions injected from: " + dllPath);
@@ -1070,7 +1088,9 @@ vData vOliEngine::callUserByteCodeFunction(const std::wstring& funcName, const s
     // Dacă este o metodă, Compilatorul a rezervat Slotul 0 pentru $this.
     if (isMethod) {
         this->m_stack.push_back(context);
-        LOG_DEBUG(L"[VM] Context '$this' injectat la Slotul 0 pentru metoda: " + funcName);
+        if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+            LOG_DEBUG(L"[VM] Context '$this' injectat la Slotul 0 pentru metoda: " + funcName);
+        }
     }
 
     // 4. Maparea parametrilor funcției
@@ -1078,11 +1098,15 @@ vData vOliEngine::callUserByteCodeFunction(const std::wstring& funcName, const s
     for (size_t i = 0; i < func.params.size(); ++i) {
         if (i < args.size()) {
             this->m_stack.push_back(args[i]);
-            LOG_DEBUG(L"[VM] Parametru mapat: " + func.params[i] + L" = " + args[i].toWString());
+            if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                    (L"[VM] Parametru mapat: " + func.params[i] + L" = " + args[i].toWString());
+            }
         } else {
             // Parametri lipsă primesc valoarea NULL (monostate)
             this->m_stack.push_back(vData());
-            LOG_DEBUG(L"[VM] Parametru lipsă (default NULL): " + func.params[i]);
+            if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                LOG_DEBUG(L"[VM] Parametru lipsă (default NULL): " + func.params[i]);
+            }
         }
     }
 
@@ -1119,7 +1143,9 @@ void vOliEngine::registerBytecodeFunction(const std::wstring& name, const ByteCo
     for (auto& c : upperName) c = std::towupper(c);
 
     this->m_bytecodeFunctions[upperName] = proc;
-    LOG_DEBUG(L"[VM] Functie inregistrata in map: " + upperName);
+    if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+        LOG_DEBUG(L"[VM] Functie inregistrata in map: " + upperName);
+    }
 }
 
 
@@ -1129,7 +1155,9 @@ void vDataSerialize::deserializeChunkToEngine(std::istream& in, OliChunk& outChu
     // 1. Citim Constante
     uint32_t constCount = 0;
     in.read(reinterpret_cast<char*>(&constCount), sizeof(constCount));
-    LOG_DEBUG(L"[SERIALIZE] Citim " + std::to_wstring(constCount) + L" constante.");
+    if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+        LOG_DEBUG(L"[SERIALIZE] Citim " + std::to_wstring(constCount) + L" constante.");
+    }
 
     for (uint32_t i = 0; i < constCount; ++i) {
         outChunk.constants.push_back(vDataSerialize::deserializevData(in));
@@ -1138,7 +1166,9 @@ void vDataSerialize::deserializeChunkToEngine(std::istream& in, OliChunk& outChu
     // 2. Citim Cod
     uint32_t codeSize = 0;
     in.read(reinterpret_cast<char*>(&codeSize), sizeof(codeSize));
-    LOG_DEBUG(L"[SERIALIZE] Citim " + std::to_wstring(codeSize) + L" bytes de cod.");
+    if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+        LOG_DEBUG(L"[SERIALIZE] Citim " + std::to_wstring(codeSize) + L" bytes de cod.");
+    }
 
     outChunk.code.resize(codeSize);
     in.read(reinterpret_cast<char*>(outChunk.code.data()), codeSize);
@@ -1146,7 +1176,9 @@ void vDataSerialize::deserializeChunkToEngine(std::istream& in, OliChunk& outChu
     // 3. Citim Proceduri (Funcții)
     uint32_t procCount = 0;
     in.read(reinterpret_cast<char*>(&procCount), sizeof(procCount));
-    LOG_DEBUG(L"[SERIALIZE] Detectat procCount: " + std::to_wstring(procCount));
+    if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+        LOG_DEBUG(L"[SERIALIZE] Detectat procCount: " + std::to_wstring(procCount));
+    }
 
     for (uint32_t i = 0; i < procCount; ++i) {
         ByteCodeProcedure proc;
@@ -1205,7 +1237,9 @@ void vOliEngine::assignToByteCodeVariable(const std::wstring& varName, const vDa
         // Dacă nu avem cale, scriem valoarea DIRECT. 
         // Aici am eliminat crearea de Map-uri inutile (Matrioșka).
         *rootPtr = newValue;
-        LOG_DEBUG(L"[VM] Atribuire directă: " + rootPart + L" = " + newValue.toWString());
+        if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+            LOG_DEBUG(L"[VM] Atribuire directă: " + rootPart + L" = " + newValue.toWString());
+        }
         return;
     }
 
@@ -1223,7 +1257,9 @@ void vOliEngine::assignToByteCodeVariable(const std::wstring& varName, const vDa
             auto* m = target->rawMap();
             if (m) {
                 (*m)[field] = newValue;
-                LOG_DEBUG(L"[VM] Actualizat câmp: " + rootPart + L" -> " + field);
+                if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                    LOG_DEBUG(L"[VM] Actualizat câmp: " + rootPart + L" -> " + field);
+                }
             }
         }
         else if (target->isArray()) {
@@ -1242,7 +1278,9 @@ void vOliEngine::assignToByteCodeVariable(const std::wstring& varName, const vDa
             // (Se întâmplă pentru $a.b = 10 când $a nu exista)
             *target = vData::CreateMap();
             (*target->rawMap())[field] = newValue;
-            LOG_DEBUG(L"[VM] Creat structură nouă pentru calea: " + rootPart);
+            if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                LOG_DEBUG(L"[VM] Creat structură nouă pentru calea: " + rootPart);
+            }
         }
     }
 }

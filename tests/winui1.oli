@@ -1,0 +1,42 @@
+# 1. Încărcăm plugin-ul proaspăt compilat
+plugin "oli_winui" # sau numele pe care l-ai dat DLL-ului tău grafic
+
+echo "=== Lansare Subsistem Grafic Oli ==="
+
+# 2. Inițializăm GUI (Verifică dacă rulează din consolă sau host grafic)
+set $initialized = GUI_INIT()
+
+if $initialized == 1 then
+    echo "[GUI] Subsistem inițializat cu succes!"
+    
+    # Id-ul ferestrei trebuie să fie string, titlul la fel
+    set $winId = "main_frame"
+    set $winTitle = "Oli Engine - Fereastră Nativă WinAPI via Script"
+
+    echo "[GUI] Se creează fereastra..."
+    
+    # 3. Creăm fereastra reală (HWND în spate)
+    set $created = WIN_CREATE($winId, $winTitle)
+    
+    if $created == 1 then
+        echo "[GUI] Fereastra a fost creată. O afișăm pe ecran..."
+        
+        # 4. Forțăm afișarea ferestrei (SW_SHOW în spate)
+        WIN_SHOW($winId)
+        
+        echo "[GUI] Intrare în bucla principală de mesaje Windows (Pump Loop)..."
+        
+        # 5. Pasăm controlul către bucla WinAPI (g_Gui.appInstance->run())
+        # Scriptul va "îngheța" (aștepta) aici până când închizi fereastra (X)
+        set $exitCode = GUI_RUN()
+        
+        echo "[GUI] Aplicația s-a închis cu codul: " .. $exitCode
+    else
+        echo "[ERROR] Crearea ferestrei native a eșuat!"
+    endif
+
+else
+    echo "[ERROR] Inițializarea GUI_INIT a eșuat (Instanța vApp invalidă)!"
+endif
+
+echo "=== Programul Oli s-a terminat ==="

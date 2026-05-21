@@ -1,8 +1,8 @@
 #include "../../OliEngine.hpp"
-#include "lib_winui/ui/vApp.hpp"
-#include "lib_winui/ui/vWindow.hpp"
-#include "lib_winui/ui/vPanel.hpp"
-#include "lib_winui/ui/vCodeView.hpp"
+#include "ui/vApp.hpp"
+#include "ui/vWindow.hpp"
+#include "ui/vPanel.hpp"
+#include "ui/vCodeView.hpp"
 #include <unordered_map>
 #include <memory>
 

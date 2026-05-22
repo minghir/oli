@@ -201,6 +201,75 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
 
             int16_t s16 = static_cast<int16_t>(sample * 32767.0f);
             f.write(reinterpret_cast<char*>(&s16), 2);
+
+            std::cout << "Sample citit: " << sample << std::endl; // Vezi dacă printează 0.0 continuu
+        }
+
+        f.close();
+        return vData{ 1LL };
+        };
+
+
+    registry[L"SND_SAVE_WAV2"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 2) return vData{ 0LL };
+
+        std::wstring wPath = std::get<std::wstring>(args[0].getTrueData().value);
+        std::string path = toUtf8(wPath);
+
+        const vData& actualArg = args[1].getTrueData();
+        if (!actualArg.isArray()) return vData{ 0LL };
+
+        vDataArray arrayPtr = std::get<vDataArray>(actualArg.value);
+        if (!arrayPtr) return vData{ 0LL };
+
+        const std::vector<vData>& oliArray = *arrayPtr;
+
+        int sampleRate = (args.size() > 2) ? (int)args[2].toInt() : 44100;
+        int numSamples = (int)oliArray.size();
+
+        std::ofstream f(path, std::ios::out | std::ios::binary);
+        if (!f.is_open()) return vData{ 0LL };
+
+        auto write_str = [&](const char* s) { f.write(s, 4); };
+        auto write_u32 = [&](uint32_t v) { f.write(reinterpret_cast<char*>(&v), 4); };
+        auto write_u16 = [&](uint16_t v) { f.write(reinterpret_cast<char*>(&v), 2); };
+
+        // --- HEADER SUB FORMĂ STEREO (Mai sigur pentru playere) ---
+        write_str("RIFF");
+        write_u32(36 + numSamples * 4); // * 4 deoarece avem 2 canale * 2 bytes per sample
+        write_str("WAVE");
+        write_str("fmt ");
+        write_u32(16);          // Dimensiune sub-chunk
+        write_u16(1);           // Format PCM întreg
+        write_u16(2);           // MODIFICARE: 2 Canale (Stereo)
+        write_u32(sampleRate);
+        write_u32(sampleRate * 4); // MODIFICARE: sampleRate * 2 canale * 2 bytes = sampleRate * 4
+        write_u16(4);           // MODIFICARE: Block Align (2 canale * 2 bytes = 4)
+        write_u16(16);          // 16 biți rezoluție
+        write_str("data");
+        write_u32(numSamples * 4); // MODIFICARE: Dimensiune date brute
+
+        // Verificăm dacă chiar avem date valabile
+        int debugCounter = 0;
+
+        for (const auto& v : oliArray) {
+            // Extragere brută direct prin helper-ul tău toDouble()
+            float sample = (float)v.toDouble();
+
+            // Debugging în consolă pentru primele 5 eșantioane să vezi dacă e totul 0.0
+            if (debugCounter < 5) {
+                std::cout << "[SND_SAVE_WAV] Debug Sample Value: " << sample << std::endl;
+                debugCounter++;
+            }
+
+            if (sample > 1.0f) sample = 1.0f;
+            if (sample < -1.0f) sample = -1.0f;
+
+            int16_t s16 = static_cast<int16_t>(sample * 32767.0f);
+
+            // Scriem eșantionul de două ori (o dată pentru canalul stâng, o dată pentru cel drept)
+            f.write(reinterpret_cast<char*>(&s16), 2); // Left
+            f.write(reinterpret_cast<char*>(&s16), 2); // Right
         }
 
         f.close();

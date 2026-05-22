@@ -1,0 +1,99 @@
+--- OLI ASSEMBLY LISTING ---
+Source: examples/audio/synth_test.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_PLUGIN       0000 (Path: "oli_miniaudio")
+0003: OP_PLUGIN       0001 (Path: "oli_math")
+0006: OP_GET_GLOBAL   0002 (Name: conf)
+0009: OP_GET_GLOBAL   0002 (Name: conf)
+0012: OP_CONSTANT     0003 (Value: === Generare Sinusoidă la 440Hz (Nota La) ===)
+0015: OP_ECHO
+0016: OP_CONSTANT     0004 (Value: 44100)
+0019: OP_SET_GLOBAL   0005 (Name: $sampleRate)
+0022: OP_CONSTANT     0006 (Value: 2)
+0025: OP_SET_GLOBAL   0007 (Name: $duration)
+0028: OP_GET_GLOBAL   0005 (Name: $sampleRate)
+0031: OP_GET_GLOBAL   0007 (Name: $duration)
+0034: OP_MUL
+0035: OP_SET_GLOBAL   0008 (Name: $totalSamples)
+0038: OP_GET_GLOBAL   0008 (Name: $totalSamples)
+0041: OP_CALL_NATIVE  0009 (Name: ARRAY, Args: 1)
+0045: OP_SET_GLOBAL   0010 (Name: $buffer)
+0048: OP_CONSTANT     0011 (Value: 440)
+0051: OP_SET_GLOBAL   0012 (Name: $frequency)
+0054: OP_CONSTANT     0013 (Value: 3.14159)
+0057: OP_SET_GLOBAL   0014 (Name: $PI)
+0060: OP_CONSTANT     0015 (Value: 0)
+0063: OP_SET_GLOBAL   0016 (Name: $phase)
+0066: OP_CONSTANT     0006 (Value: 2)
+0069: OP_GET_GLOBAL   0014 (Name: $PI)
+0072: OP_MUL
+0073: OP_GET_GLOBAL   0012 (Name: $frequency)
+0076: OP_MUL
+0077: OP_GET_GLOBAL   0005 (Name: $sampleRate)
+0080: OP_DIV
+0081: OP_SET_GLOBAL   0017 (Name: $phaseStep)
+0084: OP_CONSTANT     0018 (Value: [SYNTH] Se calculează unda sonoră prin acumulare de fază...)
+0087: OP_ECHO
+0088: OP_CONSTANT     0015 (Value: 0)
+0091: OP_SET_GLOBAL   0019 (Name: $i)
+0094: OP_GET_GLOBAL   0019 (Name: $i)
+0097: OP_GET_GLOBAL   0008 (Name: $totalSamples)
+0100: OP_CONSTANT     0020 (Value: 1)
+0103: OP_SUB
+0104: OP_GREATER
+0105: OP_JUMP_IF_TRUE  0079 (Sari la: 187)
+0108: OP_GET_GLOBAL   0019 (Name: $i)
+0111: OP_CONSTANT     0021 (Value: 5)
+0114: OP_MUL
+0115: OP_GET_GLOBAL   0019 (Name: $i)
+0118: OP_CONSTANT     0022 (Value: 7)
+0121: OP_SHR
+0122: OP_BAND
+0123: OP_GET_GLOBAL   0019 (Name: $i)
+0126: OP_CONSTANT     0023 (Value: 3)
+0129: OP_MUL
+0130: OP_GET_GLOBAL   0019 (Name: $i)
+0133: OP_CONSTANT     0024 (Value: 10)
+0136: OP_SHR
+0137: OP_BAND
+0138: OP_BOR
+0139: OP_SET_GLOBAL   0025 (Name: $val_brut)
+0142: OP_GET_GLOBAL   0025 (Name: $val_brut)
+0145: OP_CONSTANT     0026 (Value: 256)
+0148: OP_MOD
+0149: OP_CONSTANT     0027 (Value: 128)
+0152: OP_DIV
+0153: OP_CONSTANT     0020 (Value: 1)
+0156: OP_SUB
+0157: OP_SET_GLOBAL   0028 (Name: $sample)
+0160: OP_GET_GLOBAL   0010 (Name: $buffer)
+0163: OP_GET_GLOBAL   0019 (Name: $i)
+0166: OP_GET_GLOBAL   0028 (Name: $sample)
+0169: OP_CONSTANT     0029 (Value: 0.3)
+0172: OP_MUL
+0173: OP_SET_INDIRECT
+0174: OP_GET_GLOBAL   0019 (Name: $i)
+0177: OP_CONSTANT     0020 (Value: 1)
+0180: OP_ADD
+0181: OP_SET_GLOBAL   0019 (Name: $i)
+0184: OP_LOOP          0093 (Sari inapoi la: 94)
+0187: OP_CONSTANT     0030 (Value: [SYNTH] Se salvează pe disc ca generator.wav...)
+0190: OP_ECHO
+0191: OP_CONSTANT     0031 (Value: generator.wav)
+0194: OP_GET_GLOBAL   0010 (Name: $buffer)
+0197: OP_GET_GLOBAL   0005 (Name: $sampleRate)
+0200: OP_CALL_NATIVE  0032 (Name: SND_SAVE_WAV2, Args: 3)
+0204: OP_SET_GLOBAL   0033 (Name: $success)
+0207: OP_GET_GLOBAL   0033 (Name: $success)
+0210: OP_CONSTANT     0020 (Value: 1)
+0213: OP_EQUAL
+0214: OP_JUMP_IF_FALSE 0007 (Sari la: 224)
+0217: OP_CONSTANT     0034 (Value: [SUCCESS] Fișierul a fost generat cu succes!)
+0220: OP_ECHO
+0221: OP_JUMP          0004 (Sari la: 228)
+0224: OP_CONSTANT     0035 (Value: [ERROR] Scrierea a eșuat!)
+0227: OP_ECHO
+0228: OP_RETURN

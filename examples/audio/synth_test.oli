@@ -1,0 +1,44 @@
+plugin "oli_miniaudio"
+plugin "oli_math"
+
+conf max_iterations 0
+conf echo off
+
+echo "=== Generare Sinusoidă la 440Hz (Nota La) ==="
+
+set $sampleRate = 44100
+set $duration = 2
+set $totalSamples = $sampleRate * $duration
+
+# FIX 1: Alocăm tot array-ul din start (fără push-uri chinuitoare pentru Heap)
+set $buffer = array($totalSamples)
+
+set $frequency = 440.0
+set $PI = 3.14159265
+set $phase = 0.0
+
+# Calculăm pasul fix de fază pentru 440Hz
+set $phaseStep = 2.0 * $PI * $frequency / $sampleRate
+
+echo "[SYNTH] Se calculează unda sonoră prin acumulare de fază..."
+
+for $i = 0 to $totalSamples - 1 do
+# Pune asta în loop-ul tău pentru un experiment psihedelic:
+# Formula originală în C++: (t * 5 & t >> 7) | (t * 3 & t >> 10)
+
+set $val_brut = (($i * 5) & ($i >> 7)) | (($i * 3) & ($i >> 10))
+
+# Mapăm rezultatul (care e un byte 0-255) în intervalul nostru float [-1.0, 1.0]
+set $sample = ($val_brut % 256) / 128.0 - 1.0
+
+set $buffer[$i] = $sample * 0.3
+endfor
+
+echo "[SYNTH] Se salvează pe disc ca generator.wav..."
+set $success = SND_SAVE_WAV2("generator.wav", $buffer, $sampleRate)
+
+if $success == 1 then
+    echo "[SUCCESS] Fișierul a fost generat cu succes!"
+else
+    echo "[ERROR] Scrierea a eșuat!"
+endif

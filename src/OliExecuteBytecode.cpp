@@ -303,11 +303,27 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             stack.pop_back();
             break;
         }
+        
         case OpCode::OP_LOOP: {
             uint16_t offset = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
             ip += 2; ip -= offset; break;
         }
+        /*
+        
+        case OpCode::OP_LOOP: {
+            // 1. Salvăm adresa de unde a început OP_LOOP (ex: 124)
+            size_t loop_start = ip - 1;
 
+            // 2. Citim offset-ul generat de compilator (68)
+            uint16_t offset = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
+
+            // 3. Forțăm IP-ul să sară la adresa calculată + compensarea de 3 octeți
+            // 124 - 68 + 3 = 59! Fix la OP_GET_GLOBAL pentru evaluarea condiției!
+            ip = loop_start - offset + 3;
+
+            break;
+        }
+        */
                             // --- 6. STRUCTURI DE DATE (CRITIC) ---
         case OpCode::OP_ARRAY: {
             uint8_t count = chunk.code[ip++];
@@ -861,6 +877,120 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             stack.push_back(b);
             break;
         }
+
+                            // --- OPERATORI BITWISE ---
+        case OpCode::OP_BXOR: {
+            if (stack.size() < 2) break;
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
+            stack.push_back(vData{ static_cast<long long>(a.toInt() ^ b.toInt()) });
+            break;
+        }
+
+        case OpCode::OP_BNOT: {
+            if (stack.empty()) break;
+            vData a = stack.back(); stack.pop_back();
+            stack.push_back(vData{ static_cast<long long>(~a.toInt()) });
+            break;
+        }
+
+        case OpCode::OP_SHL: {
+            if (stack.size() < 2) break;
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
+            stack.push_back(vData{ static_cast<long long>(a.toInt() << b.toInt()) });
+            break;
+        }
+
+        case OpCode::OP_SHR: {
+            if (stack.size() < 2) break;
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
+            stack.push_back(vData{ static_cast<long long>(a.toInt() >> b.toInt()) });
+            break;
+        }
+        case OpCode::OP_INC: {
+            if (stack.empty()) break;
+            vData a = stack.back(); stack.pop_back();
+            if (a.isInt()) {
+                stack.push_back(vData(a.toInt() + 1));
+            }
+            else {
+                stack.push_back(vData(vDataToDouble(a) + 1.0));
+            }
+            break;
+        }
+
+        case OpCode::OP_DEC: {
+            if (stack.empty()) break;
+            vData a = stack.back(); stack.pop_back();
+            if (a.isInt()) {
+                stack.push_back(vData(a.toInt() - 1));
+            }
+            else {
+                stack.push_back(vData(vDataToDouble(a) - 1.0));
+            }
+            break;
+        }
+
+        case OpCode::OP_LOGICAL_AND: {
+            if (stack.size() < 2) break;
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
+            stack.push_back(vData(vDataToBool(a) && vDataToBool(b)));
+            break;
+        }
+
+        case OpCode::OP_LOGICAL_OR: {
+            if (stack.size() < 2) break;
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
+            stack.push_back(vData(vDataToBool(a) || vDataToBool(b)));
+            break;
+        }
+
+        case OpCode::OP_NULL_COALESCE: {
+            if (stack.size() < 2) break;
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
+
+            // Dacă a este null/monostate, returnăm b, altfel rămâne a
+            if (a.isNull() || std::holds_alternative<std::monostate>(a.value)) {
+                stack.push_back(b);
+            }
+            else {
+                stack.push_back(a);
+            }
+            break;
+        }
+
+        case OpCode::OP_CALL_DYNAMIC: {
+            // Scoatem numărul de argumente de după OpCode
+            uint8_t argCount = chunk.code[ip++];
+
+            // Valoarea de sus este chiar string-ul sau obiectul care conține numele funcției
+            vData funcVal = stack.back(); stack.pop_back();
+            std::wstring funcName = to_upper(funcVal.toWString());
+
+            std::vector<vData> args(argCount);
+            for (int i = argCount - 1; i >= 0; --i) {
+                args[i] = stack.back();
+                stack.pop_back();
+            }
+
+            // Executăm dinamic funcția din bytecode
+            vData result = this->callUserByteCodeFunction(funcName, args, vData());
+            stack.push_back(result);
+            break;
+        }
+
+        case OpCode::OP_HALT: {
+            // Schimbăm starea instanței pentru a opri bucla instant
+            this->m_executionStatus = OliStatus::RETURN_REQUESTED;
+            return;
+        }
+        
+
 		
         default:
             LOG_ERROR(L"VM Error: OpCode necunoscut [0x" + std::to_wstring((int)instruction) + L"] la IP: " + std::to_wstring(ip - 1));

@@ -1,21 +1,19 @@
-# src/plugins/oli_winui/Makefile
+# 1. Căile specifice pluginului
+LIB_WINUI_DIR      = ../../../../lib_winui
+INCLUDE_LIB_WINUI  = $(LIB_WINUI_DIR)/src
 
-# 1. Căile specifice acestui plugin (folosind / în loc de \)
-LIB_REPORT_DIR     = D:/Programming/Aplicatii_C2019/ANC/vreport/libvreport
-INCLUDE_REPORT_DIR = D:/Programming/Aplicatii_C2019/ANC/vreport/libvreport/src
+# 2. Adăugăm include-urile WinUI
+CXXFLAGS += -I$(INCLUDE_LIB_WINUI)
 
-# 2. Injectăm calea de include în CXXFLAGS înainte ca fișierul common să fie procesat
-CXXFLAGS = -I$(INCLUDE_REPORT_DIR)
+# 3. Adăugăm calea către biblioteca WinUI
+LDFLAGS += -L$(LIB_WINUI_DIR)
 
-# 3. Definim unde caută linkerul bibliotecile (-L)
-LDFLAGS_LOCAL = -L$(LIB_REPORT_DIR)
-
-# 4. Definim bibliotecile specifice
+# 4. Bibliotecile necesare
 ifeq ($(OS),Windows_NT)
-    LIBS = $(LIB_REPORT_DIR)/lib_winui.a -lgdi32 -luser32 -lcomctl32 -lshcore -lopengl32 -lglu32
+    LIBS += -l_winui -lgdi32 -luser32 -lcomctl32 -lshcore -lopengl32 -lglu32
 else
-    LIBS = -lX11
+    LIBS += -lX11
 endif
 
-# 5. ABIA ACUM includem logica globală (care va înghiți setările de mai sus)
+# 5. Includem logica comună
 include ../Makefile.plugin.common

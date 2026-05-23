@@ -313,7 +313,8 @@ private:
         vData* resolveVMPath(const std::wstring& rootName, const std::vector<std::wstring>& indexes, bool forceGlobal);
         bool internalLoadPlugin(std::wstring pluginName);
         void registerBytecodeFunction(const std::wstring& name, const ByteCodeProcedure& proc);
-        vData callUserByteCodeFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context);
+        //vData callUserByteCodeFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context) override;
+        vData callUserByteCodeFunction(const wchar_t* funcName, const vData* argsArray, size_t argCount, vData context) override;
         void assignToByteCodeVariable(const std::wstring& varName, const vData& newValue);
 
 
@@ -322,5 +323,8 @@ private:
 		std::vector<IterState> m_iterStack;
 		
 		static bool runEmbeddedIfPresent(const std::string& exePath);
+
+       
+
 };
 #endif

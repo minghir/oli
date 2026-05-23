@@ -36,16 +36,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             break;
         }
 
-        case OpCode::OP_SET_GLOBAL: {
-            //vData val = stack.back().getTrueData(); 
-            vData val = stack.back().getScalarValue();
-            stack.pop_back();
-            uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
-            ip += 2;
-            vData nameConst = chunk.constants[nameIdx].getTrueData();
-            this->setVar(nameConst.toWString(), val);
-            break;
-        }
+        
         
 
         case OpCode::OP_GET_GLOBAL: {
@@ -176,7 +167,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             }
             break;
         }
-
+        /*
         case OpCode::OP_SET_LOCAL: {
             uint8_t slot = chunk.code[ip++];
             //vData val = stack.back().getTrueData();
@@ -191,6 +182,49 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             }
 
             stack[targetIdx] = val;
+            break;
+        }
+
+        case OpCode::OP_SET_GLOBAL: {
+            //vData val = stack.back().getTrueData(); 
+            vData val = stack.back().getScalarValue();
+            stack.pop_back();
+            uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
+            ip += 2;
+            vData nameConst = chunk.constants[nameIdx].getTrueData();
+            this->setVar(nameConst.toWString(), val);
+            break;
+        }
+        */
+        case OpCode::OP_SET_LOCAL: {
+            uint8_t slot = chunk.code[ip++];
+
+            // --- FIX: Activăm getTrueData() și dezactivăm getScalarValue() ---
+            vData val = stack.back().getTrueData();
+            // vData val = stack.back().getScalarValue();
+            stack.pop_back();
+
+            size_t targetIdx = framePtr + slot;
+
+            // Asigurăm că stiva are loc pentru acest slot local
+            if (targetIdx >= stack.size()) {
+                stack.resize(targetIdx + 1);
+            }
+
+            stack[targetIdx] = val;
+            break;
+        }
+
+        case OpCode::OP_SET_GLOBAL: {
+            // --- FIX: Activăm getTrueData() și dezactivăm getScalarValue() ---
+            vData val = stack.back().getTrueData();
+            // vData val = stack.back().getScalarValue();
+            stack.pop_back();
+
+            uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
+            ip += 2;
+            vData nameConst = chunk.constants[nameIdx].getTrueData();
+            this->setVar(nameConst.toWString(), val);
             break;
         }
 
@@ -602,13 +636,21 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             }
 
             // Executăm funcția de bytecode
-            vData result = this->callUserByteCodeFunction(funcName, callArgs, vData());
-
+            //vData result = this->callUserByteCodeFunction(funcName, callArgs, vData());
+            vData result = this->callUserByteCodeFunction(
+                funcName.c_str(),   // Transformă std::wstring în const wchar_t*
+                callArgs.data(),    // Pointer brut către primul element din std::vector (const vData*)
+                callArgs.size(),    // Numărul de elemente (size_t)
+                vData()             // Contextul implicit rămâne neschimbat
+            );
+            if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                LOG_DEBUG(L"VM_DEBUG: OP_CALL - Funcția apelată: " + funcName);
+            }
             // Punem rezultatul înapoi pe stivă
             stack.push_back(result);
             break;
         }
-
+        /*
         case OpCode::OP_TYPE: {
             if (stack.empty()) break;
             vData val = stack.back();
@@ -635,7 +677,42 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             stack.push_back(vData(typeStr));
             break;
         }
-		
+		*/
+        case OpCode::OP_TYPE: {
+            if (stack.empty()) break;
+            vData val = stack.back();
+            stack.pop_back();
+
+            std::wstring typeStr = L"UNKNOWN";
+
+            // Verificăm dacă este pointer ÎNAINTE de dereferențiere 
+            if (val.isPointer()) {
+                typeStr = L"POINTER";
+            }
+            else {
+                vData actual = val.getTrueData();
+                if (actual.isInt())         typeStr = L"INT";
+                else if (actual.isFloat())  typeStr = L"FLOAT";
+                else if (actual.isBool())   typeStr = L"BOOL";
+                else if (actual.isString()) typeStr = L"STRING";
+                else if (actual.isArray())  typeStr = L"ARRAY";
+                else if (actual.isMap()) {
+                    // --- UPGRADE PENTRU DETECTARE CLASE NATIVE/DINAMICE ---
+                    auto m = actual.rawMap();
+                    if (m && m->count(L"__type__")) {
+                        // Dacă are __type__, returnăm numele clasei cu litere mari (ex: WINWINDOW)
+                        typeStr = to_upper((*m)[L"__type__"].toWString());
+                    }
+                    else {
+                        typeStr = L"MAP"; // Rămâne MAP simplu dacă e doar un dicționar normal
+                    }
+                }
+                else if (actual.isNull())   typeStr = L"NULL";
+            }
+
+            stack.push_back(vData(typeStr));
+            break;
+        }
 		case OpCode::OP_ITER_START: {
 			vData source = stack.back(); 
 			stack.pop_back(); 
@@ -795,7 +872,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
                 (parentName.empty() ? L"" : L"(Mostenit din " + parentName + L")"));
             break;
         }
-        
+        /*
         case OpCode::OP_CALL_METHOD: {
             uint8_t argCount = chunk.code[ip++];
 
@@ -842,6 +919,136 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             this->m_executionStatus = OliStatus::ERR;
             break;
         }
+        */
+        /*
+        case OpCode::OP_CALL_METHOD: {
+            uint8_t argCount = chunk.code[ip++];
+
+            // 1. Scoatem numele metodei
+            vData methodNameData = stack.back(); stack.pop_back();
+            std::wstring methodName = to_upper(methodNameData.toWString());
+
+            // 2. Scoatem OBIECTUL (Contextul) - ACUM îi dăm pop!
+            vData contextObj = stack.back(); stack.pop_back();
+
+            if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                LOG_DEBUG(L"[VM] Apel metoda: " + methodName + L" pe obiect de tip " + getVariantTypeName(contextObj));
+            }
+
+            if (contextObj.isMap()) {
+                auto m = contextObj.rawMap();
+                if (m->count(L"__type__")) {
+                    //std::wstring typeName = (*m)[L"__type__"].toWString();
+                    std::wstring typeName = to_upper((*m)[L"__type__"].toWString());
+
+                    if (m_blueprints.count(typeName)) {
+                        auto& bp = m_blueprints[typeName];
+                        if (bp.methods.count(methodName)) {
+                            std::wstring finalFunc = bp.methods[methodName];
+                            std::wstring upperFinalFunc = to_upper(finalFunc); // Normalizăm pentru lookup nativ
+
+                            // 3. Colectăm argumentele (care acum sunt în vârful stivei)
+                            std::vector<vData> args(argCount);
+                            for (int i = argCount - 1; i >= 0; --i) {
+                                args[i] = stack.back();
+                                stack.pop_back();
+                            }
+
+                            // --- 4. INTERCEPTAREA ȘI EXECUTAREA (NATIV vs BYTECODE) ---
+                            if (this->m_functionsHandlers.count(upperFinalFunc)) {
+                                // A. Metoda este înregistrată în C++ (Metodă Nativă)
+                                // Pasăm obiectul curent (contextObj) ca prim argument implicit (reprezintă $this / self)
+                                args.insert(args.begin(), contextObj);
+
+                                vData nativeResult = this->m_functionsHandlers[upperFinalFunc](args);
+                                stack.push_back(nativeResult);
+
+                                LOG_SUCCESS(L"[VM] Metoda NATIVA executata: " + finalFunc);
+                            }
+                            else {
+                                // B. Metoda este o funcție normală în Oli Bytecode
+                                vData result = this->callUserByteCodeFunction(finalFunc, args, contextObj);
+                                stack.push_back(result);
+
+                                LOG_SUCCESS(L"[VM] Metoda SCRIPT executata: " + finalFunc);
+                            }
+
+                            // Ieșim cu succes din switch, evitând eroarea de la final
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Dacă execuția a ajuns aici, înseamnă că nu s-a dat "break" în interiorul if-urilor
+            LOG_ERROR(L"Runtime Error: Metoda '" + methodName + L"' nu a putut fi rezolvata.");
+            this->m_executionStatus = OliStatus::ERR;
+            break;
+        }
+        */
+case OpCode::OP_CALL_METHOD: {
+    uint8_t argCount = chunk.code[ip++];
+
+    // 1. Scoatem numele metodei
+    vData methodNameData = stack.back(); stack.pop_back();
+    std::wstring methodName = to_upper(methodNameData.toWString());
+
+    // 2. Scoatem OBIECTUL (Contextul)
+    vData contextObjRaw = stack.back(); stack.pop_back();
+
+    // --- FIX CRITIC 1: Rezolvăm pointerii/referințele de pe stivă ---
+    vData contextObj = contextObjRaw.getTrueData();
+
+    if (contextObj.isMap()) {
+        auto m = contextObj.rawMap();
+        if (m->count(L"__type__")) {
+            std::wstring typeName = to_upper((*m)[L"__type__"].toWString());
+
+            if (m_blueprints.count(typeName)) {
+                auto& bp = m_blueprints[typeName];
+                if (bp.methods.count(methodName)) {
+                    std::wstring finalFunc = bp.methods[methodName];
+                    std::wstring upperFinalFunc = to_upper(finalFunc);
+
+                    // 3. Colectăm argumentele
+                    std::vector<vData> args(argCount);
+                    for (int i = argCount - 1; i >= 0; --i) {
+                        args[i] = stack.back();
+                        stack.pop_back();
+                    }
+
+                    // 4. Executăm (Nativ vs Bytecode)
+                    if (this->m_functionsHandlers.count(upperFinalFunc)) {
+                        args.insert(args.begin(), contextObj);
+                        vData nativeResult = this->m_functionsHandlers[upperFinalFunc](args);
+                        stack.push_back(nativeResult);
+                        LOG_SUCCESS(L"[VM] Metoda NATIVA executata: " + finalFunc);
+                    }
+                    else {
+                        //vData result = this->callUserByteCodeFunction(finalFunc, args, contextObj);
+                        vData result = this->callUserByteCodeFunction(
+                            finalFunc.c_str(),   // Transformă std::wstring în const wchar_t*
+                            args.data(),    // Pointer brut către primul element din std::vector (const vData*)
+                            args.size(),    // Numărul de elemente (size_t)
+                            vData()             // Contextul implicit rămâne neschimbat
+                        );
+                        stack.push_back(result);
+                        LOG_SUCCESS(L"[VM] Metoda SCRIPT executata: " + finalFunc);
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    // --- FIX CRITIC 2: Diagnostic ultra-precis dacă pică ---
+    std::wstring actualType = getVariantTypeName(contextObj);
+    LOG_ERROR(L"Runtime Error: Metoda '" + methodName + L"' nu a putut fi rezolvata.");
+    LOG_ERROR(L"Contextul primit ARE TIPUL: " + actualType + L" (Valoare: " + contextObj.toWString() + L")");
+
+    this->m_executionStatus = OliStatus::ERR;
+    break;
+}
 
         case OpCode::OP_SET_PTR: {
             // Stiva la noi este: [Valoare_Noua, Adresa]
@@ -979,7 +1186,16 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             }
 
             // Executăm dinamic funcția din bytecode
-            vData result = this->callUserByteCodeFunction(funcName, args, vData());
+            //vData result = this->callUserByteCodeFunction(funcName, args, vData());
+            vData result = this->callUserByteCodeFunction(
+                funcName.c_str(),   // Transformă std::wstring în const wchar_t*
+                args.data(),    // Pointer brut către primul element din std::vector (const vData*)
+                args.size(),    // Numărul de elemente (size_t)
+                vData()             // Contextul implicit rămâne neschimbat
+            );
+            if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                LOG_DEBUG(L"VM_DEBUG: OP_CALL - Funcția apelată: " + funcName);
+            }
             stack.push_back(result);
             break;
         }
@@ -1195,8 +1411,12 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
 }
 
 
+/*
+//vData vOliEngine::callUserByteCodeFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context) {
+vData vOliEngine::callUserByteCodeFunction(const wchar_t* funcName, const vData* argsArray, size_t argCount, vData context) {
+    std::wstring name(funcName);
+    std::vector<vData> args(argsArray, argsArray + argCount);
 
-vData vOliEngine::callUserByteCodeFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context) {
     LOG_INFO(L"[VM] Pregătire apel funcție: " + funcName + L" (" + std::to_wstring(args.size()) + L" argumente)");
 
     // 1. Căutăm funcția în tabelul de bytecode
@@ -1264,6 +1484,95 @@ vData vOliEngine::callUserByteCodeFunction(const std::wstring& funcName, const s
 
     LOG_SUCCESS(L"-> Funcția " + funcName + L" a returnat: " + result.toWString());
     
+    return result;
+}
+*/
+
+vData vOliEngine::callUserByteCodeFunction(const wchar_t* funcName, const vData* argsArray, size_t argCount, vData context) {
+    LOG_INFO(L"Sunt în callUserByteCodeFunction");
+    // 1. Convertim pointerul brut într-un obiect std::wstring local
+    std::wstring name(funcName);
+    for (auto& c : name) c = std::towupper(c);
+    std::vector<vData> args(argsArray, argsArray + argCount);
+
+    // ✅ CORECT: Folosim 'name' pentru concatenare
+    LOG_INFO(L"[VM] Pregătire apel funcție: " + name + L" (" + std::to_wstring(args.size()) + L" argumente)");
+
+    // 2. Căutăm funcția în tabelul de bytecode folosind obiectul string
+    auto it = m_bytecodeFunctions.find(name);
+    if (it == m_bytecodeFunctions.end()) {
+        LOG_ERROR(L"-> EROARE: Funcția " + name + L" nu este înregistrată!");
+        return vData();
+    }
+
+    const ByteCodeProcedure& func = it->second;
+
+    // --- LOGICA DE STIVĂ (VM MODE) ---
+
+    size_t newFramePtr = this->m_stack.size();
+
+    // ✅ REZOLVARE EROARE: 'name.find' în loc de 'funcName.find'
+    bool isMethod = (name.find(L"::") != std::wstring::npos);
+
+    // 3. INJECTARE CONTEXT ($this)
+    if (isMethod) {
+        this->m_stack.push_back(context);
+        if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+            LOG_DEBUG(L"[VM] Context '$this' injectat la Slotul 0 pentru metoda: " + name);
+        }
+    }
+
+    // 4. Maparea parametrilor funcției
+    for (size_t i = 0; i < func.params.size(); ++i) {
+        if (i < args.size()) {
+            this->m_stack.push_back(args[i]);
+            if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                // ✅ REZOLVAT: Am adăugat LOG_DEBUG-ul care lipsea aici!
+                LOG_DEBUG(L"[VM] Parametru mapat: " + func.params[i] + L" = " + args[i].toWString());
+            }
+        }
+        else {
+            this->m_stack.push_back(vData());
+            if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                LOG_DEBUG(L"[VM] Parametru lipsă (default NULL): " + func.params[i]);
+            }
+        }
+    }
+
+    // 5. Execuția Bytecode-ului
+    LOG_DEBUG(L"[VM] Verificare integritate funcție: " + name);
+    if (!func.compiledBody) {
+        LOG_ERROR(L"[VM] CRITIC: compiledBody este NULL pentru " + name);
+        return vData();
+    }
+
+    LOG_DEBUG(L"[VM] Pornesc execuția bytecode pentru: " + name);
+    OliStatus oldStatus = m_executionStatus;
+    m_executionStatus = OliStatus::RUNNING;
+
+    // AICI crapă probabil - dacă funcția executeBytecode accesează un index invalid
+    LOG_DEBUG(L"[VM] Executing bytecode for: " + name);
+    LOG_DEBUG(L"[VM] Stack size before: " + std::to_wstring(this->m_stack.size()));
+    LOG_DEBUG(L"[VM] Function body pointer: " + std::to_wstring(reinterpret_cast<uintptr_t>(func.compiledBody.get())));
+
+    this->executeBytecode(*(func.compiledBody), newFramePtr);
+
+    LOG_DEBUG(L"[VM] Execuție finalizată cu succes pentru: " + name);
+    m_executionStatus = oldStatus;
+
+    // 6. Recuperăm rezultatul
+    vData result = vData();
+    if (this->m_executionStatus != OliStatus::ERR && !this->m_stack.empty()) {
+        result = this->m_stack.back();
+    }
+
+    // 7. Stack Unwinding
+    while (this->m_stack.size() > newFramePtr) {
+        this->m_stack.pop_back();
+    }
+
+    LOG_SUCCESS(L"-> Funcția " + name + L" a returnat: " + result.toWString());
+
     return result;
 }
 

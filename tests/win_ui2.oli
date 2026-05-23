@@ -1,0 +1,25 @@
+plugin "oli_winui"
+config echo off
+
+echo "=== Lansare Interfață Grafică OOP ==="
+
+# 1. Definim structura claselor în script (Blueprint-urile)
+def class WinApp { init(), run() }
+def class WinWindow { id, title, show() }
+
+# 2. Instanțiem și inițializăm aplicația grafică nativă
+set $app = CREATE_WINAPP()
+$app.init()
+
+# 3. Creăm o fereastră folosind constructorul ei nativ obiectual
+set $myWindow = CREATE_WINWINDOW("main_fereastra", "OliEngine WinUI Framework Nativ")
+
+# 4. Afișăm fereastra apelând direct metoda ei
+$myWindow.show()
+
+echo "Tipul ferestrei este: " .. TYPE($myWindow) # Va returna corect schema de obiect
+
+# 5. Pornim bucla de evenimente Windows
+$app.run()
+
+echo "=== Aplicație închisă cu succes ==="

@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++20 -Wall -Wextra -O2 -Iinclude -MMD -MP
+CXXFLAGS = -std=c++20 -Wall -Wextra -O3 -Iinclude -MMD -MP
 # -MMD -MP generează automat dependențele (.d) pentru headere
 
 # Ordinea LDFLAGS este critică: bibliotecile se pun DUPĂ obiecte

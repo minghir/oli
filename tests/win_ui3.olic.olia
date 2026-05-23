@@ -1,0 +1,96 @@
+--- OLI ASSEMBLY LISTING ---
+Source: ./tests/win_ui3.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_PLUGIN       0000 (Path: "oli_winui")
+0003: OP_GET_GLOBAL   0001 (Name: config)
+0006: OP_CONSTANT     0002 (Value: === Lansare Interfață Grafică cu Click Nativ ===)
+0009: OP_ECHO
+0010: OP_DEF_TYPE      0003 (Type: UICONTROL, CLASS, Fields: 1, Methods: 3)
+    Field [0]: 0005 (Name: id)
+    Method [0]: 0006 (Name: SET_PROP)
+    Method [1]: 0007 (Name: GET_PROP)
+    Method [2]: 0008 (Name: BIND)
+0026: OP_DEF_TYPE      0009 (Type: WINAPP, CLASS, Fields: 0, Methods: 2)
+    Method [0]: 0010 (Name: INIT)
+    Method [1]: 0011 (Name: RUN)
+0038: OP_DEF_TYPE      0012 (Type: WINWINDOW, CLASS, Fields: 2, Methods: 1)
+    Field [0]: 0005 (Name: id)
+    Field [1]: 0013 (Name: title)
+    Method [0]: 0014 (Name: SHOW)
+0052: OP_DEF_TYPE      0015 (Type: WINBUTTON EXTENDS UICONTROL, CLASS, Fields: 0, Methods: 0)
+0060: OP_CALL_NATIVE  0016 (Name: CREATE_WINAPP, Args: 0)
+0064: OP_SET_GLOBAL   0017 (Name: $app)
+0067: OP_GET_GLOBAL   0017 (Name: $app)
+0070: OP_CONSTANT     0018 (Value: init)
+0073: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0075: OP_POP
+0076: OP_CONSTANT     0019 (Value: fereastra_principala)
+0079: OP_CONSTANT     0020 (Value: Oli UI Engine - Click Event Test)
+0082: OP_CALL_NATIVE  0021 (Name: CREATE_WINWINDOW, Args: 2)
+0086: OP_SET_GLOBAL   0022 (Name: $win)
+0089: OP_CONSTANT     0023 (Value: BUTTON)
+0092: OP_CONSTANT     0024 (Value: btn_salveaza)
+0095: OP_CONSTANT     0019 (Value: fereastra_principala)
+0098: OP_CONSTANT     0025 (Value: 300)
+0101: OP_CONSTANT     0026 (Value: 200)
+0104: OP_CONSTANT     0027 (Value: 180)
+0107: OP_CONSTANT     0028 (Value: 40)
+0110: OP_CONSTANT     0029 (Value: Apasă-mă!)
+0113: OP_CALL_NATIVE  0030 (Name: UI_CREATE_CONTROL, Args: 8)
+0117: OP_POP
+0118: OP_CONSTANT     0031 (Value: WinButton)
+0121: OP_CALL_NATIVE  0032 (Name: NEW, Args: 1)
+0125: OP_SET_GLOBAL   0033 (Name: $myButton)
+0128: OP_GET_GLOBAL   0033 (Name: $myButton)
+0131: OP_CONSTANT     0005 (Value: id)
+0134: OP_CONSTANT     0024 (Value: btn_salveaza)
+0137: OP_SET_INDIRECT
+0138: OP_CONSTANT     0034 (Value: click)
+0141: OP_CONSTANT     0035 (Value: logica_mea_la_click)
+0144: OP_GET_GLOBAL   0033 (Name: $myButton)
+0147: OP_CONSTANT     0036 (Value: bind)
+0150: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0152: OP_POP
+0153: OP_GET_GLOBAL   0022 (Name: $win)
+0156: OP_CONSTANT     0037 (Value: show)
+0159: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0161: OP_POP
+0162: OP_GET_GLOBAL   0017 (Name: $app)
+0165: OP_CONSTANT     0038 (Value: run)
+0168: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0170: OP_POP
+0171: OP_CONSTANT     0039 (Value: === Aplicație închisă cu succes ===)
+0174: OP_ECHO
+0175: OP_RETURN
+
+--- FUNCTION: LOGICA_MEA_LA_CLICK (Params: ) ---
+=== DISASSEMBLY: LOGICA_MEA_LA_CLICK ===
+0000: OP_CONSTANT     0000 (Value: 🎉 MAGIE! Click-ul nativ din Windows a executat cu succes acest cod din scriptul Oli!)
+0003: OP_ECHO
+0004: OP_RETURN
+
+--- FUNCTION: UICONTROL::GET_PROP (Params: $name) ---
+=== DISASSEMBLY: UICONTROL::GET_PROP ===
+0000: OP_GET_LOCAL     0000
+0002: OP_GET_LOCAL     0001
+0004: OP_CALL_NATIVE  0000 (Name: UI_GET_PROPERTY, Args: 2)
+0008: OP_RETURN
+
+--- FUNCTION: UICONTROL::BIND (Params: $event, $func) ---
+=== DISASSEMBLY: UICONTROL::BIND ===
+0000: OP_CONSTANT     0000 (Value: btn_salveaza)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0002
+0007: OP_CALL_NATIVE  0001 (Name: UI_BIND_EVENT, Args: 3)
+0011: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_PROP (Params: $name, $val) ---
+=== DISASSEMBLY: UICONTROL::SET_PROP ===
+0000: OP_GET_LOCAL     0000
+0002: OP_GET_LOCAL     0001
+0004: OP_GET_LOCAL     0002
+0006: OP_CALL_NATIVE  0000 (Name: UI_SET_PROPERTY, Args: 3)
+0010: OP_RETURN

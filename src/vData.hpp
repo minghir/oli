@@ -170,7 +170,36 @@ struct vData {
         return t1.value == t2.value;
     }
 
-    
+    bool toBool() const {
+        // 1. Folosim varianta dereferențiată (pentru suport pointeri)
+        const vData& actual = getTrueData();
+
+        // 2. Dacă este deja boolean, îl returnăm direct
+        if (std::holds_alternative<bool>(actual.value))
+            return std::get<bool>(actual.value);
+
+        // 3. Dacă este întreg (0LL este false, restul sunt true)
+        if (std::holds_alternative<long long>(actual.value))
+            return std::get<long long>(actual.value) != 0LL;
+
+        // 4. Dacă este double (0.0 este false, restul sunt true)
+        if (std::holds_alternative<double>(actual.value))
+            return std::get<double>(actual.value) != 0.0;
+
+        // 5. Dacă este String (evaluăm inteligent textele "false" sau gol)
+        if (std::holds_alternative<std::wstring>(actual.value)) {
+            const std::wstring& str = std::get<std::wstring>(actual.value);
+            if (str.empty() || str == L"false" || str == L"0") return false;
+            return true;
+        }
+
+        // 6. Dacă este Null / Monostate, este implicit false
+        if (std::holds_alternative<std::monostate>(actual.value))
+            return false;
+
+        // 7. Containerele valide (Array/Map) sunt evaluate ca true
+        return true;
+    }
 
     std::wstring toWString() const {
         const vData& actual = getTrueData();

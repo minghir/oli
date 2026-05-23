@@ -3327,13 +3327,36 @@ void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
     bool loadedAnything = false;
 
     // --- A. Încărcare FUNCȚII (Sistemul Vechi) ---
-    typedef void (*RegisterFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&);
-    RegisterFunc regFunc = (RegisterFunc)PortTools::getFunctionSymbol(hLib, "LoadOliPlugin");
+    //typedef void (*RegisterFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&);
+    //RegisterFunc regFunc = (RegisterFunc)PortTools::getFunctionSymbol(hLib, "LoadOliPlugin");
+
+    typedef void (*LoadFunctionsFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&, IOliEngine*);
+    LoadFunctionsFunc regFunc = (LoadFunctionsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliPlugin");
 
     if (regFunc) {
-        regFunc(this->m_functionsHandlers);
-        LOG_SUCCESS(L"Functions injected from: " + dllPath);
-        loadedAnything = true;
+        std::unordered_map<std::wstring, OliFunctionHandler> pluginFuncs;
+        try {
+            // 1. Executăm funcția din plugin (acum alinierea de memorie este perfectă)
+            regFunc(pluginFuncs, this);
+
+            // ⚠️ CRITIC: Nu uita să muți funcțiile injectate în map-ul principal al motorului!
+            for (auto const& [name, handler] : pluginFuncs) {
+                std::wstring upName = name;
+                for (auto& c : upName) c = std::towupper(c);
+
+                // Înregistrăm în VM cu numele normalizat în litere mari
+                this->m_functionsHandlers[upName] = handler;
+
+                // Anunțăm parserul că este o funcție nativă validă
+                vOliKeyWords::registerNativeFunction(upName);
+            }
+
+            LOG_SUCCESS(L"Functions injected from: " + dllPath);
+            loadedAnything = true;
+        }
+        catch (...) {
+            LOG_ERROR(L"Exception in LoadOliPlugin");
+        }
     }
 
     // --- B. Încărcare COMENZI (Sistemul Nou prin Interfață) ---

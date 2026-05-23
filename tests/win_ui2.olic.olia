@@ -1,0 +1,43 @@
+--- OLI ASSEMBLY LISTING ---
+Source: ./tests/win_ui2.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_PLUGIN       0000 (Path: "oli_winui")
+0003: OP_GET_GLOBAL   0001 (Name: config)
+0006: OP_CONSTANT     0002 (Value: === Lansare Interfață Grafică OOP ===)
+0009: OP_ECHO
+0010: OP_DEF_TYPE      0003 (Type: WINAPP, CLASS, Fields: 0, Methods: 2)
+    Method [0]: 0005 (Name: INIT)
+    Method [1]: 0006 (Name: RUN)
+0022: OP_DEF_TYPE      0007 (Type: WINWINDOW, CLASS, Fields: 2, Methods: 1)
+    Field [0]: 0008 (Name: id)
+    Field [1]: 0009 (Name: title)
+    Method [0]: 0010 (Name: SHOW)
+0036: OP_CALL_NATIVE  0011 (Name: CREATE_WINAPP, Args: 0)
+0040: OP_SET_GLOBAL   0012 (Name: $app)
+0043: OP_GET_GLOBAL   0012 (Name: $app)
+0046: OP_CONSTANT     0013 (Value: init)
+0049: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0051: OP_POP
+0052: OP_CONSTANT     0014 (Value: main_fereastra)
+0055: OP_CONSTANT     0015 (Value: OliEngine WinUI Framework Nativ)
+0058: OP_CALL_NATIVE  0016 (Name: CREATE_WINWINDOW, Args: 2)
+0062: OP_SET_GLOBAL   0017 (Name: $myWindow)
+0065: OP_GET_GLOBAL   0017 (Name: $myWindow)
+0068: OP_CONSTANT     0018 (Value: show)
+0071: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0073: OP_POP
+0074: OP_CONSTANT     0019 (Value: Tipul ferestrei este: )
+0077: OP_GET_GLOBAL   0017 (Name: $myWindow)
+0080: OP_TYPE
+0081: OP_CONCAT
+0082: OP_ECHO
+0083: OP_GET_GLOBAL   0012 (Name: $app)
+0086: OP_CONSTANT     0020 (Value: run)
+0089: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0091: OP_POP
+0092: OP_CONSTANT     0021 (Value: === Aplicație închisă cu succes ===)
+0095: OP_ECHO
+0096: OP_RETURN

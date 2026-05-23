@@ -1,0 +1,42 @@
+plugin "oli_winui"
+config echo off
+
+echo "=== Lansare Interfață Grafică cu Click Nativ ==="
+
+def class UiControl { id, set_prop($name, $val), get_prop($name), bind($event, $func) }
+func UiControl::set_prop($name, $val) return UI_SET_PROPERTY($this, $name, $val) endfunc
+func UiControl::get_prop($name)       return UI_GET_PROPERTY($this, $name) endfunc
+
+func UiControl::bind($event, $func)
+    # În loc de $this.get_prop("id"), transmitem ID-ul fixat pe care îl știm
+    # sau extragem din proprietatea setată anterior
+    return UI_BIND_EVENT("btn_salveaza", $event, $func)
+endfunc
+
+def class WinApp    { init(), run() }
+def class WinWindow { id, title, show() }
+def class WinButton extends UiControl {}
+
+func logica_mea_la_click()
+    echo "🎉 MAGIE! Click-ul nativ din Windows a executat cu succes acest cod din scriptul Oli!"
+endfunc
+
+set $app = CREATE_WINAPP()
+$app.init()
+
+set $win = CREATE_WINWINDOW("fereastra_principala", "Oli UI Engine - Click Event Test")
+
+# ✅ TRANSMITEM TOATE DATELE DIRECT LA CREARE: Tip, ID, Părinte, X, Y, Width, Height, Text
+UI_CREATE_CONTROL("BUTTON", "btn_salveaza", "fereastra_principala", 300, 200, 180, 40, "Apasă-mă!")
+
+set $myButton = new("WinButton")
+$myButton.id = "btn_salveaza"
+
+# Legăm evenimentul de click
+$myButton.bind("click", "logica_mea_la_click")
+
+# Afișăm fereastra mamă
+$win.show()
+$app.run()
+
+echo "=== Aplicație închisă cu succes ==="

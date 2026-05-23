@@ -15,6 +15,13 @@ public:
     virtual void execCommand(const std::wstring& command) = 0;
     virtual void logSuccess(const std::wstring& msg) = 0;
     virtual void logError(const std::wstring& msg) = 0;
+
+    virtual vData callUserByteCodeFunction(
+        const wchar_t* funcName,
+        const vData* argsArray,
+        size_t argCount,
+        vData context
+    ) = 0;
 };
 
 // Tipul de funcție pe care DLL-ul trebuie să o exporte

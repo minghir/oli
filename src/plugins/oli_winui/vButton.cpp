@@ -128,62 +128,13 @@ LRESULT vButton::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
         int notificationCode = HIWORD(wParam);
         int controlId = LOWORD(wParam); // ID-ul Win32 al controlului care a generat evenimentul
 
-        if (notificationCode == BN_CLICKED) {
+        if (notificationCode == BN_CLICKED || notificationCode == BN_DBLCLK) {
             this->onClick(); // Aici se declanșează handler-ul înregistrat
             return 0;
         }
         break; // Dacă nu este BN_CLICKED sau nu este pentru butonul nostru, continuăm cu default.
     }
-                   /*
-    case WM_DRAWITEM: {
-        LPDRAWITEMSTRUCT lpDIS = (LPDRAWITEMSTRUCT)lParam;
-        HDC hdc = lpDIS->hDC;
-        RECT rect = lpDIS->rcItem; // Aceasta este zona internă a butonului (ex: 0,0,35,20)
-
-        // 1. STĂRI
-        bool isDisabled = (lpDIS->itemState & ODS_DISABLED);
-        bool isPressed = (lpDIS->itemState & ODS_SELECTED) && !isDisabled;
-        bool hasFocus = (lpDIS->itemState & ODS_FOCUS) && !isDisabled;
-
-        // 2. FUNDAL
-        COLORREF bgColor = isDisabled ? RGB(240, 240, 240) : (isPressed ? RGB(210, 210, 210) : m_backgroundColor);
-        HBRUSH hBrush = CreateSolidBrush(bgColor);
-        FillRect(hdc, &rect, hBrush);
-        DeleteObject(hBrush);
-
-        // 3. BORDURĂ
-        COLORREF borderColor = isDisabled ? RGB(180, 180, 180) : RGB(80, 80, 80);
-        HBRUSH hBorderBrush = CreateSolidBrush(borderColor);
-        FrameRect(hdc, &rect, hBorderBrush);
-        DeleteObject(hBorderBrush);
-
-        // 4. TEXT
-        SetBkMode(hdc, TRANSPARENT);
-        SetTextColor(hdc, isDisabled ? RGB(160, 160, 160) : m_textColor);
-
-        // Ajustăm RECT-ul pentru text (padding mic să nu atingă marginile)
-        RECT textRect = rect;
-        if (isPressed) OffsetRect(&textRect, 1, 1); // Efect de apăsare
-
-        // SELECTĂM FONTUL (Asigură-te că m_hFont nu e NULL)
-        HFONT hFontToUse = m_hFont ? m_hFont : (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-        HGDIOBJ oldFont = SelectObject(hdc, hFontToUse);
-
-        // DESENARE TEXT - Folosim DT_CENTER | DT_VCENTER | DT_SINGLELINE
-        // Am eliminat DT_NOCLIP pentru a forța textul să stea în interior
-        DrawText(hdc, m_label.c_str(), -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
-
-        // 5. FOCUS RECT
-        if (hasFocus && !isPressed) {
-            RECT focusRect = rect;
-            InflateRect(&focusRect, -3, -3);
-            DrawFocusRect(hdc, &focusRect);
-        }
-
-        SelectObject(hdc, oldFont);
-        return TRUE;
-    }
-   */
+                   
 case WM_DRAWITEM: {
     LPDRAWITEMSTRUCT lpDIS = (LPDRAWITEMSTRUCT)lParam;
     HDC hdc = lpDIS->hDC;

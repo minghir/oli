@@ -1,0 +1,104 @@
+
+
+
+plugin "oli_winui"
+config echo off
+
+echo "=== Lansare Interfață Grafică cu Click Nativ ==="
+
+# =================================================================
+# DEFINE CLASA DE BAZĂ UiControl
+# =================================================================
+def class UiControl { 
+    id, 
+    set_prop($name, $val), 
+    get_prop($name), 
+    bind($event, $func),
+    set_text($text),
+    get_text(),
+    set_anchor($type),
+    set_width_mode($mode),
+    set_height_mode($mode),
+    set_margin($val),
+    set_visible($bool)
+}
+
+func UiControl::set_prop($name, $val) return UI_SET_PROPERTY($this, $name, $val) endfunc
+func UiControl::get_prop($name)       return UI_GET_PROPERTY($this, $name) endfunc
+func UiControl::bind($event, $func)   return UI_BIND_EVENT($this.id, $event, $func) endfunc
+func UiControl::set_text($text)       return $this.set_prop("text", $text) endfunc
+func UiControl::get_text()            return $this.get_prop("text") endfunc
+func UiControl::set_anchor($type)     return $this.set_prop("anchor", $type) endfunc
+func UiControl::set_width_mode($mode) return $this.set_prop("width_mode", $mode) endfunc
+func UiControl::set_height_mode($mode) return $this.set_prop("height_mode", $mode) endfunc
+func UiControl::set_margin($val)      return $this.set_prop("margin", $val) endfunc
+func UiControl::set_visible($bool)    return $this.set_prop("visible", $bool) endfunc
+
+# =================================================================
+# 🧠 ÎNCAPSULARE CORECTĂ PENTRU WINAPP (Redirecționare către Native)
+# =================================================================
+def class WinApp { create(), init(), run() }
+
+func WinApp::create()
+       $this  = CREATE_WINAPP()
+	   return $this
+endfunc
+
+func WinApp::init()
+	$this = $this.create()
+    # Apelăm funcția nativă din înregistrarea DLL-ului, trimițându-i contextul $this
+    return WINAPP::INIT($this)
+endfunc
+
+func WinApp::run()
+    return WINAPP::RUN($this)
+endfunc
+
+# =================================================================
+# 🧠 ÎNCAPSULARE CORECTĂ PENTRU WINWINDOW
+# =================================================================
+def class WinWindow { id, title, init($id, $title), show(), set_layout($style) }
+
+func WinWindow::init($id, $title)
+    # Generăm obiectul nativ direct din interiorul constructorului clasei
+	$this.id = $id
+    $this = CREATE_WINWINDOW($id, $title)
+    return $this
+endfunc
+
+func WinWindow::show()
+    return WINWINDOW::SHOW($this)
+endfunc
+
+func WinWindow::set_layout($style)
+    return UI_SET_PROPERTY($this, "layout", $style)
+endfunc
+
+# =================================================================
+# CLASELE PENTRU CONTROALELE COPIL (Rămân neschimbate)
+# =================================================================
+def class WinPanel extends UiControl { init($id, $parentId, $x, $y, $w, $h), set_layout($style) }
+func WinPanel::init($id, $parentId, $x, $y, $w, $h)
+    $this.id = $id
+    UI_CREATE_CONTROL("PANEL", $id, $parentId, $x, $y, $w, $h,)
+endfunc
+
+func WinPanel::set_layout($style) return $this.set_prop("layout", $style) endfunc
+
+def class WinButton extends UiControl { init($id, $parentId, $x, $y, $w, $h, $text) }
+func WinButton::init($id, $parentId, $x, $y, $w, $h, $text)
+    $this.id = $id
+    UI_CREATE_CONTROL("BUTTON", $id, $parentId, $x, $y, $w, $h, $text)
+endfunc
+
+def class WinCodeView extends UiControl { init($id, $parentId, $x, $y, $w, $h), set_syntax_path($path) }
+func WinCodeView::init($id, $parentId, $x, $y, $w, $h)
+    $this.id = $id
+    UI_CREATE_CONTROL("CODEVIEW", $id, $parentId, $x, $y, $w, $h)
+endfunc
+
+func WinCodeView::set_syntax_path($path)
+    return $this.set_prop("syntax_path", $path)
+endfunc
+
+

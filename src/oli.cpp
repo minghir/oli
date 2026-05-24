@@ -72,6 +72,8 @@ int main(int argc, char* argv[]) {
             std::string outputPath = (argc > 3) ? argv[3] : std::filesystem::path(inputPath).stem().string() + ".exe";
 
             try {
+                std::wcout << L"Oli Engine v0.1\nBuild Date: " << __DATE__ << std::endl;
+                std::wcout << L"Buildding: " << str_to_wstr(inputPath) << std::endl;
                 std::wifstream wif(inputPath);
                 safe_imbue(wif);
                 if (!wif.is_open()) throw std::runtime_error("Fisier sursa inexistent.");
@@ -92,6 +94,7 @@ int main(int argc, char* argv[]) {
                 uint64_t footer = (uint64_t)bytecode.size();
                 dst.write(reinterpret_cast<const char*>(&footer), 8);
                 dst.close();
+                std::wcout << L"Buildding completed. " << std::endl;
                 return 0;
             }
             catch (const std::exception& e) {

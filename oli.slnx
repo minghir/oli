@@ -15,7 +15,9 @@
     <BuildDependency Project="src/plugins/oli_opengl/oli_opengl.vcxproj" />
     <BuildDependency Project="src/plugins/oli_power/oli_power.vcxproj" />
     <BuildDependency Project="src/plugins/oli_sprites/oli_sprites.vcxproj" />
+    <BuildDependency Project="src/plugins/oli_system/oli_system.vcxproj" />
     <BuildDependency Project="src/plugins/oli_time/oli_time.vcxproj" />
+    <BuildDependency Project="src/plugins/oli_winui/oli_winui.vcxproj" />
   </Project>
   <Project Path="src/plugins/oli_bitop/oli_bitop.vcxproj" Id="43afd9ed-a6bd-48ba-b2dc-ee84e4d96a01" />
   <Project Path="src/plugins/oli_canvas/oli_canvas.vcxproj" Id="586ac153-8b56-48b5-9953-e550df43d7e9" />
@@ -28,6 +30,7 @@
   <Project Path="src/plugins/oli_opengl/oli_opengl.vcxproj" Id="d087fbe7-6b37-4e90-9441-32e495d37e6b" />
   <Project Path="src/plugins/oli_power/oli_power.vcxproj" Id="b69af423-a4fa-4c89-8926-baff02140893" />
   <Project Path="src/plugins/oli_sprites/oli_sprites.vcxproj" Id="5261e6c7-1fa5-4f3b-ba0e-8aa359d2cfdb" />
+  <Project Path="src/plugins/oli_system/oli_system.vcxproj" Id="01c3920a-89d1-4152-9294-2604697ae913" />
   <Project Path="src/plugins/oli_time/oli_time.vcxproj" Id="3acb4a62-c638-42b4-bd49-9c71e7dce6dd" />
   <Project Path="src/plugins/oli_winui/oli_winui.vcxproj" Id="4568e897-b889-4a38-8e00-936ceb20d75e" />
 </Solution>

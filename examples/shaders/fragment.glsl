@@ -104,12 +104,12 @@ float map(vec3 p) {
 
 // Calculul normalei prin diferențe finite
 vec3 get_normal(vec3 p) {
-    const vec2 h = vec2(0.001, 0.0);
-    return normalize(vec3(
-        map(p + h.xyy) - map(p - h.xyy),
-        map(p + h.yxy) - map(p - h.yxy),
-        map(p + h.yyx) - map(p - h.yyx)
-    ));
+    const float h = 0.001;
+    const vec2 k = vec2(1,-1);
+    return normalize( k.xyy*map(p + k.xyy*h) + 
+                      k.yyx*map(p + k.yyx*h) + 
+                      k.yxy*map(p + k.yxy*h) + 
+                      k.xxx*map(p + k.xxx*h) );
 }
 
 // Umbre moi prin raymarching secundar

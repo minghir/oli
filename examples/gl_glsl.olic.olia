@@ -1,5 +1,5 @@
 --- OLI ASSEMBLY LISTING ---
-Source: ./examples/gl_glsl.oli
+Source: examples/gl_glsl.oli
 Generated: 2026-05-11
 
 
@@ -10,88 +10,254 @@ Generated: 2026-05-11
 0009: OP_PLUGIN       0003 (Path: oli_time)
 0012: OP_CONSTANT     0004 (Value: 900)
 0015: OP_CONSTANT     0005 (Value: 700)
-0018: OP_CONSTANT     0006 (Value: OLI Shader Demo - Quantum Waves)
+0018: OP_CONSTANT     0006 (Value: OLI Shader Demo)
 0021: OP_CALL_NATIVE  0007 (Name: GL_INIT, Args: 3)
 0025: OP_SET_GLOBAL   0008 (Name: $v)
-0028: OP_CALL_NATIVE  0009 (Name: TIME, Args: 0)
-0032: OP_SET_GLOBAL   0010 (Name: $startTime)
-0035: OP_CONSTANT     0011 (Value: examples/shaders/vertex.glsl)
-0038: OP_CALL_NATIVE  0012 (Name: READFILE, Args: 1)
-0042: OP_SET_GLOBAL   0013 (Name: $vs_source)
-0045: OP_CONSTANT     0014 (Value: examples/shaders/fragment.glsl)
-0048: OP_CALL_NATIVE  0012 (Name: READFILE, Args: 1)
-0052: OP_SET_GLOBAL   0015 (Name: $fs_source)
-0055: OP_CONSTANT     0016 (Value: Am citit:)
-0058: OP_GET_GLOBAL   0013 (Name: $vs_source)
-0061: OP_CONCAT
-0062: OP_ECHO
-0063: OP_CONSTANT     0017 (Value: Si)
-0066: OP_GET_GLOBAL   0015 (Name: $fs_source)
-0069: OP_CONCAT
-0070: OP_ECHO
-0071: OP_GET_GLOBAL   0013 (Name: $vs_source)
-0074: OP_CONSTANT     0018 (Value: null)
-0077: OP_EQUAL
-0078: OP_DUP
-0079: OP_JUMP_IF_TRUE  0008 (Sari la: 90)
-0082: OP_POP
-0083: OP_GET_GLOBAL   0015 (Name: $fs_source)
-0086: OP_CONSTANT     0018 (Value: null)
-0089: OP_EQUAL
-0090: OP_JUMP_IF_FALSE 0007 (Sari la: 100)
-0093: OP_CONSTANT     0019 (Value: Eroare: Nu am putut incarca fisierele shader!)
-0096: OP_ECHO
-0097: OP_GET_GLOBAL   0020 (Name: exit)
-0100: OP_CONSTANT     0021 (Value: 0)
-0103: OP_GET_GLOBAL   0013 (Name: $vs_source)
-0106: OP_CALL_NATIVE  0022 (Name: GL_LOAD_SHADER, Args: 2)
-0110: OP_SET_GLOBAL   0023 (Name: $vshader)
-0113: OP_CONSTANT     0024 (Value: 1)
-0116: OP_GET_GLOBAL   0015 (Name: $fs_source)
-0119: OP_CALL_NATIVE  0022 (Name: GL_LOAD_SHADER, Args: 2)
-0123: OP_SET_GLOBAL   0025 (Name: $fshader)
-0126: OP_GET_GLOBAL   0023 (Name: $vshader)
-0129: OP_GET_GLOBAL   0025 (Name: $fshader)
-0132: OP_CALL_NATIVE  0026 (Name: GL_LINK_PROGRAM, Args: 2)
-0136: OP_SET_GLOBAL   0027 (Name: $prog)
-0139: OP_CONSTANT     0028 (Value: Shadere încărcate. Program ID: )
-0142: OP_GET_GLOBAL   0027 (Name: $prog)
-0145: OP_CALL_NATIVE  0029 (Name: STR, Args: 1)
-0149: OP_ADD
-0150: OP_ECHO
-0151: OP_CONSTANT     0024 (Value: 1)
-0154: OP_SET_GLOBAL   0030 (Name: $c)
-0157: OP_GET_GLOBAL   0030 (Name: $c)
-0160: OP_CONSTANT     0024 (Value: 1)
-0163: OP_EQUAL
-0164: OP_JUMP_IF_FALSE 0074 (Sari la: 241)
-0167: OP_CONSTANT     0021 (Value: 0)
-0170: OP_CALL_NATIVE  0031 (Name: GL_CLEAR, Args: 1)
-0174: OP_POP
-0175: OP_GET_GLOBAL   0027 (Name: $prog)
-0178: OP_CALL_NATIVE  0032 (Name: GL_USE_PROGRAM, Args: 1)
-0182: OP_POP
-0183: OP_CALL_NATIVE  0009 (Name: TIME, Args: 0)
-0187: OP_GET_GLOBAL   0010 (Name: $startTime)
-0190: OP_SUB
-0191: OP_SET_GLOBAL   0033 (Name: $localTime)
-0194: OP_GET_GLOBAL   0027 (Name: $prog)
-0197: OP_CONSTANT     0034 (Value: time)
-0200: OP_GET_GLOBAL   0033 (Name: $localTime)
-0203: OP_CALL_NATIVE  0035 (Name: GL_SET_UNIFORM, Args: 3)
-0207: OP_POP
-0208: OP_CALL_NATIVE  0036 (Name: GL_DRAW_FULLSCREEN, Args: 0)
-0212: OP_POP
-0213: OP_CALL_NATIVE  0037 (Name: GL_PRESENT, Args: 0)
-0217: OP_POP
-0218: OP_CONSTANT     0038 (Value: 27)
-0221: OP_CALL_NATIVE  0039 (Name: KEY_STATE, Args: 1)
-0225: OP_CONSTANT     0024 (Value: 1)
-0228: OP_EQUAL
-0229: OP_JUMP_IF_FALSE 0006 (Sari la: 238)
-0232: OP_CONSTANT     0021 (Value: 0)
-0235: OP_SET_GLOBAL   0030 (Name: $c)
-0238: OP_LOOP          0084 (Sari inapoi la: 157)
-0241: OP_CALL_NATIVE  0040 (Name: GL_CLOSE, Args: 0)
-0245: OP_POP
-0246: OP_RETURN
+0028: OP_CONSTANT     0009 (Value: 1)
+0031: OP_CALL_NATIVE  0010 (Name: GL_SET_VSYNC, Args: 1)
+0035: OP_SET_GLOBAL   0011 (Name: $res)
+0038: OP_GET_GLOBAL   0011 (Name: $res)
+0041: OP_CONSTANT     0009 (Value: 1)
+0044: OP_EQUAL
+0045: OP_JUMP_IF_FALSE 0007 (Sari la: 55)
+0048: OP_CONSTANT     0012 (Value: VSync activat cu succes!)
+0051: OP_ECHO
+0052: OP_JUMP          0004 (Sari la: 59)
+0055: OP_CONSTANT     0013 (Value: Placa video nu suporta controlul VSync.)
+0058: OP_ECHO
+0059: OP_CALL_NATIVE  0014 (Name: GL_WIDTH, Args: 0)
+0063: OP_SET_GLOBAL   0015 (Name: $currW)
+0066: OP_CALL_NATIVE  0016 (Name: GL_HEIGHT, Args: 0)
+0070: OP_SET_GLOBAL   0017 (Name: $currH)
+0073: OP_CALL_NATIVE  0018 (Name: TIME, Args: 0)
+0077: OP_SET_GLOBAL   0019 (Name: $startTime)
+0080: OP_CONSTANT     0020 (Value: examples/shaders/vertex.glsl)
+0083: OP_CALL_NATIVE  0021 (Name: READFILE, Args: 1)
+0087: OP_SET_GLOBAL   0022 (Name: $vs_source)
+0090: OP_CONSTANT     0023 (Value: examples/shaders/fragment.glsl)
+0093: OP_CALL_NATIVE  0021 (Name: READFILE, Args: 1)
+0097: OP_SET_GLOBAL   0024 (Name: $fs_source)
+0100: OP_GET_GLOBAL   0022 (Name: $vs_source)
+0103: OP_CONSTANT     0025 (Value: null)
+0106: OP_EQUAL
+0107: OP_DUP
+0108: OP_JUMP_IF_TRUE  0008 (Sari la: 119)
+0111: OP_POP
+0112: OP_GET_GLOBAL   0024 (Name: $fs_source)
+0115: OP_CONSTANT     0025 (Value: null)
+0118: OP_EQUAL
+0119: OP_JUMP_IF_FALSE 0013 (Sari la: 135)
+0122: OP_CALL_NATIVE  0026 (Name: GL_CLOSE, Args: 0)
+0126: OP_POP
+0127: OP_CONSTANT     0027 (Value: Eroare: Nu am putut incarca fisierele shader!)
+0130: OP_CALL_NATIVE  0028 (Name: EXIT, Args: 1)
+0134: OP_POP
+0135: OP_CONSTANT     0029 (Value: 0)
+0138: OP_GET_GLOBAL   0022 (Name: $vs_source)
+0141: OP_CALL_NATIVE  0030 (Name: GL_LOAD_SHADER, Args: 2)
+0145: OP_SET_GLOBAL   0031 (Name: $vshader)
+0148: OP_CONSTANT     0009 (Value: 1)
+0151: OP_GET_GLOBAL   0024 (Name: $fs_source)
+0154: OP_CALL_NATIVE  0030 (Name: GL_LOAD_SHADER, Args: 2)
+0158: OP_SET_GLOBAL   0032 (Name: $fshader)
+0161: OP_GET_GLOBAL   0032 (Name: $fshader)
+0164: OP_CONSTANT     0029 (Value: 0)
+0167: OP_EQUAL
+0168: OP_JUMP_IF_FALSE 0018 (Sari la: 189)
+0171: OP_CALL_NATIVE  0026 (Name: GL_CLOSE, Args: 0)
+0175: OP_POP
+0176: OP_CONSTANT     0033 (Value: EROARE COMPILARE: )
+0179: OP_CALL_NATIVE  0034 (Name: GL_GET_ERROR, Args: 0)
+0183: OP_ADD
+0184: OP_CALL_NATIVE  0028 (Name: EXIT, Args: 1)
+0188: OP_POP
+0189: OP_GET_GLOBAL   0031 (Name: $vshader)
+0192: OP_GET_GLOBAL   0032 (Name: $fshader)
+0195: OP_CALL_NATIVE  0035 (Name: GL_LINK_PROGRAM, Args: 2)
+0199: OP_SET_GLOBAL   0036 (Name: $prog)
+0202: OP_CONSTANT     0037 (Value: Shadere incarcate. Program ID: )
+0205: OP_GET_GLOBAL   0036 (Name: $prog)
+0208: OP_CALL_NATIVE  0038 (Name: STR, Args: 1)
+0212: OP_ADD
+0213: OP_ECHO
+0214: OP_CALL_NATIVE  0018 (Name: TIME, Args: 0)
+0218: OP_SET_GLOBAL   0019 (Name: $startTime)
+0221: OP_CALL_NATIVE  0018 (Name: TIME, Args: 0)
+0225: OP_SET_GLOBAL   0039 (Name: $lastTime)
+0228: OP_CONSTANT     0029 (Value: 0)
+0231: OP_SET_GLOBAL   0040 (Name: $fpsUpdateTimer)
+0234: OP_CONSTANT     0041 (Value: Calculare...)
+0237: OP_SET_GLOBAL   0042 (Name: $fpsText)
+0240: OP_CONSTANT     0043 (Value: 99999)
+0243: OP_SET_GLOBAL   0044 (Name: $minFps)
+0246: OP_CONSTANT     0029 (Value: 0)
+0249: OP_SET_GLOBAL   0045 (Name: $maxFps)
+0252: OP_CONSTANT     0029 (Value: 0)
+0255: OP_SET_GLOBAL   0046 (Name: $avgFps)
+0258: OP_CONSTANT     0029 (Value: 0)
+0261: OP_SET_GLOBAL   0047 (Name: $frameCounter)
+0264: OP_CONSTANT     0029 (Value: 0)
+0267: OP_SET_GLOBAL   0048 (Name: $totalFpsSum)
+0270: OP_CONSTANT     0009 (Value: 1)
+0273: OP_SET_GLOBAL   0049 (Name: $c)
+0276: OP_CONSTANT     0050 (Value: true)
+0279: OP_JUMP_IF_FALSE 0428 (Sari la: 710)
+0282: OP_CALL_NATIVE  0051 (Name: GL_MOUSE_X, Args: 0)
+0286: OP_SET_GLOBAL   0052 (Name: $currX)
+0289: OP_CALL_NATIVE  0053 (Name: GL_MOUSE_Y, Args: 0)
+0293: OP_SET_GLOBAL   0054 (Name: $currY)
+0296: OP_CONSTANT     0029 (Value: 0)
+0299: OP_CALL_NATIVE  0055 (Name: GL_MOUSE_BTN, Args: 1)
+0303: OP_SET_GLOBAL   0056 (Name: $isDown)
+0306: OP_GET_GLOBAL   0056 (Name: $isDown)
+0309: OP_CONSTANT     0009 (Value: 1)
+0312: OP_EQUAL
+0313: OP_JUMP_IF_FALSE 0012 (Sari la: 328)
+0316: OP_GET_GLOBAL   0052 (Name: $currX)
+0319: OP_SET_GLOBAL   0057 (Name: $clickX)
+0322: OP_GET_GLOBAL   0054 (Name: $currY)
+0325: OP_SET_GLOBAL   0058 (Name: $clickY)
+0328: OP_CALL_NATIVE  0018 (Name: TIME, Args: 0)
+0332: OP_SET_GLOBAL   0059 (Name: $currentTime)
+0335: OP_GET_GLOBAL   0059 (Name: $currentTime)
+0338: OP_GET_GLOBAL   0039 (Name: $lastTime)
+0341: OP_SUB
+0342: OP_SET_GLOBAL   0060 (Name: $dt)
+0345: OP_GET_GLOBAL   0059 (Name: $currentTime)
+0348: OP_SET_GLOBAL   0039 (Name: $lastTime)
+0351: OP_GET_GLOBAL   0060 (Name: $dt)
+0354: OP_CONSTANT     0029 (Value: 0)
+0357: OP_GREATER
+0358: OP_JUMP_IF_FALSE 0094 (Sari la: 455)
+0361: OP_CONSTANT     0009 (Value: 1)
+0364: OP_GET_GLOBAL   0060 (Name: $dt)
+0367: OP_DIV
+0368: OP_SET_GLOBAL   0061 (Name: $currentFps)
+0371: OP_GET_GLOBAL   0059 (Name: $currentTime)
+0374: OP_GET_GLOBAL   0019 (Name: $startTime)
+0377: OP_SUB
+0378: OP_CONSTANT     0009 (Value: 1)
+0381: OP_GREATER
+0382: OP_JUMP_IF_FALSE 0070 (Sari la: 455)
+0385: OP_GET_GLOBAL   0061 (Name: $currentFps)
+0388: OP_GET_GLOBAL   0044 (Name: $minFps)
+0391: OP_LESS
+0392: OP_JUMP_IF_FALSE 0006 (Sari la: 401)
+0395: OP_GET_GLOBAL   0061 (Name: $currentFps)
+0398: OP_SET_GLOBAL   0044 (Name: $minFps)
+0401: OP_GET_GLOBAL   0061 (Name: $currentFps)
+0404: OP_GET_GLOBAL   0045 (Name: $maxFps)
+0407: OP_GREATER
+0408: OP_JUMP_IF_FALSE 0006 (Sari la: 417)
+0411: OP_GET_GLOBAL   0061 (Name: $currentFps)
+0414: OP_SET_GLOBAL   0045 (Name: $maxFps)
+0417: OP_GET_GLOBAL   0047 (Name: $frameCounter)
+0420: OP_CONSTANT     0009 (Value: 1)
+0423: OP_ADD
+0424: OP_SET_GLOBAL   0047 (Name: $frameCounter)
+0427: OP_GET_GLOBAL   0048 (Name: $totalFpsSum)
+0430: OP_GET_GLOBAL   0061 (Name: $currentFps)
+0433: OP_ADD
+0434: OP_SET_GLOBAL   0048 (Name: $totalFpsSum)
+0437: OP_GET_GLOBAL   0046 (Name: $avgFps)
+0440: OP_CONSTANT     0062 (Value: 0.9)
+0443: OP_MUL
+0444: OP_GET_GLOBAL   0061 (Name: $currentFps)
+0447: OP_CONSTANT     0063 (Value: 0.1)
+0450: OP_MUL
+0451: OP_ADD
+0452: OP_SET_GLOBAL   0046 (Name: $avgFps)
+0455: OP_GET_GLOBAL   0040 (Name: $fpsUpdateTimer)
+0458: OP_GET_GLOBAL   0060 (Name: $dt)
+0461: OP_ADD
+0462: OP_SET_GLOBAL   0040 (Name: $fpsUpdateTimer)
+0465: OP_GET_GLOBAL   0040 (Name: $fpsUpdateTimer)
+0468: OP_CONSTANT     0064 (Value: 0.5)
+0471: OP_GREATER
+0472: OP_JUMP_IF_FALSE 0074 (Sari la: 549)
+0475: OP_CONSTANT     0065 (Value: FPS: )
+0478: OP_GET_GLOBAL   0061 (Name: $currentFps)
+0481: OP_CALL_NATIVE  0066 (Name: ROUND, Args: 1)
+0485: OP_CALL_NATIVE  0038 (Name: STR, Args: 1)
+0489: OP_ADD
+0490: OP_SET_GLOBAL   0042 (Name: $fpsText)
+0493: OP_CONSTANT     0067 (Value: MIN: )
+0496: OP_GET_GLOBAL   0044 (Name: $minFps)
+0499: OP_CALL_NATIVE  0066 (Name: ROUND, Args: 1)
+0503: OP_CALL_NATIVE  0038 (Name: STR, Args: 1)
+0507: OP_ADD
+0508: OP_CONSTANT     0068 (Value:  | MAX: )
+0511: OP_ADD
+0512: OP_GET_GLOBAL   0045 (Name: $maxFps)
+0515: OP_CALL_NATIVE  0066 (Name: ROUND, Args: 1)
+0519: OP_CALL_NATIVE  0038 (Name: STR, Args: 1)
+0523: OP_ADD
+0524: OP_CONSTANT     0069 (Value:  | AVG: )
+0527: OP_ADD
+0528: OP_GET_GLOBAL   0046 (Name: $avgFps)
+0531: OP_CALL_NATIVE  0066 (Name: ROUND, Args: 1)
+0535: OP_CALL_NATIVE  0038 (Name: STR, Args: 1)
+0539: OP_ADD
+0540: OP_SET_GLOBAL   0070 (Name: $statText)
+0543: OP_CONSTANT     0029 (Value: 0)
+0546: OP_SET_GLOBAL   0040 (Name: $fpsUpdateTimer)
+0549: OP_CONSTANT     0029 (Value: 0)
+0552: OP_CALL_NATIVE  0071 (Name: GL_CLEAR, Args: 1)
+0556: OP_POP
+0557: OP_GET_GLOBAL   0036 (Name: $prog)
+0560: OP_CALL_NATIVE  0072 (Name: GL_USE_PROGRAM, Args: 1)
+0564: OP_POP
+0565: OP_CALL_NATIVE  0014 (Name: GL_WIDTH, Args: 0)
+0569: OP_SET_GLOBAL   0015 (Name: $currW)
+0572: OP_CALL_NATIVE  0016 (Name: GL_HEIGHT, Args: 0)
+0576: OP_SET_GLOBAL   0017 (Name: $currH)
+0579: OP_CALL_NATIVE  0018 (Name: TIME, Args: 0)
+0583: OP_GET_GLOBAL   0019 (Name: $startTime)
+0586: OP_SUB
+0587: OP_SET_GLOBAL   0073 (Name: $localTime)
+0590: OP_GET_GLOBAL   0036 (Name: $prog)
+0593: OP_CONSTANT     0074 (Value: iTime)
+0596: OP_GET_GLOBAL   0073 (Name: $localTime)
+0599: OP_CALL_NATIVE  0075 (Name: GL_SET_UNIFORM, Args: 3)
+0603: OP_POP
+0604: OP_GET_GLOBAL   0036 (Name: $prog)
+0607: OP_CONSTANT     0076 (Value: iResolution)
+0610: OP_GET_GLOBAL   0015 (Name: $currW)
+0613: OP_GET_GLOBAL   0017 (Name: $currH)
+0616: OP_CALL_NATIVE  0075 (Name: GL_SET_UNIFORM, Args: 4)
+0620: OP_POP
+0621: OP_GET_GLOBAL   0036 (Name: $prog)
+0624: OP_CONSTANT     0077 (Value: iMouse)
+0627: OP_GET_GLOBAL   0052 (Name: $currX)
+0630: OP_GET_GLOBAL   0054 (Name: $currY)
+0633: OP_GET_GLOBAL   0057 (Name: $clickX)
+0636: OP_GET_GLOBAL   0058 (Name: $clickY)
+0639: OP_CALL_NATIVE  0075 (Name: GL_SET_UNIFORM, Args: 6)
+0643: OP_POP
+0644: OP_CALL_NATIVE  0078 (Name: GL_DRAW_FULLSCREEN, Args: 0)
+0648: OP_POP
+0649: OP_CONSTANT     0029 (Value: 0)
+0652: OP_CALL_NATIVE  0072 (Name: GL_USE_PROGRAM, Args: 1)
+0656: OP_POP
+0657: OP_CONSTANT     0079 (Value: 10)
+0660: OP_CONSTANT     0080 (Value: 25)
+0663: OP_GET_GLOBAL   0042 (Name: $fpsText)
+0666: OP_CALL_NATIVE  0081 (Name: GL_TEXT, Args: 3)
+0670: OP_POP
+0671: OP_CONSTANT     0079 (Value: 10)
+0674: OP_CONSTANT     0082 (Value: 45)
+0677: OP_GET_GLOBAL   0070 (Name: $statText)
+0680: OP_CALL_NATIVE  0081 (Name: GL_TEXT, Args: 3)
+0684: OP_POP
+0685: OP_CALL_NATIVE  0083 (Name: GL_PRESENT, Args: 0)
+0689: OP_POP
+0690: OP_CONSTANT     0084 (Value: 27)
+0693: OP_CALL_NATIVE  0085 (Name: KEY_STATE, Args: 1)
+0697: OP_CONSTANT     0009 (Value: 1)
+0700: OP_EQUAL
+0701: OP_JUMP_IF_FALSE 0003 (Sari la: 707)
+0704: OP_JUMP          0003 (Sari la: 710)
+0707: OP_LOOP          0434 (Sari inapoi la: 276)
+0710: OP_CALL_NATIVE  0026 (Name: GL_CLOSE, Args: 0)
+0714: OP_POP
+0715: OP_RETURN

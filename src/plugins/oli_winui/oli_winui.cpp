@@ -1,5 +1,6 @@
 #include "../../OliEngine.hpp"
 #include "../../IOliEngine.hpp"
+#include "Layouts/Layouts.hpp"
 #include "vApp.hpp"
 #include "vWindow.hpp"
 #include "vPanel.hpp"
@@ -224,7 +225,16 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         if (!ctrl) return vData{ 0LL };
 
         if (propName == L"text") {
-            ctrl->setText(value.toWString());
+            // Încercăm să vedem dacă este un vCodeView
+            vCodeView* codeView = dynamic_cast<vCodeView*>(ctrl);
+            if (codeView) {
+                // Dacă este vCodeView, apelăm funcția lui specifică ce conține și highlight-ul
+                codeView->setText(value.toWString());
+            }
+            else {
+                // Altfel, apelăm comportamentul standard pentru restul controalelor (butoane, label-uri etc.)
+                ctrl->setText(value.toWString());
+            }
         }
         else if (propName == L"x") {
             ctrl->setX(static_cast<int>(value.toInt()));
@@ -250,6 +260,149 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             else {
                 ctrl->hide();
             }
+        }
+        else if (propName == L"layout") {
+            // 1. Încercăm să convertim controlul la tipul vContainer
+            vContainer* container = dynamic_cast<vContainer*>(ctrl);
+
+            if (!container) {
+                LOG_ERROR(L"❌ Proprietatea 'layout' poate fi setată doar pe obiecte de tip Container (Window, Panel etc.)! ID: " + args[0].toWString());
+                return vData{ 0LL };
+            }
+
+            std::wstring layoutType = to_upper(value.toWString());
+
+            // 2. Instanțiem strategia în funcție de ce a cerut scriptul Oli
+            if (layoutType == L"GRID") {
+                // Dacă constructorul de Grid cere parametri (ex: randuri, coloane), îi poți citi din argumente suplimentare sau pune default
+                container->setLayoutStrategy(std::make_unique<GridLayout>(1,1));
+                LOG_SUCCESS(L"📐 [Layout] Strategia GRID a fost aplicată pe containerul: " + wId);
+            }
+            else if (layoutType == L"ANCHOR") {
+                // Dacă constructorul de Grid cere parametri (ex: randuri, coloane), îi poți citi din argumente suplimentare sau pune default
+                container->setLayoutStrategy(std::make_unique<AnchorLayout>());
+                LOG_SUCCESS(L"📐 [Layout] Strategia ANCHOR a fost aplicată pe containerul: " + wId);
+            }
+            else if (layoutType == L"FLOW") {
+                container->setLayoutStrategy(std::make_unique<FormLayout>());
+                LOG_SUCCESS(L"📐 [Layout] Strategia FLOW a fost aplicată pe containerul: " + wId);
+            }
+            else if (layoutType == L"VSTACK") {
+                container->setLayoutStrategy(std::make_unique<VerticalStackLayout>());
+                LOG_SUCCESS(L"📐 [Layout] Strategia VSTACK a fost aplicată pe containerul: " + wId);
+            }
+            else if (layoutType == L"HSTACK") {
+                container->setLayoutStrategy(std::make_unique<HorizontalPercentStackLayout>());
+                LOG_SUCCESS(L"📐 [Layout] Strategia HSTACK a fost aplicată pe containerul: " + wId);
+            }
+            else if (layoutType == L"NONE" || layoutType == L"NULL") {
+                container->setLayoutStrategy(nullptr);
+                LOG_INFO(L"📐 [Layout] Strategia de layout a fost eliminată pentru: " + wId);
+            }
+            //HorizontalPercentStackLayout
+            else {
+                LOG_ERROR(L"❌ Strategie de layout necunoscută: " + layoutType);
+                return vData{ 0LL };
+            }
+        }
+        // ==========================================
+    // EXTENSIE LAYOUT & EMULARE SIZEMODE / ANCHOR
+    // ==========================================
+        else if (propName == L"anchor") {
+            std::wstring valStr = to_upper(value.toWString());
+            Anchor finalAnchor = Anchor::NONE;
+
+            // Suport pentru combinări de flag-uri prin caractere de separare (ex: "LEFT|TOP" sau "LEFT+TOP")
+            if (valStr.find(L"LEFT") != std::wstring::npos)   finalAnchor = finalAnchor | Anchor::LEFT;
+            if (valStr.find(L"RIGHT") != std::wstring::npos)  finalAnchor = finalAnchor | Anchor::RIGHT;
+            if (valStr.find(L"TOP") != std::wstring::npos)    finalAnchor = finalAnchor | Anchor::TOP;
+            if (valStr.find(L"BOTTOM") != std::wstring::npos) finalAnchor = finalAnchor | Anchor::BOTTOM;
+            if (valStr.find(L"CENTER_H") != std::wstring::npos) finalAnchor = finalAnchor | Anchor::CENTER_H;
+            if (valStr.find(L"CENTER_V") != std::wstring::npos) finalAnchor = finalAnchor | Anchor::CENTER_V;
+
+            // Cazul simplu când se scrie direct "CENTER"
+            if (valStr == L"CENTER") finalAnchor = Anchor::CENTER;
+
+            ctrl->setAnchor(finalAnchor);
+
+            // Declanșăm recalcularea layout-ului pe părinte, dacă acesta este un container active
+            if (ctrl->getParent()) {
+                vContainer* parentContainer = dynamic_cast<vContainer*>(ctrl->getParent());
+                if (parentContainer) parentContainer->applyLayout();
+            }
+        }
+        else if (propName == L"width_mode") {
+            std::wstring valStr = to_upper(value.toWString());
+
+            if (valStr == L"FIXED")        ctrl->setWidthMode(SizeMode::FIXED);
+            else if (valStr == L"FILL")    ctrl->setWidthMode(SizeMode::FILL);
+            else if (valStr == L"AUTO")    ctrl->setWidthMode(SizeMode::AUTO);
+            else if (valStr == L"PERCENT") ctrl->setWidthMode(SizeMode::PERCENT);
+            else {
+                LOG_ERROR(L"❌ [Layout] SizeMode necunoscut pentru width_mode: " + valStr);
+                return vData{ 0LL };
+            }
+
+            if (ctrl->getParent()) {
+                vContainer* parentContainer = dynamic_cast<vContainer*>(ctrl->getParent());
+                if (parentContainer) parentContainer->applyLayout();
+            }
+        }
+        else if (propName == L"height_mode") {
+            std::wstring valStr = to_upper(value.toWString());
+
+            if (valStr == L"FIXED")        ctrl->setHeightMode(SizeMode::FIXED);
+            else if (valStr == L"FILL")    ctrl->setHeightMode(SizeMode::FILL);
+            else if (valStr == L"AUTO")    ctrl->setHeightMode(SizeMode::AUTO);
+            else if (valStr == L"PERCENT") ctrl->setHeightMode(SizeMode::PERCENT);
+            else {
+                LOG_ERROR(L"❌ [Layout] SizeMode necunoscut pentru height_mode: " + valStr);
+                return vData{ 0LL };
+            }
+
+            if (ctrl->getParent()) {
+                vContainer* parentContainer = dynamic_cast<vContainer*>(ctrl->getParent());
+                if (parentContainer) parentContainer->applyLayout();
+            }
+        }
+        else if (propName == L"margin") {
+            // Suportă sintaxă de tip vector sau listă din script (ex: $margin = [10, 5, 10, 5])
+            if (value.isArray()) {
+                auto* arr = value.rawArray();
+                if (arr && arr->size() >= 4) {
+                    ctrl->setMargins(
+                        static_cast<int>((*arr)[0].toInt()),
+                        static_cast<int>((*arr)[1].toInt()),
+                        static_cast<int>((*arr)[2].toInt()),
+                        static_cast<int>((*arr)[3].toInt())
+                    );
+                }
+            }
+            else {
+                // Dacă trimitem un singur număr întreg, îl aplicăm pe toate laturile uniform (ex: 10)
+                int uniformMargin = static_cast<int>(value.toInt());
+                ctrl->setMargins(uniformMargin, uniformMargin, uniformMargin, uniformMargin);
+            }
+
+            if (ctrl->getParent()) {
+                vContainer* parentContainer = dynamic_cast<vContainer*>(ctrl->getParent());
+                if (parentContainer) parentContainer->applyLayout();
+            }
+        }
+        else if (propName == L"syntax_path") {
+            // 1. Încercăm să convertim controlul generic la tipul specific vCodeView
+            vCodeView* codeView = dynamic_cast<vCodeView*>(ctrl);
+
+            if (!codeView) {
+                LOG_ERROR(L"❌ Proprietatea 'syntax_path' poate fi setată doar pe obiecte de tip CodeView! ID: " + args[0].toWString());
+                return vData{ 0LL };
+            }
+
+            // 2. Apelăm metoda specifică din vCodeView. Aceasta va încărca XML-ul și va face highlight instant.
+            std::wstring sPath = value.toWString();
+            codeView->setSyntaxPath(sPath);
+
+            LOG_SUCCESS(L"🎨 [Syntax] Sintaxa nouă a fost încărcată cu succes din: " + sPath + L" pentru editorul: " + wId);
         }
 
         return vData{ 1LL };
@@ -288,6 +441,47 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 
         if (ctrl->hasAttribute(args[1].toWString())) {
             return vData(ctrl->getAttribute(args[1].toWString()));
+        }
+
+        if (propName == L"anchor") {
+            Anchor a = ctrl->getAnchor();
+            if (a == Anchor::CENTER) return vData(L"CENTER");
+
+            std::wstring res = L"";
+            if (hasFlag(a, Anchor::LEFT))   res += L"LEFT|";
+            if (hasFlag(a, Anchor::RIGHT))  res += L"RIGHT|";
+            if (hasFlag(a, Anchor::TOP))    res += L"TOP|";
+            if (hasFlag(a, Anchor::BOTTOM)) res += L"BOTTOM|";
+            if (hasFlag(a, Anchor::CENTER_H)) res += L"CENTER_H|";
+            if (hasFlag(a, Anchor::CENTER_V)) res += L"CENTER_V|";
+
+            if (!res.empty() && res.back() == L'|') res.pop_back(); // Curățăm ultimul separator
+            return res.empty() ? vData(L"NONE") : vData(res);
+        }
+        if (propName == L"width_mode") {
+            SizeMode mode = ctrl->getWidthMode();
+            if (mode == SizeMode::FIXED)   return vData(L"FIXED");
+            if (mode == SizeMode::FILL)    return vData(L"FILL");
+            if (mode == SizeMode::AUTO)    return vData(L"AUTO");
+            if (mode == SizeMode::PERCENT) return vData(L"PERCENT");
+            return vData(L"UNKNOWN");
+        }
+        if (propName == L"height_mode") {
+            SizeMode mode = ctrl->getHeightMode();
+            if (mode == SizeMode::FIXED)   return vData(L"FIXED");
+            if (mode == SizeMode::FILL)    return vData(L"FILL");
+            if (mode == SizeMode::AUTO)    return vData(L"AUTO");
+            if (mode == SizeMode::PERCENT) return vData(L"PERCENT");
+            return vData(L"UNKNOWN");
+        }
+        if (propName == L"margin") {
+            // Returnăm marginile către script sub formă de Array Oli compus din cele 4 valori: [Left, Top, Right, Bottom]
+            auto marginArray = std::make_shared<std::vector<vData>>();
+            marginArray->push_back(vData(static_cast<long long>(ctrl->getMarginLeft())));
+            marginArray->push_back(vData(static_cast<long long>(ctrl->getMarginTop())));
+            marginArray->push_back(vData(static_cast<long long>(ctrl->getMarginRight())));
+            marginArray->push_back(vData(static_cast<long long>(ctrl->getMarginBottom())));
+            return vData(marginArray);
         }
 
         return vData{ std::monostate{} };

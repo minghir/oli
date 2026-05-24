@@ -1,0 +1,46 @@
+include ("include\winui.oli")
+
+# =================================================================
+# CODUL PRINCIPAL (LOGICA)
+# =================================================================
+
+$counter = 0
+
+func logica_mea_la_click()
+    echo "🎉 MAGIE! Click-ul nativ din Windows a executat cu succes acest cod din scriptul Oli! " .. @counter
+    @counter++
+endfunc
+
+#set $app = CREATE_WINAPP()
+set $app = new("WinApp")
+$app.init()  # ✅ ACUM VA FUNCȚIONA! Va rula corpul de script care apelează WINAPP::INIT nativ
+
+#set $win = CREATE_WINWINDOW("fereastra_principala", "Oli UI Engine - Fully Encapsulated OOP")
+set $win = new("WinWindow")
+$win.init("fereastra_principala", "Oli UI Engine - Fully Encapsulated OOP")
+$win.set_layout("GRID")
+
+set $mainPanel = new("WinPanel")
+$mainPanel.init("main_panel", "fereastra_principala")
+$mainPanel.set_layout("VSTACK")
+$mainPanel.set_width_mode("FILL")
+$mainPanel.set_height_mode("FILL")
+$mainPanel.set_margin(10)
+
+set $myButton = new("WinButton")
+$myButton.init("btn_salveaza", "main_panel", 10, 10, 180, 40, "Apasă-mă!")
+$myButton.set_anchor("RIGHT|BOTTOM")
+$myButton.set_width_mode("FIXED")
+
+set $myCodeView = new("WinCodeView")
+$myCodeView.init("CODEVIEW_salveaza", "main_panel", 20, 60, 600, 400)
+$myCodeView.set_width_mode("FILL")
+$myCodeView.set_height_mode("FILL")
+$myCodeView.set_text(READFILE("./tests/win_ui5.oli"))
+
+$myButton.bind("click", "logica_mea_la_click")
+
+$win.show()  # ✅ ACUM FUNCȚIONEAZĂ! Va rula WINWINDOW::SHOW nativ din DLL
+$app.run()
+
+echo "=== Aplicație închisă cu succes ==="

@@ -1,6 +1,6 @@
 plugin "oli_winui"
 config echo off
-
+$counter = 0
 echo "=== Lansare Interfață Grafică cu Click Nativ ==="
 
 def class UiControl { id, set_prop($name, $val), get_prop($name), bind($event, $func) }
@@ -16,9 +16,12 @@ endfunc
 def class WinApp    { init(), run() }
 def class WinWindow { id, title, show() }
 def class WinButton extends UiControl {}
+def class WinPanel extends UiControl {}
+def class WinCodeView extends UiControl {}
 
 func logica_mea_la_click()
-    echo "🎉 MAGIE! Click-ul nativ din Windows a executat cu succes acest cod din scriptul Oli!"
+    echo "🎉 MAGIE! Click-ul nativ din Windows a executat cu succes acest cod din scriptul Oli!" .. @counter
+	@counter++
 endfunc
 
 set $app = CREATE_WINAPP()
@@ -26,11 +29,22 @@ $app.init()
 
 set $win = CREATE_WINWINDOW("fereastra_principala", "Oli UI Engine - Click Event Test")
 
-# ✅ TRANSMITEM TOATE DATELE DIRECT LA CREARE: Tip, ID, Părinte, X, Y, Width, Height, Text
-UI_CREATE_CONTROL("BUTTON", "btn_salveaza", "fereastra_principala", 300, 200, 180, 40, "Apasă-mă!")
+ui_set_property($win, "layout", "GRID");
 
+# ✅ TRANSMITEM TOATE DATELE DIRECT LA CREARE: Tip, ID, Părinte, X, Y, Width, Height, Text
+UI_CREATE_CONTROL("PANEL", "main_panel", "fereastra_principala", 0, 0, 800, 600)
+set $mainPanel = new("WinPanel")
+ui_set_property($mainPanel, "layout", "GRID");
+ui_set_property($mainPanel, "width_mode", "FILL");
+ui_set_property($mainPanel, "height_mode", "FILL");
+
+UI_CREATE_CONTROL("BUTTON", "btn_salveaza", "main_panel", 10, 10, 180, 40, "Apasă-mă!")
 set $myButton = new("WinButton")
-$myButton.id = "btn_salveaza"
+#$myButton.id = "btn_salveaza"
+UI_CREATE_CONTROL("CODEVIEW", "CODEVIEW_salveaza", "main_panel", 20, 60, 600, 400)
+set $myCodeView = new("WinCodeView")
+ui_set_property($myCodeView, "width_mode", "FILL");
+ui_set_property($myCodeView, "height_mode", "FILL");
 
 # Legăm evenimentul de click
 $myButton.bind("click", "logica_mea_la_click")

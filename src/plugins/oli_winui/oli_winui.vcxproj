@@ -151,12 +151,14 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CodeLexer.cpp" />
     <ClCompile Include="ConsoleManager.cpp" />
     <ClCompile Include="ControlIdManager.cpp" />
     <ClCompile Include="EventDispatcher.cpp" />
     <ClCompile Include="FontManager.cpp" />
     <ClCompile Include="IconManager.cpp" />
     <ClCompile Include="oli_winui.cpp" />
+    <ClCompile Include="pugixml-1.15\src\pugixml.cpp" />
     <ClCompile Include="stringUtils.cpp" />
     <ClCompile Include="TooltipManager.cpp" />
     <ClCompile Include="vApp.cpp" />
@@ -177,12 +179,25 @@
     <ClCompile Include="WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CodeLexer.hpp" />
     <ClInclude Include="ConsoleManager.hpp" />
     <ClInclude Include="ControlIdManager.hpp" />
     <ClInclude Include="EventDispatcher.hpp" />
     <ClInclude Include="FontManager.hpp" />
     <ClInclude Include="IconManager.hpp" />
     <ClInclude Include="ILayoutStrategy.hpp" />
+    <ClInclude Include="Layouts\AnchorLayout.hpp" />
+    <ClInclude Include="Layouts\FlexStackLayout.hpp" />
+    <ClInclude Include="Layouts\FlowLayout.hpp" />
+    <ClInclude Include="Layouts\FormLayout.hpp" />
+    <ClInclude Include="Layouts\GridLayout.hpp" />
+    <ClInclude Include="Layouts\HorizontalPercentStackLayout.hpp" />
+    <ClInclude Include="Layouts\Layouts.hpp" />
+    <ClInclude Include="Layouts\VerticalPercentStackLayout.hpp" />
+    <ClInclude Include="Layouts\VerticalStackLayout.hpp" />
+    <ClInclude Include="Layouts\XmlDlgAnchorLayout.hpp" />
+    <ClInclude Include="pugixml-1.15\src\pugiconfig.hpp" />
+    <ClInclude Include="pugixml-1.15\src\pugixml.hpp" />
     <ClInclude Include="stringUtils.hpp" />
     <ClInclude Include="TooltipManager.hpp" />
     <ClInclude Include="vApp.hpp" />
@@ -202,6 +217,7 @@
     <ClInclude Include="vSpacer.hpp" />
     <ClInclude Include="vWindow.hpp" />
     <ClInclude Include="WindowManager.hpp" />
+    <ClInclude Include="XmlCache.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

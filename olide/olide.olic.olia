@@ -1,0 +1,9 @@
+--- OLI ASSEMBLY LISTING ---
+Source: ./olide/olide.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_PLUGIN       0000 (Path: "oli_winui")
+0003: OP_GET_GLOBAL   0001 (Name: config)
+0006: OP_CONSTANT     0002 (Value: === Lansare Interfa

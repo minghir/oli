@@ -1030,7 +1030,8 @@ case OpCode::OP_CALL_METHOD: {
                             finalFunc.c_str(),   // Transformă std::wstring în const wchar_t*
                             args.data(),    // Pointer brut către primul element din std::vector (const vData*)
                             args.size(),    // Numărul de elemente (size_t)
-                            vData()             // Contextul implicit rămâne neschimbat
+                            //vData()             // Contextul implicit rămâne neschimbat
+                            contextObj
                         );
                         stack.push_back(result);
                         LOG_SUCCESS(L"[VM] Metoda SCRIPT executata: " + finalFunc);

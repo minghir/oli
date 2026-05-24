@@ -267,6 +267,10 @@ public:
     void setWidthMode(SizeMode mode) { widthMode = mode; }
     void setHeightMode(SizeMode mode) { heightMode = mode; }
 
+    Anchor getAnchor() const { return anchor; }
+    SizeMode getWidthMode() const { return widthMode; }
+    SizeMode getHeightMode() const { return heightMode; }
+
     void setMargins(int left, int top, int right, int bottom) {
         marginLeft = left;
         marginTop = top;
@@ -296,9 +300,9 @@ public:
     virtual void moveAndResize(int x, int y, int width, int height);
 
 
-    Anchor getAnchor() const { return anchor; }
-    SizeMode getWidthMode() const { return widthMode; }
-    SizeMode getHeightMode() const { return heightMode; }
+    //Anchor getAnchor() const { return anchor; }
+    //SizeMode getWidthMode() const { return widthMode; }
+    //SizeMode getHeightMode() const { return heightMode; }
 
     int getMarginLeft() const { return marginLeft; }
     int getMarginTop() const { return marginTop; }

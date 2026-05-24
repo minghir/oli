@@ -557,6 +557,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
     
 
     // GL_POINT(x, y, size, color)
+    /*
     registry[L"GL_POINT"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 4) return vData{ 0LL };
 
@@ -594,6 +595,46 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
         glMatrixMode(GL_MODELVIEW); // Revenim la modul standard
+        glPopAttrib();
+
+        return vData{ 1LL };
+        };
+        */
+
+    registry[L"GL_POINT"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 4) return vData{ 0LL };
+
+        float x = (float)toDouble(args[0]);
+        float y = (float)toDouble(args[1]);
+        float sz = (float)toDouble(args[2]);
+        GLColor c((unsigned int)toDouble(args[3]));
+
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glDisable(GL_TEXTURE_2D);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_DEPTH_TEST);
+
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+
+        // 🔥 CORECTURA AICI: 0,0 este acum sus-stânga!
+        glOrtho(0, g_GL.width, g_GL.height, 0, -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        glColor3f(c.r, c.g, c.b);
+        glPointSize(sz);
+        glBegin(GL_POINTS);
+        glVertex2f(x, y);
+        glEnd();
+
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
         glPopAttrib();
 
         return vData{ 1LL };
@@ -842,6 +883,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         };
 
     // 2. În registry, adăugăm GL_TEXT(x, y, string)
+    /*
     registry[L"GL_TEXT"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 3) return vData{ 0LL };
 
@@ -880,6 +922,55 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         // 3. RESTAURĂM TOTUL EXACT CUM A FOST
         glMatrixMode(GL_MODELVIEW);
         glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+
+        glPopAttrib();
+
+        return vData{ 1LL };
+        };
+        */
+
+    registry[L"GL_TEXT"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 3) return vData{ 0LL };
+
+        float x = (float)toDouble(args[0]);
+        float y = (float)toDouble(args[1]);
+        std::string text = wstr_to_str(args[2].toWString());
+
+        // 1. SALVĂM STAREA CURENTĂ
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+        // 2. SETĂM PROIECȚIA PENTRU 2D (SCREEN SPACE)
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix(); // Salvăm matricea 3D
+        glLoadIdentity();
+        // 0,0 în stânga-sus, width/height în dreapta-jos
+        glOrtho(0, g_GL.width, g_GL.height, 0, -1, 1);
+
+        // 3. SETĂM MODELVIEW (Unde desenăm)
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix(); // Salvăm poziția 3D
+        glLoadIdentity();
+
+        // 4. DESENARE
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_TEXTURE_2D);
+        glUseProgram(0);
+
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glRasterPos2f(x, y); // Acum (x,y) sunt coordonate reale de ecran
+
+        if (g_GL.fontBase > 0) {
+            glListBase(g_GL.fontBase - 32);
+            glCallLists((GLsizei)text.length(), GL_UNSIGNED_BYTE, text.c_str());
+        }
+
+        // 5. RESTAURĂM TOTUL (Ordinea este inversă față de push!)
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+
         glMatrixMode(GL_PROJECTION);
         glPopMatrix();
 

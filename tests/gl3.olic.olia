@@ -1,5 +1,5 @@
 --- OLI ASSEMBLY LISTING ---
-Source: ./tests/gl3.oli
+Source: tests\gl3.oli
 Generated: 2026-05-11
 
 
@@ -17,7 +17,7 @@ Generated: 2026-05-11
 0032: OP_SET_GLOBAL   0010 (Name: $startTime)
 0035: OP_CONSTANT     0011 (Value: #version 120 \n void main() { gl_Position = gl_Vertex; })
 0038: OP_SET_GLOBAL   0012 (Name: $vs)
-0041: OP_CONSTANT     0013 (Value: #version 120 \n uniform float time; void main() {  vec2 uv = gl_FragCoord.xy / vec2(900.0, 700.0);  	float v = 0.5 + 0.5 * sin(uv.x * 10.0 + time);  float g = 0.5 + 0.5 * cos(uv.y * 8.0 - time * 0.5);  gl_FragColor = vec4(v, g, 1.0 - v, 1.0);  })
+0041: OP_CONSTANT     0013 (Value: #version 120 \n uniform float time; void main() { vec2 res = vec2(900.0, 700.0); vec2 I = gl_FragCoord.xy; I = I * 2.0 - res; float d = dot(I, I); float a = atan(I.x, I.y); vec4 O = vec4(sin(log(d) + a - time * 3.0) + 0.9); O = 0.5 + O / fwidth(O); gl_FragColor = vec4(O.rgb, 1.0);})
 0044: OP_SET_GLOBAL   0014 (Name: $fs)
 0047: OP_CONSTANT     0015 (Value: 0)
 0050: OP_GET_GLOBAL   0012 (Name: $vs)

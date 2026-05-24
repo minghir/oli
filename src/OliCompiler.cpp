@@ -190,6 +190,7 @@ OliChunk OliCompiler::compile(const std::wstring& source,
             }
         }
 
+        /*
         // --- 0. PREPROCESARE: INCLUDE ---
         std::wstring upperLine = to_upper(cleanLine);
         if (upperLine.find(L"INCLUDE") == 0) {
@@ -271,8 +272,172 @@ OliChunk OliCompiler::compile(const std::wstring& source,
                 }
             }
         }
-
+        */
         
+       // --- PREPROCESARE: INCLUDE ---
+        std::wstring upperLine = to_upper(cleanLine);
+        if (upperLine.find(L"INCLUDE") == 0) {
+            size_t startQuote = cleanLine.find(L"\"");
+            size_t endQuote = cleanLine.find_last_of(L"\"");
+
+            if (startQuote != std::wstring::npos && endQuote != std::wstring::npos && startQuote < endQuote) {
+                std::wstring path = cleanLine.substr(startQuote + 1, endQuote - startQuote - 1);
+                LOG_DEBUG(L"[PREPROCESSOR] Includem sursa: " + path);
+
+                std::ifstream file;
+                PortTools::openIfstream(file, path);
+                if (file.is_open()) {
+                    std::stringstream buffer;
+                    buffer << file.rdbuf();
+                    std::wstring includedSource = PortTools::utf8_to_wstring(buffer.str());
+
+                    // Compilăm recursiv fișierul inclus
+                    OliChunk includedChunk = this->compile(includedSource, parentProcs, true);
+
+                    // --- PASUL 1: Remapare Constante (Folosim indicii lor REALI din vector) ---
+                    std::map<uint16_t, uint16_t> indexMap;
+                    for (size_t cIdx = 0; cIdx < includedChunk.constants.size(); ++cIdx) {
+                        indexMap[static_cast<uint16_t>(cIdx)] = chunk.addConstant(includedChunk.constants[cIdx]);
+                    }
+
+                    // --- PASUL 2: Migrare Bytecode sigură și liniară (Sincronizată cu OpCodes) ---
+                    size_t i = 0;
+                    size_t limit = includedChunk.code.size();
+                    if (!includedChunk.code.empty() && includedChunk.code.back() == (uint8_t)OpCode::OP_RETURN) {
+                        limit--; // Ignorăm OP_RETURN-ul global al fișierului inclus
+                    }
+
+                    while (i < limit) {
+                        uint8_t op = includedChunk.code[i];
+
+                        // 1. Instrucțiuni standard cu indici de constante simpli pe 2 bytes
+                        if (op == (uint8_t)OpCode::OP_CONSTANT || op == (uint8_t)OpCode::OP_GET_GLOBAL ||
+                            op == (uint8_t)OpCode::OP_SET_GLOBAL || op == (uint8_t)OpCode::OP_UNSET ||
+                            op == (uint8_t)OpCode::OP_GET_ADDR || op == (uint8_t)OpCode::OP_PLUGIN ||
+                            op == (uint8_t)OpCode::OP_CALL_NATIVE || op == (uint8_t)OpCode::OP_CALL)
+                        {
+                            // 🛡️ SCUT CRITIC: Verificăm dacă mai avem octeți suficienți înainte de citire
+                            if (i + 2 >= includedChunk.code.size()) {
+                                LOG_ERROR(L"❌ [COMPILER] Eroare critică: Bytecode corupt la finalul fișierului inclus!");
+                                break;
+                            }
+
+                            uint16_t oldIdx = (uint16_t)((includedChunk.code[i + 1] << 8) | includedChunk.code[i + 2]);
+                            uint16_t newIdx = 0;
+
+                            if (indexMap.count(oldIdx)) {
+                                newIdx = indexMap[oldIdx];
+                            }
+                            else {
+                                LOG_ERROR(L"⚠️ [COMPILER] Index de constantă invalid în fișierul inclus: " + std::to_wstring(oldIdx));
+                            }
+
+                            chunk.addByte(op, 0);
+                            chunk.addByte((uint8_t)(newIdx >> 8), 0);
+                            chunk.addByte((uint8_t)(newIdx & 0xFF), 0);
+
+                            i += 3; // Consumăm OpCode și indicele pe 2 bytes
+
+                            // Verificăm dacă instrucțiunea este apel de funcție și copiem argumentul ArgCount (1 byte)
+                            if (op == (uint8_t)OpCode::OP_CALL_NATIVE || op == (uint8_t)OpCode::OP_CALL) {
+                                if (i < includedChunk.code.size()) {
+                                    chunk.addByte(includedChunk.code[i++], 0);
+                                }
+                            }
+                            continue; // 🔥 Sărim la următorul OpCode din buclă
+                        }
+
+                        // 🚀 2. MAPAREA INSTRUCTIUNII COMPLEXE DINAMICE: OP_DEF_TYPE
+                        else if (op == (uint8_t)OpCode::OP_DEF_TYPE) {
+                            // Verificăm header-ul minim fix (Op + NameIdx(2) + ParentIdx(2) + isClass(1) + fieldCount(1) + methodCount(1) = 8 bytes)
+                            if (i + 7 >= includedChunk.code.size()) {
+                                LOG_ERROR(L"❌ [COMPILER] Eroare critică: Header OP_DEF_TYPE trunchiat în fișierul inclus!");
+                                break;
+                            }
+
+                            chunk.addByte(op, 0); // Adăugăm codul instrucțiunii
+
+                            // Remapăm NameIdx (2 bytes)
+                            uint16_t oldNameIdx = (uint16_t)((includedChunk.code[i + 1] << 8) | includedChunk.code[i + 2]);
+                            uint16_t newNameIdx = indexMap.count(oldNameIdx) ? indexMap[oldNameIdx] : 0;
+                            chunk.addByte((uint8_t)(newNameIdx >> 8), 0);
+                            chunk.addByte((uint8_t)(newNameIdx & 0xFF), 0);
+
+                            // Remapăm ParentIdx (2 bytes)
+                            uint16_t oldParentIdx = (uint16_t)((includedChunk.code[i + 3] << 8) | includedChunk.code[i + 4]);
+                            uint16_t newParentIdx = indexMap.count(oldParentIdx) ? indexMap[oldParentIdx] : 0;
+                            chunk.addByte((uint8_t)(newParentIdx >> 8), 0);
+                            chunk.addByte((uint8_t)(newParentIdx & 0xFF), 0);
+
+                            // Preluăm flag-urile și lungimile vectorilor dinamici
+                            uint8_t isClass = includedChunk.code[i + 5];
+                            uint8_t fieldCount = includedChunk.code[i + 6];
+                            uint8_t methodCount = includedChunk.code[i + 7];
+
+                            chunk.addByte(isClass, 0);
+                            chunk.addByte(fieldCount, 0);
+                            chunk.addByte(methodCount, 0);
+
+                            i += 8; // Am terminat de procesat și emis header-ul fix
+
+                            // Parcurgem și remapăm vectorul de Fields (câmpuri) (2 bytes per field)
+                            for (int f = 0; f < (int)fieldCount; ++f) {
+                                if (i + 1 >= includedChunk.code.size()) break;
+                                uint16_t oldFIdx = (uint16_t)((includedChunk.code[i] << 8) | includedChunk.code[i + 1]);
+                                uint16_t newFIdx = indexMap.count(oldFIdx) ? indexMap[oldFIdx] : 0;
+                                chunk.addByte((uint8_t)(newFIdx >> 8), 0);
+                                chunk.addByte((uint8_t)(newFIdx & 0xFF), 0);
+                                i += 2;
+                            }
+
+                            // Parcurgem și remapăm vectorul de Methods (metode) (2 bytes per method)
+                            for (int m = 0; m < (int)methodCount; ++m) {
+                                if (i + 1 >= includedChunk.code.size()) break;
+                                uint16_t oldMIdx = (uint16_t)((includedChunk.code[i] << 8) | includedChunk.code[i + 1]);
+                                uint16_t newMIdx = indexMap.count(oldMIdx) ? indexMap[oldMIdx] : 0;
+                                chunk.addByte((uint8_t)(newMIdx >> 8), 0);
+                                chunk.addByte((uint8_t)(newMIdx & 0xFF), 0);
+                                i += 2;
+                            }
+
+                            continue; // 🔥 Mergem în siguranță la următoarea iterație
+                        }
+
+                        // 3. Salturi relative JUMP/LOOP (3 bytes în total)
+                        else if (op == (uint8_t)OpCode::OP_JUMP || op == (uint8_t)OpCode::OP_JUMP_IF_FALSE ||
+                            op == (uint8_t)OpCode::OP_JUMP_IF_TRUE || op == (uint8_t)OpCode::OP_LOOP) {
+
+                            if (i + 2 >= includedChunk.code.size()) break;
+
+                            chunk.addByte(includedChunk.code[i++], 0); // OpCode
+                            chunk.addByte(includedChunk.code[i++], 0); // Offset High
+                            chunk.addByte(includedChunk.code[i++], 0); // Offset Low
+                            continue;
+                        }
+                        // 4. Instrucțiuni cu 1 byte argument suplimentar (2 bytes în total)
+                        else if (op == (uint8_t)OpCode::OP_ARRAY || op == (uint8_t)OpCode::OP_MAP ||
+                            op == (uint8_t)OpCode::OP_CALL_METHOD || op == (uint8_t)OpCode::OP_CALL_DYNAMIC) {
+
+                            if (i + 1 >= includedChunk.code.size()) break;
+
+                            chunk.addByte(includedChunk.code[i++], 0); // OpCode
+                            chunk.addByte(includedChunk.code[i++], 0); // Parametru count
+                            continue;
+                        }
+                        // 5. Instrucțiuni simple de 1 singur octet (OP_ADD, OP_POP, OP_DUP etc.)
+                        else {
+                            chunk.addByte(includedChunk.code[i++], 0);
+                        }
+                    }
+
+                    // Migrăm definițiile procedurilor în tabela principală
+                    for (auto const& [name, proc] : includedChunk.procedures) {
+                        chunk.procedures[name] = proc;
+                    }
+                    continue;
+                }
+            }
+        }
 
         // --- 1. MASCARE & COMENTARII (Versiunea Corectă) ---
         bool lineInQuotes = false;

@@ -1,0 +1,92 @@
+plugin "oli_winui"
+config echo off
+$counter = 0
+echo "=== Lansare Interfață Grafică cu Click Nativ ==="
+
+# =================================================================
+# DEFINE REZOLVARE CLASĂ DE BAZĂ (Mecanismul de reflexie)
+# =================================================================
+def class UiControl { id, set_prop($name, $val), get_prop($name), bind($event, $func) }
+
+func UiControl::set_prop($name, $val) 
+    return UI_SET_PROPERTY($this, $name, $val) 
+endfunc
+
+func UiControl::get_prop($name)       
+    return UI_GET_PROPERTY($this, $name) 
+endfunc
+
+func UiControl::bind($event, $func)
+    # ✅ ACUM ESTE DINAMIC: Transmitem ID-ul salvat în obiect ($this.id)
+    return UI_BIND_EVENT($this.id, $event, $func)
+endfunc
+
+# =================================================================
+# DEFINIRE CONTROALE DERIVATE CU CONSTRUCTORI AUTOMAȚI
+# =================================================================
+def class WinApp    { init(), run() }
+def class WinWindow { id, title, show() }
+
+def class WinPanel extends UiControl { init($id, $parentId) }
+func WinPanel::init($id, $parentId)
+    $this.id = $id
+    # Cream piesa nativă direct din constructorul obiectului script
+    UI_CREATE_CONTROL("PANEL", $id, $parentId, 0, 0, 0, 0)
+endfunc
+
+def class WinButton extends UiControl { init($id, $parentId, $x, $y, $w, $h, $text) }
+func WinButton::init($id, $parentId, $x, $y, $w, $h, $text)
+    $this.id = $id
+    # Înregistrăm butonul fizic în Windows
+    UI_CREATE_CONTROL("BUTTON", $id, $parentId, $x, $y, $w, $h, $text)
+endfunc
+
+def class WinCodeView extends UiControl { init($id, $parentId, $x, $y, $w, $h) }
+func WinCodeView::init($id, $parentId, $x, $y, $w, $h)
+    $this.id = $id
+    UI_CREATE_CONTROL("CODEVIEW", $id, $parentId, $x, $y, $w, $h)
+endfunc
+
+# =================================================================
+# LOGICA SCRIPTULUI
+# =================================================================
+func logica_mea_la_click()
+    echo "🎉 MAGIE! Click-ul nativ din Windows a executat cu succes acest cod din scriptul Oli! " . @counter
+    @counter++
+endfunc
+
+# Inițializare App și Window
+set $app = CREATE_WINAPP()
+$app.init()
+
+set $win = CREATE_WINWINDOW("fereastra_principala", "Oli UI Engine - Click Event Test")
+ui_set_property($win, "layout", "GRID")
+
+# ✅ 1. PANEL: Instanțiere și inițializare automată printr-un singur "new" + constructor
+set $mainPanel = new("WinPanel")
+$mainPanel.init("main_panel", "fereastra_principala")
+
+ui_set_property($mainPanel, "layout", "GRID")
+ui_set_property($mainPanel, "width_mode", "FILL")
+ui_set_property($mainPanel, "height_mode", "FILL")
+
+# ✅ 2. BUTTON: Instanțiem butonul. El își face singur UI_CREATE_CONTROL în spate!
+set $myButton = new("WinButton")
+$myButton.init("btn_salveaza", "main_panel", 10, 10, 180, 40, "Apasă-mă!")
+
+# ✅ 3. CODEVIEW: Instanțiere nativă curată
+set $myCodeView = new("WinCodeView")
+$myCodeView.init("CODEVIEW_salveaza", "main_panel", 20, 60, 600, 400)
+
+ui_set_property($myCodeView, "width_mode", "FILL")
+ui_set_property($myCodeView, "height_mode", "FILL")
+
+# ✅ Legăm evenimentul complet dinamic. Deoarece $myButton are stocat id-ul "btn_salveaza",
+# funcția bind() va ști exact pe cine să asculte!
+$myButton.bind("click", "logica_mea_la_click")
+
+# Afișăm fereastra mamă
+$win.show()
+$app.run()
+
+echo "=== Aplicație închisă cu succes ==="

@@ -2,16 +2,18 @@
 #include "vPanel.hpp"
 #include "vRichEdit.hpp"
 #include "Layouts/AnchorLayout.hpp"
+#include "CodeLexer.hpp"
 #include <memory>
 
 class vCodeView : public vPanel {
 private:
     vRichEdit* m_richEdit = nullptr;
-    // vLineGutter* m_lineGutter = nullptr; // Viitorul control pentru numere
-
+    
+    CodeLexer m_lexer;
     int m_fontSize = 12;
     const int m_gutterWidth = 50;
-
+	std::wstring m_currentFilePath;
+    std::wstring m_syntaxPath;
 
     void drawLineNumbers(HDC hdc);
 public:
@@ -19,6 +21,8 @@ public:
         : vPanel(hInstance, id, x, y, width, height, dispatcher)
     {
         // Nu uita: vPanel va fi părintele pentru RichEdit
+        //LOG_DEBUG(L"[vCodeView] Initializare vCodeView");
+        //m_lexer.loadSyntaxes("olide\\syntaxes");
     }
     /*
     void create(HWND parent) {
@@ -51,7 +55,22 @@ public:
 
     LRESULT handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
     // Proxy methods: redirecționăm apelurile către m_richEdit-ul intern
-    void setText(const std::wstring& text) { if (m_richEdit) m_richEdit->setText(text); }
+    void setText(const std::wstring& text) override {
+        if (m_richEdit) {
+            // 1. Dezactivăm temporar redesenarea (redresarea grafică) pentru a evita pâlpâitul (flicker)
+            SendMessage(m_richEdit->getHandle(), WM_SETREDRAW, FALSE, 0);
+
+            // 2. Setăm textul brut în controlul RichEdit
+            m_richEdit->setText(text);
+
+            // 3. Rulăm Lexer-ul pentru a colora textul conform limbajului curent detectat
+            m_lexer.highlight(m_richEdit);
+
+            // 4. Reactivăm redesenarea și forțăm un refresh vizual complet
+            SendMessage(m_richEdit->getHandle(), WM_SETREDRAW, TRUE, 0);
+            InvalidateRect(m_richEdit->getHandle(), NULL, TRUE);
+        }
+    }
     std::wstring getText() const { return m_richEdit ? m_richEdit->getText() : L""; }
 
     vRichEdit* getEditor() { return m_richEdit; }
@@ -61,4 +80,35 @@ public:
 
     void setFontSize(int size);
     void redrawGutter();
+
+    void setSyntaxPath(const std::wstring& syntaxPath) {
+        m_syntaxPath = syntaxPath;
+
+        // 1. Încărcăm folderul de sintaxe (care populează mapa m_extMap)
+        std::string pathAnsi(syntaxPath.begin(), syntaxPath.end());
+        m_lexer.loadSyntaxes(pathAnsi);
+
+        // 2. 🔥 REPARAT: Îi spunem lexerului să activeze limbajul bazat pe numele fișierului de sintaxă!
+        // Dacă ai funcția setLanguageByFile, o putem păcăli trimițându-i un nume fictiv cu extensia corectă.
+        // De exemplu, dacă calea este ".../oli.xml", putem folosi o extensie temporară sau o funcție directă.
+        if (syntaxPath.find(L"oli.xml") != std::wstring::npos) {
+            m_lexer.setLanguageByFile(L"dummy.oli"); // Forțează activarea sintaxei de Oli
+        }
+        else if (syntaxPath.find(L"cpp.xml") != std::wstring::npos) {
+            m_lexer.setLanguageByFile(L"dummy.cpp"); // Forțează activarea sintaxei de C++
+        }
+        else {
+            // Fallback: încearcă să detecteze limbajul direct prin calea fișierului
+            m_lexer.setLanguageByFile(syntaxPath);
+        }
+
+        if (m_richEdit) {
+            SendMessage(m_richEdit->getHandle(), WM_SETREDRAW, FALSE, 0);
+            m_lexer.highlight(m_richEdit);
+            SendMessage(m_richEdit->getHandle(), WM_SETREDRAW, TRUE, 0);
+            InvalidateRect(m_richEdit->getHandle(), NULL, TRUE);
+        }
+    }
+
+	std::wstring getSyntaxPath() const { return m_syntaxPath; }
 };

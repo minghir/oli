@@ -11,7 +11,7 @@ $file = "examples\\gl_glsl.oli"
 $exe_file = "gl_glsl.exe"
 
 func run_click()
-    echo "🎉 MAGIE! Click-ul nativ din Windows a executat cu succes acest cod din scriptul Oli! " .. @counter
+    echo "MAGIE! Click-ul nativ din Windows a executat cu succes acest cod din scriptul Oli! " .. @counter
 	$build_command = "x64\\Release\\oli.exe -b " .. @file
 	echo "Rulez: " .. $build_command
 	$res = SYS($build_command)
@@ -24,31 +24,102 @@ endfunc
 
 
 func save_click()
-    echo "🎉 MAGIE! Click-ul nativ din Windows a executat cu succes acest cod din scriptul Oli! SALVEZ" 
+    echo "MAGIE! Click-ul nativ din Windows a executat cu succes acest cod din scriptul Oli! SALVEZ" 
 endfunc
+
+echo "CREEZ APP"
 
 #set $app = CREATE_WINAPP()
 set $app = new("WinApp")
-$app.init()  # ✅ ACUM VA FUNCȚIONA! Va rula corpul de script care apelează WINAPP::INIT nativ
+$app.init() 
 
+echo "CREEZ WIN"
 #set $win = CREATE_WINWINDOW("fereastra_principala", "Oli UI Engine - Fully Encapsulated OOP")
 set $win = new("WinWindow")
+echo "INIT WIN"
 $win.init("fereastra_principala", "Oli UI Engine - Fully Encapsulated OOP")
+echo "SETEZ LAYOUT WIN"
 $win.set_layout("GRID")
 
+
+
+# =================================================================
+# CREARE MENIU NATIV
+# =================================================================
+echo "CREEZ STRUCTURA DE MENIURI"
+
+# 1. Cream meniul principal (Bara de meniu) atasat de fereastra principala
+set $mainMenu = new("WinMenu")
+$mainMenu.init("menu_principal", "fereastra_principala")
+
+# 2. Cream sub-meniul "File"
+set $fileMenu = new("WinMenu")
+$fileMenu.init("menu_file", "menu_principal")
+
+# Adaugam elemente in meniul File
+$fileMenu.add_item("menu_save", "Save File")
+$fileMenu.add_separator("sep_1")
+$fileMenu.add_item("menu_exit", "Exit Application")
+
+# 3. Cream sub-meniul "Help"
+set $helpMenu = new("WinMenu")
+$helpMenu.init("menu_help", "menu_principal")
+$helpMenu.add_item("menu_about", "About Oli IDE")
+
+# 4. Asamblam structura: adaugam sub-meniurile in bara principala
+$mainMenu.add_submenu("File", $fileMenu)
+$mainMenu.add_submenu("Help", $helpMenu)
+
+# 5. Activam bara de meniu pe fereastra setandu-i proprietatea nativa
+$win.set_prop("menu", "menu_principal")
+
+# =================================================================
+# DEFINIRE CALLBACK-URI PENTRU ELEMENTELE DE MENIU
+# =================================================================
+func menu_save_click()
+    # Reutilizam functia ta existenta de salvare
+    save_click()
+endfunc
+
+func menu_exit_click()
+    echo "Iesire din aplicatie comandata din meniu..."
+    # Aici poti apela o functie de shutdown daca e expusa sau inchizi fereastra
+	exit()
+endfunc
+
+func menu_about_click()
+    echo "=== Despre Oli UI Engine ==="
+    echo "Versiune: 1.0.0 Enterprise"
+    echo "Engine: Fully Encapsulated OOP Bytecode VM"
+	SHOW_MESSAGE("Despre Oli", "Oli UI Engine v1.0 Fully Encapsulated OOP Bytecode VM!")
+endfunc
+
+# Legam evenimentele elementelor din meniu de functiile de tip callback
+$win.bind("menu_save", "menu_save_click")
+$win.bind("menu_exit", "menu_exit_click")
+$win.bind("menu_about", "menu_about_click")
+
+
+
+
+echo "CREEZ Main panel"
+
 set $mainPanel = new("WinPanel")
-$mainPanel.init("main_panel", "fereastra_principala")
+$mainPanel.init("main_panel", "fereastra_principala",0,0,40,40)
 $mainPanel.set_layout("VSTACK")
 $mainPanel.set_width_mode("FILL")
 $mainPanel.set_height_mode("FILL")
 $mainPanel.set_margin(10)
 
+echo "CREEZ act panel"
 set $actPanel = new("WinPanel")
 $actPanel.init("act_panel", "main_panel", 0,0,40,40)
 $actPanel.set_layout("HSTACK")
 $actPanel.set_width_mode("FILL")
 $actPanel.set_height_mode("FIXED")
 $actPanel.set_margin(10)
+
+echo "CREEZ run button"
 
 set $runButton = new("WinButton")
 $runButton.init("btn_run", "act_panel", 10, 4, 80, 40, "RUN")
@@ -66,11 +137,12 @@ $myCodeView.set_width_mode("FILL")
 $myCodeView.set_height_mode("FILL")
 $myCodeView.set_syntax_path("./olide/syntaxes/oli.xml")
 $myCodeView.set_text(READFILE($file))
+$myCodeView.set_font_size(14)
 
 $runButton.bind("click", "run_click")
 $saveButton.bind("click", "save_click")
 
-$win.show()  # ✅ ACUM FUNCȚIONEAZĂ! Va rula WINWINDOW::SHOW nativ din DLL
+$win.show()  
 $app.run()
 
 echo "=== Aplicație închisă cu succes ==="

@@ -2,7 +2,7 @@ unset all
 set $width = 60
 set $height = 30
 set $max_iter = 20
-set @memo = array()
+set @memo = array(60)
 
 set $step_y = 2.0 / $height
 set $step_x = 3.0 / $width
@@ -60,3 +60,4 @@ while $py < $height do
     echo $line
     set $py = $py + 1
 endwhile
+input()

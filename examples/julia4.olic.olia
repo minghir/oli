@@ -1,0 +1,64 @@
+--- OLI ASSEMBLY LISTING ---
+Source: D:\Programming\oli\examples\julia4.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_GET_GLOBAL   0000 (Name: config)
+0003: OP_GET_GLOBAL   0000 (Name: config)
+0006: OP_PLUGIN       0001 (Path: oli_canvas)
+0009: OP_PLUGIN       0002 (Path: oli_math)
+0012: OP_PLUGIN       0003 (Path: oli_keyboard)
+0015: OP_PLUGIN       0004 (Path: oli_fract)
+0018: OP_PLUGIN       0005 (Path: oli_time)
+0021: OP_CONSTANT     0006 (Value: 640)
+0024: OP_CONSTANT     0007 (Value: 480)
+0027: OP_CONSTANT     0008 (Value: Oli Modular Engine)
+0030: OP_CALL_NATIVE  0009 (Name: CAN_INIT, Args: 3)
+0034: OP_SET_GLOBAL   0010 (Name: $v)
+0037: OP_CALL_NATIVE  0011 (Name: CAN_GET_PTR, Args: 0)
+0041: OP_SET_GLOBAL   0012 (Name: $ptr)
+0044: OP_CALL_NATIVE  0013 (Name: CAN_GET_WIDTH, Args: 0)
+0048: OP_SET_GLOBAL   0014 (Name: $w)
+0051: OP_CALL_NATIVE  0015 (Name: CAN_GET_HEIGHT, Args: 0)
+0055: OP_SET_GLOBAL   0016 (Name: $h)
+0058: OP_CONSTANT     0017 (Value: true)
+0061: OP_JUMP_IF_FALSE 0096 (Sari la: 160)
+0064: OP_CONSTANT     0018 (Value: 0.7)
+0067: OP_CALL_NATIVE  0019 (Name: TIME, Args: 0)
+0071: OP_CONSTANT     0020 (Value: 30)
+0074: OP_MUL
+0075: OP_CALL_NATIVE  0021 (Name: COS, Args: 1)
+0079: OP_MUL
+0080: OP_SET_GLOBAL   0022 (Name: $cX)
+0083: OP_CONSTANT     0023 (Value: 0.27)
+0086: OP_CALL_NATIVE  0019 (Name: TIME, Args: 0)
+0090: OP_CONSTANT     0024 (Value: 15)
+0093: OP_MUL
+0094: OP_CALL_NATIVE  0025 (Name: SIN, Args: 1)
+0098: OP_MUL
+0099: OP_SET_GLOBAL   0026 (Name: $cY)
+0102: OP_GET_GLOBAL   0012 (Name: $ptr)
+0105: OP_GET_GLOBAL   0014 (Name: $w)
+0108: OP_GET_GLOBAL   0016 (Name: $h)
+0111: OP_GET_GLOBAL   0022 (Name: $cX)
+0114: OP_GET_GLOBAL   0026 (Name: $cY)
+0117: OP_CONSTANT     0027 (Value: 32)
+0120: OP_CALL_NATIVE  0028 (Name: FRACT_PLASMA, Args: 6)
+0124: OP_SET_GLOBAL   0010 (Name: $v)
+0127: OP_CALL_NATIVE  0029 (Name: CAN_PRESENT, Args: 0)
+0131: OP_SET_GLOBAL   0010 (Name: $v)
+0134: OP_CONSTANT     0030 (Value: 81)
+0137: OP_CALL_NATIVE  0031 (Name: KEY_STATE, Args: 1)
+0141: OP_SET_GLOBAL   0032 (Name: $state)
+0144: OP_GET_GLOBAL   0032 (Name: $state)
+0147: OP_CONSTANT     0033 (Value: 0.5)
+0150: OP_GREATER
+0151: OP_JUMP_IF_FALSE 0003 (Sari la: 157)
+0154: OP_JUMP          0003 (Sari la: 160)
+0157: OP_LOOP          0102 (Sari inapoi la: 58)
+0160: OP_CALL_NATIVE  0034 (Name: CAN_CLOSE, Args: 0)
+0164: OP_POP
+0165: OP_CONSTANT     0035 (Value: Fereastra a fost inchisa. Revenire in consola Oli.)
+0168: OP_ECHO
+0169: OP_RETURN

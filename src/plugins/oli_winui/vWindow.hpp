@@ -127,6 +127,8 @@ public:
 
     void centerWindow();
 
+    void setIcon(const std::wstring& iconPath);
+
     bool isModal() const { return m_isModal; }
 	
 	

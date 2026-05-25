@@ -523,6 +523,12 @@ bool vWindow::setProperty(const std::wstring& name, const vData& value) {
         }
         return false;
     }
+    else if (name == L"icon") {
+        // Convertim valoarea din vData în wstring (calea către ico)
+        std::wstring iconPath = value.toWString(); // sau vDataToWString(value) în funcție de engine-ul tău
+        this->setIcon(iconPath);
+        return true;
+    }
 
     // Dacă nu este o proprietate unică de fereastră, o trimitem la vContainer
     return vContainer::setProperty(name, value);
@@ -544,4 +550,31 @@ vData vWindow::getProperty(const std::wstring& name) const {
 
     // Fallback către lanțul de moștenire
     return vContainer::getProperty(name);
+}
+
+void vWindow::setIcon(const std::wstring& iconPath) {
+    if (!m_handle || !IsWindow(m_handle)) {
+        ConsoleManager::getInstance().log(L"[vWindow:setIcon] Eroare: Handle invalid. Fereastra trebuie creata inainte de a seta iconita!", LogLevel::LOG_ERROR);
+        return;
+    }
+
+    // Încărcăm iconița .ico de pe disc folosind WinAPI
+    HICON hIcon = (HICON)LoadImageW(
+        NULL,
+        iconPath.c_str(),
+        IMAGE_ICON,
+        0, 0, // Folosește dimensiunea nativă a fișierului
+        LR_LOADFROMFILE | LR_DEFAULTSIZE
+    );
+
+    if (hIcon) {
+        // Trimitem mesajele WinAPI către fereastră pentru a schimba iconița
+        SendMessageW(m_handle, WM_SETICON, ICON_SMALL, (LPARAM)hIcon); // Bara de titlu & Taskbar
+        SendMessageW(m_handle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);   // Alt + Tab
+
+        ConsoleManager::getInstance().log(L"[vWindow] Iconita a fost setata cu succes: " + iconPath);
+    }
+    else {
+        ConsoleManager::getInstance().log(L"[vWindow] Nu s-a putut incarca iconița de la calea: " + iconPath, LogLevel::LOG_ERROR);
+    }
 }

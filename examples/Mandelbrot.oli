@@ -58,3 +58,4 @@ while $py < $height do
     echo $line
     set $py = $py + 1
 endwhile
+input()

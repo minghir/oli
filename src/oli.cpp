@@ -104,6 +104,7 @@ int main(int argc, char* argv[]) {
             }
         }
         */
+        /*
         // 2. BUILD STANDALONE (-b)
         if (cmd == "-b") {
             if (argc < 3) return 1;
@@ -145,7 +146,92 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
         }
+        */
+        // 2. BUILD STANDALONE (-b)
+        
+        if (cmd == "-b") {
+            if (argc < 3) return 1;
+            std::string inputPath = argv[2];
 
+            std::filesystem::path p(inputPath);
+            p.replace_extension(".exe");
+            std::string outputPath = (argc > 3) ? argv[3] : p.string();
+
+            try {
+                std::wcout << L"Oli Engine v0.1\nBuild Date: " << __DATE__ << std::endl;
+                std::wcout << L"Building: " << str_to_wstr(inputPath) << std::endl;
+                std::wifstream wif(inputPath);
+                safe_imbue(wif);
+                if (!wif.is_open()) throw std::runtime_error("Fisier sursa inexistent.");
+
+                std::wstringstream wss; wss << wif.rdbuf();
+                std::wstring sourceCode = wss.str();
+
+                // 🔥 O facem UPPERCASE pentru a fi siguri că prindem și "config win_app 1" și "CONFIG WIN_APP 1"
+                std::wstring upperSource = sourceCode;
+                std::transform(upperSource.begin(), upperSource.end(), upperSource.begin(), ::towupper);
+
+                // 🎯 CĂUTARE EXPLICITĂ: Verificăm dacă ai cerut explicit aplicație de Windows
+                bool isGuiApp = (upperSource.find(L"CONFIG WIN_APP 1") != std::wstring::npos);
+
+                OliCompiler compiler;
+                OliChunk chunk = compiler.compile(sourceCode);
+
+                std::ifstream src(argv[0], std::ios::binary);
+                std::ofstream dst(outputPath, std::ios::binary);
+                dst << src.rdbuf();
+                src.close();
+
+                std::stringstream ss(std::ios::binary | std::ios::out);
+                vDataSerialize::serializeChunk(chunk, ss);
+                std::string bytecode = ss.str();
+                dst.write(bytecode.data(), bytecode.size());
+
+                // Păstrăm trucul cu bitul 63 în footer pentru consistența VM-ului
+                uint64_t footer = (uint64_t)bytecode.size();
+                if (isGuiApp) {
+                    footer |= (1ULL << 63); // Activăm flag-ul și în footer-ul intern
+                    std::wcout << L"[BUILD] Configurare detectata: win_app = 1." << std::endl;
+                }
+
+                dst.write(reinterpret_cast<const char*>(&footer), 8);
+                dst.close(); // 🔥 Închidem stream-ul inițial de scriere ca să eliberăm fișierul
+
+                std::wcout << L"Building completed. " << std::endl;
+
+                // =================================================================
+                // 🔥 ABORDAREA PROFESIONALĂ: Patch la PE Header pentru Subsistem GUI
+                // =================================================================
+                if (isGuiApp) {
+                    // Deschidem fișierul proaspăt generat în mod citire + scriere binară
+                    std::fstream fs(outputPath, std::ios::in | std::ios::out | std::ios::binary);
+                    if (fs.is_open()) {
+                        // 1. Citim locația PE header (e_lfanew) aflată la offset-ul fix 0x3C în formatul MZ
+                        fs.seekg(0x3C, std::ios::beg);
+                        uint32_t peOffset = 0;
+                        fs.read(reinterpret_cast<char*>(&peOffset), 4);
+
+                        // 2. Câmpul Subsystem se află exact la adresa: peOffset + 0x5C
+                        fs.seekp(peOffset + 0x5C, std::ios::beg);
+                        uint16_t subsystemGui = 2; // 2 = IMAGE_SUBSYSTEM_WINDOWS_GUI (3 era Console)
+
+                        fs.write(reinterpret_cast<const char*>(&subsystemGui), 2);
+                        fs.close();
+                        std::wcout << L"[BUILD] Executabil modificat nativ pentru Windows GUI (Fara consola!)." << std::endl;
+                    }
+                    else {
+                        std::wcerr << L"[BUILD] Avertisment: Nu s-a putut deschide .exe pentru patch-ul PE." << std::endl;
+                    }
+                }
+
+                return 0;
+            }
+            catch (const std::exception& e) {
+                std::wcerr << L"Build failed: " << str_to_wstr(e.what()) << std::endl;
+                return 1;
+            }
+        }
+        
         // 3. COMPILE BYTECODE (-c) + GENERARE ASSEMBLY (.olia)
         if (cmd == "-c") {
 			ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);

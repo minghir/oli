@@ -4902,7 +4902,7 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       
   }
   
-  
+  /*
  bool vOliEngine::runEmbeddedIfPresent(const std::string& exePath) {
     std::ifstream file(exePath, std::ios::binary | std::ios::ate);
     if (!file.is_open()) return false;
@@ -4943,3 +4943,68 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
         return false;
     }
 }
+*/
+  
+  bool vOliEngine::runEmbeddedIfPresent(const std::string& exePath) {
+      std::ifstream file(exePath, std::ios::binary | std::ios::ate);
+      if (!file.is_open()) return false;
+
+      std::streamsize fileSize = file.tellg();
+
+      // FIX: static_cast pentru a elimina warning-ul de signed/unsigned comparison
+      if (fileSize < static_cast<std::streamsize>(sizeof(uint64_t))) return false;
+
+      // 1. Citim ultimii 8 octeți (footer-ul brut care conține și dimensiunea și flag-ul GUI)
+      file.seekg(-8, std::ios::end);
+      uint64_t footer = 0;
+      file.read(reinterpret_cast<char*>(&footer), sizeof(uint64_t));
+
+      // 🔥 PASUL A: Extragem flag-ul de aplicație Windows din bitul 63
+      bool isGuiApp = (footer & (1ULL << 63)) != 0;
+
+      // 🔥 PASUL B: Curățăm bitul 63 pentru a obține dimensiunea reală a bytecode-ului
+      uint64_t bytecodeSize = footer & ~(1ULL << 63);
+
+      // 2. Verificăm dacă dimensiunea reală este plauzibilă
+      if (bytecodeSize == 0 || bytecodeSize > static_cast<uint64_t>(fileSize) - 1024) {
+          return false;
+      }
+
+      // 🔥 PASUL C: Dacă s-a cerut "config win_app 1", ascundem consola instantaneu!
+      // O facem chiar aici, înainte de execuție, pentru ca utilizatorul să nu apuce să vadă fereastra neagră
+     // 🔥 PASUL C: Dacă s-a cerut "config win_app 1", ascundem și DETAȘĂM consola!
+      if (isGuiApp) {
+#ifdef _WIN32
+          HWND hConsole = GetConsoleWindow();
+          if (hConsole) {
+              // Folosim ShowWindowAsync deoarece Terminalul modern rulează în alt proces
+              ShowWindowAsync(hConsole, SW_HIDE);
+          }
+          // Eliberăm consola complet. Această linie elimină definitiv procesul din Taskbar!
+          FreeConsole();
+#endif
+      }
+
+      // 3. Ne poziționăm la începutul bytecode-ului folosind dimensiunea curățată
+      file.seekg(static_cast<std::streamoff>(fileSize) - 8 - static_cast<std::streamoff>(bytecodeSize));
+
+      // 4. Încărcăm și rulăm
+      try {
+          // Deserializăm chunk-ul din fișier
+          OliChunk chunk = vDataSerialize::deserializeChunk(file);
+
+          // Creăm o instanță a motorului
+          vOliEngine engine;
+
+          // FIX: Transmitem și al doilea argument (framePtr = 0)
+          // Deoarece acesta este punctul de intrare (Main), stiva începe de la 0.
+          engine.executeBytecode(chunk, 0);
+
+          return true;
+      }
+      catch (...) {
+          LOG_ERROR(L"Eroare critică la încărcarea bytecode-ului embedded.");
+          return false;
+      }
+  }
+  

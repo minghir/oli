@@ -59,7 +59,7 @@ endfunc
 # =================================================================
 # INCAPSULARE CORECTA PENTRU WINWINDOW
 # =================================================================
-def class WinWindow extends UiControl { id, title, init($id, $title), show(), set_layout($style) }
+def class WinWindow extends UiControl { id, title, init($id, $title), show(), set_layout($style), set_icon($path) }
 
 func WinWindow::init($id, $title)
     # Generăm obiectul nativ direct din interiorul constructorului clasei
@@ -77,6 +77,11 @@ endfunc
 func WinWindow::set_layout($style)
     return UI_SET_PROPERTY($this, "layout", $style)
 endfunc
+
+func WinWindow::set_icon($path)
+    return $this.set_prop("icon", $path)
+endfunc
+
 
 # =================================================================
 # CLASELE PENTRU CONTROALELE COPIL (Raman neschimbate)

@@ -1,3 +1,5 @@
+config win_app 1
+
 plugin "oli_system"
 
 include ("include\winui.oli")
@@ -117,6 +119,7 @@ $app.init()
 echo "CREEZ WIN"
 set $win = new("WinWindow")
 $win.init("fereastra_principala", "Oli UI Engine - Fully Encapsulated OOP")
+$win.set_icon("./olide/assets/Oli_LOGO_32.ico")
 $win.set_layout("GRID")
 
 
@@ -223,7 +226,7 @@ $myCodeView.init("CODEVIEW_salveaza", "main_panel", 20, 60, 600, 400)
 $myCodeView.set_width_mode("FILL")
 $myCodeView.set_height_mode("FILL")
 $myCodeView.set_syntax_path("./olide/syntaxes/oli.xml")
-$myCodeView.set_text(READFILE($file))
+if $file != "" then $myCodeView.set_text(READFILE($file)) endif
 $myCodeView.set_font_size(14)
 
 # Legăm butoanele fizice de evenimente

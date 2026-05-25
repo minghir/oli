@@ -1,0 +1,4 @@
+set $a = 10
+set $b = input()
+print( ( INT($a) + INT($b) ) )
+input()

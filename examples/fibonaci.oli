@@ -43,3 +43,4 @@ endfunc
 for $i = 1 to 92 do
    echo fib_memo($i)
 endfor
+input()

@@ -1,0 +1,199 @@
+plugin oli_system
+
+include ("include\winui.oli")
+
+# =================================================================
+# CODUL PRINCIPAL (LOGICA)
+# =================================================================
+
+$counter = 0
+$file = "examples\\gl_glsl.oli"
+$exe_file = "gl_glsl.exe"
+
+func GET_EXE_NAME($cale)
+    # 1. Găsim poziția ultimului "\" (pentru a izola numele fișierului)
+    $last_slash = -1
+    $len = LEN($cale)
+    $i = 0
+    while $i < $len do
+        $sub = SUBSTR($cale, $i, 1)
+        if $sub == "\\" then
+            $last_slash = $i
+        endif
+        $i = $i + 1
+    endwhile
+    
+    # 2. Extragem numele (de după slash)
+    $name_only = SUBSTR($cale, $last_slash + 1)
+    
+    # 3. Înlocuim extensia .oli cu .exe
+    $exe_name = REPLACE($name_only, ".oli", ".exe")
+    
+    return $exe_name
+endfunc
+
+func run_click()
+    echo "MAGIE! Click-ul nativ din Windows a executat cu succes acest cod din scriptul Oli! " .. @counter
+	 #@file = REPLACE(@file,"\\","\\\\")
+	 echo "AICI FILE:" .. @file
+	$build_command = "x64\Release\oli.exe -b " .. @file
+	#$build_command = REPLACE($build_command,"\","/")
+	echo "Rulez: " .. $build_command
+	$res = SYS($build_command)
+	echo $res
+	$exe_file = GET_EXE_NAME(@file)
+	echo "EXECUT: " .. $exe_file
+	START_PROCESS($exe_file)
+	#SYS("x64\\Release\\oli.exe -b tests\\gl2.oli")
+	#SYS("gl2.exe")
+    @counter++
+endfunc
+
+
+func save_click()
+    echo "MAGIE! Click-ul nativ din Windows a executat cu succes acest cod din scriptul Oli! SALVEZ" 
+endfunc
+
+echo "CREEZ APP"
+
+#set $app = CREATE_WINAPP()
+set $app = new("WinApp")
+$app.init() 
+
+echo "CREEZ WIN"
+#set $win = CREATE_WINWINDOW("fereastra_principala", "Oli UI Engine - Fully Encapsulated OOP")
+set $win = new("WinWindow")
+echo "INIT WIN"
+$win.init("fereastra_principala", "Oli UI Engine - Fully Encapsulated OOP")
+echo "SETEZ LAYOUT WIN"
+$win.set_layout("GRID")
+
+
+
+# =================================================================
+# CREARE MENIU NATIV
+# =================================================================
+echo "CREEZ STRUCTURA DE MENIURI"
+
+# 1. Cream meniul principal (Bara de meniu) atasat de fereastra principala
+set $mainMenu = new("WinMenu")
+$mainMenu.init("menu_principal", "fereastra_principala")
+
+# 2. Cream sub-meniul "File"
+set $fileMenu = new("WinMenu")
+$fileMenu.init("menu_file", "menu_principal")
+
+# Adaugam elemente in meniul File
+$fileMenu.add_item("menu_new", "New")
+$fileMenu.add_item("menu_open", "Open...")
+$fileMenu.add_item("menu_save", "Save")
+$fileMenu.add_item("menu_save_as", "Save As...")
+$fileMenu.add_separator("sep_1")
+$fileMenu.add_item("menu_exit", "Exit Application")
+
+# 3. Cream sub-meniul "Help"
+set $helpMenu = new("WinMenu")
+$helpMenu.init("menu_help", "menu_principal")
+$helpMenu.add_item("menu_about", "About Oli IDE")
+
+# 4. Asamblam structura: adaugam sub-meniurile in bara principala
+$mainMenu.add_submenu("File", $fileMenu)
+$mainMenu.add_submenu("Help", $helpMenu)
+
+# 5. Activam bara de meniu pe fereastra setandu-i proprietatea nativa
+$win.set_prop("menu", "menu_principal")
+
+# =================================================================
+# DEFINIRE CALLBACK-URI PENTRU ELEMENTELE DE MENIU
+# =================================================================
+func menu_open_click()
+    set $dlg = new("FileDialog")
+    $dlg.title = "Deschide fișierul Oli"
+    $dlg.type = 0
+    
+    # 1. Deschidem dialogul
+    $path = $dlg.show()
+    
+    # 2. Verificăm dacă utilizatorul a ales ceva
+    if $path != "" then
+        echo "Fișier selectat: " .. $path
+        
+        # 3. Actualizăm variabila globală $file
+        @file = $path
+        
+        # 4. Încărcăm textul în editor
+        $myCodeView.set_text(READFILE($file))
+    endif
+endfunc
+
+func menu_save_click()
+    # Reutilizam functia ta existenta de salvare
+    save_click()
+endfunc
+
+func menu_exit_click()
+    echo "Iesire din aplicatie comandata din meniu..."
+    # Aici poti apela o functie de shutdown daca e expusa sau inchizi fereastra
+	exit()
+endfunc
+
+func menu_about_click()
+    echo "=== Despre Oli UI Engine ==="
+    echo "Versiune: 1.0.0 Enterprise"
+    echo "Engine: Fully Encapsulated OOP Bytecode VM"
+	SHOW_MESSAGE("Despre Oli", "Oli UI Engine v1.0 Fully Encapsulated OOP Bytecode VM!")
+endfunc
+
+# Legam evenimentele elementelor din meniu de functiile de tip callback
+$win.bind("menu_open", "menu_open_click")
+$win.bind("menu_save", "menu_save_click")
+$win.bind("menu_exit", "menu_exit_click")
+$win.bind("menu_about", "menu_about_click")
+
+
+
+
+echo "CREEZ Main panel"
+
+set $mainPanel = new("WinPanel")
+$mainPanel.init("main_panel", "fereastra_principala",0,0,40,40)
+$mainPanel.set_layout("VSTACK")
+$mainPanel.set_width_mode("FILL")
+$mainPanel.set_height_mode("FILL")
+$mainPanel.set_margin(10)
+
+echo "CREEZ act panel"
+set $actPanel = new("WinPanel")
+$actPanel.init("act_panel", "main_panel", 0,0,40,40)
+$actPanel.set_layout("HSTACK")
+$actPanel.set_width_mode("FILL")
+$actPanel.set_height_mode("FIXED")
+$actPanel.set_margin(10)
+
+echo "CREEZ run button"
+
+set $runButton = new("WinButton")
+$runButton.init("btn_run", "act_panel", 10, 4, 80, 40, "RUN")
+$runButton.set_anchor("RIGHT|BOTTOM")
+$runButton.set_width_mode("FIXED")
+
+set $saveButton = new("WinButton")
+$saveButton.init("btn_save", "act_panel", 95, 4, 80, 40, "SAVE")
+$saveButton.set_anchor("RIGHT|BOTTOM")
+$saveButton.set_width_mode("FIXED")
+
+set $myCodeView = new("WinCodeView")
+$myCodeView.init("CODEVIEW_salveaza", "main_panel", 20, 60, 600, 400)
+$myCodeView.set_width_mode("FILL")
+$myCodeView.set_height_mode("FILL")
+$myCodeView.set_syntax_path("./olide/syntaxes/oli.xml")
+$myCodeView.set_text(READFILE($file))
+$myCodeView.set_font_size(14)
+
+$runButton.bind("click", "run_click")
+$saveButton.bind("click", "save_click")
+
+$win.show()  
+$app.run()
+
+echo "=== Aplicație închisă cu succes ==="

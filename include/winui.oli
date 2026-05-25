@@ -130,4 +130,17 @@ func WinMenu::add_submenu($text, $childMenuObj)
     return UI_CALL_METHOD($this.id, "add_submenu", $text, $childMenuObj.id)
 endfunc
 
+
+# =================================================================
+# CLASA WINDIALOG
+# =================================================================
+
+def class FileDialog { title, type, show() }
+
+func FileDialog::show()
+    return UI_FILE_DIALOG($this.type, $this.title)
+endfunc
+
+
+
 echo "AM DEFINIT CLASELE"

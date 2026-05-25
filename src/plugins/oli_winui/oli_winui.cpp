@@ -5,6 +5,7 @@
 #include "vWindow.hpp"
 #include "vPanel.hpp"
 #include "vButton.hpp"
+#include "vFileDialog.hpp"
 #include "vCodeView.hpp"
 #include "vMenu.hpp"
 #include "vMessageDialog.hpp"
@@ -453,4 +454,22 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 			
 			return vData(std::wstring(result.begin(), result.end()));
 		};
+
+        registry[L"UI_FILE_DIALOG"] = [](const std::vector<vData>& args) -> vData {
+            // Arg 0: tip (0 = OPEN, 1 = SAVE)
+            // Arg 1: Titlu
+            int type = (int)args[0].toDouble();
+            std::wstring title = args[1].toWString();
+
+            WinFileDialog dlg(title);
+
+            if (type == 0) { // OPEN
+                if (dlg.showOpen(nullptr)) return vData(dlg.getFilePath());
+            }
+            else { // SAVE
+                if (dlg.showSave(nullptr)) return vData(dlg.getFilePath());
+            }
+
+            return vData(L""); // Returnează string gol la Cancel
+            };
 }

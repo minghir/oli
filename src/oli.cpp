@@ -66,6 +66,7 @@ int main(int argc, char* argv[]) {
         }
 
         // 2. BUILD STANDALONE (-b)
+        /*
         if (cmd == "-b") {
             if (argc < 3) return 1;
             std::string inputPath = argv[2];
@@ -84,6 +85,48 @@ int main(int argc, char* argv[]) {
 
                 std::ifstream src(argv[0], std::ios::binary);
                 std::ofstream dst(outputPath, std::ios::binary);
+                dst << src.rdbuf();
+                src.close();
+
+                std::stringstream ss(std::ios::binary | std::ios::out);
+                vDataSerialize::serializeChunk(chunk, ss);
+                std::string bytecode = ss.str();
+                dst.write(bytecode.data(), bytecode.size());
+                uint64_t footer = (uint64_t)bytecode.size();
+                dst.write(reinterpret_cast<const char*>(&footer), 8);
+                dst.close();
+                std::wcout << L"Buildding completed. " << std::endl;
+                return 0;
+            }
+            catch (const std::exception& e) {
+                std::wcerr << L"Build failed: " << str_to_wstr(e.what()) << std::endl;
+                return 1;
+            }
+        }
+        */
+        // 2. BUILD STANDALONE (-b)
+        if (cmd == "-b") {
+            if (argc < 3) return 1;
+            std::string inputPath = argv[2];
+
+            // 🔥 MODIFICARE AICI: Păstrăm calea completă și doar schimbăm extensia în .exe
+            std::filesystem::path p(inputPath);
+            p.replace_extension(".exe");
+            std::string outputPath = (argc > 3) ? argv[3] : p.string();
+
+            try {
+                std::wcout << L"Oli Engine v0.1\nBuild Date: " << __DATE__ << std::endl;
+                std::wcout << L"Buildding: " << str_to_wstr(inputPath) << std::endl;
+                std::wifstream wif(inputPath);
+                safe_imbue(wif);
+                if (!wif.is_open()) throw std::runtime_error("Fisier sursa inexistent.");
+
+                std::wstringstream wss; wss << wif.rdbuf();
+                OliCompiler compiler;
+                OliChunk chunk = compiler.compile(wss.str());
+
+                std::ifstream src(argv[0], std::ios::binary);
+                std::ofstream dst(outputPath, std::ios::binary); // Acum dst va folosi calea completă a scriptului!
                 dst << src.rdbuf();
                 src.close();
 

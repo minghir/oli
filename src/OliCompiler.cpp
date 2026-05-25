@@ -22,44 +22,6 @@ static std::vector<std::wstring> splitW(const std::wstring& s, const std::wstrin
 std::vector<std::wstring> splitStatementsSmart(const std::wstring& input) {
     std::vector<std::wstring> result;
     std::wstring current;
-    int depth = 0;
-    int bDepth = 0;
-    bool inQuotes = false;
-
-    // Tokenizăm grosier pentru a găsi structurile de control
-    auto tokens = vOliCommandParser::tokenize(input);
-
-    for (const auto& token : tokens) {
-        std::wstring ut = to_upper(token);
-
-        if (token == L"\"") inQuotes = !inQuotes; // Notă: Depinde de cum scoate parserul tău ghilimelele
-
-        if (!inQuotes) {
-            // Adăugăm REPEAT aici
-            if (ut == L"IF" || ut == L"WHILE" || ut == L"FOR" || ut == L"FUNC" || ut == L"REPEAT" || ut == L"CYCLE" || ut == L"SWITCH" || ut == L"PROC") depth++;
-
-            // Adăugăm ENDREPEAT aici
-            if (ut == L"ENDIF" || ut == L"ENDWHILE" || ut == L"ENDFOR" || ut == L"ENDFUNC" || ut == L"ENDREPEAT" || ut == L"ENDCYCLE" || ut == L"ENDSWITCH" || ut == L"ENDPROC") depth--;
-
-            if (token == L"{" || token == L"[") bDepth++;
-            if (token == L"}" || token == L"]") bDepth--;
-
-            if (token == L";" && depth == 0 && bDepth == 0) {
-                if (!trim(current).empty()) result.push_back(trim(current));
-                current.clear();
-                continue;
-            }
-        }
-        current += token + L" ";
-    }
-
-    if (!trim(current).empty()) result.push_back(trim(current));
-    return result;
-}
-*/
-std::vector<std::wstring> splitStatementsSmart(const std::wstring& input) {
-    std::vector<std::wstring> result;
-    std::wstring current;
 
     int depth = 0;      // Nivelul de blocuri (IF, WHILE, PROC etc.)
     int bDepth = 0;     // Nivelul de paranteze ( [ { )
@@ -147,6 +109,118 @@ std::vector<std::wstring> splitStatementsSmart(const std::wstring& input) {
 
     return result;
 }
+*/
+std::vector<std::wstring> splitStatementsSmart(const std::wstring& input) {
+    std::vector<std::wstring> result;
+    std::wstring current;
+
+    int depth = 0;      // Nivelul de blocuri (IF, WHILE, PROC etc.)
+    int bDepth = 0;     // Nivelul de paranteze ( [ { )
+    bool inQuotes = false;
+
+    LOG_DEBUG(L"[SPLIT] Incepe procesarea blocului de dimensiune: " + std::to_wstring(input.length()));
+
+    for (size_t i = 0; i < input.length(); ++i) {
+        wchar_t c = input[i];
+
+        // =================================================================
+        // 1. SCUTUL ANTI-ESCAPE (Rezolvă problema cu căile și ghilimelele)
+        // =================================================================
+        // Dacă întâlnim un backslash, îl adăugăm în buffer împreună cu următorul 
+        // caracter și sărim peste el. Astfel, perechi ca \\ sau \" sunt consumate corect
+        // și nu vor păcăli mașina de stări a ghilimelelor de mai jos.
+        if (c == L'\\') {
+            current += c;
+            if (i + 1 < input.length()) {
+                current += input[i + 1];
+                i++; // Sărim peste caracterul care a fost escapat
+            }
+            continue;
+        }
+
+        // =================================================================
+        // 2. GESTIONARE GHILIMELE (State Machine pentru String-uri)
+        // =================================================================
+        // Acum verificarea este 100% sigură: dacă am ajuns aici și c este '"', 
+        // înseamnă sigur că este un delimitator de string, nu o ghilimea escapată!
+        if (c == L'"') {
+            inQuotes = !inQuotes;
+            // LOG_DEBUG(inQuotes ? L"[SPLIT] Intrat in mod STRING" : L"[SPLIT] Iesit din mod STRING");
+        }
+
+        // =================================================================
+        // 3. LOGICĂ DE SEPARARE (Activă doar în afara ghilimelelor)
+        // =================================================================
+        if (!inQuotes) {
+
+            // Lambda pentru a verifica dacă la poziția curentă începe un keyword
+            auto isKeyword = [&](const std::wstring& targetUpper, size_t pos) {
+                if (pos + targetUpper.length() > input.length()) return false;
+
+                // Extragem bucata și o facem Upper pentru comparație case-insensitive
+                std::wstring sub = input.substr(pos, targetUpper.length());
+                for (auto& sc : sub) sc = std::towupper(sc);
+
+                if (sub != targetUpper) return false;
+
+                // Verificăm marginile (să nu fie parte dintr-un alt cuvânt, ex: "SHIFT" să nu fie "IF")
+                bool prevOk = (pos == 0 || iswspace(input[pos - 1]) || wcschr(L";()[]{}\"", input[pos - 1]));
+                size_t endPos = pos + targetUpper.length();
+                bool nextOk = (endPos >= input.length() || iswspace(input[endPos]) || wcschr(L";()[]{}\"", input[endPos]));
+
+                return prevOk && nextOk;
+                };
+
+            // Detectăm structurile care deschid blocuri de cod
+            if (isKeyword(L"IF", i) || isKeyword(L"WHILE", i) || isKeyword(L"FOR", i) ||
+                isKeyword(L"PROC", i) || isKeyword(L"FUNC", i) || isKeyword(L"REPEAT", i) ||
+                isKeyword(L"CYCLE", i) || isKeyword(L"SWITCH", i)) {
+                depth++;
+                LOG_DEBUG(L"[SPLIT] Gasit Keyword Start. Depth: " + std::to_wstring(depth));
+            }
+            // Detectăm structurile care închid blocurile de cod
+            else if (isKeyword(L"ENDIF", i) || isKeyword(L"ENDWHILE", i) || isKeyword(L"ENDFOR", i) ||
+                isKeyword(L"ENDPROC", i) || isKeyword(L"ENDFUNC", i) || isKeyword(L"ENDREPEAT", i) ||
+                isKeyword(L"ENDCYCLE", i) || isKeyword(L"ENDSWITCH", i)) {
+                if (depth > 0) depth--;
+                LOG_DEBUG(L"[SPLIT] Gasit Keyword End. Depth: " + std::to_wstring(depth));
+            }
+
+            // Gestionăm adâncimea parantezelor pentru structurile de tip Array/Map/Expresii
+            if (c == L'{' || c == L'[') {
+                bDepth++;
+            }
+            if (c == L'}' || c == L']') {
+                if (bDepth > 0) bDepth--;
+            }
+
+            // =================================================================
+            // 4. SEPARARE LA PUNCT ȘI VIRGULĂ (Tăierea instrucțiunilor)
+            // =================================================================
+            // Tăiem linia doar dacă suntem la nivelul "zero" global (nu în interiorul unui IF/WHILE sau Array)
+            if (c == L';' && depth == 0 && bDepth == 0) {
+                if (!trim(current).empty()) {
+                    LOG_DEBUG(L"[SPLIT] Statement finalizat la ';': " + (current.length() > 20 ? current.substr(0, 20) + L"..." : current));
+                    result.push_back(trim(current));
+                }
+                current.clear();
+                continue; // Sărim peste ';' pentru a nu-l introduce în instrucțiunea următoare
+            }
+        }
+
+        // Adăugăm caracterul curent la instrucțiunea aflată în construcție
+        current += c;
+    }
+
+    // Adăugăm și ultima instrucțiune din buffer dacă a rămas ceva nefinalizat cu ';'
+    if (!trim(current).empty()) {
+        LOG_DEBUG(L"[SPLIT] Ultimul statement adaugat: " + (current.length() > 20 ? current.substr(0, 20) + L"..." : current));
+        result.push_back(trim(current));
+    }
+
+    return result;
+}
+
 
 
 OliChunk OliCompiler::compile(const std::wstring& source,
@@ -189,90 +263,6 @@ OliChunk OliCompiler::compile(const std::wstring& source,
                 isMultilineString = !isMultilineString;
             }
         }
-
-        /*
-        // --- 0. PREPROCESARE: INCLUDE ---
-        std::wstring upperLine = to_upper(cleanLine);
-        if (upperLine.find(L"INCLUDE") == 0) {
-            size_t startQuote = cleanLine.find(L"\"");
-            size_t endQuote = cleanLine.find_last_of(L"\"");
-
-            if (startQuote != std::wstring::npos && endQuote != std::wstring::npos && startQuote < endQuote) {
-                std::wstring path = cleanLine.substr(startQuote + 1, endQuote - startQuote - 1);
-                LOG_DEBUG(L"[PREPROCESSOR] Includem sursa: " + path);
-
-                std::ifstream file;
-                PortTools::openIfstream(file, path);
-                if (file.is_open()) {
-                    std::stringstream buffer;
-                    buffer << file.rdbuf();
-                    std::wstring includedSource = PortTools::utf8_to_wstring(buffer.str());
-
-                    // Compilăm recursiv
-                    OliChunk includedChunk = this->compile(includedSource, parentProcs, true);
-
-                    // --- PASUL CRITIC 1: Remapare Constante ---
-                    std::map<uint16_t, uint16_t> indexMap;
-                    for (uint16_t i = 0; i < (uint16_t)includedChunk.constants.size(); ++i) {
-                        indexMap[i] = chunk.addConstant(includedChunk.constants[i]);
-                    }
-
-                    // --- PASUL CRITIC 2: Migrare Bytecode cu corecție de indici ---
-                    size_t i = 0;
-                    // Nu copiem OP_RETURN-ul de la finalul fișierului inclus
-                    size_t limit = includedChunk.code.size();
-                    if (!includedChunk.code.empty() && includedChunk.code.back() == (uint8_t)OpCode::OP_RETURN) {
-                        limit--;
-                    }
-
-                    while (i < limit) {
-                        uint8_t op = includedChunk.code[i];
-                        chunk.addByte(op, 0);
-                        i++;
-
-                        // Instrucțiuni care folosesc 2 bytes pentru indici de constante
-                        if (op == (uint8_t)OpCode::OP_CONSTANT || op == (uint8_t)OpCode::OP_GET_GLOBAL ||
-                            op == (uint8_t)OpCode::OP_SET_GLOBAL || op == (uint8_t)OpCode::OP_UNSET ||
-                            op == (uint8_t)OpCode::OP_GET_ADDR || op == (uint8_t)OpCode::OP_PLUGIN ||
-                            op == (uint8_t)OpCode::OP_CALL_NATIVE || op == (uint8_t)OpCode::OP_CALL)
-                        {
-                            uint16_t oldIdx = (uint16_t)((includedChunk.code[i] << 8) | includedChunk.code[i + 1]);
-                            uint16_t newIdx = indexMap[oldIdx];
-                            chunk.code[chunk.code.size() - 0] = (uint8_t)(newIdx >> 8); // Rescriem High Byte (deja adăugat un placeholder sau addByte)
-                            // Corecție: addByte a pus deja OP-ul, acum punem cei 2 bytes corecți
-                            chunk.code.pop_back(); // Scoatem byte-ul adăugat greșit mai sus dacă e cazul, sau gestionăm flow-ul:
-
-                            // Versiune curată de emisie:
-                            chunk.addByte((uint8_t)(newIdx >> 8), 0);
-                            chunk.addByte((uint8_t)(newIdx & 0xFF), 0);
-                            i += 2;
-
-                            if (op == (uint8_t)OpCode::OP_CALL_NATIVE || op == (uint8_t)OpCode::OP_CALL) {
-                                chunk.addByte(includedChunk.code[i++], 0); // ArgCount
-                            }
-                        }
-                        // Salturi (JUMP/LOOP) - se copiază ca atare (sunt relative)
-                        else if (op == (uint8_t)OpCode::OP_JUMP || op == (uint8_t)OpCode::OP_JUMP_IF_FALSE ||
-                            op == (uint8_t)OpCode::OP_JUMP_IF_TRUE || op == (uint8_t)OpCode::OP_LOOP) {
-                            chunk.addByte(includedChunk.code[i++], 0);
-                            chunk.addByte(includedChunk.code[i++], 0);
-                        }
-                        // Instrucțiuni cu 1 byte argument (Array/Map/CallMethod)
-                        else if (op == (uint8_t)OpCode::OP_ARRAY || op == (uint8_t)OpCode::OP_MAP ||
-                            op == (uint8_t)OpCode::OP_CALL_METHOD || op == (uint8_t)OpCode::OP_CALL_DYNAMIC) {
-                            chunk.addByte(includedChunk.code[i++], 0);
-                        }
-                    }
-
-                    // Migrăm procedurile în tabela principală
-                    for (auto const& [name, proc] : includedChunk.procedures) {
-                        chunk.procedures[name] = proc;
-                    }
-                    continue;
-                }
-            }
-        }
-        */
         
        // --- PREPROCESARE: INCLUDE ---
         std::wstring upperLine = to_upper(cleanLine);

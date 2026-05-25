@@ -4,6 +4,10 @@
 #include "ConsoleManager.hpp"
 #include "ControlIdManager.hpp" // Adăugat pentru a accesa ControlIdManager::getInstance().getId()
 #include "stringUtils.hpp"
+
+
+#include "Layouts/Layouts.hpp" // Include headerele pentru GridLayout, AnchorLayout, FormLayout etc.
+#include <algorithm>
 #include <windows.h>
 #include <shellscalingapi.h>
 
@@ -311,3 +315,90 @@ LRESULT vContainer::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPa
     return vControl::handleMessage(hwnd, msg, wParam, lParam);
 }
 
+
+
+// Funcție ajutătoare pentru normalizarea numelui proprietății în lowercase
+static std::wstring toLowerProp(const std::wstring& name) {
+    std::wstring lowered = name;
+    std::transform(lowered.begin(), lowered.end(), lowered.begin(), ::tolower);
+    return lowered;
+}
+
+// Funcție ajutătoare pentru normalizarea valorii de tip string în uppercase
+static std::wstring toUpperVal(const std::wstring& val) {
+    std::wstring upper = val;
+    std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+    return upper;
+}
+
+bool vContainer::setProperty(const std::wstring& name, const vData& value) {
+    std::wstring prop = toLowerProp(name);
+
+    // Interceptăm proprietatea specifică doar containerelor care acceptă manageri de layout
+    if (prop == L"layout") {
+        std::wstring layoutType = toUpperVal(value.toWString());
+
+        if (layoutType == L"GRID") {
+            // Instanțiem un Grid standard 1x1. Parametrii suplimentari pot fi configurați 
+            // ulterior prin atribute sau metode custom, dacă scriptul o cere
+            this->setLayoutStrategy(std::make_unique<GridLayout>(1, 1));
+            ConsoleManager::getInstance().log(L"📐 [vContainer] Strategia GRID a fost aplicată polimorfic pe: " + str_to_wstr(m_id));
+            return true;
+        }
+        else if (layoutType == L"ANCHOR") {
+            this->setLayoutStrategy(std::make_unique<AnchorLayout>());
+            ConsoleManager::getInstance().log(L"📐 [vContainer] Strategia ANCHOR a fost aplicată polimorfic pe: " + str_to_wstr(m_id));
+            return true;
+        }
+        else if (layoutType == L"FLOW" || layoutType == L"FORM") {
+            this->setLayoutStrategy(std::make_unique<FormLayout>());
+            ConsoleManager::getInstance().log(L"📐 [vContainer] Strategia FLOW/FORM a fost aplicată polimorfic pe: " + str_to_wstr(m_id));
+            return true;
+        }
+        else if (layoutType == L"VSTACK") {
+            this->setLayoutStrategy(std::make_unique<VerticalStackLayout>());
+            ConsoleManager::getInstance().log(L"📐 [vContainer] Strategia VSTACK a fost aplicată polimorfic pe: " + str_to_wstr(m_id));
+            return true;
+        }
+        else if (layoutType == L"HSTACK") {
+            this->setLayoutStrategy(std::make_unique<HorizontalPercentStackLayout>());
+            ConsoleManager::getInstance().log(L"📐 [vContainer] Strategia HSTACK a fost aplicată polimorfic pe: " + str_to_wstr(m_id));
+            return true;
+        }
+        else if (layoutType == L"NONE" || layoutType == L"NULL") {
+            this->setLayoutStrategy(nullptr);
+            ConsoleManager::getInstance().log(L"📐 [vContainer] Strategia de layout a fost eliminată pentru: " + str_to_wstr(m_id));
+            return true;
+        }
+        
+        return false; // Strategie de layout necunoscută
+    }
+
+    // Dacă nu este proprietatea "layout", o pasăm în cascadă către vControl
+    // vControl se va ocupa de text, x, y, width, height, margin, anchor etc.
+    return vControl::setProperty(name, value);
+}
+
+vData vContainer::getProperty(const std::wstring& name) const {
+    std::wstring prop = toLowerProp(name);
+
+    // Citirea tipului de layout activat în container
+    if (prop == L"layout") {
+        if (!m_layoutStrategy) {
+            return vData(L"NONE");
+        }
+        
+        // Dacă ai nevoie să întorci tipul exact ca string, putem face verificări de tip RTTI (dynamic_cast) 
+        // pe m_layoutStrategy.get(), sau poți lăsa o identificare generică.
+        if (dynamic_cast<GridLayout*>(m_layoutStrategy.get())) return vData(L"GRID");
+        if (dynamic_cast<AnchorLayout*>(m_layoutStrategy.get())) return vData(L"ANCHOR");
+        if (dynamic_cast<FormLayout*>(m_layoutStrategy.get())) return vData(L"FLOW");
+        if (dynamic_cast<VerticalStackLayout*>(m_layoutStrategy.get())) return vData(L"VSTACK");
+        if (dynamic_cast<HorizontalPercentStackLayout*>(m_layoutStrategy.get())) return vData(L"HSTACK");
+        
+        return vData(L"CUSTOM");
+    }
+
+    // Dacă nu e "layout", lăsăm vControl să rezolve citirea proprietății
+    return vControl::getProperty(name);
+}

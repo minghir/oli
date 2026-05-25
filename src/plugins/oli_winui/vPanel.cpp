@@ -6,7 +6,7 @@
 
 #include <windowsx.h>
 #include <commctrl.h>
-
+#include <algorithm>
 
 // Initialize the static member (outside of any function).
 ATOM vPanel::s_panelClassAtom = 0;
@@ -365,61 +365,51 @@ LRESULT vPanel::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
    // return 0;
 }
 
-/*
-LRESULT vPanel::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
-    
+
+
+
+
+// Funcție ajutătoare locală pentru transformarea în lowercase
+static std::wstring toLowerPropPanel(const std::wstring& name) {
+    std::wstring lowered = name;
+    std::transform(lowered.begin(), lowered.end(), lowered.begin(), ::tolower);
+    return lowered;
+}
+
+bool vPanel::setProperty(const std::wstring& name, const vData& value) {
+    std::wstring prop = toLowerPropPanel(name);
+
+    // Proprietate specifică doar pentru vPanel
+    if (prop == L"scroll_bar" || prop == L"scrollbar") {
+        bool scrollOn = value.toBool();
+        this->setScrollBarOn(scrollOn);
         
-    if (vContainer::handleMessage(hwnd, msg, wParam, lParam) == 0) {
-        return 0;
+        // AICI: Dacă ai nevoie să modifici dinamic stilurile ferestrei Win32 (WS_VSCROLL)
+        // în funcție de starea scrollBarOn, o poți face aici, urmată de un refresh:
+        // if (m_handle) {
+        //     LONG_PTR style = GetWindowLongPtr(m_handle, GWL_STYLE);
+        //     if (scrollOn) style |= WS_VSCROLL; else style &= ~WS_VSCROLL;
+        //     SetWindowLongPtr(m_handle, GWL_STYLE, style);
+        //     SetWindowPos(m_handle, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+        // }
+        
+        ConsoleManager::getInstance().log(L"📦 [vPanel] S-a modificat starea scrollbar pe panoul: " + str_to_wstr(m_id));
+        return true;
     }
 
-        // 2. Dacă am ajuns aici, mesajul este pentru vPanel însuși
-        switch (msg) {
-        case WM_ERASEBKGND: {
-            HDC hdc = (HDC)wParam;
-            RECT rect;
-            GetClientRect(hwnd, &rect);
-            HBRUSH hBrush = CreateSolidBrush(m_backgroundColor);
-            FillRect(hdc, &rect, hBrush);
-            DeleteObject(hBrush);
-            return 1;
-        }
-        case WM_PAINT: {
-            PAINTSTRUCT ps;
-            HDC hdc = BeginPaint(hwnd, &ps);
-            HBRUSH hBrush = CreateSolidBrush(m_backgroundColor);
-            FillRect(hdc, &ps.rcPaint, hBrush);
-            DeleteObject(hBrush);
-            // ... restul logicii de desenare ...
-            EndPaint(hwnd, &ps);
-            return 0;
-        }
-        case WM_LBUTTONDOWN:
-            m_isPressed = true;
-            SetCapture(hwnd);
-            InvalidateRect(hwnd, nullptr, TRUE);
-            return 0;
-
-        case WM_LBUTTONUP:
-            if (m_isPressed) {
-                m_isPressed = false;
-                ReleaseCapture();
-                InvalidateRect(hwnd, nullptr, TRUE);
-                // ... onMouseClick logic ...
-            }
-            return 0;
-
-        case WM_SIZE: {
-            // Tratăm WM_SIZE special: întâi layout-ul copiilor, apoi logica de panel
-            LRESULT r = vContainer::handleMessage(hwnd, msg, wParam, lParam);
-            GetClientRect(hwnd, &m_originalClientRect);
-            return r;
-        }
-        }
-    
-
-    // 3. Mesaje reziduale (default)
-    return vContainer::handleMessage(hwnd, msg, wParam, lParam);
+    // Dacă nu este proprietatea specifică panoului, o pasăm în sus către vContainer
+    // vContainer va verifica dacă e un "layout", iar dacă nu, o va trimite la vControl
+    return vContainer::setProperty(name, value);
 }
-*/
+
+vData vPanel::getProperty(const std::wstring& name) const {
+    std::wstring prop = toLowerPropPanel(name);
+
+    if (prop == L"scroll_bar" || prop == L"scrollbar") {
+        return vData(m_scrollBarOn);
+    }
+
+    // Fallback către lanțul de moștenire (vContainer -> vControl)
+    return vContainer::getProperty(name);
+}

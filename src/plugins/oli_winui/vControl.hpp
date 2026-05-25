@@ -12,6 +12,8 @@
 #include "EventDispatcher.hpp" // Pentru sistemul de evenimente
 #include "ConsoleManager.hpp"
 #include "stringUtils.hpp"
+#include "../../OliEngine.hpp"
+#include "../../IOliEngine.hpp"
 
 enum class ControlType {
     Window,
@@ -235,7 +237,7 @@ public:
     void setFontName(const std::wstring& fontName){
         setFont(fontName, m_baseFontSize, m_fontWeight, m_fontItalic, m_fontUnderline);
     }
-    void setFontSize(int baseFontSize) {
+    virtual void setFontSize(int baseFontSize) {
         setFont(m_fontName, baseFontSize, m_fontWeight, m_fontItalic, m_fontUnderline);
     }
     void setFontWeight(int weight) {
@@ -422,6 +424,14 @@ public:
     bool validateRecursive();
 
     std::wstring getValidationError() const { return m_validationError; }
+	
+	
+	virtual bool setProperty(const std::wstring& name, const vData& value);
+	virtual vData getProperty(const std::wstring& name) const;
+	// În vControl.hpp
+	virtual bool callMethod(const std::wstring& methodName, const std::vector<vData>& args) {
+		return false; // Implementare default
+	}
 protected:
     
     std::function<void()> m_onClickCallback = nullptr;

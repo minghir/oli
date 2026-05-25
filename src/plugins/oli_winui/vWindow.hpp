@@ -128,6 +128,11 @@ public:
     void centerWindow();
 
     bool isModal() const { return m_isModal; }
+	
+	
+	bool setProperty(const std::wstring& name, const vData& value) override;
+	vData getProperty(const std::wstring& name) const override;
+	
 protected:
    // HINSTANCE m_hInstance;      // Handle-ul instanței aplicației.
     bool m_isMainWindow;        // Flag pentru a determina dacă este fereastra principală.

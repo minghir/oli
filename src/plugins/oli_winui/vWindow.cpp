@@ -21,30 +21,15 @@ vWindow::~vWindow() {
     }
 }
 
-
+/*
 // --- Metoda Create (detaliată) ---
 bool vWindow::create(const std::wstring& className, const std::wstring& title,
     DWORD style, int x, int y, int w, int h,
     HWND parent, HMENU menu) {
-    /*
-    switch (m_WindowType) {
-    case WindowType::StandardWindow:
-        style |= WS_OVERLAPPEDWINDOW;
-        break;
-
-    case WindowType::DialogWindow:
-        style = WS_POPUP | WS_CAPTION | WS_SYSMENU;
-        break;
-
-    case WindowType::ToolWindow:
-        style = WS_POPUP | WS_CAPTION | WS_VISIBLE | WS_EX_TOOLWINDOW;
-        break;
-
-    case WindowType::PopupWindow:
-        style = WS_POPUP;
-        break;
-    }
-    */
+		
+		m_hInstance = GetModuleHandle(nullptr);
+		
+    
     DWORD dwExStyle = 0; // Variabilă nouă pentru stiluri extinse
    // LOG_WARNING()
     switch (m_WindowType) {
@@ -73,30 +58,7 @@ bool vWindow::create(const std::wstring& className, const std::wstring& title,
     m_base_width = w;
     m_base_height = h;
 
-    /*
-    WNDCLASS wc = {}; // Inițializează structura la zero
-    //wc.lpfnWndProc = StaticWndProc; // Asociază procedura statică de fereastră din vControl.
-    //wc.lpfnWndProc = wndProc; // Asociază procedura statică de fereastră din vControl.
-    wc.lpfnWndProc = vControl::StaticWndProc;
-    wc.hInstance = m_hInstance;
-    wc.lpszClassName = className.c_str();
-    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
 
-    // Verifică dacă clasa de fereastră este deja înregistrată pentru a evita erori.
-    WNDCLASS existingWc; // Pentru a verifica existența clasei.
-    if (!GetClassInfo(m_hInstance, className.c_str(), &existingWc)) {
-        if (!RegisterClass(&wc)) {
-            //ConsoleManager::getInstance().log(L"[ERROR] Creare vWindow: Eroare la înregistrarea clasei de fereastră '" + className + L"'. Cod eroare: " + std::to_wstring(GetLastError()));
-            return false;
-        }
-        //ConsoleManager::getInstance().log(L"[vWindow::create] Clasa de fereastră '" + className + L"' înregistrată cu succes.");
-    }
-    else {
-       // ConsoleManager::getInstance().log(L"[vWindow::create] Clasa de fereastră '" + className + L"' este deja înregistrată. Se va reutiliza.");
-    }
-    */
 
     // Folosește versiunea EXW pentru siguranță maximă
     WNDCLASSEXW wc = { 0 };
@@ -117,6 +79,7 @@ bool vWindow::create(const std::wstring& className, const std::wstring& title,
             return false;
         }
     }
+	
 
 
     // Creează fereastra WinAPI. `this` este pasat ca lpCreateParams.
@@ -126,22 +89,12 @@ bool vWindow::create(const std::wstring& className, const std::wstring& title,
     //int scaled_h = static_cast<int>(h * scaleFactor);
     //UINT parentDpi = GetDpiForWindow(parent);
     // Apelează metoda de scalare cu DPI-ul obținut
-    scale(GetDpiForSystem());
+    
+	scale(GetDpiForSystem());
     
   //  ConsoleManager::getInstance().log(L"[ERROR] vWindow creation: Error creating panel HWND for ID '" + str_to_wstr(m_id) + L"'. Error code: " + std::to_wstring(GetLastError()));
-  //  ConsoleManager::getInstance().log(L"[ERROR]\t\t\t x,y,width,height(" + std::to_wstring(getX()) + L"," + std::to_wstring(getY()) + L"," + std::to_wstring(getWidth()) + L"," + std::to_wstring(getHeight()) + L")");
-    /*
-    m_handle = CreateWindowEx(0,
-        className.c_str(),
-        title.c_str(),
-        style | WS_CLIPCHILDREN, // WS_CLIPCHILDREN este esențial pentru performanța desenării controalelor copil.
-        //m_x, m_y, scaled_w, scaled_h,
-        getX(), getY(), getWidth(), getHeight(),
-        parent,
-        menu,
-        m_hInstance,
-        this);
-        */
+  //  ConsoleManager::getInstance().log(L"[ERROR]\t\t\t x,y,width,height(" + std::to_wstring(getX()) + L"," + std::to_wstring(getY()) + L"," + std::to_wstring(getWidth()) + L"," + //std::to_wstring(getHeight()) + L")");
+    
 
     m_handle = CreateWindowExW(
         dwExStyle, // Transmitem stilul extins aici!
@@ -155,13 +108,84 @@ bool vWindow::create(const std::wstring& className, const std::wstring& title,
         this);
     if (!m_handle) {
         //ConsoleManager::getInstance().log(L"[ERROR] Creare vWindow: Eroare la crearea ferestrei '" + title + L"'. Cod eroare: " + std::to_wstring(GetLastError()));
+		return false;
     }
     else {
         centerWindow();
         //ConsoleManager::getInstance().log(L"[vWindow::create] Fereastra '" + title + L"' (ID: " + std::wstring(m_id.begin(), m_id.end()) + L") a fost creată cu succes. HWND: " + std::to_wstring(reinterpret_cast<uintptr_t>(m_handle)));
     }
+	scale(GetDpiForSystem());
     return m_handle != nullptr;
 }
+*/
+bool vWindow::create(const std::wstring& className, const std::wstring& title,
+    DWORD style, int x, int y, int w, int h,
+    HWND parent, HMENU menu) {
+    
+    m_hInstance = GetModuleHandle(nullptr);
+    
+    // 1. Determinare stiluri extinse
+    DWORD dwExStyle = 0;
+    switch (m_WindowType) {
+        case WindowType::StandardWindow: style |= WS_OVERLAPPEDWINDOW; break;
+        case WindowType::DialogWindow:   style = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_BORDER; break;
+        case WindowType::ToolWindow:     style = WS_POPUP | WS_CAPTION | WS_SYSMENU; dwExStyle = WS_EX_TOOLWINDOW; break;
+        case WindowType::PopupWindow:    style = WS_POPUP; break;
+    }
+
+    m_base_x = x;
+    m_base_y = y;
+    m_base_width = w;
+    m_base_height = h;
+
+    // 2. Înregistrare clasă folosind structuri Unicode (W)
+    WNDCLASSEXW wc = { 0 };
+    wc.cbSize = sizeof(WNDCLASSEXW);
+    wc.lpfnWndProc = vControl::StaticWndProc; // Asigură-te că aici apelezi DefWindowProcW!
+    wc.hInstance = m_hInstance;
+    wc.lpszClassName = className.c_str();
+    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+    wc.style = CS_HREDRAW | CS_VREDRAW;
+
+    WNDCLASSEXW existingWc = { 0 };
+    existingWc.cbSize = sizeof(WNDCLASSEXW);
+
+    if (!GetClassInfoExW(m_hInstance, className.c_str(), &existingWc)) {
+        if (!RegisterClassExW(&wc)) {
+            LOG_ERROR(L"[vWindow::create] RegisterClassExW a eșuat. Cod: " + std::to_wstring(GetLastError()));
+            return false;
+        }
+    }
+
+    // 3. Scalare DPI (Păstrată conform logicii tale)
+    scale(GetDpiForSystem());
+
+    // 4. Creare fereastră Unicode (W)
+    m_handle = CreateWindowExW(
+        dwExStyle,
+        className.c_str(),
+        title.c_str(), // title este std::wstring, perfect pentru W
+        style | WS_CLIPCHILDREN,
+        getX(), getY(), getWidth(), getHeight(),
+        parent,
+        menu,
+        m_hInstance,
+        this // `this` este trimis ca lParam in WM_CREATE
+    );
+
+    if (!m_handle) {
+        LOG_ERROR(L"[vWindow::create] CreateWindowExW a eșuat. Cod: " + std::to_wstring(GetLastError()));
+        return false;
+    }
+
+    centerWindow();
+    scale(GetDpiForSystem());
+
+    return true;
+}
+
 
 // --- Gestionare Mesaje (handleMessage) ---
 LRESULT vWindow::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -208,8 +232,9 @@ LRESULT vWindow::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
             }
 
             std::string menuItemId = ControlIdManager::getNameById(win32Id);
-           // LOG_DEBUG(L"[vWindow::handleMessage] Mesaj WM_COMMAND de la un MENIU/ACCELERATOR. ID: " + std::to_wstring(win32Id) + L":" + str_to_wstr(menuItemId));
-            getEventDispatcher().dispatch(menuItemId);
+            LOG_DEBUG(L"[vWindow::handleMessage] Mesaj WM_COMMAND de la un MENIU/ACCELERATOR. ID: " + std::to_wstring(win32Id) + L":" + str_to_wstr(menuItemId));
+            //getEventDispatcher().dispatch(menuItemId);
+			getEventDispatcher().dispatch(menuItemId, m_id);
             //m_appDispatcher->dispatch(menuItemId);
            // ConsoleManager::getInstance().log(L"[vWindow::handleMessage] A fost emis un eveniment de meniu: " + str_to_wstr(menuItemId));
             // Mesajul a fost procesat, nu mai este necesar să-l pasăm mai departe.
@@ -343,25 +368,46 @@ LRESULT vWindow::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
 }
 
 
+/*
+void vWindow::setMenu(vMenu* pMenu) {
+    if (!m_handle || !IsWindow(m_handle)) return;
+    if (!pMenu || !pMenu->getHandle()) return;
 
+    // Atașăm meniul ferestrei
+    if (SetMenu(m_handle, pMenu->getHandle())) {
+        // 🔥 ESENȚIAL: Forțăm fereastra să redeseneze bara de meniu
+        DrawMenuBar(m_handle);
+        // Dacă meniul tot nu apare, forțăm un resize minim care forțează recalcularea spațiului
+        SetWindowPos(m_handle, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+        
+        LOG_DEBUG(L"[vWindow::setMenu] Meniu atașat și redesenat cu succes.");
+    } else {
+        LOG_ERROR(L"[vWindow::setMenu] SetMenu a esuat. Cod: " + std::to_wstring(GetLastError()));
+    }
+}
+*/
 
 void vWindow::setMenu(vMenu* pMenu) {
-    if (!m_handle) {
-        //ConsoleManager::getInstance().log(L"[ERROR] vWindow::setMenu: Fereastra nu este creată.");
+    if (!m_handle || !IsWindow(m_handle)) {
+        LOG_ERROR(L"[vWindow::setMenu] Fereastra este invalida!");
+        return;
+    }
+    
+    HMENU hMenuToSet = pMenu->getHandle();
+    LOG_DEBUG(L"[vWindow::setMenu] Incerc setarea meniului cu HMENU: " + std::to_wstring(reinterpret_cast<uintptr_t>(hMenuToSet)));
+
+    if (!hMenuToSet) {
+        LOG_ERROR(L"[vWindow::setMenu] Meniul primit are handle NULL!");
         return;
     }
 
-    if (!pMenu || !pMenu->getHandle()) {
-        //ConsoleManager::getInstance().log(L"[ERROR] vWindow::setMenu: Meniul furnizat este invalid sau nu are un handle WinAPI.");
-        return;
-    }
-
-    // Apelează funcția WinAPI pentru a asocia meniul cu fereastra
-    if (!SetMenu(m_handle, pMenu->getHandle())) {
-       // ConsoleManager::getInstance().log(L"[ERROR] vWindow::setMenu: Eroare la setarea meniului. Cod eroare: " + std::to_wstring(GetLastError()));
-    }
-    else {
-       // ConsoleManager::getInstance().log(L"[vWindow::setMenu] Meniul '" + std::wstring(pMenu->getId().begin(), pMenu->getId().end()) + L"' a fost setat cu succes pe fereastra cu ID '" + std::wstring(m_id.begin(), m_id.end()) + L"'.");
+    if (SetMenu(m_handle, hMenuToSet)) {
+        SetWindowPos(m_handle, NULL, 0, 0, 0, 0, 
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+        DrawMenuBar(m_handle);
+        LOG_DEBUG(L"[vWindow::setMenu] Meniu atașat cu succes.");
+    } else {
+        LOG_ERROR(L"[vWindow::setMenu] SetMenu a eșuat. Cod eroare Win32: " + std::to_wstring(GetLastError()));
     }
 }
 
@@ -410,7 +456,7 @@ void vWindow::hide() {
 
 
 void vWindow::centerWindow() {
-    if (!m_handle) return;
+    if (!m_handle || !IsWindow(m_handle)) return;
 
     HWND hOwner = GetWindow(m_handle, GW_OWNER);
     RECT rcOwner, rcChild;
@@ -442,4 +488,60 @@ void vWindow::centerWindow() {
     }
 
     SetWindowPos(m_handle, NULL, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+}
+
+bool vWindow::setProperty(const std::wstring& name, const vData& value) {
+    std::wstring prop = name;
+    std::transform(prop.begin(), prop.end(), prop.begin(), ::tolower);
+
+    // 1. Schimbă titlul ferestrei
+    if (prop == L"title") {
+        this->setText(value.toWString()); 
+        return true;
+    }
+    // 2. Schimbă starea de afișare modală
+    else if (prop == L"modal") {
+        if (value.toBool()) {
+            this->showModal();
+        } else {
+            this->show(); 
+        }
+        return true;
+    }
+    // 🔥 3. PROPRIETATEA NOUĂ: Atașează meniul de bară
+    else if (prop == L"menu") {
+        std::wstring wMenuId = value.toWString();
+        std::string menuId(wMenuId.begin(), wMenuId.end());
+
+        // Căutăm meniul în ierarhia de copii a ferestrei curente
+        vControl* ctrl = this->getChildRecursive(menuId);
+        vMenu* pMenu = dynamic_cast<vMenu*>(ctrl);
+        
+        if (pMenu) {
+            this->setMenu(pMenu); // Apelează funcția nativă Win32 SetMenu
+            return true;
+        }
+        return false;
+    }
+
+    // Dacă nu este o proprietate unică de fereastră, o trimitem la vContainer
+    return vContainer::setProperty(name, value);
+}
+
+vData vWindow::getProperty(const std::wstring& name) const {
+    std::wstring prop = name;
+    std::transform(prop.begin(), prop.end(), prop.begin(), ::tolower);
+
+    if (prop == L"title") {
+        return vData(this->getText());
+    }
+    if (prop == L"is_main") {
+        return vData(this->isMainWindow());
+    }
+    if (prop == L"is_modal") {
+        return vData(this->isModal());
+    }
+
+    // Fallback către lanțul de moștenire
+    return vContainer::getProperty(name);
 }

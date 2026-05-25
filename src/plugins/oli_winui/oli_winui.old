@@ -7,7 +7,6 @@
 #include "vButton.hpp"
 #include "vCodeView.hpp"
 #include "vMenu.hpp"
-#include "vMessageDialog.hpp"
 #include <unordered_map>
 #include <memory>
 #include <sstream>
@@ -109,8 +108,6 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             std::wstring wTitle = args[1].toWString();
             std::string id(wId.begin(), wId.end());
 
-			LOG_DEBUG(L"[DLL_DEBUG] Titlu primit: " + wTitle + L" | Lungime: " + std::to_wstring(wTitle.length()));
-
             auto objMap = std::make_shared<std::unordered_map<std::wstring, vData>>();
             (*objMap)[L"__type__"] = vData(L"WinWindow");
             (*objMap)[L"id"] = vData(wId);
@@ -209,13 +206,13 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         // 1. Verificare stare parinte în controlsMap sau vApp
         vControl* parentCtrl = LocateAnyControl(parentId);
         if (parentCtrl) {
-            LOG_DEBUG(L"[DLL_DEBUG] Parintele '" + wParentId + L"' gasit cu succes in controlsMap. Adresa: " + std::to_wstring(reinterpret_cast<uintptr_t>(parentCtrl)));
+            LOG_DEBUG(L"[DLL_DEBUG] Parintele '" + wParentId + L"' gasit cu succes in controlsMap.");
         } else {
             LOG_DEBUG(L"[DLL_DEBUG] Parintele '" + wParentId + L"' NU e in controlsMap. Incercam prin getWindow...");
             parentCtrl = g_Gui.appInstance->getWindow(parentId);
             
             if (parentCtrl) {
-                LOG_DEBUG(L"[DLL_DEBUG] Parintele '" + wParentId + L"' a fost gasit ca Window legitim. Adresa: " + std::to_wstring(reinterpret_cast<uintptr_t>(parentCtrl)));
+                LOG_DEBUG(L"[DLL_DEBUG] Parintele '" + wParentId + L"' a fost gasit ca Window legitim.");
             } else {
                 LOG_ERROR(L"[DLL_DEBUG] CRITIC: Parintele '" + wParentId + L"' nu a putut fi localizat nicaieri!");
                 return vData{ 0LL };
@@ -224,47 +221,30 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 
         HINSTANCE hInst = g_Gui.appInstance->getInstance();
 
-        // =================================================================
-        // 2. LOGICA MODIFICATĂ ȘI SECURIZATĂ PENTRU COMPONENTA MENU
-        // =================================================================
-        // =================================================================
-        // 2. LOGICA REPARATĂ PENTRU COMPONENTA MENU
-        // =================================================================
+        // 2. Logica Meniu împachetată defensiv
         if (wType == L"MENU") {
             try {
-                LOG_DEBUG(L"[DLL_DEBUG] Initializare vMenu: " + wId);
-                
-                auto menuCtrl = std::make_shared<vMenu>(id, g_Gui.appInstance->getEventDispatcher());
-                
-                // Creăm meniul (indiferent dacă e bară sau popup)
+                LOG_DEBUG(L"[DLL_DEBUG] Initializare structura vMenu for ID: '" + wId + L"'");
+                auto menuCtrl = std::make_unique<vMenu>(id, g_Gui.appInstance->getEventDispatcher());
                 menuCtrl->create(nullptr); 
                 
                 vControl* rawPtr = menuCtrl.get();
-                LOG_DEBUG(L"[DLL_DEBUG] vMenu creat. Adresa pointer: " + std::to_wstring(reinterpret_cast<uintptr_t>(rawPtr)));
-
-                // 1. Mapăm pointerul în controlsMap ca să îl poți apela prin UI_CALL_METHOD
                 g_Gui.controlsMap[id] = rawPtr;
+                parentCtrl->addChild(id, std::move(menuCtrl));
                 
-                // 2. Păstrăm instanța vie (evităm distrugerea la ieșirea din funcție)
-                static std::vector<std::shared_ptr<vControl>> m_persistentMenus;
-                m_persistentMenus.push_back(menuCtrl);
-
-                // 🔥 ELIMINAT: parentCtrl->addChild(id, std::move(menuCtrl)); 
-                // NU mai adăugăm meniul în ierarhia de copii a ferestrei! 
-                // Asta este cauza erorilor de HWND.
-//AppendMenuW(menuCtrl->getHandle(), MF_STRING, 1001, L"ELEMENT_TEST_FORTAT");
-                LOG_DEBUG(L"[DLL_DEBUG] vMenu '" + wId + L"' inregistrat cu succes (fără addChild).");
+                LOG_DEBUG(L"[DLL_DEBUG] vMenu inregistrat si atasat cu succes.");
                 return vData{ 1LL };
             }
             catch (const std::exception& e) {
-                LOG_ERROR(L"[DLL_DEBUG] Exceptie menu: " + std::wstring(e.what(), e.what() + strlen(e.what())));
+                std::wstring errMsg(e.what(), e.what() + strlen(e.what()));
+                LOG_ERROR(L"[DLL_DEBUG] Exceptie prinsa la creare MENU: " + errMsg);
                 return vData{ 0LL };
             }
         }
 
         // 3. Parsarea coordonatelor și instanțierea controalelor standard
         try {
-            LOG_DEBUG(L"[DLL_DEBUG] Incepe parsarea coordonatelor optionale pentru control standard...");
+            LOG_DEBUG(L"[DLL_DEBUG] Incepe parsarea coordonatelor optionale...");
             
             int x = (args.size() > 3) ? static_cast<int>(args[3].toInt()) : 0;
             int y = (args.size() > 4) ? static_cast<int>(args[4].toInt()) : 0;
@@ -309,7 +289,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         }
         catch (const std::exception& e) {
             std::wstring errMsg(e.what(), e.what() + strlen(e.what()));
-            LOG_ERROR(L"[DLL_DEBUG] EXCEPTIE CRITICA PRINSA LA CONTROL STANDARD: " + errMsg);
+            LOG_ERROR(L"[DLL_DEBUG] EXCEPTIE CRITICA PRINSA: " + errMsg);
             return vData{ 0LL };
         }
         catch (...) {
@@ -323,39 +303,23 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 
 
 	registry[L"UI_SET_PROPERTY"] = [](const std::vector<vData>& args) -> vData {
-		if (args.size() < 3) return vData{ 0LL };
+        if (args.size() < 3) return vData{ 0LL };
 
-		vData self = args[0];
-		std::wstring propName = args[1].toWString();
-		vData value = args[2];
+        vData self = args[0];
+        std::wstring propName = args[1].toWString();
+        vData value = args[2];
 
-		if (!self.isMap()) return vData{ 0LL };
-		std::wstring wId = (*self.rawMap())[L"id"].toWString();
-		std::string id(wId.begin(), wId.end());
+        if (!self.isMap()) return vData{ 0LL };
+        std::wstring wId = (*self.rawMap())[L"id"].toWString();
+        std::string id(wId.begin(), wId.end());
 
-		vControl* ctrl = LocateAnyControl(id);
-		if (!ctrl) return vData{ 0LL };
+        vControl* ctrl = LocateAnyControl(id);
+        if (!ctrl) return vData{ 0LL };
 
-		// 🔥 FIX: Tratare specială pentru "menu" aici în DLL, 
-		// ca să nu ne bazăm pe ierarhia vWindow::getChildRecursive
-		if (propName == L"menu") {
-			std::wstring wMenuId = value.toWString();
-			std::string menuId(wMenuId.begin(), wMenuId.end());
-			
-			vControl* menuCtrl = LocateAnyControl(menuId);
-			vMenu* pMenu = dynamic_cast<vMenu*>(menuCtrl);
-			vWindow* pWin = dynamic_cast<vWindow*>(ctrl);
-
-			if (pWin && pMenu) {
-				pWin->setMenu(pMenu); // Aceasta apelează DrawMenuBar din WinAPI
-				return vData{ 1LL };
-			}
-			return vData{ 0LL };
-		}
-
-		bool success = ctrl->setProperty(propName, value);
-		return vData{ success ? 1LL : 0LL };
-	};
+        // Apel polimorfic nativ
+        bool success = ctrl->setProperty(propName, value);
+        return vData{ success ? 1LL : 0LL };
+    };
 
     registry[L"UI_GET_PROPERTY"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 2) return vData{ std::monostate{} };
@@ -419,38 +383,26 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         };
 		
 		registry[L"UI_CALL_METHOD"] = [](const std::vector<vData>& args) -> vData {
-			if (args.size() < 2) return vData{ 0LL };
+			if (args.size() < 2) return vData{ 0LL }; // Avem nevoie de ID control și Nume Metodă
 
+			// --- CORECTAT AICI ---
 			std::wstring wId = args[0].toWString();
 			std::string id(wId.begin(), wId.end());
-			std::wstring methodName = args[1].toWString(); // <--- Aici verificăm dacă asta e gol!
+			// ---------------------
+			
+			std::wstring methodName = args[1].toWString();
 
-			// LOG DE SIGURANȚĂ
-			LOG_DEBUG(L"[DLL_DEBUG] DEBUG: methodName primit este: '" + methodName + L"'");
-
-			vControl* ctrl = LocateAnyControl(id);
-			if (!ctrl) return vData{ 0LL };
-
-			// Construim vectorul de argumente DOAR din ce rămâne după ID și Method
+			// Toate argumentele de la indexul 2 încolo sunt parametrii metodei
 			std::vector<vData> methodArgs;
 			for (size_t i = 2; i < args.size(); ++i) {
 				methodArgs.push_back(args[i]);
 			}
 
-			// Apel polimorfic
+			vControl* ctrl = LocateAnyControl(id);
+			if (!ctrl) return vData{ 0LL };
+
+			// Apelul polimorfic nativ!
 			bool success = ctrl->callMethod(methodName, methodArgs);
 			return vData{ success ? 1LL : 0LL };
-		};
-		
-		registry[L"SHOW_MESSAGE"] = [](const std::vector<vData>& args) -> vData {
-			if (args.size() < 2) return vData{ std::monostate{} };
-			
-			std::wstring title = args[0].toWString();
-			std::wstring message = args[1].toWString();
-			
-			// Poți adăuga logica pentru butoane dacă vrei (opțional, aici forțăm OK pentru simplitate)
-			std::string result = vMessageDialog::show(title, message, MessageButtons::Ok);
-			
-			return vData(std::wstring(result.begin(), result.end()));
 		};
 }

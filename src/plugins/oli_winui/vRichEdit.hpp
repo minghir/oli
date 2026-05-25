@@ -30,6 +30,8 @@ public:
     // Utile pentru Syntax Highlighting
     void freeze();   // Oprește redesenarea (pentru performanță în timpul colorării)
     void unfreeze(); // Repornește redesenarea
+	void setFontSize(int size);
+	
 };
 
 #endif

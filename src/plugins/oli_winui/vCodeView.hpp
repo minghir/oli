@@ -78,7 +78,7 @@ public:
     bool loadFromFile(const std::wstring& filePath);
     void setReadOnly(bool readOnly);
 
-    void setFontSize(int size);
+   
     void redrawGutter();
 
     void setSyntaxPath(const std::wstring& syntaxPath) {
@@ -110,5 +110,10 @@ public:
         }
     }
 
+	void setFontSize(int size) override; // Suprascrie metoda de bază
+	
 	std::wstring getSyntaxPath() const { return m_syntaxPath; }
+	
+	bool setProperty(const std::wstring& name, const vData& value) override;
+    vData getProperty(const std::wstring& name) const override;
 };

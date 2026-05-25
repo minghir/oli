@@ -5,7 +5,9 @@
 #include "ControlIdManager.hpp"
 #include "FontManager.hpp"
 #include "TooltipManager.hpp" 
+
 #include <shellscalingapi.h>
+#include <algorithm>
 
 
 
@@ -398,7 +400,7 @@ LRESULT CALLBACK vControl::StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
 
     // Foarte important: Pentru controalele cu subclassing, 
     // dacă nu avem 'self', lăsăm procedura originală să se ocupe, nu DefWindowProc direct.
-    return DefWindowProc(hwnd, msg, wParam, lParam);
+    return DefWindowProcW(hwnd, msg, wParam, lParam);
 }
 
 void vControl::onClick() {
@@ -1004,4 +1006,195 @@ bool vControl::validateRecursive() {
     }
 
     return thisOk;
+}
+
+
+
+
+
+// Funcție ajutătoare internă pentru normalizarea numelui proprietății
+static std::wstring normalizePropName(const std::wstring& name) {
+    std::wstring lowered = name;
+    std::transform(lowered.begin(), lowered.end(), lowered.begin(), ::tolower);
+    return lowered;
+}
+
+bool vControl::setProperty(const std::wstring& name, const vData& value) {
+    std::wstring prop = normalizePropName(name);
+
+    if (prop == L"text") {
+        this->setText(value.toWString());
+        return true;
+    }
+    else if (prop == L"x") {
+        this->setX(static_cast<int>(value.toInt()));
+        if (m_handle) MoveWindow(m_handle, m_x, m_y, m_width, m_height, TRUE);
+        return true;
+    }
+    else if (prop == L"y") {
+        this->setY(static_cast<int>(value.toInt()));
+        if (m_handle) MoveWindow(m_handle, m_x, m_y, m_width, m_height, TRUE);
+        return true;
+    }
+    else if (prop == L"width") {
+        this->setWidth(static_cast<int>(value.toInt()));
+        if (m_handle) MoveWindow(m_handle, m_x, m_y, m_width, m_height, TRUE);
+        return true;
+    }
+    else if (prop == L"height") {
+        this->setHeight(static_cast<int>(value.toInt()));
+        if (m_handle) MoveWindow(m_handle, m_x, m_y, m_width, m_height, TRUE);
+        return true;
+    }
+    else if (prop == L"visible") {
+        if (value.toBool()) {
+            this->show();
+        } else {
+            this->hide();
+        }
+        return true;
+    }
+    else if (prop == L"enabled") {
+        this->setEnabled(value.toBool());
+        return true;
+    }
+    else if (prop == L"tooltip") {
+        this->setTooltipText(value.toWString());
+        return true;
+    }
+    else if (prop == L"anchor") {
+        std::wstring valStr = value.toWString();
+        std::transform(valStr.begin(), valStr.end(), valStr.begin(), ::toupper);
+        
+        Anchor finalAnchor = Anchor::NONE;
+        if (valStr == L"CENTER") {
+            finalAnchor = Anchor::CENTER;
+        } else {
+            if (valStr.find(L"LEFT") != std::wstring::npos)     finalAnchor = finalAnchor | Anchor::LEFT;
+            if (valStr.find(L"RIGHT") != std::wstring::npos)    finalAnchor = finalAnchor | Anchor::RIGHT;
+            if (valStr.find(L"TOP") != std::wstring::npos)     finalAnchor = finalAnchor | Anchor::TOP;
+            if (valStr.find(L"BOTTOM") != std::wstring::npos)  finalAnchor = finalAnchor | Anchor::BOTTOM;
+            if (valStr.find(L"CENTER_H") != std::wstring::npos) finalAnchor = finalAnchor | Anchor::CENTER_H;
+            if (valStr.find(L"CENTER_V") != std::wstring::npos) finalAnchor = finalAnchor | Anchor::CENTER_V;
+        }
+        
+        this->setAnchor(finalAnchor);
+
+        // Notificăm părintele să recalculeze layout-ul
+        if (m_parent) {
+            m_parent->resize(); // Sau m_parent->applyLayout() în funcție de cum e expus în containere
+        }
+        return true;
+    }
+    else if (prop == L"width_mode") {
+        std::wstring valStr = value.toWString();
+        std::transform(valStr.begin(), valStr.end(), valStr.begin(), ::toupper);
+
+        if (valStr == L"FIXED")        this->setWidthMode(SizeMode::FIXED);
+        else if (valStr == L"FILL")    this->setWidthMode(SizeMode::FILL);
+        else if (valStr == L"AUTO")    this->setWidthMode(SizeMode::AUTO);
+        else if (valStr == L"PERCENT") this->setWidthMode(SizeMode::PERCENT);
+        else return false;
+
+        if (m_parent) m_parent->resize();
+        return true;
+    }
+    else if (prop == L"height_mode") {
+        std::wstring valStr = value.toWString();
+        std::transform(valStr.begin(), valStr.end(), valStr.begin(), ::toupper);
+
+        if (valStr == L"FIXED")        this->setHeightMode(SizeMode::FIXED);
+        else if (valStr == L"FILL")    this->setHeightMode(SizeMode::FILL);
+        else if (valStr == L"AUTO")    this->setHeightMode(SizeMode::AUTO);
+        else if (valStr == L"PERCENT") this->setHeightMode(SizeMode::PERCENT);
+        else return false;
+
+        if (m_parent) m_parent->resize();
+        return true;
+    }
+    else if (prop == L"margin") {
+        if (value.isArray()) {
+            auto* arr = value.rawArray();
+            if (arr && arr->size() >= 4) {
+                this->setMargins(
+                    static_cast<int>((*arr)[0].toInt()),
+                    static_cast<int>((*arr)[1].toInt()),
+                    static_cast<int>((*arr)[2].toInt()),
+                    static_cast<int>((*arr)[3].toInt())
+                );
+            }
+        } else {
+            int uniformMargin = static_cast<int>(value.toInt());
+            this->setMargins(uniformMargin, uniformMargin, uniformMargin, uniformMargin);
+        }
+
+        if (m_parent) m_parent->resize();
+        return true;
+    }
+    else if (prop == L"font_size") {
+        this->setFontSize(static_cast<int>(value.toInt()));
+		this->scale(m_currentDpi);
+        return true;
+    }
+    else if (prop == L"font_name") {
+        this->setFontName(value.toWString());
+        return true;
+    }
+
+    return false; // Proprietatea nu aparține obiectului vControl de bază
+}
+
+vData vControl::getProperty(const std::wstring& name) const {
+    std::wstring prop = normalizePropName(name);
+
+    if (prop == L"id")          return vData(str_to_wstr(m_id));
+    if (prop == L"text")        return vData(this->getText());
+    if (prop == L"x")           return vData(static_cast<long long>(this->getX()));
+    if (prop == L"y")           return vData(static_cast<long long>(this->getY()));
+    if (prop == L"width")       return vData(static_cast<long long>(this->getWidth()));
+    if (prop == L"height")      return vData(static_cast<long long>(this->getHeight()));
+    if (prop == L"visible")     return vData(this->isVisible());
+    if (prop == L"enabled")     return vData(this->isEnabled());
+    if (prop == L"font_size")   return vData(static_cast<long long>(m_baseFontSize));
+    if (prop == L"font_name")   return vData(m_fontName);
+    
+    if (prop == L"anchor") {
+        if (anchor == Anchor::CENTER) return vData(L"CENTER");
+        std::wstring res = L"";
+        if (hasFlag(anchor, Anchor::LEFT))     res += L"LEFT|";
+        if (hasFlag(anchor, Anchor::RIGHT))    res += L"RIGHT|";
+        if (hasFlag(anchor, Anchor::TOP))      res += L"TOP|";
+        if (hasFlag(anchor, Anchor::BOTTOM))   res += L"BOTTOM|";
+        if (hasFlag(anchor, Anchor::CENTER_H)) res += L"CENTER_H|";
+        if (hasFlag(anchor, Anchor::CENTER_V)) res += L"CENTER_V|";
+        if (!res.empty() && res.back() == L'|') res.pop_back();
+        return res.empty() ? vData(L"NONE") : vData(res);
+    }
+    if (prop == L"width_mode") {
+        if (widthMode == SizeMode::FIXED)   return vData(L"FIXED");
+        if (widthMode == SizeMode::FILL)    return vData(L"FILL");
+        if (widthMode == SizeMode::AUTO)    return vData(L"AUTO");
+        if (widthMode == SizeMode::PERCENT) return vData(L"PERCENT");
+    }
+    if (prop == L"height_mode") {
+        if (heightMode == SizeMode::FIXED)   return vData(L"FIXED");
+        if (heightMode == SizeMode::FILL)    return vData(L"FILL");
+        if (heightMode == SizeMode::AUTO)    return vData(L"AUTO");
+        if (heightMode == SizeMode::PERCENT) return vData(L"PERCENT");
+    }
+    if (prop == L"margin") {
+        auto marginArray = std::make_shared<std::vector<vData>>();
+        marginArray->push_back(vData(static_cast<long long>(marginLeft)));
+        marginArray->push_back(vData(static_cast<long long>(marginTop)));
+        marginArray->push_back(vData(static_cast<long long>(marginRight)));
+        marginArray->push_back(vData(static_cast<long long>(marginBottom)));
+        return vData(marginArray);
+    }
+
+    // Sistem fallback: verificăm dacă este în atributele generice runtime
+    if (this->hasAttribute(name)) {
+        return vData(this->getAttribute(name));
+    }
+
+    return vData{ std::monostate{} }; // Proprietate inexistentă -> returnează Null în script
 }

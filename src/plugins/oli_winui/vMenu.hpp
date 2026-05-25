@@ -57,7 +57,10 @@ public:
     std::string getItemIdByWin32Id(int win32Id) const;
 
     void setEnabled(const std::string& id, bool enabled);
-
+	
+	bool setProperty(const std::wstring& name, const vData& value) override;
+	vData getProperty(const std::wstring& name) const override;
+	virtual bool callMethod(const std::wstring& methodName, const std::vector<vData>& args);
 protected:
     HMENU m_handle;
     std::vector<MenuItem> m_menuItems;

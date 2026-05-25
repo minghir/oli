@@ -96,3 +96,32 @@ std::wstring vRichEdit::getText() const {
     GetWindowTextW(m_handle, buf.data(), len + 1);
     return std::wstring(buf.data());
 }
+
+void vRichEdit::setFontSize(int size) {
+    if (!m_handle) return;
+
+    // 1. Pregătim structura CHARFORMAT2
+    CHARFORMAT2 cf;
+    ZeroMemory(&cf, sizeof(cf));
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_SIZE | CFM_FACE; // Mască pentru dimensiune și font
+    cf.yHeight = size * 20; // 24 puncte * 20 = 480 twips
+    
+    // Setăm numele fontului
+    wcscpy_s(cf.szFaceName, L"Consolas"); 
+    cf.dwEffects = 0; 
+
+    // 2. Aplicăm formatarea:
+    // SCF_ALL = Modifică tot textul din editor
+    // SCF_DEFAULT = Modifică fontul default pentru tot ce vei scrie ulterior
+    SendMessage(m_handle, EM_SETCHARFORMAT, SCF_ALL | SCF_DEFAULT, (LPARAM)&cf);
+    
+    // 3. Opțional: Pentru a fi siguri, trimitem și WM_SETFONT
+    // Deși EM_SETCHARFORMAT este mai important pentru RichEdit
+    HFONT hFont = CreateFontW(
+        -MulDiv(size, 96, 72), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+        CLEARTYPE_QUALITY, FIXED_PITCH | FF_MODERN, L"Consolas"
+    );
+    SendMessage(m_handle, WM_SETFONT, (WPARAM)hFont, TRUE);
+}

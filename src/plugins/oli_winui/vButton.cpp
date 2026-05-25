@@ -3,6 +3,8 @@
 #include "IconManager.hpp" 
 #include "TooltipManager.hpp" 
 #include "stringUtils.hpp"
+
+#include <algorithm>
 #include <windows.h> // Pentru funcții WinAPI
 
 // --- Constructor ---
@@ -231,4 +233,45 @@ void vButton::setText(const std::wstring& text) {
    
     // Opțional: Dacă butonul are dimensiune AUTO, ar trebui să ceri un layout refresh aici
      //this->update(); 
+}
+
+// Funcție ajutătoare pentru transformarea numelui în lowercase
+static std::wstring toLowerProp(const std::wstring& name) {
+    std::wstring lowered = name;
+    std::transform(lowered.begin(), lowered.end(), lowered.begin(), ::tolower);
+    return lowered;
+}
+
+bool vButton::setProperty(const std::wstring& name, const vData& value) {
+    std::wstring prop = toLowerProp(name);
+
+    // Proprietate specifică doar pentru vButton
+    if (prop == L"icon_path" || prop == L"icon") {
+        m_iconFilePath = value.toWString();
+        m_hasIcon = !m_iconFilePath.empty();
+        
+        // AICI: Dacă ai deja o metodă care încarcă fizic icoana pe buton în Win32, o apelezi:
+        // this->loadIconFromPath(m_iconFilePath);
+        
+        ConsoleManager::getInstance().log(L"🎨 [vButton] S-a setat icoana: " + m_iconFilePath + L" pe butonul: " + str_to_wstr(m_id));
+        return true;
+    }
+
+    // Dacă nu este o proprietate de icoană, o trimitem la clasa de bază vControl
+    // vControl va rezolva automat: text (label-ul), x, y, width, height, anchor, margin etc.
+    return vControl::setProperty(name, value);
+}
+
+vData vButton::getProperty(const std::wstring& name) const {
+    std::wstring prop = toLowerProp(name);
+
+    if (prop == L"icon_path" || prop == L"icon") {
+        return vData(m_iconFilePath);
+    }
+    if (prop == L"has_icon") {
+        return vData(m_hasIcon);
+    }
+
+    // Fallback către lanțul de moștenire (vControl)
+    return vControl::getProperty(name);
 }

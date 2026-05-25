@@ -57,7 +57,9 @@ public:
     }
 
     void setText(const std::wstring& text) override;
-
+	
+	bool setProperty(const std::wstring& name, const vData& value) override;
+    vData getProperty(const std::wstring& name) const override;
 private:
     //HINSTANCE m_hInstance;
    

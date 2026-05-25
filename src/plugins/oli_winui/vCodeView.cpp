@@ -8,7 +8,6 @@
 
 #include <richedit.h>
 
-
 #include <fstream>
 #include <sstream>
 #include <algorithm>
@@ -93,7 +92,7 @@ void vCodeView::setReadOnly(bool readOnly) {
         ConsoleManager::getInstance().log(L"[vCodeView::setReadOnly] ID: " + str_to_wstr(m_id) + L" setat la: " + status);
     }
 }
-
+/*
 void vCodeView::setFontSize(int size) {
     m_fontSize = size;
 
@@ -102,12 +101,6 @@ void vCodeView::setFontSize(int size) {
         // Framework-ul tău probabil are deja o metodă în vRichEdit
         m_richEdit->setFontSize(size);
 
-        // 2. Aplicăm la Gutter (când îl vei activa)
-        /*
-        if (m_lineGutter) {
-            m_lineGutter->updateFont(L"Consolas", size);
-        }
-        */
 
         // 3. Forțăm un re-layout pentru că schimbarea fontului poate modifica 
         // lățimea necesară pentru Gutter (ex: de la 99 la 100 linii)
@@ -117,7 +110,25 @@ void vCodeView::setFontSize(int size) {
          //applayColors(); 
     }
 }
+*/
 
+
+void vCodeView::setFontSize(int size) {
+    m_fontSize = size; // Actualizează baza pentru scalare
+
+    // 1. Trimite comanda către controlul RICHEDIT (cel care desenează textul)
+    if (m_richEdit) {
+        m_richEdit->setFontSize(size); 
+    }
+
+    
+    
+    
+
+    // 3. Re-layout pentru a ajusta spațierea
+    applyLayout();
+	m_lexer.highlight(m_richEdit);
+}
 
 
 LRESULT vCodeView::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -275,7 +286,9 @@ void vCodeView::create(HWND parent)  {
     // 1. Creăm RichEdit-ul decalat spre dreapta prin margini
     auto rich = std::make_unique<vRichEdit>(m_hInstance, m_id + "_edit", 0, 0, m_width, m_height, getEventDispatcher());
     m_richEdit = rich.get();
-
+	
+	
+	
     m_richEdit->setHeightMode(SizeMode::FILL);
     m_richEdit->setWidthMode(SizeMode::FILL);
     m_richEdit->setFontSize(m_fontSize);
@@ -297,4 +310,47 @@ void vCodeView::create(HWND parent)  {
 
     // Forțăm o primă redesenare curată
     InvalidateRect(this->getHandle(), NULL, TRUE);
+}
+
+
+
+// Funcție ajutătoare locală pentru transformarea numelui în lowercase
+static std::wstring toLowerPropCodeView(const std::wstring& name) {
+    std::wstring lowered = name;
+    std::transform(lowered.begin(), lowered.end(), lowered.begin(), ::tolower);
+    return lowered;
+}
+
+bool vCodeView::setProperty(const std::wstring& name, const vData& value) {
+    std::wstring prop = toLowerPropCodeView(name);
+
+    // Proprietate unică, specifică DOAR pentru vCodeView
+    if (prop == L"syntax_path" || prop == L"syntax") {
+        this->setSyntaxPath(value.toWString());
+        return true;
+    }
+
+    // Notă istorică: Dacă scriptul cere modificarea proprietății "text", 
+    // apelul va fi trimis mai jos la vPanel::setProperty, care va ajunge în vControl::setProperty.
+    // Acolo se va apela `this->setText()`. Deoarece setText() este virtuală și suprascrisă 
+    // chiar aici în vCodeView (cea cu WM_SETREDRAW și m_lexer.highlight), 
+    // se va executa automat varianta ta corectă cu highlight inclus!
+    
+    // Cascadrăm proprietatea către clasa părinte vPanel
+    return vPanel::setProperty(name, value);
+}
+
+vData vCodeView::getProperty(const std::wstring& name) const {
+    std::wstring prop = toLowerPropCodeView(name);
+
+    if (prop == L"syntax_path" || prop == L"syntax") {
+        return vData(this->getSyntaxPath());
+    }
+    
+    if (prop == L"file_path" || prop == L"current_file") {
+        return vData(m_currentFilePath);
+    }
+
+    // Dacă nu este o proprietate unică a editorului de cod, lăsăm ierarhia superioară să o caute
+    return vPanel::getProperty(name);
 }

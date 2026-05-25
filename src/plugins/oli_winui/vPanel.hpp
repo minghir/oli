@@ -44,6 +44,9 @@ public:
         vContainer::scale(newDpi);
         
     }
+	
+	bool setProperty(const std::wstring& name, const vData& value) override;
+    vData getProperty(const std::wstring& name) const override;
 
 protected:
     // S-a mutat m_hInstance aici pentru a fi accesibil claselor derivate.

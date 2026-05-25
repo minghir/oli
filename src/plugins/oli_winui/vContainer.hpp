@@ -85,6 +85,9 @@ public:
 
     virtual void scale(int newDpi);
     ILayoutStrategy* getLayoutStrategy() const { return m_layoutStrategy.get(); }
+	
+	bool setProperty(const std::wstring& name, const vData& value) override;
+    vData getProperty(const std::wstring& name) const override;
 
 
 };

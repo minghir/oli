@@ -3,7 +3,7 @@
 #include "../ILayoutStrategy.hpp"
 #include "../vContainer.hpp"
 #include "../ConsoleManager.hpp"
-#include "../../stringUtils.hpp"
+#include "../stringUtils.hpp"
 #include <algorithm>
 #include <vector>
 

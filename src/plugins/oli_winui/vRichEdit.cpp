@@ -108,7 +108,15 @@ void vRichEdit::setFontSize(int size) {
     cf.yHeight = size * 20; // 24 puncte * 20 = 480 twips
     
     // Setăm numele fontului
-    wcscpy_s(cf.szFaceName, L"Consolas"); 
+    //wcscpy_s(cf.szFaceName, L"Consolas"); 
+	// Setăm numele fontului
+#ifdef UNICODE
+    wcsncpy(cf.szFaceName, L"Consolas", LF_FACESIZE - 1);
+    cf.szFaceName[LF_FACESIZE - 1] = L'\0';
+#else
+    strncpy(cf.szFaceName, "Consolas", LF_FACESIZE - 1);
+    cf.szFaceName[LF_FACESIZE - 1] = '\0';
+#endif
     cf.dwEffects = 0; 
 
     // 2. Aplicăm formatarea:

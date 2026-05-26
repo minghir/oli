@@ -1,6 +1,6 @@
 ifeq ($(OS),Windows_NT)
 	CXXFLAGS += -D_WIN32_WINNT=0x0A00
-    LIBS += -lgdi32 -luser32 -lcomctl32 -lshcore -lopengl32 -lglu32 -luxtheme 
+    LIBS += -lgdi32 -luser32 -lcomctl32 -lshcore -lopengl32 -lglu32 -luxtheme  -lcomdlg32
 else
     LIBS += -lX11
 endif

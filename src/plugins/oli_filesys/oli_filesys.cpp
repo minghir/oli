@@ -130,6 +130,52 @@ void RegisterFileSystemFunctions(std::unordered_map<std::wstring, std::function<
         result.value = isDir;
         return result;
         };
+    // =================================================================
+    // 🔥 FUNCTIA NOUA: FS_GET_FILE_STEM (Numele fără extensie)
+    // =================================================================
+    registry[L"FS_GET_FILE_STEM"] = [](const std::vector<vData>& args) -> vData {
+        // 1. Validăm argumentul
+        if (args.empty() || !std::holds_alternative<std::wstring>(args[0].value)) {
+            return vData{ L"" };
+        }
+
+        std::wstring fullPath = std::get<std::wstring>(args[0].value);
+        vData result;
+
+        try {
+            // 2. Extragem "stem"-ul (numele fără directoare și fără extensie)
+            result.value = std::filesystem::path(fullPath).stem().wstring();
+        }
+        catch (...) {
+            result.value = L"";
+        }
+
+        return result;
+        };
+
+    // =================================================================
+    // 🔥 FUNCTIA NOUA: FS_GET_FILENAME
+    // =================================================================
+    registry[L"FS_GET_FILENAME"] = [](const std::vector<vData>& args) -> vData {
+        // 1. Verificăm dacă s-a trimis un argument valid de tip text
+        if (args.empty() || !std::holds_alternative<std::wstring>(args[0].value)) {
+            return vData{ L"" };
+        }
+
+        std::wstring fullPath = std::get<std::wstring>(args[0].value);
+        vData result;
+
+        try {
+            // 2. Extragem curat doar numele fișierului (ex: canvas_cube.oli)
+            result.value = std::filesystem::path(fullPath).filename().wstring();
+        }
+        catch (...) {
+            result.value = L""; // În caz de vreo eroare de format, returnăm string gol
+        }
+
+        return result;
+        };
+
 
 }
 

@@ -153,9 +153,9 @@ int main(int argc, char* argv[]) {
             if (argc < 3) return 1;
             std::string inputPath = argv[2];
 
-            std::filesystem::path p(inputPath);
-            p.replace_extension(".exe");
-            std::string outputPath = (argc > 3) ? argv[3] : p.string();
+            // 🔥 MODIFICARE: Folosim .stem() pentru a genera .exe-ul în directorul curent de lucru,
+            // astfel încât să aibă acces direct la DLL-urile pluginurilor din folder!
+            std::string outputPath = (argc > 3) ? argv[3] : std::filesystem::path(inputPath).stem().string() + ".exe";
 
             try {
                 std::wcout << L"Oli Engine v0.1\nBuild Date: " << __DATE__ << std::endl;

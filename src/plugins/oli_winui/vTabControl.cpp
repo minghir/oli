@@ -52,7 +52,7 @@ void vTabControl::create(HWND parent) {
     }
 }
 
-
+/*
 void vTabControl::addTabPage(const std::wstring& title, std::unique_ptr<vPanel> page) {
     if (!m_handle) return;
 
@@ -91,10 +91,61 @@ void vTabControl::addTabPage(const std::wstring& title, std::unique_ptr<vPanel> 
         pPage->hide();
         SetWindowPos(pPage->getHandle(), NULL, -10000, -10000, 0, 0, SWP_HIDEWINDOW | SWP_NOSIZE);
     }
+    RedrawWindow(m_handle, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+}
+*/
+void vTabControl::addTabPage(const std::wstring& title, std::unique_ptr<vPanel> page) {
+    if (!m_handle) return;
+
+    // Inserare în controlul nativ de tip Tab
+    int index = TabCtrl_GetItemCount(m_handle);
+    TCITEMW tie = { 0 };
+    tie.mask = TCIF_TEXT;
+    tie.pszText = (LPWSTR)title.c_str();
+    SendMessageW(m_handle, TCM_INSERTITEMW, index, (LPARAM)&tie);
+
+    vPanel* pPage = page.get();
+    std::string pageId = page->getId();
+
+    // =================================================================
+    // 🔥 FIXUL CRITIC #1: Îl ascundem IMEDIAT dacă nu este primul tab!
+    // =================================================================
+    if (index > 0) {
+        pPage->hide(); // Îi tăiem vizibilitatea înainte de orice redimensionare
+    }
+
+    this->addChild(pageId, std::move(page), m_handle);
+
+    // Calculăm zona de afișare corectă
+    RECT rc = { 0, 0, m_width, m_height };
+    TabCtrl_AdjustRect(m_handle, FALSE, &rc);
+
+    if (rc.right - rc.left <= 0) {
+        rc = { 0, 30, m_width, m_height };
+    }
+
+    // Acum redimensionarea este 100% sigură! Dacă index > 0, se face în background silențios
+    pPage->moveAndResize(rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top);
+    pPage->applyLayout();
+
+    m_pages.push_back({ title, pPage });
+
+    // =================================================================
+    // 🔥 FIXUL CRITIC #2: Logica de afișare/mutare curată
+    // =================================================================
+    if (index == 0) {
+        pPage->show(SW_SHOW);
+    }
+    else {
+        // Fiind deja ascuns vizual, îl mutăm în siguranță în afara ecranului
+        SetWindowPos(pPage->getHandle(), NULL, -10000, -10000, 0, 0, SWP_HIDEWINDOW | SWP_NOSIZE | SWP_NOMOVE);
+    }
+
+    // Ștergem preventiv orice randare reziduală
+    RedrawWindow(m_handle, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN);
 }
 
-
-
+/*
 void vTabControl::switchPage(int index) {
     if (index < 0 || index >= (int)m_pages.size() || !m_handle) return;
 
@@ -113,9 +164,37 @@ void vTabControl::switchPage(int index) {
         } else {
             pPage->hide();
             // Mutăm în afara ecranului
+            RedrawWindow(m_handle, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+        }
+    }
+    InvalidateRect(m_handle, nullptr, TRUE);
+}
+*/
+void vTabControl::switchPage(int index) {
+    if (index < 0 || index >= (int)m_pages.size() || !m_handle) return;
+
+    RECT rc = { 0, 0, m_width, m_height };
+    TabCtrl_AdjustRect(m_handle, FALSE, &rc);
+    int localW = rc.right - rc.left;
+    int localH = rc.bottom - rc.top;
+
+    // 1. Mai întâi ASCUNDEM și mutăm toate celelalte pagini
+    for (int i = 0; i < (int)m_pages.size(); ++i) {
+        if (i != index) {
+            vPanel* pPage = m_pages[i].panel;
+            pPage->hide();
             SetWindowPos(pPage->getHandle(), NULL, -10000, -10000, 0, 0, SWP_HIDEWINDOW | SWP_NOSIZE);
         }
     }
+
+    // 2. ABIA ACUM o poziționăm și o afișăm pe cea activă
+    vPanel* activePage = m_pages[index].panel;
+    activePage->moveAndResize(rc.left, rc.top, localW, localH);
+    activePage->applyLayout();
+    activePage->show(SW_SHOW);
+
+    // Curățare finală de buffer grafic
+    RedrawWindow(m_handle, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN);
 }
 
 int vTabControl::getSelectedIndex() const {
@@ -210,6 +289,14 @@ vData vTabControl::getProperty(const std::wstring& name) const {
 
     if (prop == L"selected_index") return vData(this->getSelectedIndex());
     if (prop == L"tab_count") return vData((int)m_pages.size());
+    if (prop == L"active_tab_id") {
+        vPanel* cp = this->getCurrentPage();
+        if (cp) {
+            std::string id = cp->getId();
+            return vData(std::wstring(id.begin(), id.end()));
+        }
+        return vData(L"");
+    }
     
     return vContainer::getProperty(name);
 }
@@ -249,6 +336,64 @@ bool vTabControl::callMethod(const std::wstring& methodName, const std::vector<v
         if (args.empty()) return false;
         this->switchPage(args[0].toInt());
         return true;
+    }
+
+    // =================================================================
+    // 🔥 IMPLEMENTARE ULTRA-ROBUSTĂ: REMOVE_TAB PRIN DEFERRED DELETION
+    // =================================================================
+    if (method == L"remove_tab" || method == L"remove_tab_page") {
+        ConsoleManager::getInstance().log(L"[remove_tab] ---> A fost apelată funcția.");
+
+        int index = this->getSelectedIndex();
+        if (!args.empty()) index = args[0].toInt();
+
+        if (index >= 0 && index < (int)m_pages.size()) {
+            HWND hPageWnd = m_pages[index].panel->getHandle();
+            std::string childId = m_pages[index].panel->getId();
+            std::wstring wChildId(childId.begin(), childId.end());
+
+            // Pasul 1: Ștergem tab-ul vizual din bara nativă de sus a Win32
+            TabCtrl_DeleteItem(m_handle, index);
+
+            // Pasul 2: Distrugem FIZIC și instantaneu ierarhia de ferestre din Windows
+            if (hPageWnd && IsWindow(hPageWnd)) {
+                // Rupem legătura directă cu WndProc pentru a ignora mesajele reziduale de distrugere
+                ::SetWindowLongPtrW(hPageWnd, GWLP_USERDATA, 0);
+                ::DestroyWindow(hPageWnd);
+            }
+            ConsoleManager::getInstance().log(L"[remove_tab] Pas 2: Ferestrele Win32 au fost distruse curat.");
+
+            // Pasul 3: Îl scoatem din vectorul nostru local de pagini active
+            m_pages.erase(m_pages.begin() + index);
+
+            // Pasul 4: Extragem unique_ptr-ul din structura de containere a framework-ului
+            auto destroyedChild = this->releaseChild(childId);
+            ConsoleManager::getInstance().log(L"[remove_tab] Pas 4: Controlul a fost extras din ierarhia C++.");
+
+            // Pasul 5: 🔥 TRUCUL ANTI-CRASH (Tehnica Zombie)
+            // Mutăm obiectul într-un container static care îl ține în viață în background.
+            // Evităm apelul de destructor (.reset()) acum, eliminând riscul de iterator invalidation!
+            static std::vector<std::unique_ptr<vControl>> s_zombieGarbageCollector;
+            if (destroyedChild) {
+                s_zombieGarbageCollector.push_back(std::move(destroyedChild));
+            }
+            ConsoleManager::getInstance().log(L"[remove_tab] Pas 5: Obiectul C++ a fost parcat în siguranță în Zombie List.");
+
+            // Pasul 6: Dacă au mai rămas tab-uri deschise, mutăm focusul pe următorul
+            int count = TabCtrl_GetItemCount(m_handle);
+            if (count > 0) {
+                int newSel = (index >= count) ? count - 1 : index;
+                TabCtrl_SetCurSel(m_handle, newSel);
+                this->switchPage(newSel);
+            }
+
+            // Pasul 7: Redesenăm curat ecranul
+            RedrawWindow(m_handle, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+            ConsoleManager::getInstance().log(L"[remove_tab] Succes total! Tab închis fără crash.");
+
+            return true;
+        }
+        return false;
     }
 
     return vContainer::callMethod(methodName, args);

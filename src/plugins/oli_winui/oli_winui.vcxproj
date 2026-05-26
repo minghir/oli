@@ -175,6 +175,7 @@
     <ClCompile Include="vRichEdit.cpp" />
     <ClCompile Include="vSeparator.cpp" />
     <ClCompile Include="vSpacer.cpp" />
+    <ClCompile Include="vTabControl.cpp" />
     <ClCompile Include="vWindow.cpp" />
     <ClCompile Include="WindowManager.cpp" />
   </ItemGroup>
@@ -215,6 +216,7 @@
     <ClInclude Include="vRichEdit.hpp" />
     <ClInclude Include="vSeparator.hpp" />
     <ClInclude Include="vSpacer.hpp" />
+    <ClInclude Include="vTabControl.hpp" />
     <ClInclude Include="vWindow.hpp" />
     <ClInclude Include="WindowManager.hpp" />
     <ClInclude Include="XmlCache.hpp" />

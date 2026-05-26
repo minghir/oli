@@ -26,6 +26,7 @@ public:
         //m_lexer.loadSyntaxes("olide\\syntaxes");
     }
     
+    virtual ~vCodeView();
 
     void create(HWND parent) override;
 
@@ -60,5 +61,6 @@ public:
         
     }
 	
-		void moveAndResize(int x, int y, int width, int height) ;
+     void moveAndResize(int x, int y, int width, int height);
+     void applyLayout() override; // 🔥 Adaugă această linie pentru a suprascrie layout-ul părintelui
 };

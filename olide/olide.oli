@@ -1,46 +1,70 @@
-config win_app 1
+config win_app 0
 
-plugin "oli_system"
+plugin oli_system
+plugin oli_filesys
 
 include ("include\winui.oli")
 
 # =================================================================
-# CODUL PRINCIPAL (LOGICA)
+# CODUL PRINCIPAL (LOGICA DE SINCRONIZARE MULTI-TAB)
 # =================================================================
 
-$file = "" #"examples\\gl_glsl.oli"
+$file = "" 
+set $activeCodeView = null
 
-# Funcție utilitară pentru a rula executabilul direct din folderul lui nativ
-func GET_FULL_EXE_PATH($cale)
-    # Deoarece acum compilatorul generează .exe exact lângă .oli,
-    # trebuie doar să înlocuim extensia în calea completă!
-    return REPLACE($cale, ".oli", ".exe")
+# Funcție de sincronizare: Află ce tab e pe ecran și actualizează contextul IDE-ului
+func UPDATE_ACTIVE_CONTEXT()
+    # Întrebăm componenta C++ care este ID-ul panelului activ în acest moment
+    $active_id = $tabs.get_prop("active_tab_id")
+    
+    if $active_id != "" then
+        # Re-ancorăm dinamic obiectul de control pe ID-ul curent
+        set $currentView = new("WinCodeView")
+        $currentView.id = $active_id
+        
+        # Preluăm calea absolută pe care am salvat-o în el la deschidere
+        @file = $currentView.get_prop("file_path")
+        @activeCodeView = $currentView
+    else
+        @file = ""
+        @activeCodeView = null
+    endif
+endfunc
+
+func GET_EXE_NAME($cale)
+    $nume_fisier = FS_GET_FILENAME($cale)
+    return REPLACE($nume_fisier, ".oli", ".exe")
 endfunc
 
 func run_click()
-    # 1. AUTO-SALVARE SILENȚIOASĂ
-    # Luăm textul proaspăt din editor și îl scriem direct pe disc, fără mesaje popup modal
-    if @file != "" then
-        echo "[IDE] Auto-salvare în fundal pentru: " .. @file
-        $cod_curent = $myCodeView.get_text()
-        WRITEFILE(@file, $cod_curent)
+    # Sincronizăm contextul înainte de rulare ca să fim siguri că rulăm tab-ul corect
+    UPDATE_ACTIVE_CONTEXT()
+
+    if @file == "" then
+        SHOW_MESSAGE("IDE Error", "Nu există niciun fișier deschis în editor pentru a fi rulat!")
+        return
     endif
 
-    # 2. COMPILAREA ȘI EXECUTAREA CODULUI SALVAT
+    # 1. AUTO-SALVARE SILENȚIOASĂ
+    echo "[IDE] Auto-salvare în fundal pentru: " .. @file
+    $cod_curent = $activeCodeView.get_text()
+    WRITEFILE(@file, $cod_curent)
+
+    # 2. COMPILAREA ȘI EXECUTAREA
     echo "=== LANSARE COMPILARE ==="
     echo "Fișier sursă: " .. @file
+    
     $compile_command = "x64\Release\oli.exe -c " .. @file
-	$res = SYS($compile_command)
-	echo $res
-	
+    $res = SYS($compile_command)
+    echo $res
+    
     $build_command = "x64\Release\oli.exe -b " .. @file
     echo "Rulez comanda: " .. $build_command
     
     $res = SYS($build_command)
     echo $res
     
-    # Obținem calea completă a executabilului și îl lansăm
-    $exe_file = GET_FULL_EXE_PATH(@file)
+    $exe_file = GET_EXE_NAME(@file)
     echo "LANSARE PROCES: " .. $exe_file
     
     START_PROCESS($exe_file)
@@ -51,10 +75,9 @@ endfunc
 # =================================================================
 
 func execute_save_to_disk($calea_fisiere)
-    # Luăm textul direct din CodeView folosind încapsularea OOP
-    $cod_curent = $myCodeView.get_text()
+    if @activeCodeView == null then return endif
     
-    # Salvăm nativ pe disc
+    $cod_curent = $activeCodeView.get_text()
     WRITEFILE($calea_fisiere, $cod_curent)
     
     echo "[SUCCESS] Fișier salvat cu succes la: " .. $calea_fisiere
@@ -62,52 +85,74 @@ func execute_save_to_disk($calea_fisiere)
 endfunc
 
 func menu_save_click()
-    # Dacă avem deja o cale validă (fișier deschis anterior), salvăm direct
+    UPDATE_ACTIVE_CONTEXT()
     if @file != "" then
         execute_save_to_disk(@file)
     else
-        # Dacă cumva calea e goală (ex: fișier complet nou), redirecționăm către Save As
         menu_save_as_click()
     endif
 endfunc
 
 func menu_save_as_click()
+    UPDATE_ACTIVE_CONTEXT()
+    if @activeCodeView == null then return endif
+
     set $dlg = new("FileDialog")
     $dlg.title = "Salvează fișierul sub alt nume..."
-    $dlg.type = 1  # 1 înseamnă modul SAVE în clasa ta FileDialog din C++
+    $dlg.type = 1  
     
     $path = $dlg.show()
     if $path != "" then
-        @file = $path  # Actualizăm calea globală a proiectului curent
+        @file = $path  
+        $activeCodeView.set_prop("file_path", $path) # Actualizăm proprietatea internă
         execute_save_to_disk(@file)
     endif
 endfunc
 
 func save_click()
-    # Butonul mare SAVE de pe panel execută aceeași logică ca File -> Save
     menu_save_click()
 endfunc
 
 func menu_new_click()
     echo "=== CREARE FIȘIER NOU ==="
-    
     set $dlg = new("FileDialog")
     $dlg.title = "Creează un fișier nou Oli..."
-    $dlg.type = 1  # 1 = Modul SAVE (un Save As mascat)
+    $dlg.type = 1  
     
     $path = $dlg.show()
     if $path != "" then
-        # 1. Setăm noua cale globală a proiectului
         @file = $path
-        
-        # 2. Creăm fizic fișierul gol pe disc ca să existe pentru compilator
         WRITEFILE(@file, "")
         
-        # 3. Curățăm ecranul editorului de cod (WinCodeView) pentru o foaie curată
-        $myCodeView.set_text("")
+        # Deschidem fișierul nou direct într-un tab nou ca să poată fi editat separat!
+        $newTabId = "tab_page_" .. FS_GET_FILENAME(@file)
+        set $newView = new("WinCodeView")
+        $newView.init($newTabId, "main_tabs", 0, 0, 0, 0)
+        $newView.set_width_mode("FILL")
+        $newView.set_height_mode("FILL")
+        $newView.set_font_size(12)
+        $newView.set_prop("file_path", @file) # 🔥 Reținem calea în C++
         
-        echo "[IDE] Fișier nou inițializat direct pe disc: " .. @file
-        SHOW_MESSAGE("Fișier Nou", "Fișierul noul a fost creat! Poți începe să scrii cod.")
+        $tabs.add_tab(FS_GET_FILENAME(@file), $newTabId)
+        $newView.set_syntax_path("./olide/syntaxes/oli.xml")
+        $newView.set_text("")
+        
+        UPDATE_ACTIVE_CONTEXT()
+        SHOW_MESSAGE("Fișier Nou", "Fișierul a fost creat și deschis în tab nou!")
+    endif
+endfunc
+
+# 🔥 INTERCEPTĂM EVENIMENTUL DE CLOSE TAB
+func menu_close_click()
+    $active_id = $tabs.get_prop("active_tab_id")
+    if $active_id != "" then
+        echo "[IDE] Închid tab-ul curent: " .. $active_id
+        
+        # Apelăm metoda nativă din C++ pe care am adăugat-o în Pasul 1
+        UI_CALL_METHOD($tabs.id, "remove_tab")
+        
+        # Actualizăm imediat contextul pentru a vedea ce fișier a rămas în focus
+        UPDATE_ACTIVE_CONTEXT()
     endif
 endfunc
 
@@ -128,11 +173,9 @@ $win.set_layout("GRID")
 # =================================================================
 echo "CREEZ STRUCTURA DE MENIURI"
 
-# 1. Cream meniul principal (Bara de meniu) atasat de fereastra principala
 set $mainMenu = new("WinMenu")
 $mainMenu.init("menu_principal", "fereastra_principala")
 
-# 2. Cream sub-meniul "File"
 set $fileMenu = new("WinMenu")
 $fileMenu.init("menu_file", "menu_principal")
 
@@ -141,88 +184,28 @@ $fileMenu.add_item("menu_new", "New")
 $fileMenu.add_item("menu_open", "Open...")
 $fileMenu.add_item("menu_save", "Save")
 $fileMenu.add_item("menu_save_as", "Save As...")
+$fileMenu.add_item("menu_close", "Close File") # 🔥 Opțiunea Close adăugată în meniu!
 $fileMenu.add_separator("sep_1")
 $fileMenu.add_item("menu_exit", "Exit Application")
 
-# 3. Cream sub-meniul "Help"
 set $helpMenu = new("WinMenu")
 $helpMenu.init("menu_help", "menu_principal")
 $helpMenu.add_item("menu_about", "About Oli IDE")
 
-# 4. Asamblam structura
 $mainMenu.add_submenu("File", $fileMenu)
 $mainMenu.add_submenu("Help", $helpMenu)
 
-# 5. Activam bara de meniu
 $win.set_prop("menu", "menu_principal")
 
 
 # =================================================================
-# DEFINIRE CALLBACK-URI GENERALE & BINDING
+# BINDING CALL-BACKS
 # =================================================================
-# =================================================================
-# LOGICA NOUA: DESCHIDERE DINAMICA
-# =================================================================
-set $counter = 0
-func menu_open_click()
-    set $dlg = new("FileDialog")
-    $dlg.title = "Deschide fișierul Oli"
-    $dlg.type = 0
-    
-    $path = $dlg.show()
-    if $path != "" then
-        $newTabId = "tab_page_" .. $path 
-        
-        # 1. Creezi panel-ul care va fi "Pagina"
-        set $page = new("WinPanel")
-        $page.init($newTabId, "main_tabs", 0, 0, 100, 100)
-		
-        $page.set_width_mode("FILL")
-        $page.set_height_mode("FILL")
-        $page.set_layout("VSTACK") # Sau layout-ul tău preferat
-		#switch @counter 
-		case 0
-			$page.set_prop("background_color", 0x0000FF) # Albastru
-			break
-		case 1
-			$page.set_prop("background_color", 0xAA00FF) # Albastru
-			break
-		case 2
-			$page.set_prop("background_color", 0x220088) # Albastru
-			break
-		endswitch
-		
-        # 2. Creezi CodeView-ul și îl adaugi CA COPIL al panel-ului
-      #  set $newView = new("WinCodeView")
-      #  $newView.init("view_" .. $path, $newTabId, 0, 0, 100, 100)
-	#	$newView.set_width_mode("FILL")
-     #   $newView.set_height_mode("FILL")
-      #  $newView.set_syntax_path("./olide/syntaxes/oli.xml")
-      #  $newView.set_text(READFILE($path))
-      #  $newView.set_font_size(12)
-        
-        # 3. Adaugi Paginile în tab, nu View-ul direct
-        $tabs.add_tab($path, $newTabId)
-        
-        $activeCodeView = $newView
-		@counter++
-    endif
-endfunc
-
-func menu_exit_click()
-    echo "Iesire din aplicatie comandata din meniu..."
-    exit()
-endfunc
-
-func menu_about_click()
-    SHOW_MESSAGE("Despre Oli", "Oli UI Engine v1.0 Fully Encapsulated OOP Bytecode VM!")
-endfunc
-
-# Legam toate evenimentele elementelor din meniu de functiile de tip callback
 $win.bind("menu_new", "menu_new_click")
 $win.bind("menu_open", "menu_open_click")
 $win.bind("menu_save", "menu_save_click")
-$win.bind("menu_save_as", "menu_save_as_click")  # 🔥 Legătura pentru Save As
+$win.bind("menu_save_as", "menu_save_as_click") 
+$win.bind("menu_close", "menu_close_click") # 🔥 Legăm funcția de butonul din meniu
 $win.bind("menu_exit", "menu_exit_click")
 $win.bind("menu_about", "menu_about_click")
 
@@ -250,9 +233,6 @@ set $tabs = new("WinTabControl")
 $tabs.init("main_tabs", "main_panel", 0, 0, 600, 400)
 $tabs.set_width_mode("FILL")
 $tabs.set_height_mode("FILL")
-#$tabs.set_layout("VSTACK") 
-# Variabilă globală pentru a ține minte tab-ul curent (poți extinde logica asta)
-set $activeCodeView = null
 
 echo "CREEZ run button"
 set $runButton = new("WinButton")
@@ -265,17 +245,41 @@ $saveButton.init("btn_save", "act_panel", 95, 4, 80, 40, "SAVE")
 $saveButton.set_anchor("RIGHT|BOTTOM")
 $saveButton.set_width_mode("FIXED")
 
-#set $myCodeView = new("WinCodeView")
-#$myCodeView.init("CODEVIEW_salveaza", "main_tabs", 0, 60, 600, 400)
-#$myCodeView.set_width_mode("FILL")
-#$myCodeView.set_height_mode("FILL")
-#$myCodeView.set_syntax_path("./olide/syntaxes/oli.xml")
-#if $file != "" then $myCodeView.set_text(READFILE($file)) endif
-#$myCodeView.set_font_size(12)
-
-# Legăm butoanele fizice de evenimente
 $runButton.bind("click", "run_click")
 $saveButton.bind("click", "save_click")
+
+# =================================================================
+# LOGICA DE DESCHIDERE DINAMICĂ ACTUALIZATĂ
+# =================================================================
+set $counter = 0
+func menu_open_click()
+    set $dlg = new("FileDialog")
+    $dlg.title = "Deschide fișierul Oli"
+    $dlg.type = 0
+    
+    $path = $dlg.show()
+    if $path != "" then
+        $newTabId = "tab_page_" .. FS_GET_FILENAME($path)
+        
+        set $newView = new("WinCodeView")
+        $newView.init($newTabId, "main_tabs", 0, 0, 0, 0)
+        $newView.set_width_mode("FILL")
+        $newView.set_height_mode("FILL")
+        $newView.set_font_size(12)
+        
+        # 🔥 CRITIC: Salvăm calea completă a fișierului în proprietatea nativă C++ a obiectului
+        $newView.set_prop("file_path", $path)
+        
+        $tabs.add_tab(FS_GET_FILENAME($path), $newTabId)
+        
+        $newView.set_syntax_path("./olide/syntaxes/oli.xml")
+        $newView.set_text(READFILE($path))
+        
+        # Sincronizăm imediat contextul global cu noul tab deschis
+        UPDATE_ACTIVE_CONTEXT()
+        @counter++
+    endif
+endfunc
 
 $win.show()  
 $app.run()

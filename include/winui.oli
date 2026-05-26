@@ -146,6 +146,23 @@ func FileDialog::show()
     return UI_FILE_DIALOG($this.type, $this.title)
 endfunc
 
+# =================================================================
+# CLASA TABCONTROL
+# =================================================================
 
+def class WinTabControl extends UiControl { init($id, $parentId, $x, $y, $w, $h), add_tab($title, $panelId), switch_page($index) }
+
+func WinTabControl::init($id, $parentId, $x, $y, $w, $h)
+    $this.id = $id
+    UI_CREATE_CONTROL("TABCONTROL", $id, $parentId, $x, $y, $w, $h)
+endfunc
+
+func WinTabControl::add_tab($title, $panelId)
+    return UI_CALL_METHOD($this.id, "add_tab_page", $title, $panelId)
+endfunc
+
+func WinTabControl::switch_page($index)
+    return UI_CALL_METHOD($this.id, "switch_page", $index)
+endfunc
 
 echo "AM DEFINIT CLASELE"

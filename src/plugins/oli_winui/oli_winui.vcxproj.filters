@@ -92,6 +92,9 @@
     <ClCompile Include="pugixml-1.15\src\pugixml.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="vTabControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConsoleManager.hpp">
@@ -209,6 +212,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="pugixml-1.15\src\pugixml.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vTabControl.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

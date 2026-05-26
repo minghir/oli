@@ -21,15 +21,20 @@ extern std::wstring utf8_to_wstring(const std::string& str);
 
 
 
+// 1. MODIFICĂ PROCEDURA DE SUBCLASS (Adaugă protecția la WM_DESTROY / WM_NCDESTROY)
 LRESULT CALLBACK RichEditSubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
     vCodeView* codeView = reinterpret_cast<vCodeView*>(dwRefData);
 
+    // 🔥 Protecție Win32: Dacă fereastra se distruge, scoatem subclass-ul instant
+    if (msg == WM_DESTROY || msg == WM_NCDESTROY) {
+        RemoveWindowSubclass(hwnd, RichEditSubclassProc, uIdSubclass);
+        return DefSubclassProc(hwnd, msg, wParam, lParam);
+    }
+
     // Prindem orice mesaj care ar trebui să miște sau să modifice textul
     if (msg == WM_VSCROLL || msg == WM_MOUSEWHEEL || msg == WM_PAINT || msg == WM_CHAR) {
-        // Lăsăm mai întâi RichEdit-ul să-și facă scroll-ul intern nativ
         LRESULT res = DefSubclassProc(hwnd, msg, wParam, lParam);
 
-        // Forțăm imediat Panel-ul să-și redeseneze cifrele în stânga
         if (codeView) {
             codeView->redrawGutter();
         }
@@ -38,7 +43,20 @@ LRESULT CALLBACK RichEditSubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM
     return DefSubclassProc(hwnd, msg, wParam, lParam);
 }
 
+// =================================================================
+// 🔥 IMPLEMENTEAZĂ DESTRUCTORUL COMPONENTEI vCodeView
+// =================================================================
+vCodeView::~vCodeView() {
+    ConsoleManager::getInstance().log(L"[vCodeView::Destructor] Eliberare latentă în background...");
 
+    // Decuplăm doar hook-ul grafic de pe RichEdit pentru a lăsa controlul curat
+    if (m_richEdit && m_richEdit->getHandle()) {
+        HWND hEdit = m_richEdit->getHandle();
+        if (IsWindow(hEdit)) {
+            RemoveWindowSubclass(hEdit, RichEditSubclassProc, 1);
+        }
+    }
+}
 
 // Presupunând că str_to_wstr este disponibil pentru logare
 // extern std::wstring str_to_wstr(const std::string& s); 
@@ -233,62 +251,72 @@ void vCodeView::drawLineNumbers(HDC hdc) {
 
 void vCodeView::redrawGutter() {
     int neededWidth = calculateGutterWidth();
-    
-    // Dacă lățimea s-a schimbat semnificativ, actualizăm layout-ul
-    if (abs(neededWidth - m_gutterWidth) > 5) {
-        m_gutterWidth = neededWidth;
-        
-        if (m_richEdit) {
-            // AICI E SECRETUL:
-            // Marginea setată RichEdit-ului trebuie să fie IDENTICĂ cu m_gutterWidth
-            m_richEdit->setMargins(m_gutterWidth, 0, 0, 0);
-        }
-        applyLayout(); 
+
+    // Dacă numărul de cifre s-a schimbat (ex: s-a trecut de la linia 99 la 100), re-aranjăm totul
+    if (neededWidth != m_gutterWidth) {
+        this->applyLayout();
+        return;
     }
 
-    // Desenarea propriu-zisă
+    // Altfel doar redesenăm cifrele (la scroll, taste, etc.)
     HWND hwndPanel = this->getHandle();
-    HDC hdcPanel = GetDC(hwndPanel);
-    drawLineNumbers(hdcPanel);
-    ReleaseDC(hwndPanel, hdcPanel);
+    if (hwndPanel && IsWindow(hwndPanel)) {
+        HDC hdcPanel = GetDC(hwndPanel);
+        drawLineNumbers(hdcPanel);
+        ReleaseDC(hwndPanel, hdcPanel);
+    }
 }
 
 
-void vCodeView::create(HWND parent)  {
+void vCodeView::create(HWND parent) {
     vPanel::create(parent);
-    setLayoutStrategy(std::make_unique<AnchorLayout>());
 
-    // 1. Creăm RichEdit-ul decalat spre dreapta prin margini
-    auto rich = std::make_unique<vRichEdit>(m_hInstance, m_id + "_edit", 0, 0, m_width, m_height, getEventDispatcher());
+    // ❌ ELIMINĂM LINIA: setLayoutStrategy(std::make_unique<AnchorLayout>());
+    // Nu punem nicio strategie, ne vom ocupa noi manual de layout în applyLayout()!
+
+    m_gutterWidth = calculateGutterWidth();
+
+    // Creăm RichEdit-ul decalat inițial corect
+    auto rich = std::make_unique<vRichEdit>(m_hInstance, m_id + "_edit", m_gutterWidth, 0, m_width - m_gutterWidth, m_height, getEventDispatcher());
     m_richEdit = rich.get();
-	
-	
-	m_richEdit->setMargins(5, 0, 0, 0);
+
+    m_richEdit->setMargins(5, 0, 0, 0);
     m_richEdit->setHeightMode(SizeMode::FILL);
     m_richEdit->setWidthMode(SizeMode::FILL);
     m_richEdit->setFontSize(m_fontSize);
-    //m_richEdit->setMargins(m_gutterWidth, 0, 0, 0);
-	
 
     this->addChild(m_id + "_edit", std::move(rich));
 
-    // --- LEGĂTURA CRUCIALĂ RE-ACTIVATĂ ---
     if (m_richEdit->getHandle()) {
         HWND hEdit = m_richEdit->getHandle();
-        // Îi spunem controlului RichEdit să execute RichEditSubclassProc la scroll/taste
         SetWindowSubclass(hEdit, RichEditSubclassProc, 1, reinterpret_cast<DWORD_PTR>(this));
-
-        // Activăm măștile de notificare pentru orice eventualitate
         SendMessage(hEdit, EM_SETEVENTMASK, 0, ENM_SCROLL | ENM_CHANGE);
     }
 
-    applyLayout();
+    // Apelăm noul nostru layout custom local
+    this->applyLayout();
 
-    // Forțăm o primă redesenare curată
     InvalidateRect(this->getHandle(), NULL, TRUE);
 }
 
+void vCodeView::applyLayout() {
+    // Îi dezactivăm complet comportamentul de container standard.
+    // Calculăm dinamic lățimea riglei pe baza textului actual
+    m_gutterWidth = calculateGutterWidth();
 
+    if (m_richEdit) {
+        // Forțăm RichEdit-ul să ocupe EXACT spațiul rămas, la milimetru, fără ajutorul AnchorLayout!
+        m_richEdit->moveAndResize(m_gutterWidth, 0, m_width - m_gutterWidth, m_height);
+    }
+
+    // Forțăm redesenarea riglei cu cifre
+    HWND hwndPanel = this->getHandle();
+    if (hwndPanel && IsWindow(hwndPanel)) {
+        HDC hdcPanel = GetDC(hwndPanel);
+        drawLineNumbers(hdcPanel);
+        ReleaseDC(hwndPanel, hdcPanel);
+    }
+}
 
 // Funcție ajutătoare locală pentru transformarea numelui în lowercase
 static std::wstring toLowerPropCodeView(const std::wstring& name) {
@@ -303,6 +331,11 @@ bool vCodeView::setProperty(const std::wstring& name, const vData& value) {
     // Proprietate unică, specifică DOAR pentru vCodeView
     if (prop == L"syntax_path" || prop == L"syntax") {
         this->setSyntaxPath(value.toWString());
+        return true;
+    }
+
+    if (prop == L"file_path" || prop == L"current_file") {
+        m_currentFilePath = value.toWString();
         return true;
     }
 
@@ -356,21 +389,18 @@ int vCodeView::calculateGutterWidth() {
 }
 
 void vCodeView::setText(const std::wstring& text) {
-        if (m_richEdit) {
-            // 1. Dezactivăm temporar redesenarea (redresarea grafică) pentru a evita pâlpâitul (flicker)
-            SendMessage(m_richEdit->getHandle(), WM_SETREDRAW, FALSE, 0);
+    if (m_richEdit) {
+        SendMessage(m_richEdit->getHandle(), WM_SETREDRAW, FALSE, 0);
+        m_richEdit->setText(text);
+        m_lexer.highlight(m_richEdit);
+        SendMessage(m_richEdit->getHandle(), WM_SETREDRAW, TRUE, 0);
 
-            // 2. Setăm textul brut în controlul RichEdit
-            m_richEdit->setText(text);
+        // Textul s-a schimbat, deci numărul de linii s-a modificat radical. Actualizăm layout-ul!
+        this->applyLayout();
 
-            // 3. Rulăm Lexer-ul pentru a colora textul conform limbajului curent detectat
-            m_lexer.highlight(m_richEdit);
-
-            // 4. Reactivăm redesenarea și forțăm un refresh vizual complet
-            SendMessage(m_richEdit->getHandle(), WM_SETREDRAW, TRUE, 0);
-            InvalidateRect(m_richEdit->getHandle(), NULL, TRUE);
-        }
+        InvalidateRect(m_richEdit->getHandle(), NULL, TRUE);
     }
+}
 	
 	void vCodeView::setSyntaxPath(const std::wstring& syntaxPath) {
         m_syntaxPath = syntaxPath;
@@ -402,12 +432,10 @@ void vCodeView::setText(const std::wstring& text) {
     }
 	
 	
-	void vCodeView::moveAndResize(int x, int y, int width, int height) {
-			// Loghează dimensiunea
-			std::wstring msg = L"[vCodeView] Resizing ID: " + str_to_wstr(m_id) + 
-							   L" la " + std::to_wstring(width) + L"x" + std::to_wstring(height);
-			ConsoleManager::getInstance().log(msg);
-			
-			vPanel::moveAndResize(x, y, width, height);
-			if (m_richEdit) m_richEdit->moveAndResize(0, 0, width, height);
-}
+    void vCodeView::moveAndResize(int x, int y, int width, int height) {
+        // vPanel stochează noile valori în m_width și m_height
+        vPanel::moveAndResize(x, y, width, height);
+
+        // Executăm poziționarea fixă a copilului RichEdit adaptată la noile dimensiuni (inclusiv Maximize!)
+        this->applyLayout();
+    }

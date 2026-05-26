@@ -17,53 +17,6 @@ vMenu::~vMenu() {
     }
 }
 
-// Implementarea metodei virtuale pure create()
-/*
-void vMenu::create(HWND parent) {
-    // Un meniu nu folosește HWND-ul părinte în procesul de creare
-    // Dar o poți folosi pentru o eventuală verificare de coerență.
-
-    // Un meniu nu are nevoie de un părinte (HWND) pentru a fi creat.
-    // Această metodă are scopul de a îndeplini contractul cu vControl.
-    // Codul de creare a meniului rămâne similar cu ce aveai inițial.
-    HMENU hMenu = CreateMenu();
-    if (!hMenu) {
-        ConsoleManager::getInstance().log(L"[ERROR] vMenu::create: Eroare la crearea meniului. Cod eroare: " + std::to_wstring(GetLastError()));
-        return;
-    }
-    m_handle = hMenu;
-
-    // Adăugăm elementele de meniu la handle-ul WinAPI
-    for (const auto& item : m_menuItems) {
-        if (item.isSeparator) {
-            AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
-        }
-        else {
-            AppendMenu(hMenu, MF_STRING, item.win32Id, item.text.c_str());
-        }
-    }
-  //  ConsoleManager::getInstance().log(L"[vMenu::create] Meniul cu ID '" + std::wstring(m_id.begin(), m_id.end()) + L"' a fost creat cu succes.");
-}
-*/
-/*
-void vMenu::create(HWND parent) {
-    HMENU hMenu = CreateMenu();
-    if (!hMenu) return;
-    m_handle = hMenu;
-
-    for (const auto& item : m_menuItems) {
-        if (item.isSeparator) {
-            AppendMenu(hMenu, MF_SEPARATOR, 0, NULL);
-        }
-        else {
-            UINT flags = MF_STRING;
-            if (!item.enabled) flags |= (MF_DISABLED | MF_GRAYED); // Aplică starea aici
-
-            AppendMenuW(hMenu, flags, item.win32Id, item.text.c_str());
-        }
-    }
-}
-*/
 void vMenu::create(HWND parent) {
     if (m_handle) return; 
     
@@ -126,23 +79,7 @@ std::string vMenu::getItemIdByWin32Id(int win32Id) const {
     }
     return "";
 }
-/*
-void vMenu::addSubMenu(const std::wstring& text, vMenu* subMenu) {
-    if (!m_handle || !subMenu || !subMenu->getHandle()) {
-        ConsoleManager::getInstance().log(L"[ERROR] vMenu::addSubMenu: Handle-ul meniului părinte sau al submeniului este invalid.");
-        return;
-    }
 
-    AppendMenuW(
-        m_handle,
-        MF_POPUP,
-        (UINT_PTR)subMenu->getHandle(),
-        text.c_str()
-    );
-
-   // ConsoleManager::getInstance().log(L"[vMenu::addSubMenu] Adăugat submeniu '" + text + L"' la meniul '" + std::wstring(m_id.begin(), m_id.end()) + L"'.");
-}
-*/
 void vMenu::addSubMenu(const std::wstring& text, vMenu* subMenu) {
     if (!m_handle || !subMenu || !subMenu->getHandle()) return;
 

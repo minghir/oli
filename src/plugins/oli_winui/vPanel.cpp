@@ -63,7 +63,7 @@ void vPanel::create(HWND parent) {
     // Apelează metoda de scalare cu DPI-ul obținut
    scale(parentDpi);
    
-   DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_CLIPCHILDREN;
+   DWORD dwStyle = WS_CHILD |  WS_CLIPCHILDREN;
    if (m_scrollBarOn) {
        dwStyle |= WS_VSCROLL;
    }
@@ -412,4 +412,11 @@ vData vPanel::getProperty(const std::wstring& name) const {
 
     // Fallback către lanțul de moștenire (vContainer -> vControl)
     return vContainer::getProperty(name);
+}
+
+
+void vPanel::moveAndResize(int x, int y, int width, int height) {
+    LOG_DEBUG(L"[Panel " + str_to_wstr(m_id) + L"] Resize la " + std::to_wstring(width));
+    vControl::moveAndResize(x, y, width, height);
+    this->applyLayout();
 }

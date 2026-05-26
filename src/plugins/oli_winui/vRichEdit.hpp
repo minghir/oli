@@ -13,9 +13,10 @@ private:
     static HMODULE s_richEditModule; // Avem nevoie de un singur handle pentru DLL
     bool m_isReadOnly = false;
 
+	HFONT m_activeFont = nullptr; // Stocăm fontul aici
 public:
     vRichEdit(HINSTANCE hInstance, const std::string& id, int x, int y, int width, int height, EventDispatcher& dispatcher);
-    virtual ~vRichEdit() = default;
+    ~vRichEdit();
 
     void create(HWND parent) override;
 
@@ -30,8 +31,12 @@ public:
     // Utile pentru Syntax Highlighting
     void freeze();   // Oprește redesenarea (pentru performanță în timpul colorării)
     void unfreeze(); // Repornește redesenarea
-	void setFontSize(int size);
+
+	void setFont(const std::wstring& fontName, int baseFontSize, int weight, bool italic, bool underline) override;
+    void setFontSize(int baseFontSize) override;
+    void scaleFont(int newDpi) override; // FOARTE IMPORTANT pentru scalare
 	
+	HFONT getActiveFont() const { return m_activeFont; }
 };
 
 #endif

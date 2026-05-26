@@ -153,6 +153,7 @@ public:
 
     // Elimină un control copil din colecție.
     void removeChild(const std::string& id);
+	std::unique_ptr<vControl> releaseChild(const std::string& id);
 
     // Handlerul de mesaje pentru instanța controlului.
     // Mesajele WinAPI sunt direcționate aici de către StaticWndProc.
@@ -223,7 +224,7 @@ public:
 
 
     int getCurrentDpi() const;
-    void scaleFont(int newDpi);
+    virtual void scaleFont(int newDpi);
     //void setFont(const std::wstring& fontName, int baseFontSize);
     //void setFont(const std::wstring& fontName, int baseFontSize, int weight, bool italic, bool underline);
     virtual void setFont(const std::wstring& fontName,

@@ -42,12 +42,13 @@ public:
         
         // Apelăm implementarea din vContainer, care conține bucla de propagare la copii
         vContainer::scale(newDpi);
+		scaleFont(newDpi);
         
     }
 	
 	bool setProperty(const std::wstring& name, const vData& value) override;
     vData getProperty(const std::wstring& name) const override;
-
+	void moveAndResize(int x, int y, int width, int height);
 protected:
     // S-a mutat m_hInstance aici pentru a fi accesibil claselor derivate.
     //HINSTANCE m_hInstance;

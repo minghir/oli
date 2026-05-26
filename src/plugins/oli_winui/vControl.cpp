@@ -262,6 +262,30 @@ void vControl::removeChild(const std::string& id) {
     }
 }
 
+std::unique_ptr<vControl> vControl::releaseChild(const std::string& id) {
+    // Căutăm elementul
+    auto it = std::find_if(m_children.begin(), m_children.end(),
+        [&id](const std::pair<std::string, std::unique_ptr<vControl>>& pair) {
+            return pair.first == id;
+        });
+
+    if (it != m_children.end()) {
+        // Înainte de a scoate obiectul, curățăm map-ul de ID-uri
+        int win32Id = it->second->getWin32Id();
+        m_controlsByWin32Id.erase(win32Id);
+
+        // 🔥 AICI E MAGIA: Mutăm ownership-ul din vector în acest pointer temporar
+        std::unique_ptr<vControl> ptr = std::move(it->second);
+        
+        // Ștergem doar intrarea din vector (fără să distrugem obiectul, ptr-ul îl ține în viață)
+        m_children.erase(it);
+        
+        // Returnăm obiectul viu
+        return ptr; 
+    }
+    return nullptr;
+}
+
 // --- Obținere Copii ---
 //const std::map<std::string, std::unique_ptr<vControl>>& vControl::getChildren() const {
 //    return m_children;
@@ -1140,6 +1164,12 @@ bool vControl::setProperty(const std::wstring& name, const vData& value) {
         this->setFontName(value.toWString());
         return true;
     }
+	else if (prop == L"background_color") {
+		// Presupunem că primești o valoare de tip 0xRRGGBB (hex sau int)
+		COLORREF color = static_cast<COLORREF>(value.toInt());
+		this->setBackgroundColor(color);
+		return true;
+	}
 
     return false; // Proprietatea nu aparține obiectului vControl de bază
 }

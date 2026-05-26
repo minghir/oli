@@ -92,25 +92,6 @@ void vCodeView::setReadOnly(bool readOnly) {
         ConsoleManager::getInstance().log(L"[vCodeView::setReadOnly] ID: " + str_to_wstr(m_id) + L" setat la: " + status);
     }
 }
-/*
-void vCodeView::setFontSize(int size) {
-    m_fontSize = size;
-
-    if (m_richEdit && m_richEdit->getHandle()) {
-        // 1. Aplicăm la RichEdit
-        // Framework-ul tău probabil are deja o metodă în vRichEdit
-        m_richEdit->setFontSize(size);
-
-
-        // 3. Forțăm un re-layout pentru că schimbarea fontului poate modifica 
-        // lățimea necesară pentru Gutter (ex: de la 99 la 100 linii)
-        applyLayout();
-
-        // 4. Re-colorează (uneori RichEdit pierde formatarea la schimbări majore de font)
-         //applayColors(); 
-    }
-}
-*/
 
 
 void vCodeView::setFontSize(int size) {
@@ -120,16 +101,29 @@ void vCodeView::setFontSize(int size) {
     if (m_richEdit) {
         m_richEdit->setFontSize(size); 
     }
-
     
+	InvalidateRect(m_richEdit->getHandle(), NULL, TRUE);
+    UpdateWindow(m_richEdit->getHandle());
     
-    
-
-    // 3. Re-layout pentru a ajusta spațierea
-    applyLayout();
-	m_lexer.highlight(m_richEdit);
+    // Redesenează Gutter-ul acum că avem înălțimea nouă
+    this->redrawGutter();
+    m_lexer.highlight(m_richEdit);
+	applyLayout();
 }
 
+
+void vCodeView::scaleFont(int newDpi) {
+    // 1. Apelăm scalarea de bază (pentru fontul containerului/gutter-ului dacă e cazul)
+    vPanel::scaleFont(getCurrentDpi() );
+
+    // 2. Calculăm dimensiunea corectă în puncte (Puncte = pixeli * 72 / DPI)
+    // Sau, dacă m_fontSize este în "puncte", trebuie să-l scalăm în funcție de DPI
+    int scaledSize = MulDiv(m_fontSize, newDpi, 96);
+
+    // 3. Trimitem către RichEdit
+	//setFontSize(getCurrentDpi() );
+		
+}
 
 LRESULT vCodeView::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
@@ -175,106 +169,87 @@ LRESULT vCodeView::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
     return vPanel::handleMessage(hwnd, msg, wParam, lParam);
 }
 
+
 void vCodeView::drawLineNumbers(HDC hdc) {
     if (!m_richEdit || !m_richEdit->getHandle()) return;
 
     HWND hEdit = m_richEdit->getHandle();
+    HFONT hMyFont = m_richEdit->getActiveFont();
+    if (!hMyFont) hMyFont = (HFONT)SendMessage(hEdit, WM_GETFONT, 0, 0);
+    HFONT hOldFont = (HFONT)SelectObject(hdc, hMyFont);
 
-    // 1. Desenăm fundalul Gutter-ului direct cu ALB (la fel ca RichEdit)
+    // 1. Fundalul Gutter-ului (Exact pe lățimea m_gutterWidth)
     RECT gutterRect = { 0, 0, m_gutterWidth, m_height };
-    HBRUSH hBrush = CreateSolidBrush(RGB(255, 255, 255)); // <--- SCHIMBAT ÎN ALB COMPLET
-    FillRect(hdc, &gutterRect, hBrush);
-    DeleteObject(hBrush);
+    FillRect(hdc, &gutterRect, (HBRUSH)GetStockObject(WHITE_BRUSH));
 
-    // 2. Linia de demarcație verticală
-    // O facem tot ALBI dacă vrei să dispară de tot, sau un gri extrem de șters (RGB(240,240,240)) ca un ghidaj fin
-    HPEN hPen = CreatePen(PS_SOLID, 1, RGB(255, 255, 255)); // <--- SCHIMBAT ÎN ALB (dispare linia)
+    // 2. Linia de demarcație neagră (exact pe marginea din dreapta)
+    // Desenăm o linie verticală la m_gutterWidth - 1
+    HPEN hPen = CreatePen(PS_SOLID, 1, RGB(0, 0, 0)); 
     HPEN hOldPen = (HPEN)SelectObject(hdc, hPen);
-    MoveToEx(hdc, m_gutterWidth - 1, 0, nullptr);
+    MoveToEx(hdc, m_gutterWidth - 1, 0, NULL);
     LineTo(hdc, m_gutterWidth - 1, m_height);
     SelectObject(hdc, hOldPen);
     DeleteObject(hPen);
 
-    // 3. Setări text (numerele rămân pe gri închis ca să fie lizibile, dar pe fundal alb)
-    SetTextColor(hdc, RGB(140, 140, 140)); // Un gri curat pentru cifre
+    SetTextColor(hdc, RGB(140, 140, 140));
     SetBkMode(hdc, TRANSPARENT);
 
-    // --- CORECTURA 1: Forțăm utilizarea fontului din framework-ul tău ---
-    // Încercăm să luăm fontul obiectului vCodeView/vPanel. Dacă nu e setat, îl luăm pe cel din RichEdit
-    HFONT hMyFont = m_richEdit->getFont();
-    if (!hMyFont) {
-        hMyFont = (HFONT)SendMessage(hEdit, WM_GETFONT, 0, 0);
-    }
-
-    HFONT hOldFont = nullptr;
-    if (hMyFont) {
-        hOldFont = (HFONT)SelectObject(hdc, hMyFont);
-    }
-
-    // 3. Aflăm pozițiile de scroll
-    int firstLine = (int)SendMessage(hEdit, EM_GETFIRSTVISIBLELINE, 0, 0);
-    int totalLines = (int)SendMessage(hEdit, EM_GETLINECOUNT, 0, 0);
-
-    // 4. Calculăm înălțimea liniei direct din contextul fontului aplicat
     TEXTMETRICW tm;
     GetTextMetricsW(hdc, &tm);
     int lineHeight = tm.tmHeight + tm.tmExternalLeading;
-    if (lineHeight <= 0) lineHeight = 16;
 
-    // --- CORECTURA 2: Aliniere la pixel prin interogarea directă a liniei vizibile ---
-    // Luăm indexul primului caracter de pe linia curentă de sus
-    int firstCharIndex = (int)SendMessage(hEdit, EM_LINEINDEX, firstLine, 0);
-    int yPos = 0;
-
-    if (firstCharIndex != -1) {
-        POINT pt = { 0, 0 };
-        // Trimitem pointerul corect către structura POINT (WPARAM) și indexul caracterului (LPARAM)
-        // Asta funcționează perfect în RichEdit și ne spune EXACT la ce pixel Y începe textul pe ecran
-        SendMessage(hEdit, EM_POSFROMCHAR, (WPARAM)&pt, firstCharIndex);
-        yPos = pt.y;
-    }
-
-    // 5. Bucla de randare
-
-    SetTextAlign(hdc, TA_RIGHT | TA_TOP);
+    RECT rcEdit;
+    SendMessage(hEdit, EM_GETRECT, 0, (LPARAM)&rcEdit);
+    int firstLine = (int)SendMessage(hEdit, EM_GETFIRSTVISIBLELINE, 0, 0);
+    int totalLines = (int)SendMessage(hEdit, EM_GETLINECOUNT, 0, 0);
 
     int currentLine = firstLine;
+    while (currentLine < totalLines) {
+        int charIndex = (int)SendMessage(hEdit, EM_LINEINDEX, currentLine, 0);
+        if (charIndex == -1) break;
 
-    while (yPos < m_height && currentLine < totalLines) {
+        POINT pt;
+        SendMessage(hEdit, EM_POSFROMCHAR, (WPARAM)&pt, charIndex);
+
+        if (pt.y > rcEdit.bottom) break;
+
         std::wstring lineNumStr = std::to_wstring(currentLine + 1);
+        
+        // --- DREPTUNGHIUL DE DESENARE ---
+        // Right: m_gutterWidth - 6 (lăsăm 6px distanță față de linia neagră)
+        RECT numRect;
+        numRect.left = 0;              
+        numRect.right = m_gutterWidth - 6 ; 
+        numRect.top = pt.y;            
+        numRect.bottom = pt.y + lineHeight;
 
-        // Pasăm coordonata X fixă: m_gutterWidth - 8 (adică exact la 8 pixeli în stânga de RichEdit)
-        // Datorită TA_RIGHT, cifrele se vor extinde spre stânga, rămânând lipite frumos de RichEdit!
-        TextOutW(hdc, m_gutterWidth - 8, yPos, lineNumStr.c_str(), static_cast<int>(lineNumStr.length()));
+        DrawTextW(hdc, lineNumStr.c_str(), -1, &numRect, DT_RIGHT | DT_SINGLELINE | DT_NOPREFIX);
 
         currentLine++;
-        int nextCharIndex = (int)SendMessage(hEdit, EM_LINEINDEX, currentLine, 0);
-        if (nextCharIndex != -1) {
-            POINT ptNext = { 0, 0 };
-            SendMessage(hEdit, EM_POSFROMCHAR, (WPARAM)&ptNext, nextCharIndex);
-            yPos = ptNext.y;
-        }
-        else {
-            yPos += lineHeight;
-        }
     }
 
-    if (hOldFont) {
-        SelectObject(hdc, hOldFont);
-    }
+    SelectObject(hdc, hOldFont);
 }
 
 void vCodeView::redrawGutter() {
-    HWND hwndPanel = this->getHandle(); // Handle-ul PANELULUI vCodeView
-    if (!hwndPanel) return;
+    int neededWidth = calculateGutterWidth();
+    
+    // Dacă lățimea s-a schimbat semnificativ, actualizăm layout-ul
+    if (abs(neededWidth - m_gutterWidth) > 5) {
+        m_gutterWidth = neededWidth;
+        
+        if (m_richEdit) {
+            // AICI E SECRETUL:
+            // Marginea setată RichEdit-ului trebuie să fie IDENTICĂ cu m_gutterWidth
+            m_richEdit->setMargins(m_gutterWidth, 0, 0, 0);
+        }
+        applyLayout(); 
+    }
 
-    // Luăm DC-ul direct, ocolind mesajul WM_PAINT
+    // Desenarea propriu-zisă
+    HWND hwndPanel = this->getHandle();
     HDC hdcPanel = GetDC(hwndPanel);
-
-    // Rulăm funcția ta de randare
     drawLineNumbers(hdcPanel);
-
-    // Eliberăm resursele grafice
     ReleaseDC(hwndPanel, hdcPanel);
 }
 
@@ -288,11 +263,12 @@ void vCodeView::create(HWND parent)  {
     m_richEdit = rich.get();
 	
 	
-	
+	m_richEdit->setMargins(5, 0, 0, 0);
     m_richEdit->setHeightMode(SizeMode::FILL);
     m_richEdit->setWidthMode(SizeMode::FILL);
     m_richEdit->setFontSize(m_fontSize);
-    m_richEdit->setMargins(m_gutterWidth, 0, 0, 0);
+    //m_richEdit->setMargins(m_gutterWidth, 0, 0, 0);
+	
 
     this->addChild(m_id + "_edit", std::move(rich));
 
@@ -353,4 +329,85 @@ vData vCodeView::getProperty(const std::wstring& name) const {
 
     // Dacă nu este o proprietate unică a editorului de cod, lăsăm ierarhia superioară să o caute
     return vPanel::getProperty(name);
+}
+
+int vCodeView::calculateGutterWidth() {
+    if (!m_richEdit || !m_richEdit->getHandle()) return 50;
+
+    // Aflăm numărul maxim de linii pentru a ști câte cifre trebuie să încapă
+    int totalLines = (int)SendMessage(m_richEdit->getHandle(), EM_GETLINECOUNT, 0, 0);
+    if (totalLines < 100) totalLines = 100; // Asigură minim 3 cifre spațiu
+    std::wstring maxLineStr = std::to_wstring(totalLines);
+    
+    // FOLOSEȘTE FONTUL ACTIV (la fel ca în drawLineNumbers)
+    HDC hdc = GetDC(m_richEdit->getHandle());
+    HFONT hFont = m_richEdit->getActiveFont();
+    if (!hFont) hFont = (HFONT)SendMessage(m_richEdit->getHandle(), WM_GETFONT, 0, 0);
+    HFONT hOldFont = (HFONT)SelectObject(hdc, hFont);
+
+    SIZE size;
+    GetTextExtentPoint32W(hdc, maxLineStr.c_str(), (int)maxLineStr.length(), &size);
+
+    SelectObject(hdc, hOldFont);
+    ReleaseDC(m_richEdit->getHandle(), hdc);
+
+    // Padding-ul trebuie să fie exact cel din drawLineNumbers (8px dreapta + puțin stânga)
+    return size.cx + 10; 
+}
+
+void vCodeView::setText(const std::wstring& text) {
+        if (m_richEdit) {
+            // 1. Dezactivăm temporar redesenarea (redresarea grafică) pentru a evita pâlpâitul (flicker)
+            SendMessage(m_richEdit->getHandle(), WM_SETREDRAW, FALSE, 0);
+
+            // 2. Setăm textul brut în controlul RichEdit
+            m_richEdit->setText(text);
+
+            // 3. Rulăm Lexer-ul pentru a colora textul conform limbajului curent detectat
+            m_lexer.highlight(m_richEdit);
+
+            // 4. Reactivăm redesenarea și forțăm un refresh vizual complet
+            SendMessage(m_richEdit->getHandle(), WM_SETREDRAW, TRUE, 0);
+            InvalidateRect(m_richEdit->getHandle(), NULL, TRUE);
+        }
+    }
+	
+	void vCodeView::setSyntaxPath(const std::wstring& syntaxPath) {
+        m_syntaxPath = syntaxPath;
+
+        // 1. Încărcăm folderul de sintaxe (care populează mapa m_extMap)
+        std::string pathAnsi(syntaxPath.begin(), syntaxPath.end());
+        m_lexer.loadSyntaxes(pathAnsi);
+
+        // 2. 🔥 REPARAT: Îi spunem lexerului să activeze limbajul bazat pe numele fișierului de sintaxă!
+        // Dacă ai funcția setLanguageByFile, o putem păcăli trimițându-i un nume fictiv cu extensia corectă.
+        // De exemplu, dacă calea este ".../oli.xml", putem folosi o extensie temporară sau o funcție directă.
+        if (syntaxPath.find(L"oli.xml") != std::wstring::npos) {
+            m_lexer.setLanguageByFile(L"dummy.oli"); // Forțează activarea sintaxei de Oli
+        }
+        else if (syntaxPath.find(L"cpp.xml") != std::wstring::npos) {
+            m_lexer.setLanguageByFile(L"dummy.cpp"); // Forțează activarea sintaxei de C++
+        }
+        else {
+            // Fallback: încearcă să detecteze limbajul direct prin calea fișierului
+            m_lexer.setLanguageByFile(syntaxPath);
+        }
+
+        if (m_richEdit) {
+            SendMessage(m_richEdit->getHandle(), WM_SETREDRAW, FALSE, 0);
+            m_lexer.highlight(m_richEdit);
+            SendMessage(m_richEdit->getHandle(), WM_SETREDRAW, TRUE, 0);
+            InvalidateRect(m_richEdit->getHandle(), NULL, TRUE);
+        }
+    }
+	
+	
+	void vCodeView::moveAndResize(int x, int y, int width, int height) {
+			// Loghează dimensiunea
+			std::wstring msg = L"[vCodeView] Resizing ID: " + str_to_wstr(m_id) + 
+							   L" la " + std::to_wstring(width) + L"x" + std::to_wstring(height);
+			ConsoleManager::getInstance().log(msg);
+			
+			vPanel::moveAndResize(x, y, width, height);
+			if (m_richEdit) m_richEdit->moveAndResize(0, 0, width, height);
 }

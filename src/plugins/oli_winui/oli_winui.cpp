@@ -9,6 +9,7 @@
 #include "vCodeView.hpp"
 #include "vMenu.hpp"
 #include "vMessageDialog.hpp"
+#include "vTabControl.hpp"
 #include <unordered_map>
 #include <memory>
 #include <sstream>
@@ -287,6 +288,11 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
                     hInst, id, x, y, w, h, g_Gui.appInstance->getEventDispatcher()
                 );
             }
+			else if (wType == L"TABCONTROL") {
+				newCtrl = std::make_unique<vTabControl>(
+					hInst, id, x, y, w, h, g_Gui.appInstance->getEventDispatcher()
+				);
+			}
             else if (wType == L"CODEVIEW") {
                 newCtrl = std::make_unique<vCodeView>(
                     hInst, id, x, y, w, h, g_Gui.appInstance->getEventDispatcher()

@@ -17,6 +17,12 @@ vRichEdit::vRichEdit(HINSTANCE hInstance, const std::string& id, int x, int y, i
     }
 }
 
+
+vRichEdit::~vRichEdit() {
+    if (m_activeFont) DeleteObject(m_activeFont);
+    if (s_richEditModule) FreeLibrary(s_richEditModule); // Atenție: s_richEditModule este static
+}
+
 void vRichEdit::create(HWND parent) {
     if (!parent) return;
 
@@ -47,6 +53,9 @@ void vRichEdit::create(HWND parent) {
             OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
             FIXED_PITCH | FF_MODERN, L"Consolas");
         SendMessage(m_handle, WM_SETFONT, (WPARAM)hFont, TRUE);
+		RECT rc;
+		GetClientRect(m_handle, &rc);
+		SendMessage(m_handle, EM_SETRECT, 0, (LPARAM)&rc);
     }
 }
 
@@ -96,7 +105,7 @@ std::wstring vRichEdit::getText() const {
     GetWindowTextW(m_handle, buf.data(), len + 1);
     return std::wstring(buf.data());
 }
-
+/*
 void vRichEdit::setFontSize(int size) {
     if (!m_handle) return;
 
@@ -132,4 +141,64 @@ void vRichEdit::setFontSize(int size) {
         CLEARTYPE_QUALITY, FIXED_PITCH | FF_MODERN, L"Consolas"
     );
     SendMessage(m_handle, WM_SETFONT, (WPARAM)hFont, TRUE);
+}
+*/
+
+void vRichEdit::setFont(const std::wstring& fontName, int baseFontSize, int weight, bool italic, bool underline) {
+    // 1. Apelăm clasa de bază pentru ca vControl să salveze atributele (m_fontName, m_baseFontSize, etc.)
+    vControl::setFont(fontName, baseFontSize, weight, italic, underline);
+
+    // 2. Acum aplicăm specific pentru RichEdit
+    if (!m_handle) return;
+
+    CHARFORMAT2 cf;
+    ZeroMemory(&cf, sizeof(cf));
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_SIZE | CFM_FACE | CFM_BOLD | CFM_ITALIC | CFM_UNDERLINE;
+    cf.yHeight = baseFontSize * 20; // Twips
+    wcscpy_s(cf.szFaceName, fontName.c_str());
+    
+    cf.dwEffects = 0;
+    if (weight >= FW_BOLD) cf.dwEffects |= CFE_BOLD;
+    if (italic) cf.dwEffects |= CFE_ITALIC;
+    if (underline) cf.dwEffects |= CFE_UNDERLINE;
+
+    SendMessage(m_handle, EM_SETCHARFORMAT, SCF_ALL | SCF_DEFAULT, (LPARAM)&cf);
+}
+
+void vRichEdit::setFontSize(int baseFontSize) {
+    if (!m_handle) return;
+
+    // 1. Calculăm atributele pentru RichEdit
+    CHARFORMAT2 cf;
+    ZeroMemory(&cf, sizeof(cf));
+    cf.cbSize = sizeof(cf);
+    cf.dwMask = CFM_SIZE | CFM_FACE;
+    cf.yHeight = baseFontSize * 20; 
+    wcscpy_s(cf.szFaceName, L"Consolas");
+    SendMessage(m_handle, EM_SETCHARFORMAT, SCF_ALL | SCF_DEFAULT, (LPARAM)&cf);
+
+    // 2. Creăm fontul pentru WinAPI (Gutter-ul are nevoie de asta)
+    // Calculăm înălțimea în pixeli
+    HDC hdc = GetDC(m_handle);
+    int pixelHeight = -MulDiv(baseFontSize, GetDeviceCaps(hdc, LOGPIXELSY), 72);
+    ReleaseDC(m_handle, hdc);
+
+    HFONT hFont = CreateFontW(pixelHeight, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                              DEFAULT_CHARSET, OUT_OUTLINE_PRECIS, CLIP_DEFAULT_PRECIS,
+                              CLEARTYPE_QUALITY, FIXED_PITCH | FF_MODERN, L"Consolas");
+
+    // 3. Update-ul fontului activ și curățarea celui vechi
+    if (m_activeFont) DeleteObject(m_activeFont); // Prevenim memory leak
+    m_activeFont = hFont;
+    SendMessage(m_handle, WM_SETFONT, (WPARAM)m_activeFont, TRUE);
+}
+
+void vRichEdit::scaleFont(int newDpi) {
+    // 1. Întâi scalăm în baza (vControl va recalcula m_hFont bazat pe DPI)
+    vControl::scaleFont(newDpi);
+
+    // 2. Pentru RichEdit, trebuie să aplicăm formatarea recalculată
+    int scaledSize = MulDiv(m_baseFontSize, newDpi, 96);
+    setFontSize(scaledSize);
 }

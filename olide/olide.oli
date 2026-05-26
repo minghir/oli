@@ -119,7 +119,7 @@ $app.init()
 echo "CREEZ WIN"
 set $win = new("WinWindow")
 $win.init("fereastra_principala", "Oli UI Engine - Fully Encapsulated OOP")
-$win.set_icon("./olide/assets/Oli_LOGO_32.ico")
+$win.set_icon("./olide/assets/Oli_Icon.ico")
 $win.set_layout("GRID")
 
 
@@ -160,16 +160,52 @@ $win.set_prop("menu", "menu_principal")
 # =================================================================
 # DEFINIRE CALLBACK-URI GENERALE & BINDING
 # =================================================================
+# =================================================================
+# LOGICA NOUA: DESCHIDERE DINAMICA
+# =================================================================
+set $counter = 0
 func menu_open_click()
     set $dlg = new("FileDialog")
     $dlg.title = "Deschide fișierul Oli"
-    $dlg.type = 0  # 0 înseamnă modul OPEN
+    $dlg.type = 0
     
     $path = $dlg.show()
     if $path != "" then
-        echo "Fișier selectat: " .. $path
-        @file = $path
-        $myCodeView.set_text(READFILE($file))
+        $newTabId = "tab_page_" .. $path 
+        
+        # 1. Creezi panel-ul care va fi "Pagina"
+        set $page = new("WinPanel")
+        $page.init($newTabId, "main_tabs", 0, 0, 100, 100)
+		
+        $page.set_width_mode("FILL")
+        $page.set_height_mode("FILL")
+        $page.set_layout("VSTACK") # Sau layout-ul tău preferat
+		#switch @counter 
+		case 0
+			$page.set_prop("background_color", 0x0000FF) # Albastru
+			break
+		case 1
+			$page.set_prop("background_color", 0xAA00FF) # Albastru
+			break
+		case 2
+			$page.set_prop("background_color", 0x220088) # Albastru
+			break
+		endswitch
+		
+        # 2. Creezi CodeView-ul și îl adaugi CA COPIL al panel-ului
+      #  set $newView = new("WinCodeView")
+      #  $newView.init("view_" .. $path, $newTabId, 0, 0, 100, 100)
+	#	$newView.set_width_mode("FILL")
+     #   $newView.set_height_mode("FILL")
+      #  $newView.set_syntax_path("./olide/syntaxes/oli.xml")
+      #  $newView.set_text(READFILE($path))
+      #  $newView.set_font_size(12)
+        
+        # 3. Adaugi Paginile în tab, nu View-ul direct
+        $tabs.add_tab($path, $newTabId)
+        
+        $activeCodeView = $newView
+		@counter++
     endif
 endfunc
 
@@ -210,6 +246,14 @@ $actPanel.set_width_mode("FILL")
 $actPanel.set_height_mode("FIXED")
 $actPanel.set_margin(10)
 
+set $tabs = new("WinTabControl")
+$tabs.init("main_tabs", "main_panel", 0, 0, 600, 400)
+$tabs.set_width_mode("FILL")
+$tabs.set_height_mode("FILL")
+#$tabs.set_layout("VSTACK") 
+# Variabilă globală pentru a ține minte tab-ul curent (poți extinde logica asta)
+set $activeCodeView = null
+
 echo "CREEZ run button"
 set $runButton = new("WinButton")
 $runButton.init("btn_run", "act_panel", 10, 4, 80, 40, "RUN")
@@ -221,13 +265,13 @@ $saveButton.init("btn_save", "act_panel", 95, 4, 80, 40, "SAVE")
 $saveButton.set_anchor("RIGHT|BOTTOM")
 $saveButton.set_width_mode("FIXED")
 
-set $myCodeView = new("WinCodeView")
-$myCodeView.init("CODEVIEW_salveaza", "main_panel", 20, 60, 600, 400)
-$myCodeView.set_width_mode("FILL")
-$myCodeView.set_height_mode("FILL")
-$myCodeView.set_syntax_path("./olide/syntaxes/oli.xml")
-if $file != "" then $myCodeView.set_text(READFILE($file)) endif
-$myCodeView.set_font_size(14)
+#set $myCodeView = new("WinCodeView")
+#$myCodeView.init("CODEVIEW_salveaza", "main_tabs", 0, 60, 600, 400)
+#$myCodeView.set_width_mode("FILL")
+#$myCodeView.set_height_mode("FILL")
+#$myCodeView.set_syntax_path("./olide/syntaxes/oli.xml")
+#if $file != "" then $myCodeView.set_text(READFILE($file)) endif
+#$myCodeView.set_font_size(12)
 
 # Legăm butoanele fizice de evenimente
 $runButton.bind("click", "run_click")

@@ -395,6 +395,34 @@ bool vTabControl::callMethod(const std::wstring& methodName, const std::vector<v
         }
         return false;
     }
+	if (method == L"refresh") {
+        this->refresh();
+        return true;
+    }
 
     return vContainer::callMethod(methodName, args);
+}
+
+void vTabControl::refresh() {
+    if (!m_handle || !IsWindow(m_handle)) return;
+
+    // 1. Recalculăm dreptunghiul de afișare (zona utilă)
+    RECT rc = { 0, 0, m_width, m_height };
+    TabCtrl_AdjustRect(m_handle, FALSE, &rc);
+    int localW = rc.right - rc.left;
+    int localH = rc.bottom - rc.top;
+
+    // 2. Refresh pe pagina activă
+    vPanel* currentPage = getCurrentPage();
+    if (currentPage) {
+        // Forțăm re-așezarea exact în zona corectă
+        currentPage->moveAndResize(rc.left, rc.top, localW, localH);
+        currentPage->applyLayout();
+    }
+
+    // 3. 🔥 COMANDA MAGICĂ: Forțăm redesenarea completă
+    // RDW_ALLCHILDREN este esențial aici pentru ca și RichEdit-ul din interior
+    // să fie forțat să se randeze din nou.
+    RedrawWindow(m_handle, nullptr, nullptr, 
+                 RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN);
 }

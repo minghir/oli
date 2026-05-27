@@ -63,6 +63,7 @@ public:
 private:
     std::vector<vTabPage> m_pages;
     RECT getDisplayRect();
+	void refresh();
    // COLORREF m_backgroundColor;
 };
 

@@ -104,6 +104,7 @@ def class WinCodeView extends UiControl { init($id, $parentId, $x, $y, $w, $h), 
 func WinCodeView::init($id, $parentId, $x, $y, $w, $h)
     $this.id = $id
     UI_CREATE_CONTROL("CODEVIEW", $id, $parentId, $x, $y, $w, $h)
+	#$this.set_font_size(12)
 endfunc
 
 func WinCodeView::set_syntax_path($path)
@@ -150,7 +151,7 @@ endfunc
 # CLASA TABCONTROL
 # =================================================================
 
-def class WinTabControl extends UiControl { init($id, $parentId, $x, $y, $w, $h), add_tab($title, $panelId), switch_page($index) }
+def class WinTabControl extends UiControl { init($id, $parentId, $x, $y, $w, $h), add_tab($title, $panelId), switch_page($index), refresh() }
 
 func WinTabControl::init($id, $parentId, $x, $y, $w, $h)
     $this.id = $id
@@ -163,6 +164,10 @@ endfunc
 
 func WinTabControl::switch_page($index)
     return UI_CALL_METHOD($this.id, "switch_page", $index)
+endfunc
+
+func WinTabControl::refresh()
+    return UI_CALL_METHOD($this.id, "refresh")
 endfunc
 
 echo "AM DEFINIT CLASELE"

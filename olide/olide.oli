@@ -130,13 +130,14 @@ func menu_new_click()
         $newView.init($newTabId, "main_tabs", 0, 0, 0, 0)
         $newView.set_width_mode("FILL")
         $newView.set_height_mode("FILL")
-        $newView.set_font_size(12)
         $newView.set_prop("file_path", @file) # 🔥 Reținem calea în C++
+		$newView.set_font_size(14)
         
         $tabs.add_tab(FS_GET_FILENAME(@file), $newTabId)
         $newView.set_syntax_path("./olide/syntaxes/oli.xml")
         $newView.set_text("")
-        
+        $tabCount = $tabs.get_prop("tab_count")
+        $tabs.switch_page($tabCount - 1)
         UPDATE_ACTIVE_CONTEXT()
         SHOW_MESSAGE("Fișier Nou", "Fișierul a fost creat și deschis în tab nou!")
     endif
@@ -263,25 +264,49 @@ func menu_open_click()
         
         set $newView = new("WinCodeView")
         $newView.init($newTabId, "main_tabs", 0, 0, 0, 0)
+		
         $newView.set_width_mode("FILL")
         $newView.set_height_mode("FILL")
-        $newView.set_font_size(12)
+        
         
         # 🔥 CRITIC: Salvăm calea completă a fișierului în proprietatea nativă C++ a obiectului
         $newView.set_prop("file_path", $path)
+		
         
         $tabs.add_tab(FS_GET_FILENAME($path), $newTabId)
         
         $newView.set_syntax_path("./olide/syntaxes/oli.xml")
         $newView.set_text(READFILE($path))
-        
+		
+        $newView.set_font_size(12)
+		
+		$tabCount = $tabs.get_prop("tab_count")
+		$tabs.switch_page($tabCount - 1)
+		
         # Sincronizăm imediat contextul global cu noul tab deschis
         UPDATE_ACTIVE_CONTEXT()
+		#$tabs.refresh()
         @counter++
     endif
 endfunc
 
+func init_first_tab()
+	$newTabId = "tab_page_" .. "untitled.oli"
+	set $newView = new("WinCodeView")
+    $newView.init($newTabId, "main_tabs", 0, 0, 0, 0)
+    $newView.set_width_mode("FILL")
+    $newView.set_height_mode("FILL")
+	$newView.set_syntax_path("./olide/syntaxes/oli.xml")
+	$tabs.add_tab("untitled.oli", $newTabId)
+	$newView.set_font_size(12)
+	UPDATE_ACTIVE_CONTEXT()
+	$tabs.refresh()
+	@counter++
+endfunc
+
+init_first_tab()
 $win.show()  
 $app.run()
+
 
 echo "=== Aplicație închisă cu succes ==="

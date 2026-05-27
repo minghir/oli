@@ -1,5 +1,5 @@
 --- OLI ASSEMBLY LISTING ---
-Source: examples/julia.oli
+Source: D:\Programming\oli\examples\Julia.oli
 Generated: 2026-05-11
 
 
@@ -131,4 +131,6 @@ Generated: 2026-05-11
 0320: OP_ADD
 0321: OP_SET_GLOBAL   0015 (Name: $py)
 0324: OP_LOOP          0270 (Sari inapoi la: 57)
-0327: OP_RETURN
+0327: OP_CALL_NATIVE  0035 (Name: INPUT, Args: 0)
+0331: OP_POP
+0332: OP_RETURN

@@ -11,7 +11,8 @@ plugin oli_time
 
 set $SW = 640
 set $SH = 480
-set $v = CAN_INIT($SW, $SH, "Oli Mandelbrot Explorer:arrows to use")
+# Actualizăm titlul ferestrei ca să reflecte noile taste
+set $v = CAN_INIT($SW, $SH, "Oli Mandelbrot Explorer: Arrows=Move, A/Q=Zoom, ESC=Quit")
 set $ptr = CAN_GET_PTR()
 
 set $zoom = 1.0
@@ -22,24 +23,33 @@ while true do
     # 1. Desenăm fractalul (Foc: Red/Yellow gradient)
     set $v = FRACT_MANDEL($ptr, $SW, $SH, $zoom, $mX, $mY)
 
-    # 2. Control Zoom & Mișcare
-    if KEY_STATE(38) == 1 then # Săgeată SUS (Zoom In)
+    # 2. Control ZOOM (Tastele 'A' și 'Q')
+    if KEY_STATE(65) == 1 then # Tasta 'A' (Zoom In)
         set $zoom = $zoom * 1.1
     endif
-    if KEY_STATE(40) == 1 then # Săgeată JOS (Zoom Out)
+    if KEY_STATE(81) == 1 then # Tasta 'Q' (Zoom Out)
         set $zoom = $zoom * 0.9
     endif
-    if KEY_STATE(37) == 1 then # STÂNGA
+
+    # 3. Control MIȘCARE (Săgețile mută camera pe axele X și Y)
+    if KEY_STATE(38) == 1 then # Săgeată SUS (Mută vederea în sus)
+        set $mY = $mY - (0.05 / $zoom)
+    endif
+    if KEY_STATE(40) == 1 then # Săgeată JOS (Mută vederea în jos)
+        set $mY = $mY + (0.05 / $zoom)
+    endif
+    if KEY_STATE(37) == 1 then # Săgeată STÂNGA
         set $mX = $mX - (0.05 / $zoom)
     endif
-    if KEY_STATE(39) == 1 then # DREAPTA
+    if KEY_STATE(39) == 1 then # Săgeată DREAPTA
         set $mX = $mX + (0.05 / $zoom)
     endif
 
-    # 3. Afișare
+    # 4. Afișare buffer pe ecran
     set $v = CAN_PRESENT()
 
-    if KEY_STATE(81) == 1 then # Q
+    # 5. Ieșire din aplicație pe tasta ESC (cod 27)
+    if KEY_STATE(27) == 1 then # ESC
         break
     endif
 endwhile

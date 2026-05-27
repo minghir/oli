@@ -1,0 +1,41 @@
+--- OLI ASSEMBLY LISTING ---
+Source: D:\Programming\oli\examples\fx_matrix_ascii.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_GET_GLOBAL   0000 (Name: config)
+0003: OP_GET_GLOBAL   0000 (Name: config)
+0006: OP_PLUGIN       0001 (Path: oli_canvas)
+0009: OP_PLUGIN       0002 (Path: oli_fract)
+0012: OP_PLUGIN       0003 (Path: oli_keyboard)
+0015: OP_CONSTANT     0004 (Value: 640)
+0018: OP_CONSTANT     0005 (Value: 480)
+0021: OP_CONSTANT     0006 (Value: Matrix ASCII)
+0024: OP_CALL_NATIVE  0007 (Name: CAN_INIT, Args: 3)
+0028: OP_SET_GLOBAL   0008 (Name: $v)
+0031: OP_CALL_NATIVE  0009 (Name: CAN_GET_PTR, Args: 0)
+0035: OP_SET_GLOBAL   0010 (Name: $ptr)
+0038: OP_CALL_NATIVE  0011 (Name: CAN_GET_WIDTH, Args: 0)
+0042: OP_SET_GLOBAL   0012 (Name: $w)
+0045: OP_CALL_NATIVE  0013 (Name: CAN_GET_HEIGHT, Args: 0)
+0049: OP_SET_GLOBAL   0014 (Name: $h)
+0052: OP_CONSTANT     0015 (Value: true)
+0055: OP_JUMP_IF_FALSE 0041 (Sari la: 99)
+0058: OP_GET_GLOBAL   0010 (Name: $ptr)
+0061: OP_GET_GLOBAL   0012 (Name: $w)
+0064: OP_GET_GLOBAL   0014 (Name: $h)
+0067: OP_CALL_NATIVE  0016 (Name: FX_MATRIX_ASCII, Args: 3)
+0071: OP_SET_GLOBAL   0017 (Name: $res)
+0074: OP_CALL_NATIVE  0018 (Name: CAN_PRESENT, Args: 0)
+0078: OP_POP
+0079: OP_CONSTANT     0019 (Value: 81)
+0082: OP_CALL_NATIVE  0020 (Name: KEY_STATE, Args: 1)
+0086: OP_CONSTANT     0021 (Value: 1)
+0089: OP_EQUAL
+0090: OP_JUMP_IF_FALSE 0003 (Sari la: 96)
+0093: OP_JUMP          0003 (Sari la: 99)
+0096: OP_LOOP          0047 (Sari inapoi la: 52)
+0099: OP_CALL_NATIVE  0022 (Name: CAN_CLOSE, Args: 0)
+0103: OP_POP
+0104: OP_RETURN

@@ -1,0 +1,58 @@
+--- OLI ASSEMBLY LISTING ---
+Source: D:\Programming\oli\examples\fx_3d_shapes.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_GET_GLOBAL   0000 (Name: config)
+0003: OP_GET_GLOBAL   0000 (Name: config)
+0006: OP_PLUGIN       0001 (Path: oli_canvas)
+0009: OP_PLUGIN       0002 (Path: oli_fract)
+0012: OP_PLUGIN       0003 (Path: oli_keyboard)
+0015: OP_PLUGIN       0004 (Path: oli_time)
+0018: OP_CONSTANT     0005 (Value: 800)
+0021: OP_CONSTANT     0006 (Value: 600)
+0024: OP_CONSTANT     0007 (Value: Oli 3D Engine - Cube & Sphere)
+0027: OP_CALL_NATIVE  0008 (Name: CAN_INIT, Args: 3)
+0031: OP_SET_GLOBAL   0009 (Name: $v)
+0034: OP_CALL_NATIVE  0010 (Name: CAN_GET_PTR, Args: 0)
+0038: OP_SET_GLOBAL   0011 (Name: $ptr)
+0041: OP_CALL_NATIVE  0012 (Name: CAN_GET_WIDTH, Args: 0)
+0045: OP_SET_GLOBAL   0013 (Name: $w)
+0048: OP_CALL_NATIVE  0014 (Name: CAN_GET_HEIGHT, Args: 0)
+0052: OP_SET_GLOBAL   0015 (Name: $h)
+0055: OP_CONSTANT     0016 (Value: Randare 3D inceputa. Q pentru Iesire.)
+0058: OP_ECHO
+0059: OP_CONSTANT     0017 (Value: 1)
+0062: OP_SET_GLOBAL   0018 (Name: $i)
+0065: OP_GET_GLOBAL   0018 (Name: $i)
+0068: OP_CONSTANT     0017 (Value: 1)
+0071: OP_EQUAL
+0072: OP_JUMP_IF_FALSE 0066 (Sari la: 141)
+0075: OP_CALL_NATIVE  0019 (Name: TIME, Args: 0)
+0079: OP_SET_GLOBAL   0020 (Name: $t)
+0082: OP_GET_GLOBAL   0018 (Name: $i)
+0085: OP_ECHO
+0086: OP_GET_GLOBAL   0011 (Name: $ptr)
+0089: OP_GET_GLOBAL   0013 (Name: $w)
+0092: OP_GET_GLOBAL   0015 (Name: $h)
+0095: OP_GET_GLOBAL   0020 (Name: $t)
+0098: OP_CALL_NATIVE  0021 (Name: FX_3D_SHAPES, Args: 4)
+0102: OP_SET_GLOBAL   0022 (Name: $res)
+0105: OP_CALL_NATIVE  0023 (Name: CAN_PRESENT, Args: 0)
+0109: OP_SET_GLOBAL   0009 (Name: $v)
+0112: OP_CONSTANT     0024 (Value: 81)
+0115: OP_CALL_NATIVE  0025 (Name: KEY_STATE, Args: 1)
+0119: OP_SET_GLOBAL   0026 (Name: $state)
+0122: OP_GET_GLOBAL   0026 (Name: $state)
+0125: OP_CONSTANT     0027 (Value: 0.5)
+0128: OP_GREATER
+0129: OP_JUMP_IF_FALSE 0006 (Sari la: 138)
+0132: OP_CONSTANT     0028 (Value: 0)
+0135: OP_SET_GLOBAL   0018 (Name: $i)
+0138: OP_LOOP          0076 (Sari inapoi la: 65)
+0141: OP_CALL_NATIVE  0029 (Name: CAN_CLOSE, Args: 0)
+0145: OP_SET_GLOBAL   0009 (Name: $v)
+0148: OP_CONSTANT     0030 (Value: Revenire in consola.)
+0151: OP_ECHO
+0152: OP_RETURN

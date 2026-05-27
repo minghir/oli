@@ -1,0 +1,30 @@
+--- OLI ASSEMBLY LISTING ---
+Source: D:\Programming\oli\tests\factorial.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_CONSTANT     0000 (Value: 1)
+0003: OP_SET_GLOBAL   0001 (Name: $n)
+0006: OP_CONSTANT     0000 (Value: 1)
+0009: OP_SET_GLOBAL   0002 (Name: $fact)
+0012: OP_GET_GLOBAL   0001 (Name: $n)
+0015: OP_CONSTANT     0003 (Value: 10)
+0018: OP_LESS_EQUAL
+0019: OP_JUMP_IF_FALSE 0023 (Sari la: 45)
+0022: OP_GET_GLOBAL   0002 (Name: $fact)
+0025: OP_GET_GLOBAL   0001 (Name: $n)
+0028: OP_MUL
+0029: OP_SET_GLOBAL   0002 (Name: $fact)
+0032: OP_GET_GLOBAL   0001 (Name: $n)
+0035: OP_CONSTANT     0000 (Value: 1)
+0038: OP_ADD
+0039: OP_SET_GLOBAL   0001 (Name: $n)
+0042: OP_LOOP          0033 (Sari inapoi la: 12)
+0045: OP_CONSTANT     0004 (Value: Gata! Rezultatul este: )
+0048: OP_GET_GLOBAL   0002 (Name: $fact)
+0051: OP_ADD
+0052: OP_ECHO
+0053: OP_CALL_NATIVE  0005 (Name: INPUT, Args: 0)
+0057: OP_POP
+0058: OP_RETURN

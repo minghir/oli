@@ -58,18 +58,21 @@ while $running == 1 do
     endwhile
 
     # --- STRATUL 3: "Nucleul" (Puls Central) ---
-    # Un cluster de puncte care "vibrează"
     set $core_pulse = 30 + 10 * SIN($t * 5)
     set $v = GL_NODE(400, 300, $core_pulse, 0xFFFFFF) # Alb central
     set $v = GL_NODE(400, 300, $core_pulse + 15, 0xFFBB00) # Aură portocalie
 
     # --- INPUT ȘI RENDER ---
     set $v = GL_PRESENT()
-    #set $v = WAIT(16)
     
-    # Ieșire
-    if KEY_STATE(27) == 1 then set $running = 0 endif
-    if KEY_STATE(81) == 1 then set $running = 0 endif
+    # 🔥 FIXUL CRITIC: Structură curată pe linii separate pentru input
+    if KEY_STATE(27) == 1 then 
+        set $running = 0 
+    endif
+    
+    if KEY_STATE(81) == 1 then 
+        set $running = 0 
+    endif
 endwhile
 
 set $v = GL_CLOSE()

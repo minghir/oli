@@ -5,6 +5,9 @@
 // Inițializăm membrul static
 HMODULE vRichEdit::s_richEditModule = nullptr;
 
+
+
+
 vRichEdit::vRichEdit(HINSTANCE hInstance, const std::string& id, int x, int y, int width, int height, EventDispatcher& dispatcher)
     : vControl(hInstance, id, x, y, width, height, dispatcher) {
 

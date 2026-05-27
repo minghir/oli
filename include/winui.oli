@@ -151,7 +151,7 @@ endfunc
 # CLASA TABCONTROL
 # =================================================================
 
-def class WinTabControl extends UiControl { init($id, $parentId, $x, $y, $w, $h), add_tab($title, $panelId), switch_page($index), refresh() }
+def class WinTabControl extends UiControl { init($id, $parentId, $x, $y, $w, $h), add_tab($title, $panelId), switch_page($index),select_tab_by_id($panelId), refresh() }
 
 func WinTabControl::init($id, $parentId, $x, $y, $w, $h)
     $this.id = $id
@@ -168,6 +168,10 @@ endfunc
 
 func WinTabControl::refresh()
     return UI_CALL_METHOD($this.id, "refresh")
+endfunc
+
+func WinTabControl::select_tab_by_id($panelId)
+    return UI_CALL_METHOD($this.id, "select_tab_by_id", $panelId)
 endfunc
 
 echo "AM DEFINIT CLASELE"

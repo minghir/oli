@@ -25,18 +25,32 @@ extern std::wstring utf8_to_wstring(const std::string& str);
 LRESULT CALLBACK RichEditSubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
     vCodeView* codeView = reinterpret_cast<vCodeView*>(dwRefData);
 
-    // 🔥 Protecție Win32: Dacă fereastra se distruge, scoatem subclass-ul instant
     if (msg == WM_DESTROY || msg == WM_NCDESTROY) {
         RemoveWindowSubclass(hwnd, RichEditSubclassProc, uIdSubclass);
         return DefSubclassProc(hwnd, msg, wParam, lParam);
     }
 
-    // Prindem orice mesaj care ar trebui să miște sau să modifice textul
+    // Prindem mesajele grafice și de tastatură
     if (msg == WM_VSCROLL || msg == WM_MOUSEWHEEL || msg == WM_PAINT || msg == WM_CHAR) {
+
+        // 1. Permitem controlului să își scrie caracterul pe ecran
         LRESULT res = DefSubclassProc(hwnd, msg, wParam, lParam);
 
         if (codeView) {
+            // Re-desenăm rigla cu numere (codul tău existent)
             codeView->redrawGutter();
+
+            // 2. 🔥 FILTRAREA INTELIGENTĂ: Recolorăm doar la Space sau Enter!
+            if (msg == WM_CHAR) {
+                wchar_t ch = static_cast<wchar_t>(wParam);
+
+                // 32 = Space (' ')
+                // 13 = Enter ('\r' / '\n')
+                if (ch == L' ' || ch == 13) {
+                    // Invocăm highlight-ul securizat care păstrează cursorul pe poziție
+                    codeView->triggerHighlight();
+                }
+            }
         }
         return res;
     }
@@ -438,4 +452,22 @@ void vCodeView::setText(const std::wstring& text) {
 
         // Executăm poziționarea fixă a copilului RichEdit adaptată la noile dimensiuni (inclusiv Maximize!)
         this->applyLayout();
+    }
+
+    void vCodeView::triggerHighlight() {
+        if (!m_richEdit || !m_richEdit->getHandle()) return;
+        HWND hEdit = m_richEdit->getHandle();
+
+        // 1. 🔥 SALVĂM CU PRECIZIE POZIȚIA CURSORULUI (CARET POSITION)
+        CHARRANGE cr;
+        ::SendMessageW(hEdit, EM_EXGETSEL, 0, (LPARAM)&cr);
+
+        // 2. Rulăm lexerul tău pe editor
+        // (Presupun că ai o instanță de lexer accesibilă sau un Singleton, adaptează apelul după arhitectura ta)
+        // Dacă ai lexer global sau proprietate în vCodeView, îl apelăm așa:
+        m_lexer.highlight(m_richEdit);
+
+        // 3. 🔥 RESTAURĂM CURSORUL EXACT UNDE ERA
+        // Acest pas elimină complet orice tremurat (flicker) sau jump ilegal al cursorului la tastare
+        ::SendMessageW(hEdit, EM_EXSETSEL, 0, (LPARAM)&cr);
     }

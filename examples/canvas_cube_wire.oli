@@ -1,4 +1,8 @@
+config win_app 1
+
 # --- SETUP ---
+
+
 config echo off
 config max_iterations 0
 

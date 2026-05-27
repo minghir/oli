@@ -253,6 +253,43 @@ $saveButton.bind("click", "save_click")
 # LOGICA DE DESCHIDERE DINAMICĂ ACTUALIZATĂ
 # =================================================================
 set $counter = 0
+# func menu_open_click()
+    # set $dlg = new("FileDialog")
+    # $dlg.title = "Deschide fișierul Oli"
+    # $dlg.type = 0
+    
+    # $path = $dlg.show()
+    # if $path != "" then
+        # $newTabId = "tab_page_" .. FS_GET_FILENAME($path)
+        
+        # set $newView = new("WinCodeView")
+        # $newView.init($newTabId, "main_tabs", 0, 0, 0, 0)
+		
+        # $newView.set_width_mode("FILL")
+        # $newView.set_height_mode("FILL")
+        
+        
+        # # 🔥 CRITIC: Salvăm calea completă a fișierului în proprietatea nativă C++ a obiectului
+        # $newView.set_prop("file_path", $path)
+		
+        
+        # $tabs.add_tab(FS_GET_FILENAME($path), $newTabId)
+        
+        # $newView.set_syntax_path("./olide/syntaxes/oli.xml")
+        # $newView.set_text(READFILE($path))
+		
+        # $newView.set_font_size(12)
+		
+		# $tabCount = $tabs.get_prop("tab_count")
+		# $tabs.switch_page($tabCount - 1)
+		
+        # # Sincronizăm imediat contextul global cu noul tab deschis
+        # UPDATE_ACTIVE_CONTEXT()
+		# #$tabs.refresh()
+        # @counter++
+    # endif
+# endfunc
+
 func menu_open_click()
     set $dlg = new("FileDialog")
     $dlg.title = "Deschide fișierul Oli"
@@ -262,30 +299,35 @@ func menu_open_click()
     if $path != "" then
         $newTabId = "tab_page_" .. FS_GET_FILENAME($path)
         
+        # 🔥 VERIFICARE DE SIGURANȚĂ: Încercăm să activăm tab-ul dacă este deja deschis!
+        $alreadyOpen = $tabs.select_tab_by_id($newTabId)
+        if $alreadyOpen == true then
+            echo "[IDE] Fișierul '" .. FS_GET_FILENAME($path) .. "' este deja deschis. Mut focusul pe el!"
+            UPDATE_ACTIVE_CONTEXT()
+            return # Oprim execuția funcției aici, nu mai creăm nimic!
+        endif
+        
+        # -----------------------------------------------------------------
+        # Dacă codul trece de 'if', înseamnă că fișierul NU este deschis.
+        # Continuăm cu logica ta normală de creare:
+        # -----------------------------------------------------------------
         set $newView = new("WinCodeView")
         $newView.init($newTabId, "main_tabs", 0, 0, 0, 0)
-		
+        
         $newView.set_width_mode("FILL")
         $newView.set_height_mode("FILL")
-        
-        
-        # 🔥 CRITIC: Salvăm calea completă a fișierului în proprietatea nativă C++ a obiectului
         $newView.set_prop("file_path", $path)
-		
         
         $tabs.add_tab(FS_GET_FILENAME($path), $newTabId)
         
         $newView.set_syntax_path("./olide/syntaxes/oli.xml")
         $newView.set_text(READFILE($path))
-		
         $newView.set_font_size(12)
-		
-		$tabCount = $tabs.get_prop("tab_count")
-		$tabs.switch_page($tabCount - 1)
-		
-        # Sincronizăm imediat contextul global cu noul tab deschis
+        
+        $tabCount = $tabs.get_prop("tab_count")
+        $tabs.switch_page($tabCount - 1)
+        
         UPDATE_ACTIVE_CONTEXT()
-		#$tabs.refresh()
         @counter++
     endif
 endfunc
@@ -303,6 +345,25 @@ func init_first_tab()
 	$tabs.refresh()
 	@counter++
 endfunc
+
+# =================================================================
+# 🔥 EVENIMENT AUTOMAT: SCHIMBARE TAB PRIN CLICK SAU TASTE
+# =================================================================
+
+func on_tab_changed()
+    echo "[IDE] Tab-ul a fost schimbat de utilizator! Actualizez contextul..."
+    
+    # Apelăm funcția ta magică de sincronizare
+    UPDATE_ACTIVE_CONTEXT()
+    
+    # Log de verificare în consolă pentru a vedea dacă s-a mutat corect calea fișierului
+    if @file != "" then
+        echo "[IDE] Context nou activat: " .. @file
+    else
+        echo "[IDE] Ecran gol, nu există fișier activ."
+    endif
+endfunc
+$tabs.bind("tab_changed", "on_tab_changed")
 
 init_first_tab()
 $win.show()  

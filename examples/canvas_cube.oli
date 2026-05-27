@@ -71,4 +71,4 @@ set $vx[7]=-1.5; set $vy[7]= 1.5; set $vz[7]= 1.5
     endwhile
 endfunc
 
-set $res = RENDER_CUBE_DEBUG()
+set $res = RENDER_CUBE_DEBUG()dsadas

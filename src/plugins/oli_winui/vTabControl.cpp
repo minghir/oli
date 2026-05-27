@@ -170,8 +170,40 @@ void vTabControl::switchPage(int index) {
     InvalidateRect(m_handle, nullptr, TRUE);
 }
 */
+/*
 void vTabControl::switchPage(int index) {
     if (index < 0 || index >= (int)m_pages.size() || !m_handle) return;
+
+    RECT rc = { 0, 0, m_width, m_height };
+    TabCtrl_AdjustRect(m_handle, FALSE, &rc);
+    int localW = rc.right - rc.left;
+    int localH = rc.bottom - rc.top;
+
+    // 1. Mai întâi ASCUNDEM și mutăm toate celelalte pagini
+    for (int i = 0; i < (int)m_pages.size(); ++i) {
+        if (i != index) {
+            vPanel* pPage = m_pages[i].panel;
+            pPage->hide();
+            SetWindowPos(pPage->getHandle(), NULL, -10000, -10000, 0, 0, SWP_HIDEWINDOW | SWP_NOSIZE);
+        }
+    }
+
+    // 2. ABIA ACUM o poziționăm și o afișăm pe cea activă
+    vPanel* activePage = m_pages[index].panel;
+    activePage->moveAndResize(rc.left, rc.top, localW, localH);
+    activePage->applyLayout();
+    activePage->show(SW_SHOW);
+
+    // Curățare finală de buffer grafic
+    RedrawWindow(m_handle, nullptr, nullptr, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+}
+*/
+void vTabControl::switchPage(int index) {
+    if (index < 0 || index >= (int)m_pages.size() || !m_handle) return;
+
+    // 🔥 FIXUL CRITIC: Sincronizăm selecția vizuală a tab-ului nativ Win32 (titlul de sus)
+    // Trimitem mesajul către control pentru a evidenția/ilumina tab-ul cu indexul selectat
+    TabCtrl_SetCurSel(m_handle, index);
 
     RECT rc = { 0, 0, m_width, m_height };
     TabCtrl_AdjustRect(m_handle, FALSE, &rc);
@@ -228,7 +260,7 @@ LRESULT vTabControl::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
         if (lpnmhdr->code == TCN_SELCHANGE) {
            // LOG_DEBUG(L"Click Aicic!!!!");
             switchPage(TabCtrl_GetCurSel(m_handle));
-
+            m_dispatcher.dispatch("tab_changed", m_id);
             return 0;
         }
         else {
@@ -304,6 +336,27 @@ vData vTabControl::getProperty(const std::wstring& name) const {
 bool vTabControl::callMethod(const std::wstring& methodName, const std::vector<vData>& args) {
     std::wstring method = methodName;
     std::transform(method.begin(), method.end(), method.begin(), ::tolower);
+
+    if (method == L"select_tab_by_id" || method == L"activate_tab_by_id") {
+        if (args.empty()) return false;
+        std::wstring wTargetId = args[0].toWString();
+        std::string targetId(wTargetId.begin(), wTargetId.end());
+
+        // Căutăm în vectorul de pagini dacă există deja una cu acest ID
+        for (int i = 0; i < (int)m_pages.size(); ++i) {
+            if (m_pages[i].panel->getId() == targetId) {
+                // 1. Schimbăm vizual pagina în container
+                this->switchPage(i);
+                // 2. Schimbăm selecția în bara nativă Win32 din capsulă
+                TabCtrl_SetCurSel(m_handle, i);
+
+                ConsoleManager::getInstance().log(L"[vTabControl] Tab-ul existent a fost găsit și activat direct.");
+                return true; // Returnăm succes către scriptul Oli
+            }
+        }
+        return false; // Tab-ul nu este deschis, trebuie creat
+    }
+
 
     if (method == L"add_tab_page") {
         if (args.size() < 2) return false;

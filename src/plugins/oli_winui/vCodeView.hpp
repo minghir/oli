@@ -63,4 +63,5 @@ public:
 	
      void moveAndResize(int x, int y, int width, int height);
      void applyLayout() override; // 🔥 Adaugă această linie pentru a suprascrie layout-ul părintelui
+     void triggerHighlight();
 };

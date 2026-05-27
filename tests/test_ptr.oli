@@ -2,7 +2,7 @@ echo "--- START POINTER TEST ---"
 
 # 1. TEST: Pointer Simplu (Citire/Scriere)
 set $a = 10
-set $p_a = REF("a")
+set $p_a = &a
 echo "Initial a: " + $a
 echo "Prin pointer: " + *$p_a
 
@@ -30,8 +30,8 @@ set $n2 = {"id": 2, "next": null}
 set $n3 = {"id": 3, "next": null}
 
 # Facem legaturile
-set $n1.next = REF("n2")
-set $n2.next = REF("n3")
+set $n1.next = &$n2
+set $n2.next = &$n3
 
 echo "ID Nod 2 prin Nod 1: " + (*$n1.next).id
 echo "ID Nod 3 prin Nod 1 (Double Jump): " + (*(*$n1.next).next).id
@@ -39,7 +39,7 @@ echo "ID Nod 3 prin Nod 1 (Double Jump): " + (*(*$n1.next).next).id
 # ---------------------------------------------------------
 # 4. TEST: Protectie Circulara (Self-Pointer)
 set $self = 0
-set $self = REF("self")
+set $self = &$self
 echo "Self-pointer (nu ar trebui sa inghete): " + $self
 
 echo "--- TEST FINALIZAT CU SUCCES ---"
@@ -67,3 +67,4 @@ set $n2.next = REF("n3")
 
 # 4. Rulam
 print_list(REF("n1"))
+input()

@@ -6,3 +6,4 @@ while $n <= 10 do
     set $n = $n + 1 
 endwhile
 echo "Gata! Rezultatul este: " + $fact
+input()

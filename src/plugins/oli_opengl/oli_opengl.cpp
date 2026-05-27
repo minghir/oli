@@ -521,38 +521,97 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
     };
 
     // GL_LINE(x1, y1, x2, y2, color)
+    // =================================================================
+    // 🔥 GL_LINE (Corectat cu Izolator Screen-Space 2D)
+    // =================================================================
     registry[L"GL_LINE"] = [](const std::vector<vData>& args) -> vData {
-        if (args.size() < 5) return vData{0LL};
+        if (args.size() < 5) return vData{ 0LL };
 
+        float x1 = (float)toDouble(args[0]);
+        float y1 = (float)toDouble(args[1]);
+        float x2 = (float)toDouble(args[2]);
+        float y2 = (float)toDouble(args[3]);
         GLColor col((unsigned int)toDouble(args[4]));
-        glColor3f(col.r, col.g, col.b);
 
+        // 1. Salvăm starea 3D curentă și dezactivăm lumina/texturile pentru linii pure 2D
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glDisable(GL_TEXTURE_2D);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_DEPTH_TEST);
+        glUseProgram(0); // Ne asigurăm că nu este vreun shader 3D activ
+
+        // 2. Comutăm proiecția pe mod Pixel-Perfect Ortho (0,0 sus-stânga)
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0, g_GL.width, g_GL.height, 0, -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        // 3. Desenăm linia nativ
+        glColor3f(col.r, col.g, col.b);
         glBegin(GL_LINES);
-            glVertex2f((float)toDouble(args[0]), (float)toDouble(args[1]));
-            glVertex2f((float)toDouble(args[2]), (float)toDouble(args[3]));
+        glVertex2f(x1, y1);
+        glVertex2f(x2, y2);
         glEnd();
 
-        return vData{1LL};
-    };
+        // 4. Restaurăm complet starea anterioară pentru pipeline-ul 3D
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopAttrib();
 
-    // GL_NODE(x, y, size, color)
+        return vData{ 1LL };
+        };
+
+    // =================================================================
+    // 🔥 GL_NODE (Corectat cu Izolator Screen-Space 2D)
+    // =================================================================
     registry[L"GL_NODE"] = [](const std::vector<vData>& args) -> vData {
-        if (args.size() < 4) return vData{0LL};
+        if (args.size() < 4) return vData{ 0LL };
 
-        float x   = (float)toDouble(args[0]);
-        float y   = (float)toDouble(args[1]);
-        float sz  = (float)toDouble(args[2]);
+        float x = (float)toDouble(args[0]);
+        float y = (float)toDouble(args[1]);
+        float sz = (float)toDouble(args[2]);
         GLColor c((unsigned int)toDouble(args[3]));
 
+        // 1. Salvăm starea 3D curentă
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glDisable(GL_TEXTURE_2D);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_DEPTH_TEST);
+        glUseProgram(0);
+
+        // 2. Configuram proiecția 2D
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0, g_GL.width, g_GL.height, 0, -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        // 3. Desenăm nodul punctiform
         glColor3f(c.r, c.g, c.b);
         glPointSize(sz);
 
         glBegin(GL_POINTS);
-            glVertex2f(x, y);
+        glVertex2f(x, y);
         glEnd();
 
-        return vData{1LL};
-    };
+        // 4. Restaurăm starea 3D
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopAttrib();
+
+        return vData{ 1LL };
+        };
 
     
 

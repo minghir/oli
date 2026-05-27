@@ -154,6 +154,7 @@ void vOliEngine::initializeFunctionsHandlers() {
 
         return { std::monostate{} };
         };
+    vOliKeyWords::registerNativeFunction(L"REF");
 
     // --- ISREF(value) -> 1 dacă e pointer, 0 dacă e valoare pură ---
     m_functionsHandlers[L"ISREF"] = [this](const std::vector<vData>& args) -> vData {

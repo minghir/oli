@@ -1,4 +1,4 @@
-config win_app 0
+﻿config win_app 0
 
 plugin oli_system
 plugin oli_filesys
@@ -28,6 +28,7 @@ func UPDATE_ACTIVE_CONTEXT()
     else
         @file = ""
         @activeCodeView = null
+		init_first_tab()
     endif
 endfunc
 
@@ -41,8 +42,10 @@ func run_click()
     UPDATE_ACTIVE_CONTEXT()
 
     if @file == "" then
-        SHOW_MESSAGE("IDE Error", "Nu există niciun fișier deschis în editor pentru a fi rulat!")
-        return
+        #SHOW_MESSAGE("IDE Error", "Nu există niciun fișier deschis în editor pentru a fi rulat!")
+		menu_save_as_click()
+        if @file != "" then run_click() endif
+		return
     endif
 
     # 1. AUTO-SALVARE SILENȚIOASĂ
@@ -58,7 +61,7 @@ func run_click()
     $res = SYS($compile_command)
     echo $res
     
-    $build_command = "x64\Release\oli.exe -b " .. @file
+    $build_command = "oli.exe -b " .. @file
     echo "Rulez comanda: " .. $build_command
     
     $res = SYS($build_command)
@@ -237,7 +240,9 @@ $tabs.set_height_mode("FILL")
 
 echo "CREEZ run button"
 set $runButton = new("WinButton")
-$runButton.init("btn_run", "act_panel", 10, 4, 80, 40, "RUN")
+
+$runButton.init("btn_run", "act_panel", 10, 4, 80, 40, "▶")
+$runButton.set_prop("font_name","Segoe UI Symbol")
 $runButton.set_anchor("RIGHT|BOTTOM")
 $runButton.set_width_mode("FIXED")
 

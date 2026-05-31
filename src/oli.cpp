@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
         }
         */
         // 2. BUILD STANDALONE (-b)
-        
+        /*
         if (cmd == "-b") {
             if (argc < 3) return 1;
             std::string inputPath = argv[2];
@@ -231,7 +231,88 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
         }
-        
+        */
+        // 2. BUILD STANDALONE (-b)
+// 2. BUILD STANDALONE (-b)
+if (cmd == "-b") {
+    if (argc < 3) return 1;
+    std::string inputPath = argv[2];
+
+    // Generăm .exe-ul în directorul curent de lucru
+    std::string outputPath = (argc > 3) ? argv[3] : std::filesystem::path(inputPath).stem().string() + ".exe";
+
+    try {
+        std::wcout << L"Oli Engine v0.1\nBuild Date: " << __DATE__ << std::endl;
+        std::wcout << L"Building: " << str_to_wstr(inputPath) << std::endl;
+        std::wifstream wif(inputPath);
+        safe_imbue(wif);
+        if (!wif.is_open()) throw std::runtime_error("Fisier sursa inexistent.");
+
+        std::wstringstream wss; wss << wif.rdbuf();
+        std::wstring sourceCode = wss.str();
+
+        std::wstring upperSource = sourceCode;
+        std::transform(upperSource.begin(), upperSource.end(), upperSource.begin(), ::towupper);
+
+        // Verificăm dacă s-a cerut explicit aplicație de Windows GUI
+        bool isGuiApp = (upperSource.find(L"CONFIG WIN_APP 1") != std::wstring::npos);
+
+        OliCompiler compiler;
+        OliChunk chunk = compiler.compile(sourceCode);
+
+        std::ifstream src(argv[0], std::ios::binary);
+        if (!src.is_open()) throw std::runtime_error("Nu s-a putut deschide executabilul sursa al motorului.");
+
+        // =================================================================
+        // 🔥 TRUC DE GENIU: Citim peOffset direct din 'src' (oli.exe)
+        // =================================================================
+        uint32_t peOffset = 0;
+        if (isGuiApp) {
+            src.seekg(0x3C, std::ios::beg);
+            src.read(reinterpret_cast<char*>(&peOffset), 4);
+            src.seekg(0, std::ios::beg); // Resetăm la început pentru rdbuf()
+        }
+
+        // 🔥 Păstrăm dst ca std::ofstream pur (Garantat va crea fișierul din prima!)
+        std::ofstream dst(outputPath, std::ios::binary);
+        if (!dst.is_open()) throw std::runtime_error("Nu s-a putut crea executabilul de destinatie.");
+
+        dst << src.rdbuf();
+        src.close();
+
+        std::stringstream ss(std::ios::binary | std::ios::out);
+        vDataSerialize::serializeChunk(chunk, ss);
+        std::string bytecode = ss.str();
+        dst.write(bytecode.data(), bytecode.size());
+
+        uint64_t footer = (uint64_t)bytecode.size();
+        if (isGuiApp) {
+            footer |= (1ULL << 63);
+            std::wcout << L"[BUILD] Configurare detectata: win_app = 1." << std::endl;
+        }
+
+        dst.write(reinterpret_cast<const char*>(&footer), 8);
+
+        // =================================================================
+        // 🔥 PATCH VIA SEEKP: Modificăm bitul PE direct în stream-ul de scriere
+        // =================================================================
+        if (isGuiApp && peOffset > 0) {
+            dst.seekp(peOffset + 0x5C, std::ios::beg);
+            uint16_t subsystemGui = 2; // 2 = IMAGE_SUBSYSTEM_WINDOWS_GUI (Fara consola)
+            dst.write(reinterpret_cast<const char*>(&subsystemGui), 2);
+            std::wcout << L"[BUILD] Executabil modificat nativ pentru Windows GUI (Fara consola!)." << std::endl;
+        }
+
+        dst.close(); // Închidem abia acum, curat și complet
+        std::wcout << L"Building completed." << std::endl;
+        return 0;
+    }
+    catch (const std::exception& e) {
+        std::wcerr << L"Build failed: " << str_to_wstr(e.what()) << std::endl;
+        return 1;
+    }
+}
+
         // 3. COMPILE BYTECODE (-c) + GENERARE ASSEMBLY (.olia)
         if (cmd == "-c") {
 			ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);

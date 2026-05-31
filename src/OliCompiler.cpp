@@ -18,98 +18,7 @@ static std::vector<std::wstring> splitW(const std::wstring& s, const std::wstrin
     }
     return tokens;
 }
-/*
-std::vector<std::wstring> splitStatementsSmart(const std::wstring& input) {
-    std::vector<std::wstring> result;
-    std::wstring current;
 
-    int depth = 0;      // Nivelul de blocuri (IF, WHILE, PROC etc.)
-    int bDepth = 0;     // Nivelul de paranteze ( [ { )
-    bool inQuotes = false;
-
-    LOG_DEBUG(L"[SPLIT] Incepe procesarea blocului de dimensiune: " + std::to_wstring(input.length()));
-
-    for (size_t i = 0; i < input.length(); ++i) {
-        wchar_t c = input[i];
-
-        // 1. GESTIONARE GHILIMELE (State Machine)
-        // Verificăm ghilimelele și ignorăm escape-ul (ex: \" nu închide string-ul)
-        if (c == L'"' && (i == 0 || input[i - 1] != L'\\')) {
-            inQuotes = !inQuotes;
-            // LOG_DEBUG(inQuotes ? L"[SPLIT] Intrat in mod STRING" : L"[SPLIT] Iesit din mod STRING");
-        }
-
-        // 2. LOGICĂ DE SEPARARE (Activă doar în afara ghilimelelor)
-        if (!inQuotes) {
-
-            // Lambda pentru a verifica dacă la poziția curentă începe un keyword
-            auto isKeyword = [&](const std::wstring& targetUpper, size_t pos) {
-                if (pos + targetUpper.length() > input.length()) return false;
-
-                // Extragem bucata și o facem Upper pentru comparație case-insensitive
-                std::wstring sub = input.substr(pos, targetUpper.length());
-                for (auto& sc : sub) sc = std::towupper(sc);
-
-                if (sub != targetUpper) return false;
-
-                // Verificăm marginile (să nu fie parte dintr-un alt cuvânt, ex: "SHIFT" să nu fie "IF")
-                bool prevOk = (pos == 0 || iswspace(input[pos - 1]) || wcschr(L";()[]{}\"", input[pos - 1]));
-                size_t endPos = pos + targetUpper.length();
-                bool nextOk = (endPos >= input.length() || iswspace(input[endPos]) || wcschr(L";()[]{}\"", input[endPos]));
-
-                return prevOk && nextOk;
-                };
-
-            // Detectăm structurile care deschid blocuri
-            if (isKeyword(L"IF", i) || isKeyword(L"WHILE", i) || isKeyword(L"FOR", i) ||
-                isKeyword(L"PROC", i) || isKeyword(L"FUNC", i) || isKeyword(L"REPEAT", i) ||
-                isKeyword(L"CYCLE", i) || isKeyword(L"SWITCH", i)) {
-                depth++;
-                LOG_DEBUG(L"[SPLIT] Gasit Keyword Start. Depth: " + std::to_wstring(depth));
-            }
-            // Detectăm structurile care închid blocuri
-            else if (isKeyword(L"ENDIF", i) || isKeyword(L"ENDWHILE", i) || isKeyword(L"ENDFOR", i) ||
-                isKeyword(L"ENDPROC", i) || isKeyword(L"ENDFUNC", i) || isKeyword(L"ENDREPEAT", i) ||
-                isKeyword(L"ENDCYCLE", i) || isKeyword(L"ENDSWITCH", i)) {
-                if (depth > 0) depth--;
-                LOG_DEBUG(L"[SPLIT] Gasit Keyword End. Depth: " + std::to_wstring(depth));
-            }
-
-            // Gestionăm parantezele pentru Array/Map/Expresii
-            if (c == L'{' || c == L'[') {
-                bDepth++;
-                // LOG_DEBUG(L"[SPLIT] Bracket Open. bDepth: " + std::to_wstring(bDepth));
-            }
-            if (c == L'}' || c == L']') {
-                if (bDepth > 0) bDepth--;
-                // LOG_DEBUG(L"[SPLIT] Bracket Close. bDepth: " + std::to_wstring(bDepth));
-            }
-
-            // SEPARARE LA PUNCT ȘI VIRGULĂ
-            // Tăiem doar dacă suntem la nivelul "zero" (nu în interiorul unui IF/WHILE/Array)
-            if (c == L';' && depth == 0 && bDepth == 0) {
-                if (!trim(current).empty()) {
-                    LOG_DEBUG(L"[SPLIT] Statement finalizat la ';': " + (current.length() > 20 ? current.substr(0, 20) + L"..." : current));
-                    result.push_back(trim(current));
-                }
-                current.clear();
-                continue; // Sărim peste ';' pentru a nu-l include în instrucțiunea următoare
-            }
-        }
-
-        // Adăugăm caracterul la instrucțiunea curentă
-        current += c;
-    }
-
-    // Adăugăm și ultima parte dacă buffer-ul nu e gol
-    if (!trim(current).empty()) {
-        LOG_DEBUG(L"[SPLIT] Ultimul statement adaugat: " + (current.length() > 20 ? current.substr(0, 20) + L"..." : current));
-        result.push_back(trim(current));
-    }
-
-    return result;
-}
-*/
 std::vector<std::wstring> splitStatementsSmart(const std::wstring& input) {
     std::vector<std::wstring> result;
     std::wstring current;
@@ -525,83 +434,8 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
             generateFromAST(exprAST, chunk, externalProcs);
         }
     }
+    
     /*
-    else if (cmdName == L"DEF") {
-        if (sc.args.size() < 3) return;
-
-        std::wstring subType = to_lower(sc.args[0]);
-        bool isClass = (subType == L"class");
-        std::wstring typeName = sc.args[1];
-        std::wstring typeNameUpper = to_upper(typeName); // Normalizăm numele clasei
-
-        uint16_t nameIdx = chunk.addConstant(vData(typeNameUpper));
-
-        std::vector<uint16_t> fieldIndices;
-        std::vector<uint16_t> methodIndices;
-        bool inBraces = false;
-
-        for (size_t i = 2; i < sc.args.size(); ++i) {
-            std::wstring token = sc.args[i];
-            if (token == L"{") { inBraces = true; continue; }
-            if (token == L"}") { inBraces = false; break; }
-
-            // Curățăm token-ul de virgule reziduale (ex: "hp," -> "hp")
-            while (!token.empty() && (token.back() == L',' || token.back() == L' ')) token.pop_back();
-            if (!inBraces || token.empty()) continue;
-
-            // --- LOGICA DE DETECȚIE METODĂ ---
-            size_t openParen = token.find(L'(');
-            if (openParen != std::wstring::npos) {
-                // Cazul: ataca() sau ataca($val)
-                std::wstring methodName = to_upper(trim(token.substr(0, openParen)));
-                if (!methodName.empty()) {
-                    methodIndices.push_back(chunk.addConstant(vData(methodName)));
-                }
-            }
-            else if (i + 1 < sc.args.size() && sc.args[i + 1][0] == L'(') {
-                // Cazul: ataca ($val)
-                std::wstring methodName = to_upper(trim(token));
-                methodIndices.push_back(chunk.addConstant(vData(methodName)));
-                // Sărim peste parametri până la închiderea metodei
-                while (i < sc.args.size() && sc.args[i].find(L')') == std::wstring::npos) {
-                    i++;
-                }
-            }
-            else {
-                // Este un câmp simplu (dată)
-                fieldIndices.push_back(chunk.addConstant(vData(to_lower(token))));
-            }
-        }
-
-        // --- EMITERE BYTECODE (Contractul cu VM & Disassembler) ---
-        chunk.addByte((uint8_t)OpCode::OP_DEF_TYPE, 0);
-        chunk.addByte((uint8_t)(nameIdx >> 8), 0);
-        chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
-        chunk.addByte(isClass ? 1 : 0, 0);
-
-        // --- 1. METADATELE (Ordinea contează pentru dezasamblator!) ---
-        chunk.addByte((uint8_t)fieldIndices.size(), 0);
-        chunk.addByte((uint8_t)methodIndices.size(), 0); // Scriem methodCount imediat după fieldCount
-
-        // --- 2. DATELE (Array-urile de indici) ---
-        // Scriem toți indicii câmpurilor
-        for (uint16_t fIdx : fieldIndices) {
-            chunk.addByte((uint8_t)(fIdx >> 8), 0);
-            chunk.addByte((uint8_t)(fIdx & 0xFF), 0);
-        }
-
-        // Scriem toți indicii metodelor
-        for (uint16_t mIdx : methodIndices) {
-            chunk.addByte((uint8_t)(mIdx >> 8), 0);
-            chunk.addByte((uint8_t)(mIdx & 0xFF), 0);
-        }
-
-        LOG_DEBUG(L"[COMPILER] DEF " + typeNameUpper +
-            L" - Câmpuri: " + std::to_wstring(fieldIndices.size()) +
-            L", Metode: " + std::to_wstring(methodIndices.size()));
-    }
-    */
-
     else if (cmdName == L"DEF") {
         if (sc.args.size() < 3) return;
 
@@ -692,9 +526,127 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
             L" - Câmpuri: " + std::to_wstring(fieldIndices.size()) +
             L", Metode: " + std::to_wstring(methodIndices.size()));
     }
+    */
 
+    else if (cmdName == L"DEF") {
+        if (sc.args.size() < 3) return;
 
+        std::wstring subType = to_lower(sc.args[0]);
+        bool isClass = (subType == L"class");
+        std::wstring typeName = sc.args[1];
+        std::wstring typeNameUpper = to_upper(typeName);
 
+        // --- DETECȚIE MOȘTENIRE (EXTENDS) ---
+        std::wstring parentName = L"";
+        size_t bodyStartIndex = 2;
+
+        if (sc.args.size() > 4 && to_lower(sc.args[2]) == L"extends") {
+            parentName = to_upper(sc.args[3]);
+            bodyStartIndex = 4;
+        }
+
+        uint16_t nameIdx = chunk.addConstant(vData(typeNameUpper));
+        uint16_t parentIdx = chunk.addConstant(vData(parentName));
+
+        std::vector<uint16_t> fieldIndices;
+        std::vector<uint16_t> methodIndices;
+
+        // =========================================================================
+        // 🔥 FIX CRITIC 1: Normalizăm și spargem token-urile lipite (ex: "{$a}" -> "{", "$a", "}")
+        // =========================================================================
+        std::vector<std::wstring> cleanTokens;
+        for (size_t i = bodyStartIndex; i < sc.args.size(); ++i) {
+            std::wstring arg = sc.args[i];
+            std::wstring current = L"";
+
+            for (wchar_t ch : arg) {
+                if (ch == L'{' || ch == L'}') {
+                    if (!current.empty()) { cleanTokens.push_back(current); current = L""; }
+                    cleanTokens.push_back(std::wstring(1, ch));
+                }
+                else if (ch == L',' || ch == L' ') {
+                    if (!current.empty()) { cleanTokens.push_back(current); current = L""; }
+                }
+                else {
+                    current += ch;
+                }
+            }
+            if (!current.empty()) cleanTokens.push_back(current);
+        }
+
+        // =========================================================================
+        // 🚀 PROCESARE TOKEN-URI DETAȘATE
+        // =========================================================================
+        bool inBraces = false;
+        for (size_t i = 0; i < cleanTokens.size(); ++i) {
+            std::wstring token = cleanTokens[i];
+
+            if (token == L"{") { inBraces = true; continue; }
+            if (token == L"}") { inBraces = false; break; }
+
+            if (!inBraces || token.empty()) continue;
+
+            // --- LOGICA DE DETECȚIE METODĂ ---
+            size_t openParen = token.find(L'(');
+            if (openParen != std::wstring::npos) {
+                std::wstring methodName = to_upper(trim(token.substr(0, openParen)));
+                if (!methodName.empty()) {
+                    methodIndices.push_back(chunk.addConstant(vData(methodName)));
+                }
+            }
+            else if (i + 1 < cleanTokens.size() && cleanTokens[i + 1][0] == L'(') {
+                std::wstring methodName = to_upper(trim(token));
+                methodIndices.push_back(chunk.addConstant(vData(methodName)));
+                while (i < cleanTokens.size() && cleanTokens[i].find(L')') == std::wstring::npos) {
+                    i++;
+                }
+            }
+            else {
+                // --- 🔥 FIX CRITIC 2: Curățăm prefixele '$' sau '@' de la proprietăți ---
+                std::wstring fieldName = to_lower(token);
+                if (!fieldName.empty() && (fieldName[0] == L'$' || fieldName[0] == L'@')) {
+                    fieldName.erase(0, 1); // "$a" devine "a"
+                }
+
+                fieldIndices.push_back(chunk.addConstant(vData(fieldName)));
+            }
+        }
+
+        // --- EMITERE BYTECODE ---
+        chunk.addByte((uint8_t)OpCode::OP_DEF_TYPE, 0);
+
+        // 1. Indice Nume Clasă Curentă
+        chunk.addByte((uint8_t)(nameIdx >> 8), 0);
+        chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
+
+        // 2. Indice Nume Clasă Părinte
+        chunk.addByte((uint8_t)(parentIdx >> 8), 0);
+        chunk.addByte((uint8_t)(parentIdx & 0xFF), 0);
+
+        // 3. Tip (Class/Struct)
+        chunk.addByte(isClass ? 1 : 0, 0);
+
+        // 4. METADATE
+        chunk.addByte((uint8_t)fieldIndices.size(), 0);
+        chunk.addByte((uint8_t)methodIndices.size(), 0);
+
+        // 5. DATE (Câmpuri)
+        for (uint16_t fIdx : fieldIndices) {
+            chunk.addByte((uint8_t)(fIdx >> 8), 0);
+            chunk.addByte((uint8_t)(fIdx & 0xFF), 0);
+        }
+
+        // 6. DATE (Metode)
+        for (uint16_t mIdx : methodIndices) {
+            chunk.addByte((uint8_t)(mIdx >> 8), 0);
+            chunk.addByte((uint8_t)(mIdx & 0xFF), 0);
+        }
+
+        LOG_DEBUG(L"[COMPILER] DEF " + typeNameUpper +
+            (parentName.empty() ? L"" : L" EXTENDS " + parentName) +
+            L" - Câmpuri: " + std::to_wstring(fieldIndices.size()) +
+            L", Metode: " + std::to_wstring(methodIndices.size()));
+    }
 
     else if (cmdName == L"SWITCH") {
         // 1. Găsim markerii (CASE, DEFAULT, ENDSWITCH) cu Nesting Corect
@@ -966,95 +918,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
         }
     }
 
-    /*
-    else if (cmdName == L"FUNC") {
-        LOG_DEBUG(L"[DEBUG] Entering FUNC block parsing...");
-
-        // 1. Reconstruim header-ul pentru a analiza semnătura
-        // Folosim un spațiu la concatenare pentru a nu lipi token-urile accidental, 
-        // apoi curățăm la extragere.
-        std::wstring header = L"";
-        for (const auto& a : sc.args) header += a + L" ";
-
-        size_t openP = header.find(L'(');
-        size_t closeP = header.find(L')');
-
-        if (openP == std::wstring::npos || closeP == std::wstring::npos) {
-            LOG_ERROR(L"Runtime Error: Antet FUNC invalid (lipsesc parantezele).");
-            return;
-        }
-
-        // --- LOGICA DE NAMESPACE (Punct::print) ---
-        // Extragem tot ce e înainte de '(', eliminăm spațiile și forțăm UPPERCASE
-        std::wstring rawName = trim(header.substr(0, openP));
-        std::wstring cleanName = L"";
-        for (wchar_t c : rawName) {
-            if (!iswspace(c)) cleanName += c;
-        }
-        //std::wstring funcName = to_upper(rawName);
-        std::wstring funcName = to_upper(cleanName);
-
-        LOG_DEBUG(L"[DEBUG] Final Function/Method Name: " + funcName);
-
-        // 2. Extragem Parametrii
-        std::wstring paramsPart = header.substr(openP + 1, closeP - openP - 1);
-
-        // 3. Delimităm corpul funcției (ca în codul tău)
-        int bodyStart = 0;
-        for (int i = 0; i < (int)sc.args.size(); ++i) {
-            if (sc.args[i].find(L')') != std::wstring::npos) {
-                bodyStart = i + 1;
-                break;
-            }
-        }
-
-        int bodyEnd = -1;
-        int depth = 1;
-        for (int i = bodyStart; i < (int)sc.args.size(); ++i) {
-            std::wstring argU = to_upper(sc.args[i]);
-            if (argU == L"FUNC") depth++;
-            if (argU == L"ENDFUNC") {
-                depth--;
-                if (depth == 0) { bodyEnd = i; break; }
-            }
-        }
-        if (bodyEnd == -1) bodyEnd = (int)sc.args.size();
-
-        // 4. Pregătim ByteCodeProcedure
-        ByteCodeProcedure proc;
-        proc.name = funcName;
-        proc.compiledBody = std::make_shared<OliChunk>();
-
-        // Extragem parametrii nominali
-        auto pTokens = splitW(paramsPart, L","); // Split doar după virgulă
-        for (auto& p : pTokens) {
-            std::wstring cleaned = trim(p);
-            if (cleaned == L"...") proc.isVariadic = true;
-            else if (!cleaned.empty()) {
-                proc.params.push_back(this->cleanVariableName(cleaned));
-            }
-        }
-
-        // 5. ÎNREGISTRARE ÎN CHUNK
-        // funcName va fi de forma "PUNCT::PRINT"
-        chunk.procedures[funcName] = proc;
-
-        // 6. COMPILARE CORP
-        compileSubBlock(sc.args, bodyStart, bodyEnd, *(proc.compiledBody), chunk.procedures);
-
-        // Return implicit
-        if (proc.compiledBody->code.empty() || proc.compiledBody->code.back() != (uint8_t)OpCode::OP_RETURN) {
-            proc.compiledBody->addByte((uint8_t)OpCode::OP_RETURN, 0);
-        }
-
-        // Salvăm înapoi în map-ul global de proceduri al chunk-ului
-        chunk.procedures[funcName] = proc;
-
-        LOG_DEBUG(L"[COMPILER] Registered " + std::wstring( (funcName.find(L"::") != std::wstring::npos ? L"Method: " : L"Function: ") ) + funcName);
-        }
-
-    // În OliCompiler::compileStatement, adaugă acest else if:
-	*/
+   
 	
 	else if (cmdName == L"FUNC") {
     LOG_DEBUG(L"[COMPILER] --- Început procesare bloc FUNC ---");
@@ -1691,45 +1555,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
                 }
             }
             }
-           /*
-		   else {
-                // 1. Reconstruim toată linia într-un vector de tokeni pentru a fi parsați ca o expresie
-                std::vector<std::wstring> tokens;
-                tokens.push_back(sc.name);
-                for (const auto& arg : sc.args) {
-                    tokens.push_back(arg);
-                }
-
-                // 2. Pasăm TOTUL la Parserul de Expresii
-                // Parserul va știi să transforme "upgrade_boss(&$boss)" într-un nod FunctionCall corect
-                OliExpressionParser exprParser(tokens);
-                ASTPtr exprAST = exprParser.parse();
-
-                if (exprAST) {
-                    // Determinăm dacă expresia este ceva ce lasă un rezultat „murdar” pe stivă
-                    // (Vrem să păstrăm stiva curată în Main după fiecare linie executată)
-                    bool isAssignment = (exprAST->type == ASTNodeType::Operator &&
-                        (exprAST->value == L"=" || exprAST->value == L"+=" || exprAST->value == L"-="));
-
-                    // Verificăm dacă este un apel de funcție (care de obicei returnează ceva)
-                    bool isCall = (exprAST->type == ASTNodeType::FunctionCall || exprAST->value == L"DYNAMIC_CALL");
-
-                    // 3. Generăm bytecode-ul folosind arborele (AST)
-                    // Acesta va apela corect logica de filtrare a parantezelor și OP_GET_ADDR pentru '&'
-                    generateFromAST(exprAST, chunk, externalProcs);
-
-                    // 4. MANAGEMENTUL STIVEI
-                    // Dacă e un apel de funcție de sine stătător (nu e într-un echo sau atribuire),
-                    // dăm POP la valoarea returnată pentru a nu bloca stiva VM-ului.
-                    if (isCall && !isAssignment) {
-                        chunk.addByte((uint8_t)OpCode::OP_POP, 0);
-                        LOG_DEBUG(L"[COMPILER] Adaugat OP_POP pentru a curata stiva dupa apelul: " + sc.name);
-                    }
-                }
-                else {
-                    LOG_ERROR(L"Eroare de sintaxa: Nu am putut interpreta linia: " + sc.name);
-                }
-			}*/
+           
 			else {
 				// 1. Încercăm mai întâi să vedem dacă este un apel de PROCEDURĂ (stil comandă: nume arg1 arg2)
 				// Procedurile au prioritate față de expresiile libere pentru a evita interpretarea eronată.

@@ -30,31 +30,7 @@ void vOliEngine::initializeFunctionsHandlers() {
 
 
     
-    /*
-    m_functionsHandlers[L"NEW"] = [this](const std::vector<vData>& args) -> vData {
-        if (args.empty()) return vData(std::monostate{});
-
-        std::wstring typeName = args[0].toWString();
-        if (m_blueprints.count(typeName)) {
-            vTypeBlueprint& bp = m_blueprints[typeName];
-            vDataMap instance = std::make_shared<std::unordered_map<std::wstring, vData>>();
-
-            // Populăm instanța cu câmpurile din blueprint
-            for (const auto& field : bp.fields) {
-                (*instance)[field] = vData(std::monostate{});
-            }
-
-            // Adăugăm metadate despre tip (opțional, dar util pentru debug)
-            (*instance)[L"__type__"] = vData(typeName);
-
-            return vData(instance);
-        }
-
-        LOG_ERROR(L"Unknown blueprint: " + typeName);
-        return vData(std::monostate{});
-        };
-        */
-
+   
     m_functionsHandlers[L"EXIT"] = [this](const std::vector<vData>& args) -> vData {
         int exitCode = 0;
 
@@ -154,6 +130,7 @@ void vOliEngine::initializeFunctionsHandlers() {
 
         return { std::monostate{} };
         };
+
     vOliKeyWords::registerNativeFunction(L"REF");
 
     // --- ISREF(value) -> 1 dacă e pointer, 0 dacă e valoare pură ---
@@ -207,7 +184,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         if (args.empty()) return { L"NULL" };
 
         // args[0] este deja vData, nu mai facem evaluateExpression!
-        return { getVariantTypeName(args[0]) };
+        return { getVariantTypeName(args[0].getTrueData()) };
         };
     vOliKeyWords::registerNativeFunction(L"TYPE");
     
@@ -381,35 +358,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         return vData(0LL);
         };
     vOliKeyWords::registerNativeFunction(L"SET_AT");
-    // --- SORT(array) -> Sortează array-ul (In-place) ---
-    /*
-    m_functionsHandlers[L"SORT"] = [this](const std::vector<vData>& args) -> vData {
-        if (args.empty() || !args[0].isArray()) return { std::monostate{} };
-
-        auto arrPtr = std::get<vDataArray>(args[0].value);
-        if (arrPtr && arrPtr->size() > 1) {
-            // Adăugăm "-> bool" pentru a forța deducția corectă
-            std::sort(arrPtr->begin(), arrPtr->end(), [](const vData& a, const vData& b) -> bool {
-                // 1. Dacă tipurile sunt diferite, le sortăm după indexul variantei
-                if (a.value.index() != b.value.index()) {
-                    return a.value.index() < b.value.index();
-                }
-
-                // 2. Dacă sunt de același tip, facem comparația specifică
-                if (a.isInt())
-                    return std::get<long long>(a.value) < std::get<long long>(b.value);
-                if (a.isFloat())
-                    return std::get<double>(a.value) < std::get<double>(b.value);
-                if (a.isString())
-                    return std::get<std::wstring>(a.value) < std::get<std::wstring>(b.value);
-
-                // Pentru Maps, Arrays sau null, nu avem o ordine naturală
-                return false;
-                });
-        }
-        return args[0]; // Returnăm array-ul (care e deja sortat in-place)
-        };
-    */
+    
     m_functionsHandlers[L"SORT"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty() || !args[0].isArray()) return { std::monostate{} };
 

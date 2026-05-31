@@ -1,6 +1,6 @@
 # --- 1. PREGĂTIRE MEDIU ---
 unset all; cls
-plugin oli_plugin.dll
+plugin oli_math
 
 # --- 2. DEFINIRE BLUEPRINTS (Modelele de Date) ---
 def struct Pozitie {x, y}
@@ -9,7 +9,7 @@ def struct Entitate {nume, poz}
 # --- 3. DEFINIRE FUNCȚII ---
 
 # Funcția A: Calculează distanța (Pitagora)
-func CALCULEAZA_DISTANTA punct
+func CALCULEAZA_DISTANTA($punct)
     set $x = $punct.x
     set $y = $punct.y
     set $x2 = $x * $x
@@ -19,28 +19,40 @@ endfunc
 
 # Funcția B: Mișcare Globală (Side Effect prin @$)
 # Modifică variabila globală al cărei nume este trimis ca string
-func MOVE_GLOBAL nume_var dx dy
+func MOVE_GLOBAL($nume_var, $dx, $dy)
     echo "Sistem: Se mișcă entitatea '" + $nume_var + "'..."
-    
+    echo "Aicic:"  
+    set $b = @$nume_var
+     echo $b.nume
+    echo "--------------"
     # Citim valorile actuale, adunăm deplasarea și scriem înapoi în Global
-    set @$$nume_var.poz.x = @$$nume_var.poz.x + $dx
-    set @$$nume_var.poz.y = @$$nume_var.poz.y + $dy
+    #set @$$nume_var.poz.x = @$$nume_var.poz.x + $dx
+    #set @$$nume_var.poz.y = @$$nume_var.poz.y + $dy
 endfunc
 
 # --- 4. EXECUTARE TEST ---
 
 # Creăm Dragonul (Observă structura imbricată)
-set $boss = Entitate("Dragon", Pozitie(100, 100))
+set $boss = new("Entitate")
+set $pos = new("Pozitie")
+$pos.x = 100
+$pos.y = 100
+$boss.nume = "Dragon"
+$boss.poz = $pos
 
 echo "--- STARE INIȚIALĂ ---"
 echo "Nume: " + $boss.nume
-echo "Poziție: [" + $boss.poz.x + "," + $boss.poz.y + "]"
+echo "Pozitie: [" + $boss.poz.x + "," + $boss.poz.y + "]"
 set $dist_initiala = CALCULEAZA_DISTANTA($boss.poz)
-echo "Distanța față de origine: " + $dist_initiala
+echo "Distanta fata de origine: " + $dist_initiala
 
 echo ""
 # Mutăm Dragonul folosind indirectarea globală
 # Îi dăm numele variabilei ("boss") nu valoarea ei ($boss)
+echo "=================="
+$test = "boss"
+echo $$$test
+echo "=================="
 MOVE_GLOBAL("boss", 50, -20)
 
 echo ""
@@ -48,3 +60,4 @@ echo "--- STARE FINALĂ ---"
 echo "Poziție Nouă: [" + $boss.poz.x + "," + $boss.poz.y + "]"
 set $dist_finala = CALCULEAZA_DISTANTA($boss.poz)
 echo "Distanța nouă față de origine: " + $dist_finala
+INPUT()

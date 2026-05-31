@@ -1,0 +1,13 @@
+config echo off
+
+func fibonacci($n)
+    if $n <= 1 then
+        return $n
+    endif
+    return fibonacci($n - 1) + fibonacci($n - 2)
+endfunc
+
+# Example usage
+set $result = fibonacci(10)
+echo "The 10th Fibonacci number is: " .. $result
+input()

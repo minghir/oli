@@ -66,7 +66,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             stack.pop_back();
 
             // 1. Cazul ACCES CONTAINER: [Container, Index]
-            if (!stack.empty() && (stack.back().isArray() || stack.back().isMap())) {
+            if (!stack.empty() && (stack.back().isArray() || stack.back().isMap()) || stack.back().isString()) {
                 vData container = stack.back();
                 stack.pop_back();
 
@@ -90,6 +90,22 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
                         stack.push_back(vData{ std::monostate{} });
                     }
                 }
+                else if (container.isString()) {
+                    std::wstring str = container.toWString();
+                    long long idx = indexOrPtr.toInt();
+
+                    if (idx >= 0 && idx < (long long)str.length()) {
+                        // IMPORTANT: Construim un std::wstring din caracterul de la poziția respectivă.
+                        // Asta forțează variant-ul din vDataValue să aleagă ramura de String, 
+                        // evitând transformarea eronată a lui wchar_t în bool (1/true).
+                        stack.push_back(vData{ std::wstring(1, str[idx]) });
+                    }
+                    else {
+                        // Index out of bounds (în afara limitelor textului) -> returnăm un șir vid
+                        stack.push_back(vData{ L"" });
+                    }
+                }
+
             }
             // 2. Cazul DEREFERENȚIERE POINTER (*$ptr)
             else {

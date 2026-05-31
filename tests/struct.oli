@@ -1,0 +1,5 @@
+def struct test {$a}
+$b = new("test")
+$b.a = 10
+echo $b.a
+input()

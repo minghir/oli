@@ -1204,9 +1204,343 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         return std::wstring::npos;
     }
 
+    vData vOliEngine::executeAST(ASTPtr node) {
+        if (!node) return { std::monostate{} };
 
+        try {
+            switch (node->type) {
+            case ASTNodeType::Literal: {
+                // --- CREARE ARRAY DIN COD: [1, 2, 3] ---
+                if (node->value == L"ARRAY_OBJECT") {
+                    vDataArray elements = std::make_shared<std::vector<vData>>();
+                    for (auto& child : node->children) {
+                        if (child) elements->push_back(executeAST(child));
+                    }
+                    return { elements };
+                }
+
+                // --- CREARE MAP DIN COD: { "a": 1 } ---
+                if (node->value == L"MAP_OBJECT") {
+                    vDataMap myMap = std::make_shared<std::unordered_map<std::wstring, vData>>();
+                    for (size_t i = 0; i + 1 < node->children.size(); i += 2) {
+                        vData keyData = executeAST(node->children[i]);
+                        vData valData = executeAST(node->children[i + 1]);
+                        (*myMap)[vDataToWString(keyData)] = valData;
+                    }
+                    return { myMap };
+                }
+
+                std::wstring val = node->value;
+                if (val == L"monostate" || val == L"NULL" || val == L"null") return { std::monostate{} };
+
+                if (val.size() >= 2 && val.front() == L'"' && val.back() == L'"') {
+                    std::wstring raw = val.substr(1, val.size() - 2);
+                    return { unescape(raw) };
+                }
+                return parseRawLiteral(val);
+            }
+
+            case ASTNodeType::Variable: {
+                return resolveVariable(node->value);
+            }
+
+            case ASTNodeType::FunctionCall: {
+                std::wstring funcName = L"";
+                std::vector<vData> evaluatedArgs;
+                vData contextObj = { std::monostate{} };
+
+                // --- 1. IDENTIFICARE CONTEXT ȘI NUME ---
+                if (!node->children.empty() && (node->children[0]->value == L"." || node->children[0]->value == L"DOT")) {
+                    const ASTPtr& dotNode = node->children[0];
+
+                    contextObj = executeAST(dotNode->children[0]);
+                    std::wstring rawMethodName = dotNode->children[1]->value;
+
+                    // Căutăm map-ul real (clasa), trecând nativ prin pointeri
+                    if (auto* m = contextObj.rawMap()) {
+                        if (m->count(L"__type__")) {
+                            std::wstring typeName = to_upper((*m)[L"__type__"].toWString());
+                            std::wstring methodUpper = to_upper(rawMethodName);
+
+                            if (m_blueprints.count(typeName)) {
+                                auto& bp = m_blueprints[typeName];
+                                if (bp.methods.count(methodUpper)) {
+                                    funcName = bp.methods[methodUpper];
+                                }
+                            }
+                        }
+                    }
+
+                    if (funcName.empty()) {
+                        funcName = vDataToWString(executeAST(dotNode));
+                    }
+
+                    for (size_t i = 1; i < node->children.size(); ++i)
+                        evaluatedArgs.push_back(executeAST(node->children[i]));
+                }
+                else if (node->value == L"DYNAMIC_CALL" && !node->children.empty()) {
+                    funcName = vDataToWString(executeAST(node->children[0]));
+                    for (size_t i = 1; i < node->children.size(); ++i)
+                        evaluatedArgs.push_back(executeAST(node->children[i]));
+                }
+                else if (!node->value.empty() && node->value[0] == L'$') {
+                    funcName = vDataToWString(resolveVariable(node->value));
+                    for (auto& child : node->children)
+                        evaluatedArgs.push_back(executeAST(child));
+                }
+                else {
+                    funcName = node->value;
+                    for (auto& child : node->children)
+                        evaluatedArgs.push_back(executeAST(child));
+                }
+
+                if (funcName.empty()) return { std::monostate{} };
+
+                // --- 2. CONSTRUCTORI ---
+                std::wstring upperName = to_upper(funcName);
+                auto itBlueprint = m_blueprints.find(upperName);
+                if (itBlueprint != m_blueprints.end()) {
+                    vDataMap instance = std::make_shared<std::unordered_map<std::wstring, vData>>();
+                    (*instance)[L"__type__"] = vData(itBlueprint->second.name);
+
+                    const auto& fields = itBlueprint->second.fields;
+                    for (size_t i = 0; i < fields.size(); ++i) {
+                        (*instance)[fields[i]] = (i < evaluatedArgs.size()) ? evaluatedArgs[i] : vData{ std::monostate{} };
+                    }
+                    return { instance };
+                }
+
+                // --- 3. EXECUȚIE ---
+                auto itInternal = m_functionsHandlers.find(upperName);
+                if (itInternal != m_functionsHandlers.end()) {
+                    return itInternal->second(evaluatedArgs);
+                }
+
+                auto itUser = m_userFunctions.find(upperName);
+                if (itUser != m_userFunctions.end()) {
+                    return callUserFunction(upperName, evaluatedArgs, contextObj);
+                }
+
+                LOG_ERROR(L"[INTERPRETER ERROR] Unknown function or method: " + funcName);
+                return { std::monostate{} };
+            }
+            case ASTNodeType::Operator: {
+                std::wstring op = node->value;
+
+                if (op == L"ADDRESS_OF") {
+                    ASTPtr child = node->children[0];
+                    if (child->type == ASTNodeType::Variable) {
+                        std::wstring varName = child->value;
+                        if (!varName.empty() && (varName[0] == L'$' || varName[0] == L'@')) varName.erase(0, 1);
+
+                        vData* targetPtr = nullptr;
+                        if (!m_callStack.empty()) {
+                            auto& locals = m_callStack.back().localVariables;
+                            if (locals.count(varName)) targetPtr = &locals[varName];
+                        }
+                        if (!targetPtr && m_globalVariables.count(varName)) targetPtr = &m_globalVariables[varName];
+
+                        if (targetPtr) {
+                            vData res; res.value = targetPtr;
+                            return res;
+                        }
+                    }
+                    LOG_ERROR(L"Runtime Error: Operator '&' requires a variable.");
+                    return { std::monostate{} };
+                }
+
+                // 🔥 FIX 1: Dereferențierea în mod citire (ECHO *ptr) devine iertătoare, exact ca în VM
+                if (op == L"DEREFERENCE") {
+                    vData ptrContainer = executeAST(node->children[0]);
+                    return ptrContainer.getTrueData();
+                }
+
+                bool isCompound = (op == L"+=" || op == L"-=" || op == L"*=" || op == L"/=");
+                bool isSimpleAssign = (op == L"=");
+                bool isPostfix = (op == L"POSTFIX_INC" || op == L"POSTFIX_DEC");
+
+                if (isSimpleAssign || isCompound || isPostfix) {
+                    if (node->children.empty()) return { std::monostate{} };
+
+                    ASTPtr leftNode = node->children[0];
+
+                    vData currentVal = (isSimpleAssign) ? vData{} : executeAST(leftNode);
+                    vData newValue;
+
+                    if (isSimpleAssign) {
+                        newValue = executeAST(node->children[1]);
+                    }
+                    else if (isPostfix) {
+                        std::wstring baseOp = (op == L"POSTFIX_INC") ? L"+" : L"-";
+                        newValue = executeBinaryOperator(baseOp, currentVal, vData(1LL));
+                    }
+                    else if (isCompound) {
+                        vData rhsEvaluated = executeAST(node->children[1]);
+                        std::wstring baseOp = op.substr(0, 1);
+                        newValue = executeBinaryOperator(baseOp, currentVal, rhsEvaluated);
+                    }
+
+                    // --- LOGICA DE SCRIERE (L-Value) ---
+
+                    if (leftNode->value == L"DEREFERENCE") {
+                        vData ptrContainer = executeAST(leftNode->children[0]);
+                        if (vData** addrPtr = std::get_if<vData*>(&ptrContainer.value)) {
+                            if (*addrPtr && *addrPtr) {
+                                **addrPtr = newValue;
+                                return isPostfix ? currentVal : newValue;
+                            }
+                        }
+                        LOG_ERROR(L"Runtime Error: Cannot dereference a null or invalid pointer.");
+                        return { std::monostate{} };
+                    }
+
+                    if (leftNode->type == ASTNodeType::Variable) {
+                        std::wstring rawName = leftNode->value;
+
+                        bool isPointer = (!rawName.empty() && rawName[0] == L'*');
+                        std::wstring targetName = isPointer ? rawName.substr(1) : rawName;
+
+                        bool forceGlobal = (!targetName.empty() && targetName[0] == L'@');
+                        if (forceGlobal) {
+                            targetName[0] = L'$';
+                        }
+
+                        int safetyGuard = 0;
+                        while (targetName.size() > 1 && targetName[0] == L'$' && targetName[1] == L'$') {
+                            vData nextNameData = resolveVariable(targetName.substr(1));
+                            std::wstring nextName = vDataToWString(nextNameData);
+
+                            if (nextName.empty() || nextName == L"null") {
+                                LOG_ERROR(L"Runtime Error: Indirection broken for " + targetName);
+                                return { std::monostate{} };
+                            }
+
+                            targetName = (nextName[0] == L'$' || nextName[0] == L'@') ? nextName : L"$" + nextName;
+
+                            if (++safetyGuard > 20) {
+                                LOG_ERROR(L"Runtime Error: Circular reference in L-Value indirection.");
+                                return { std::monostate{} };
+                            }
+                        }
+
+                        if (forceGlobal && !targetName.empty()) {
+                            if (targetName[0] == L'$') targetName[0] = L'@';
+                            else if (targetName[0] != L'@') targetName = L"@" + targetName;
+                        }
+
+                        if (isPointer) {
+                            vData ptrInfo = resolveVariable(targetName);
+                            if (vData** addrPtr = std::get_if<vData*>(&ptrInfo.value)) {
+                                if (*addrPtr && *addrPtr) {
+                                    **addrPtr = newValue;
+                                    return isPostfix ? currentVal : newValue;
+                                }
+                            }
+                            LOG_ERROR(L"Runtime Error: Invalid pointer write attempt via *" + targetName);
+                            return { std::monostate{} };
+                        }
+                        else {
+                            setVariable(targetName, newValue);
+                            return isPostfix ? currentVal : newValue;
+                        }
+                    }
+
+                    // --- 2. Acces membru la scriere (obj.prop = ...) ---
+                    if (leftNode->value == L"DOT" || leftNode->value == L".") {
+                        vData container = executeAST(leftNode->children[0]);
+                        std::wstring field = leftNode->children[1]->value;
+
+                        // 🔥 FIX 2A: Folosim helperul securizat rawMap() care trece automat prin pointeri
+                        if (auto* mapPtr = container.rawMap()) {
+                            (*mapPtr)[field] = newValue;
+                            return isPostfix ? currentVal : newValue;
+                        }
+                    }
+
+                    // --- 3. Indexare la scriere (arr[index] = ...) ---
+                    if (leftNode->value == L"INDEX" || leftNode->value == L"[") {
+                        vData container = executeAST(leftNode->children[0]);
+                        vData index = executeAST(leftNode->children[1]);
+
+                        // 🔥 FIX 2B: Folosim rawArray() și rawMap() securizate contra variant-ului brut
+                        if (auto* arrPtr = container.rawArray()) {
+                            size_t idx = static_cast<size_t>(vDataToDouble(index));
+                            if (idx < arrPtr->size()) {
+                                (*arrPtr)[idx] = newValue;
+                                return isPostfix ? currentVal : newValue;
+                            }
+                        }
+                        else if (auto* mapPtr = container.rawMap()) {
+                            (*mapPtr)[vDataToWString(index)] = newValue;
+                            return isPostfix ? currentVal : newValue;
+                        }
+                    }
+
+                    std::wstring fullPath = reconstructPath(leftNode);
+                    if (!fullPath.empty()) {
+                        assignToVariable(fullPath, newValue);
+                        return isPostfix ? currentVal : newValue;
+                    }
+
+                    throw std::runtime_error("L-value required for assignment.");
+                }
+
+                // 🔥 FIX 1B: Al doilea bloc de DEREFERENCE explicit din arbore devine de asemenea iertător
+                if (node->value == L"DEREFERENCE") {
+                    vData ptr = executeAST(node->children[0]);
+                    return ptr.getTrueData();
+                }
+
+                // --- ACCES LA CITIRE (DOT / INDEX) ---
+                if (node->value == L"DOT" || node->value == L".") {
+                    if (node->children.size() < 2) return { std::monostate{} };
+                    vData container = executeAST(node->children[0]);
+                    std::wstring field = node->children[1]->value;
+
+                    // 🔥 FIX 2C: Eliminăm std::get direct din citirea proprietăților (previne bad variant access)
+                    if (auto* mapPtr = container.rawMap()) {
+                        if (mapPtr->count(field)) return mapPtr->at(field);
+                    }
+                    return { std::monostate{} };
+                }
+
+                if (node->value == L"INDEX" || node->value == L"[") {
+                    if (node->children.size() < 2) return { std::monostate{} };
+                    vData container = executeAST(node->children[0]);
+                    vData index = executeAST(node->children[1]);
+
+                    // getTrueData() va trece de pointerul $ref2 și va da array-ul real către accessContainer
+                    return accessContainer(container.getTrueData(), index);
+                }
+
+                // --- BINAR & UNAR ---
+                if (node->children.size() >= 2) {
+                    vData lhs = executeAST(node->children[0]);
+                    vData rhs = executeAST(node->children[1]);
+                    return executeBinaryOperator(node->value, lhs, rhs);
+                }
+
+                if (node->children.size() >= 1) {
+                    vData operand = executeAST(node->children[0]);
+                    if (node->value == L"UNARY_MINUS") return { -vDataToDouble(operand) };
+                    if (node->value == L"NOT") return { !vDataToBool(operand) };
+                    if (node->value == L"BITWISE_NOT" || node->value == L"~") {
+                        return { ~vDataToLong(operand) };
+                    }
+                }
+                break;
+            }
+            default: break;
+            }
+        }
+        catch (const std::exception& e) {
+            LOG_ERROR(L"[CRITICAL EXECUTION ERROR] " + std::wstring(e.what(), e.what() + strlen(e.what())));
+        }
+
+        return { std::monostate{} };
+    }
    
-
+    /*
     vData vOliEngine::executeAST(ASTPtr node) {
         if (!node) return { std::monostate{} };
 
@@ -1672,7 +2006,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
 
         return { std::monostate{} };
     }
-
+    */
     std::wstring vOliEngine::reconstructPath(ASTPtr node) {
         if (!node) return L"";
 
@@ -2971,6 +3305,7 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
         return trim(cleaned);
     }
 
+    /*
     void vOliEngine::handleCycleCommand(const std::wstring& fullLine) {
         std::wstring upperLine = fullLine;
         std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
@@ -3066,7 +3401,108 @@ vData vOliEngine::executeBinaryOperator(const std::wstring& op, const vData& lef
             }
         }
     }
+    */
 
+    void vOliEngine::handleCycleCommand(const std::wstring& fullLine) {
+        std::wstring upperLine = fullLine;
+        std::transform(upperLine.begin(), upperLine.end(), upperLine.begin(), ::towupper);
+
+        // 1. Găsire Keyword-uri (DO și ENDCYCLE)
+        size_t cyclePos = upperLine.find(L"CYCLE");
+        size_t posDo = findTopLevelCycleKeyword(fullLine, L"DO");
+        size_t posEnd = findTopLevelCycleKeyword(fullLine, L"ENDCYCLE");
+
+        if (posDo == std::wstring::npos || posEnd == std::wstring::npos) {
+            LOG_ERROR(L"Malformed CYCLE: Missing DO or ENDCYCLE at current level");
+            return;
+        }
+
+        // 2. Extragere Header (Ex: $lista AS $item)
+        size_t headerStart = cyclePos + 5;
+        std::wstring header = trim(fullLine.substr(headerStart, posDo - headerStart));
+
+        std::wstring upperHeader = header;
+        std::transform(upperHeader.begin(), upperHeader.end(), upperHeader.begin(), ::towupper);
+        size_t asPos = upperHeader.find(L"AS");
+
+        if (asPos == std::wstring::npos) {
+            LOG_ERROR(L"CYCLE requires 'as'. Ex: CYCLE $list AS $item");
+            return;
+        }
+
+        std::wstring sourceExpr = trim(header.substr(0, asPos));
+        std::wstring iteratorName = trim(header.substr(asPos + 2));
+
+        // 3. Evaluare Sursă (Ce iterăm?)
+        vData sourceData = evaluateExpression(sourceExpr);
+
+        // =========================================================================
+        // 🔥 FIXUL CRITIC: Desfacem ierarhiile de pointeri (ptr -> ptr -> Array)
+        // =========================================================================
+        vData realSource = sourceData.getTrueData();
+
+        if (realSource.isNull()) {
+            LOG_ERROR(L"Cycle error: Source '" + sourceExpr + L"' is NULL.");
+            return;
+        }
+
+        // 4. Pregătire Instrucțiuni din corpul buclei
+        size_t bodyStart = posDo + 2;
+        std::wstring bodyCommand = trim(fullLine.substr(bodyStart, posEnd - bodyStart));
+        std::vector<std::wstring> instructions = preParse(bodyCommand);
+
+        // 5. Salvare valoare veche pentru iterator (Shadowing Protection)
+        vData oldVal = resolveVariable(iteratorName);
+        bool existed = !oldVal.isNull();
+
+        // =========================================================================
+        // 🚀 6. EXECUȚIA EFECTIVĂ (Procesată pe containerul real, dereferențiat)
+        // =========================================================================
+        if (realSource.isArray()) {
+            auto arrPtr = std::get<vDataArray>(realSource.value);
+            if (arrPtr) {
+                // Iterăm prin vectorul real din Heap folosind *arrPtr
+                for (const auto& item : *arrPtr) {
+                    if (executeCycleStep(iteratorName, item, instructions)) break; // BREAK detectat
+                    if (m_executionStatus == OliStatus::RETURN_REQUESTED) break; // RETURN detectat
+                }
+            }
+        }
+        else if (realSource.isMap()) {
+            auto mapPtr = std::get<vDataMap>(realSource.value);
+            if (mapPtr) {
+                // Iterăm prin Map-ul real din Heap
+                for (const auto& pair : *mapPtr) {
+                    if (executeCycleStep(iteratorName, vData{ pair.first }, instructions)) break;
+                    if (m_executionStatus == OliStatus::RETURN_REQUESTED) break;
+                }
+            }
+        }
+        else if (realSource.isString()) {
+            const std::wstring& str = std::get<std::wstring>(realSource.value);
+            for (wchar_t c : str) {
+                if (executeCycleStep(iteratorName, vData{ std::wstring(1, c) }, instructions)) break;
+                if (m_executionStatus == OliStatus::RETURN_REQUESTED) break;
+            }
+        }
+        else {
+            LOG_ERROR(L"Cycle error: Source is not iterable (Array, Map or String).");
+        }
+
+        // 7. RESTAURARE (Curățăm "murdăria" lăsată de iterator în memorie)
+        if (existed) {
+            setVariable(iteratorName, oldVal);
+        }
+        else {
+            std::wstring cleanName = cleanVariableName(iteratorName);
+            if (!m_callStack.empty()) {
+                m_callStack.back().localVariables.erase(cleanName);
+            }
+            else {
+                m_globalVariables.erase(cleanName);
+            }
+        }
+    }
 
 
     size_t vOliEngine::findTopLevelCycleKeyword(const std::wstring& line, const std::wstring& keyword) {
@@ -4590,7 +5026,7 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
   }
   */
 
-
+  /*
   void vOliEngine::handleDefCommand(const ShellCommand& sc) {
       if (sc.args.size() < 3) {
           LOG_ERROR(L"[SYNTAX ERROR] Usage: def class Name { field, method() }");
@@ -4636,7 +5072,82 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
           std::to_wstring(bp.fields.size()) + L" fields and " +
           std::to_wstring(bp.methods.size()) + L" methods.");
   }
+  */
 
+void vOliEngine::handleDefCommand(const ShellCommand& sc) {
+    if (sc.args.size() < 3) {
+        LOG_ERROR(L"[SYNTAX ERROR] Usage: def class/struct Name [extends Parent] { field, method() }");
+        return;
+    }
+
+    std::wstring subType = to_lower(sc.args[0]);
+    std::wstring typeName = to_upper(sc.args[1]); // Normalizăm numele tipului la UPPERCASE
+
+    // --- 🚀 ALINIERE CU COMPILATORUL: DETECȚIE MOȘTENIRE (EXTENDS) ---
+    std::wstring parentName = L""; // Gol dacă nu are părinte
+    size_t bodyStartIndex = 2;
+
+    // Verificăm dacă al treilea argument este "extends"
+    if (sc.args.size() > 4 && to_lower(sc.args[2]) == L"extends") {
+        parentName = to_upper(sc.args[3]);
+        bodyStartIndex = 4; // Trecem peste 'extends' și numele părintelui
+    }
+
+    // Extragem conținutul dintre acolade începând de la indexul corect (2 sau 4)
+    std::wstring fullLine;
+    for (size_t i = bodyStartIndex; i < sc.args.size(); ++i) {
+        fullLine += sc.args[i];
+    }
+
+    size_t start = fullLine.find(L'{');
+    size_t end = fullLine.find(L'}');
+    if (start == std::wstring::npos || end == std::wstring::npos) {
+        LOG_ERROR(L"[SYNTAX ERROR] Missing braces '{ }' in definition.");
+        return;
+    }
+
+    std::wstring content = fullLine.substr(start + 1, end - start - 1);
+    std::vector<std::wstring> tokens = wexplodeQuoteSafe(content, L',');
+
+    vTypeBlueprint bp;
+    bp.name = typeName;
+    bp.isClass = (subType == L"class");
+
+    // Dacă structura ta vTypeBlueprint are un câmp pentru părinte, îl mapăm aici:
+    // bp.parentName = parentName; 
+
+    for (auto& t : tokens) {
+        std::wstring item = trim(t);
+        if (item.empty()) continue;
+
+        size_t paren = item.find(L'(');
+
+        if (paren != std::wstring::npos) {
+            // Este o METODĂ
+            std::wstring methodName = to_upper(trim(item.substr(0, paren)));
+            // Mapăm "METODA" -> "CLASA::METODA"
+            bp.methods[methodName] = typeName + L"::" + methodName;
+        }
+        else {
+            // Este un CÂMP
+            std::wstring fieldName = to_lower(item);
+
+            // --- 💡 FIX CRITIC: Curățăm prefixele '$' sau '@' ca să avem paritate cu compilatorul ---
+            if (!fieldName.empty() && (fieldName[0] == L'$' || fieldName[0] == L'@')) {
+                fieldName.erase(0, 1); // "$a" devine "a"
+            }
+
+            bp.fields.push_back(fieldName);
+        }
+    }
+
+    m_blueprints[typeName] = bp;
+
+    LOG_SUCCESS(L"Interpreter Blueprint " + std::wstring(bp.isClass ? L"'CLASS " : L"'STRUCT ") + typeName + L"'" +
+        (parentName.empty() ? L"" : L" EXTENDS '" + parentName + L"'") +
+        L" registered with " + std::to_wstring(bp.fields.size()) + L" fields and " +
+        std::to_wstring(bp.methods.size()) + L" methods.");
+}
 
   void vOliEngine::updateDataMember(vData& container, const vData& key, const vData& newValue) {
       // 1. CAZUL MAP
@@ -4902,48 +5413,7 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       
   }
   
-  /*
- bool vOliEngine::runEmbeddedIfPresent(const std::string& exePath) {
-    std::ifstream file(exePath, std::ios::binary | std::ios::ate);
-    if (!file.is_open()) return false;
-
-    std::streamsize fileSize = file.tellg();
-    
-    // FIX: static_cast pentru a elimina warning-ul de signed/unsigned comparison
-    if (fileSize < static_cast<std::streamsize>(sizeof(uint64_t))) return false;
-
-    // 1. Citim ultimii 8 octeți (footer-ul cu dimensiunea)
-    file.seekg(-8, std::ios::end);
-    uint64_t bytecodeSize = 0;
-    file.read(reinterpret_cast<char*>(&bytecodeSize), sizeof(uint64_t));
-
-    // 2. Verificăm dacă dimensiunea este plauzibilă
-    if (bytecodeSize == 0 || bytecodeSize > static_cast<uint64_t>(fileSize) - 1024) {
-        return false; 
-    }
-
-    // 3. Ne poziționăm la începutul bytecode-ului
-    file.seekg(static_cast<std::streamoff>(fileSize) - 8 - static_cast<std::streamoff>(bytecodeSize));
-
-    // 4. Încărcăm și rulăm
-    try {
-        // Deserializăm chunk-ul din fișier
-        OliChunk chunk = vDataSerialize::deserializeChunk(file);
-        
-        // Creăm o instanță a motorului
-        vOliEngine engine;
-
-        // FIX: Transmitem și al doilea argument (framePtr = 0)
-        // Deoarece acesta este punctul de intrare (Main), stiva începe de la 0.
-        engine.executeBytecode(chunk, 0); 
-        
-        return true;
-    } catch (...) {
-        LOG_ERROR(L"Eroare critică la încărcarea bytecode-ului embedded.");
-        return false;
-    }
-}
-*/
+ 
   
   bool vOliEngine::runEmbeddedIfPresent(const std::string& exePath) {
       std::ifstream file(exePath, std::ios::binary | std::ios::ate);

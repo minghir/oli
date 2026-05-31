@@ -61,7 +61,7 @@ func run_click()
     $res = SYS($compile_command)
     echo $res
     
-    $build_command = "oli.exe -b " .. @file
+    $build_command = "x64\Release\oli.exe -b " .. @file
     echo "Rulez comanda: " .. $build_command
     
     $res = SYS($build_command)

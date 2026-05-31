@@ -122,6 +122,7 @@ public:
             // --- PARTEA 1 ---
             L"INCLUDE",
             L"NEW",
+			L"REF",
             L"ISREF",
             L"DEREF",
             L"SETREF",
@@ -133,6 +134,7 @@ public:
             L"RND",
             L"HASH",
             L"WAIT",
+			L"SLEEP",
             L"SYS",
             L"CONTAINS",
             L"EVAL",

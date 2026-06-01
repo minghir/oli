@@ -3,5 +3,6 @@ echo $a++
 echo $a
 
 set $b = &$a
-echo (*$b)++
+echo (*$b)+=1
 echo *$b
+input()

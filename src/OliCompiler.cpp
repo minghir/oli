@@ -172,8 +172,8 @@ OliChunk OliCompiler::compile(const std::wstring& source,
                 isMultilineString = !isMultilineString;
             }
         }
-        
-       // --- PREPROCESARE: INCLUDE ---
+
+        // --- PREPROCESARE: INCLUDE ---
         std::wstring upperLine = to_upper(cleanLine);
         if (upperLine.find(L"INCLUDE") == 0) {
             size_t startQuote = cleanLine.find(L"\"");
@@ -355,7 +355,7 @@ OliChunk OliCompiler::compile(const std::wstring& source,
             maskedLine = trim(maskedLine.substr(0, commentPos));
         }
         if (cleanLine.empty()) continue;
-
+        /*
         // --- 2. ACTUALIZARE ADÂNCIME (Nesting) ---
         auto nestingTokens = vOliCommandParser::tokenize(maskedLine);
         for (const auto& rawT : nestingTokens) {
@@ -396,7 +396,64 @@ OliChunk OliCompiler::compile(const std::wstring& source,
             commandBuffer = L"";
         }
     }
+    */
+    // =================================================================
+        // 🔥 FIX STRUCTURI MULTI-LINE: Reținem dacă eram deja într-o paranteză/acoladă
+        // =================================================================
+        bool insideBrackets = (bracketDepth > 0);
 
+        // --- 2. ACTUALIZARE ADÂNCIME (Nesting) ---
+        auto nestingTokens = vOliCommandParser::tokenize(maskedLine);
+        for (const auto& rawT : nestingTokens) {
+            std::wstring t = to_upper(rawT); // IMPORTANT: Lucrăm cu majuscule aici
+
+            if (t == L"IF" || t == L"WHILE" || t == L"FOR" || t == L"PROC" || t == L"FUNC" || t == L"REPEAT" || t == L"CYCLE" || t == L"SWITCH") nestingLevel++;
+            if (t == L"ENDIF" || t == L"ENDWHILE" || t == L"ENDFOR" || t == L"ENDPROC" || t == L"ENDFUNC" || t == L"ENDREPEAT" || t == L"ENDCYCLE" || t == L"ENDSWITCH") nestingLevel--;
+
+            if (rawT == L"{" || rawT == L"[") bracketDepth++;
+            if (rawT == L"}" || rawT == L"]") bracketDepth--;
+        }
+
+        // 🔥 Dacă și după tokenizare trackerul spune că suntem în interior, activăm flag-ul
+        if (bracketDepth > 0) insideBrackets = true;
+
+        // --- 3. ACUMULARE BUFFER INTELIGENTĂ ---
+        if (commandBuffer.empty()) commandBuffer = cleanLine;
+        else {
+            if (insideBrackets) {
+                // Dacă suntem în interiorul unui [Array] sau {Map} multi-line, separăm doar prin spațiu!
+                commandBuffer += L" " + cleanLine;
+            }
+            else {
+                // Pentru blocuri de instrucțiuni (IF, WHILE, etc.), punct-virgula rămâne separatorul corect
+                commandBuffer += L" ; " + cleanLine;
+            }
+        }
+
+        // --- 4. DECIZIA DE COMPILARE ---
+        if (nestingLevel == 0 && bracketDepth == 0) {
+            LOG_DEBUG(L"[DEBUG] Nesting reached 0. Compiling buffer...");
+            std::wstring trimmedBuf = trim(commandBuffer);
+
+            // Eliminăm punct-virgulele de început
+            while (!trimmedBuf.empty() && trimmedBuf.front() == L';') {
+                trimmedBuf = trim(trimmedBuf.substr(1));
+            }
+
+            if (!trimmedBuf.empty()) {
+                auto stmts = splitStatementsSmart(trimmedBuf);
+
+                for (const auto& s : stmts) {
+                    LOG_DEBUG(L"[DEBUG] Compiling statement: " + (s.length() > 30 ? s.substr(0, 30) + L"..." : s));
+                    std::wstring ts = trim(s);
+                    if (ts.empty()) continue;
+
+                    compileStatement(vOliCommandParser::parse(ts), chunk, parentProcs);
+                }
+            }
+            commandBuffer = L"";
+        }
+    }
     // --- 5. FINALIZARE ---
     if (!isSubBlock) {
         LOG_DEBUG(L"[DEBUG] Finalizing Main Chunk.");

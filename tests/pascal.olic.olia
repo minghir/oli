@@ -1,5 +1,5 @@
 --- OLI ASSEMBLY LISTING ---
-Source: ./tests/pascal.oli
+Source: D:\Programming\oli\tests\pascal.oli
 Generated: 2026-05-11
 
 
@@ -38,7 +38,9 @@ Generated: 2026-05-11
 0081: OP_ECHO
 0082: OP_GET_GLOBAL   0003 (Name: $memo_pascal)
 0085: OP_ECHO
-0086: OP_RETURN
+0086: OP_CALL_NATIVE  0018 (Name: INPUT, Args: 0)
+0090: OP_POP
+0091: OP_RETURN
 
 --- FUNCTION: PASCAL (Params: $n, $k) ---
 === DISASSEMBLY: PASCAL ===

@@ -20,6 +20,8 @@ func PASCAL($n, $k)
         return @memo_pascal[$key]
     endif
 
+
+
     # Calcul recursiv (VM-ul gestionează automat cadrele de stivă)
     set $val1 = PASCAL($n - 1, $k - 1)
     set $val2 = PASCAL($n - 1, $k)
@@ -41,3 +43,4 @@ echo "Rezultat C(10, 5) = " + $valoare
 echo "Total apeluri: " + $apeluri
 echo "Durata: " + ($end - $start) + " ms"
 echo $memo_pascal
+input()

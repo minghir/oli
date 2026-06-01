@@ -18,19 +18,17 @@ for $y = 0 to $h - 1 do
         set $nx = (1.0 * $x / $w) - 0.5
         set $ny = (1.0 * $y / $h) - 0.5
         set $cx = ($nx * 3.0) - 0.5
-        set $cy = ($ny * 3.0)
-        
+        set $cy = ($ny * 3.0)        
         set $zx = 0.0
         set $zy = 0.0
         set $it = 0
-        
+       
         while ($zx * $zx + $zy * $zy < 4.0) && ($it < $maxIter) do
             set $xt = $zx * $zx - $zy * $zy + $cx
             set $zy = 2.0 * $zx * $zy + $cy
             set $zx = $xt
             set $it = $it + 1
         endwhile
-        
         set $idx = 1 + (($y * $w + $x) * 3)
         
         if $it == $maxIter then

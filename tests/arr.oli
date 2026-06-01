@@ -16,11 +16,10 @@ ECHO "Obiect Map: " .. $user
 
 # 4. Test Structură Mixtă (Complexă)
 # Un Map care conține un Array
-SET $robotData = { 
-    "id": 101, 
-    "senzori": ["optic", "termic", "presiune"],
-    "activ": true 
-}
+SET $robotData = {  
+"id" : 101,   
+"senzori" : ["optic", "termic", "presiune"],   
+"activ" : true }
 ECHO "Structura Complexa: " .. $robotData
 
 # 5. Test Dinamic (Variabile în Array/Map)
@@ -50,3 +49,4 @@ unset all
 ECHO "Array cu indiratie : " + $pointerArray
 
 ECHO "SFARSIT"
+input()

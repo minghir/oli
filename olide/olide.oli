@@ -247,7 +247,7 @@ $runButton.set_anchor("RIGHT|BOTTOM")
 $runButton.set_width_mode("FIXED")
 
 set $saveButton = new("WinButton")
-$saveButton.init("btn_save", "act_panel", 95, 4, 80, 40, "SAVE")
+$saveButton.init("btn_save", "act_panel", 95, 4, 80, 40, "💾")
 $saveButton.set_anchor("RIGHT|BOTTOM")
 $saveButton.set_width_mode("FIXED")
 

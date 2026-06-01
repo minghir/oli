@@ -1,0 +1,19 @@
+--- OLI ASSEMBLY LISTING ---
+Source: D:\Programming\oli\tests\fn.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_CONSTANT     0000 (Value: test)
+0003: OP_SET_GLOBAL   0001 (Name: $a)
+0006: OP_CONSTANT     0002 (Value: 2)
+0009: OP_CALL         0003 (Name: $A, Args: 1)
+0013: OP_ECHO
+0014: OP_CALL_NATIVE  0004 (Name: INPUT, Args: 0)
+0018: OP_POP
+0019: OP_RETURN
+
+--- FUNCTION: TEST (Params: $n) ---
+=== DISASSEMBLY: TEST ===
+0000: OP_GET_LOCAL     0000
+0002: OP_RETURN

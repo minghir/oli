@@ -13,3 +13,4 @@ until $k >= 3
 endrepeat
 
 echo "--- TEST FINALIZAT ---"
+input()

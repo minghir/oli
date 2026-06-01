@@ -42,3 +42,4 @@ endproc
 # Main execution
 echo "--- Pascal's Triangle (Oli Edition) ---"
 pascaltriangle 8
+input()

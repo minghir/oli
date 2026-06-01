@@ -100,3 +100,4 @@ endfunc
 
 TEST_SHADOW()
 echo "Dupa Shadowing, numele global este: " + $boss.nume
+input()

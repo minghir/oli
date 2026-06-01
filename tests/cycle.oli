@@ -19,3 +19,4 @@ cycle $categorii as $cat do
 endcycle
 
 echo "TEST FINALIZAT"
+input()

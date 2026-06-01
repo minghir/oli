@@ -453,7 +453,7 @@ void vCodeView::setText(const std::wstring& text) {
         // Executăm poziționarea fixă a copilului RichEdit adaptată la noile dimensiuni (inclusiv Maximize!)
         this->applyLayout();
     }
-
+    /*
     void vCodeView::triggerHighlight() {
         if (!m_richEdit || !m_richEdit->getHandle()) return;
         HWND hEdit = m_richEdit->getHandle();
@@ -470,4 +470,34 @@ void vCodeView::setText(const std::wstring& text) {
         // 3. 🔥 RESTAURĂM CURSORUL EXACT UNDE ERA
         // Acest pas elimină complet orice tremurat (flicker) sau jump ilegal al cursorului la tastare
         ::SendMessageW(hEdit, EM_EXSETSEL, 0, (LPARAM)&cr);
+    }
+    */
+
+    void vCodeView::triggerHighlight() {
+        if (!m_richEdit || !m_richEdit->getHandle()) return;
+        HWND hEdit = m_richEdit->getHandle();
+
+        // 1. 🔥 BLOCĂM REDESENAREA: Înghețăm controlul grafic pentru a preveni flicker-ul
+        ::SendMessageW(hEdit, WM_SETREDRAW, FALSE, 0);
+
+        // 2. 🔥 SALVĂM COORDONATELE DE SCROLL: Reținem poziția exactă în pixeli a ferestrei
+        POINT scrollPos = { 0, 0 };
+        ::SendMessageW(hEdit, EM_GETSCROLLPOS, 0, (LPARAM)&scrollPos);
+
+        // 3. SALVĂM POZIȚIA CURSORULUI
+        CHARRANGE cr;
+        ::SendMessageW(hEdit, EM_EXGETSEL, 0, (LPARAM)&cr);
+
+        // 4. EXECUTĂM HIGHLIGHT-UL (Lexerul poate face acum selecții oriunde, RichEdit-ul e complet mut)
+        m_lexer.highlight(m_richEdit);
+
+        // 5. RESTAURĂM CURSORUL EXACT UNDE ERA
+        ::SendMessageW(hEdit, EM_EXSETSEL, 0, (LPARAM)&cr);
+
+        // 6. 🔥 RESTAURĂM COORDONATELE DE SCROLL: Forțăm textul de sus să rămână nemișcat la punct fix
+        ::SendMessageW(hEdit, EM_SETSCROLLPOS, 0, (LPARAM)&scrollPos);
+
+        // 7. DEBLOCĂM CONTROLUL ȘI REÎMPROSPĂTĂM
+        ::SendMessageW(hEdit, WM_SETREDRAW, TRUE, 0);
+        ::InvalidateRect(hEdit, NULL, TRUE);
     }

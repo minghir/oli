@@ -46,3 +46,4 @@ $boss.ataca()         # Metodă suprascrisă (Overridden)
 
 echo ""
 echo "--- TEST FINALIZAT ---"
+input()

@@ -3,7 +3,32 @@
     <Settings caseSensitive="false" />
     <Styles>
         <Style id="keyword" color="#0000FF" bold="true">
-            def class struct func cycle if then else endif endfunc endcycle for endfor to do new set return echo config plugin  while endwhile
+            INFO   
+HELP    
+SET   
+UNSET   
+ECHO ECHO_DBG 
+IF THEN ELSE ENDIF 
+WHILE DO ENDWHILE 
+FOR  TO  BY  ENDFOR 
+CYCLE ENDCYCLE 
+RUN
+SYS 
+PROC 
+FUNC ENDFUNC
+PLUGIN 
+QUIT  
+DUMP_MEM  DM  VARS 
+LIST 
+BREAK 
+CONTINUE 
+RETURN  RET 
+REPEAT  UNTIL  ENDREPEAT 
+SWITCH  CASE  DEFAULT  ENDSWITCH 
+CLEAR  CLS 
+TRACE 
+DEFINE  DEF 
+CONFIG  CONF
         </Style>
         <Style id="comment" color="#008000" start="#" end="" />
         <Style id="string" color="#A31515" start="&quot;" end="&quot;" />

@@ -5,3 +5,4 @@ endfunc
 
 set $a="test"
 echo $a(2)
+input()

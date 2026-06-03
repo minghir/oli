@@ -109,6 +109,7 @@ void RegisterSystemFunctions(PluginRegistry& registry) {
 
     // --- THREAD_RUN: Execuție asincronă pentru logică internă (dacă ai nevoie) ---
     registry[L"THREAD_RUN"] = [](const std::vector<vData>& args) -> vData {
+		
         if (args.empty()) return vData(0LL);
 
         // Notă: Aceasta este pentru a lansa un thread care rulează ceva, 
@@ -120,6 +121,87 @@ void RegisterSystemFunctions(PluginRegistry& registry) {
 
         return vData(1LL);
         };
+		
+		
+	registry[L"SYS_WAIT"] = [](const std::vector<vData>& args) -> vData {
+		if (args.empty()) return vData(L"ERR_NO_ARGS");
+		
+		std::wstring cmd = args[0].toWString(); 
+		ConsoleManager::getInstance().log(L"[DEBUG] SYS_WAIT execută direct: " + cmd);
+
+		HANDLE hRead, hWrite;
+		SECURITY_ATTRIBUTES sa = { sizeof(SECURITY_ATTRIBUTES), NULL, TRUE };
+		if (!CreatePipe(&hRead, &hWrite, &sa, 0)) return vData(L"ERR_PIPE");
+
+		STARTUPINFOW si;
+		PROCESS_INFORMATION pi;
+		ZeroMemory(&si, sizeof(si));
+		si.cb = sizeof(si);
+		si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+		si.hStdOutput = hWrite; 
+		si.hStdError = hWrite;  
+		si.wShowWindow = SW_HIDE; 
+		ZeroMemory(&pi, sizeof(pi));
+
+		std::vector<wchar_t> cmdLine(cmd.begin(), cmd.end());
+		cmdLine.push_back(0);
+
+		BOOL success = CreateProcessW(
+			NULL, cmdLine.data(), NULL, NULL, TRUE, 
+			DETACHED_PROCESS | CREATE_NO_WINDOW, 
+			NULL, NULL, &si, &pi
+		);
+		
+		CloseHandle(hWrite);
+
+		if (!success) {
+			CloseHandle(hRead);
+			return vData(L"ERR_LAUNCH");
+		}
+
+		char buffer[256];
+		DWORD bytesRead;
+		MSG msg;
+
+		// --- BUCLE DE CITIRE "PUSH" (Singura și curată) ---
+		while (true) {
+			DWORD exitCode;
+			if (GetExitCodeProcess(pi.hProcess, &exitCode) && exitCode != STILL_ACTIVE) break;
+
+			// Citim din pipe DOAR O DATĂ pe iterație
+			if (PeekNamedPipe(hRead, NULL, 0, NULL, &bytesRead, NULL) && bytesRead > 0) {
+				if (ReadFile(hRead, buffer, sizeof(buffer) - 1, &bytesRead, NULL)) {
+					buffer[bytesRead] = 0;
+					
+					// Trimitem direct către ConsoleManager
+					std::wstring wLine = utf8_to_wstring(std::string(buffer));
+					ConsoleManager::getInstance().log(wLine, LogLevel::INFO);
+				}
+			}
+
+			if (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) DispatchMessageW(&msg);
+			Sleep(10); 
+		}
+
+		// Citire finală (resturile din pipe)
+		while (ReadFile(hRead, buffer, sizeof(buffer) - 1, &bytesRead, NULL) && bytesRead > 0) {
+			buffer[bytesRead] = 0;
+			ConsoleManager::getInstance().log(utf8_to_wstring(std::string(buffer)), LogLevel::INFO);
+		}
+
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+		CloseHandle(hRead);
+
+		return vData(L"DONE"); 
+	};
+
+	registry[L"OPEN_TERMINAL"] = [](const std::vector<vData>& args) -> vData {
+			// Aici folosim ShellExecute, care este mult mai prietenos cu Windows
+			// și deschide automat o fereastră vizibilă.
+			ShellExecuteW(NULL, L"open", L"cmd.exe", NULL, NULL, SW_SHOWNORMAL);
+			return vData(1LL);
+		};
 }
 
 OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {

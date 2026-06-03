@@ -10,6 +10,7 @@ include ("include\winui.oli")
 # =================================================================
 
 $file = "" 
+$oli_path = "oli.exe"
 set $activeCodeView = null
 
 # Funcție de sincronizare: Află ce tab e pe ecran și actualizează contextul IDE-ului
@@ -57,11 +58,12 @@ func run_click()
     echo "=== LANSARE COMPILARE ==="
     echo "Fișier sursă: " .. @file
     
-    $compile_command = "x64\Release\oli.exe -c " .. @file
-    $res = SYS($compile_command)
-    echo $res
+    #$compile_command = @oli_path .. " -c " .. @file
+	#echo "Compilez:" .. $compile_command
+    #$res = SYS($compile_command)
+    #echo $res
     
-    $build_command = "x64\Release\oli.exe -b " .. @file
+    $build_command = @oli_path .. " -b " .. @file
     echo "Rulez comanda: " .. $build_command
     
     $res = SYS($build_command)
@@ -98,6 +100,14 @@ endfunc
 
 func menu_save_as_click()
     UPDATE_ACTIVE_CONTEXT()
+	
+	if @file == "" then
+        #SHOW_MESSAGE("IDE Error", "Nu există niciun fișier deschis în editor pentru a fi rulat!")
+		menu_save_as_click()
+        if @file != "" then run_click() endif
+		return
+    endif
+	
     if @activeCodeView == null then return endif
 
     set $dlg = new("FileDialog")
@@ -161,13 +171,53 @@ func menu_close_click()
 endfunc
 
 
+func menu_exit_click()
+	exit()
+endfunc
+
+func menu_about_click()
+	set $about_text = "Oli Engine v0.1"
+	SHOW_MESSAGE("About oli:",$about_text)
+endfunc
+
+
+func menu_interpreter_click()
+	START_PROCESS(@oli_path)
+endfunc
+
+func menu_command_click()
+	OPEN_TERMINAL()
+endfunc
+
+func menu_compile_click()
+    UPDATE_ACTIVE_CONTEXT()
+    if @file == "" then return endif
+
+    $consoleOutput.set_text("=== [COMPILE] START ===\n")
+    
+    $compile_command = @oli_path .. " -c " .. @file
+    echo "Execut: " .. $compile_command
+    
+    $res = SYS($compile_command)
+    
+    # Verificăm dacă rezultatul conține text sau dacă este gol
+    if $res != "" then
+        $consoleOutput.append_text($res .. "\n")
+    else
+        # Dacă $res este gol, compilarea a reușit fără avertismente/erori
+        $consoleOutput.append_text("Compilare finalizată cu succes (fără erori).\n")
+    endif
+    
+    $consoleOutput.append_text("=== [COMPILE] END ===\n")
+endfunc
+
 echo "CREEZ APP"
 set $app = new("WinApp")
 $app.init() 
 
 echo "CREEZ WIN"
 set $win = new("WinWindow")
-$win.init("fereastra_principala", "Oli UI Engine - Fully Encapsulated OOP")
+$win.init("fereastra_principala", "Oli WINUI")
 $win.set_icon("./olide/assets/Oli_Icon.ico")
 $win.set_layout("GRID")
 
@@ -196,7 +246,20 @@ set $helpMenu = new("WinMenu")
 $helpMenu.init("menu_help", "menu_principal")
 $helpMenu.add_item("menu_about", "About Oli IDE")
 
+
+set $toolsMenu = new("WinMenu")
+$toolsMenu.init("menu_tools", "menu_principal")
+$toolsMenu.add_item("menu_interpreter", "Interpreter")
+$toolsMenu.add_item("menu_command", "Command prompt")
+
+set $buildMenu = new("WinMenu")
+$buildMenu.init("menu_build", "menu_principal")
+$buildMenu.add_item("menu_build", "Build")
+$buildMenu.add_item("menu_compile", "Compile")
+
 $mainMenu.add_submenu("File", $fileMenu)
+$mainMenu.add_submenu("Build", $buildMenu)
+$mainMenu.add_submenu("Tools", $toolsMenu)
 $mainMenu.add_submenu("Help", $helpMenu)
 
 $win.set_prop("menu", "menu_principal")
@@ -212,7 +275,9 @@ $win.bind("menu_save_as", "menu_save_as_click")
 $win.bind("menu_close", "menu_close_click") # 🔥 Legăm funcția de butonul din meniu
 $win.bind("menu_exit", "menu_exit_click")
 $win.bind("menu_about", "menu_about_click")
-
+$win.bind("menu_interpreter", "menu_interpreter_click")
+$win.bind("menu_command", "menu_command_click")
+$win.bind("menu_compile", "menu_compile_click")
 
 # =================================================================
 # INTERFAȚA GRAFICĂ (PANELS & CONTROLS)
@@ -254,46 +319,33 @@ $saveButton.set_width_mode("FIXED")
 $runButton.bind("click", "run_click")
 $saveButton.bind("click", "save_click")
 
+
+
+# =================================================================
+# CONSOLĂ COMPILARE (JOS)
+# =================================================================
+echo "CREEZ Consolă..."
+set $consolePanel = new("WinPanel")
+$consolePanel.init("console_panel", "main_panel", 0, 0, 0, 150) # Înălțime fixă 150px
+#$consolePanel.set_layout("FILL") 
+$consolePanel.set_layout("GRID")
+$consolePanel.set_width_mode("FILL")
+$consolePanel.set_height_mode("FIXED") # Fixăm înălțimea ca să nu ocupe tot
+
+set $consoleOutput = new("WinRichConsole")
+$consoleOutput.init("console_output", "console_panel", 0, 0, 100, 150)
+$consoleOutput.set_width_mode("FILL")
+$consolePanel.set_height_mode("FIXED")
+$consoleOutput.set_read_only(true) # Utilizatorul nu poate scrie în ea
+$consoleOutput.set_font_size(12)
+$consoleOutput.set_text("Gata pentru compilare...")
+
+
 # =================================================================
 # LOGICA DE DESCHIDERE DINAMICĂ ACTUALIZATĂ
 # =================================================================
 set $counter = 0
-# func menu_open_click()
-    # set $dlg = new("FileDialog")
-    # $dlg.title = "Deschide fișierul Oli"
-    # $dlg.type = 0
-    
-    # $path = $dlg.show()
-    # if $path != "" then
-        # $newTabId = "tab_page_" .. FS_GET_FILENAME($path)
-        
-        # set $newView = new("WinCodeView")
-        # $newView.init($newTabId, "main_tabs", 0, 0, 0, 0)
-		
-        # $newView.set_width_mode("FILL")
-        # $newView.set_height_mode("FILL")
-        
-        
-        # # 🔥 CRITIC: Salvăm calea completă a fișierului în proprietatea nativă C++ a obiectului
-        # $newView.set_prop("file_path", $path)
-		
-        
-        # $tabs.add_tab(FS_GET_FILENAME($path), $newTabId)
-        
-        # $newView.set_syntax_path("./olide/syntaxes/oli.xml")
-        # $newView.set_text(READFILE($path))
-		
-        # $newView.set_font_size(12)
-		
-		# $tabCount = $tabs.get_prop("tab_count")
-		# $tabs.switch_page($tabCount - 1)
-		
-        # # Sincronizăm imediat contextul global cu noul tab deschis
-        # UPDATE_ACTIVE_CONTEXT()
-		# #$tabs.refresh()
-        # @counter++
-    # endif
-# endfunc
+
 
 func menu_open_click()
     set $dlg = new("FileDialog")
@@ -323,7 +375,7 @@ func menu_open_click()
         $newView.set_height_mode("FILL")
         $newView.set_prop("file_path", $path)
         
-        $tabs.add_tab(FS_GET_FILENAME($path), $newTabId)
+        $tabs.add_tab(FS_GET_FILENAME($path) .. " ", $newTabId)
         
         $newView.set_syntax_path("./olide/syntaxes/oli.xml")
         $newView.set_text(READFILE($path))

@@ -394,6 +394,7 @@ vData vContainer::getProperty(const std::wstring& name) const {
         if (dynamic_cast<AnchorLayout*>(m_layoutStrategy.get())) return vData(L"ANCHOR");
         if (dynamic_cast<FormLayout*>(m_layoutStrategy.get())) return vData(L"FLOW");
         if (dynamic_cast<VerticalStackLayout*>(m_layoutStrategy.get())) return vData(L"VSTACK");
+		if (dynamic_cast<VerticalPercentStackLayout*>(m_layoutStrategy.get())) return vData(L"VPROCSTACK");
         if (dynamic_cast<HorizontalPercentStackLayout*>(m_layoutStrategy.get())) return vData(L"HSTACK");
         
         return vData(L"CUSTOM");

@@ -10,6 +10,7 @@
 #include "vMenu.hpp"
 #include "vMessageDialog.hpp"
 #include "vTabControl.hpp"
+#include "vRichConsole.hpp"
 #include <unordered_map>
 #include <memory>
 #include <sstream>
@@ -297,7 +298,18 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
                 newCtrl = std::make_unique<vCodeView>(
                     hInst, id, x, y, w, h, g_Gui.appInstance->getEventDispatcher()
                 );
-            } else {
+			}
+			else if (wType == L"RICHEDIT") {
+                newCtrl = std::make_unique<vRichEdit>(
+                    hInst, id, x, y, w, h, g_Gui.appInstance->getEventDispatcher()
+                );
+            }
+			else if (wType == L"RICHCONSOLE") {
+				newCtrl = std::make_unique<vRichConsole>(
+					hInst, id, x, y, w, h, g_Gui.appInstance->getEventDispatcher()
+				);
+			}
+			else {
                 LOG_ERROR(L"[DLL_DEBUG] Tip de control necunoscut/nesuportat: '" + wType + L"'");
             }
 

@@ -4,13 +4,8 @@
 #include <fstream>
 #include <sstream>
 #include <algorithm> // Pentru std::replace (folosit în mod standard)
-
-
+#include <vector>
 #include <richedit.h>
-
-#include <fstream>
-#include <sstream>
-#include <algorithm>
 #include <iterator> // Pentru std::istreambuf_iterator
 #include <filesystem>
 
@@ -20,10 +15,20 @@ extern std::wstring utf8_to_wstring(const std::string& str);
 
 
 
-
 // 1. MODIFICĂ PROCEDURA DE SUBCLASS (Adaugă protecția la WM_DESTROY / WM_NCDESTROY)
 LRESULT CALLBACK RichEditSubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
     vCodeView* codeView = reinterpret_cast<vCodeView*>(dwRefData);
+
+	if (msg == WM_CONTEXTMENU) {
+        // Obținem coordonatele mouse-ului
+        int xPos = GET_X_LPARAM(lParam);
+        int yPos = GET_Y_LPARAM(lParam);
+
+        if (codeView) {
+            codeView->showContextMenu(xPos, yPos);
+        }
+        return 0; // Prevenim afișarea meniului default de RichEdit
+    }
 
     if (msg == WM_DESTROY || msg == WM_NCDESTROY) {
         RemoveWindowSubclass(hwnd, RichEditSubclassProc, uIdSubclass);
@@ -287,7 +292,7 @@ void vCodeView::create(HWND parent) {
 
     // ❌ ELIMINĂM LINIA: setLayoutStrategy(std::make_unique<AnchorLayout>());
     // Nu punem nicio strategie, ne vom ocupa noi manual de layout în applyLayout()!
-
+	initContextMenu();
     m_gutterWidth = calculateGutterWidth();
 
     // Creăm RichEdit-ul decalat inițial corect
@@ -501,3 +506,123 @@ void vCodeView::setText(const std::wstring& text) {
         ::SendMessageW(hEdit, WM_SETREDRAW, TRUE, 0);
         ::InvalidateRect(hEdit, NULL, TRUE);
     }
+	
+	
+void vCodeView::initContextMenu() {
+    // 🔥 Folosim ID-ul unic al vCodeView pentru a crea un ID unic de meniu
+    std::string uniqueMenuId = "ctx_menu_" + m_id;
+
+    m_contextMenu = std::make_unique<vPopupMenu>(uniqueMenuId, m_dispatcher);
+
+    // Adăugăm itemele
+    m_contextMenu->addItem("ctx_cut_" + m_id, L"Cut");
+    m_contextMenu->addItem("ctx_copy_" + m_id, L"Copy");
+    m_contextMenu->addItem("ctx_paste_" + m_id, L"Paste");
+    m_contextMenu->addSeparator("sep_" + m_id);
+    m_contextMenu->addItem("ctx_delete_" + m_id, L"Delete");
+	m_contextMenu->addSeparator("sep1_" + m_id);
+	m_contextMenu->addItem("ctx_comment_" + m_id, L"Comment Line");   // 🔥 Nou
+    m_contextMenu->addItem("ctx_uncomment_" + m_id, L"Uncomment Line"); // 🔥 Nou
+    // Important: creăm meniul
+    m_contextMenu->create(m_handle);
+}
+
+void vCodeView::showContextMenu(int x, int y) {
+    if (!m_contextMenu) return;
+
+    // Afișăm meniul și primim Win32 ID-ul returnat
+    int cmd = m_contextMenu->display(m_handle, x, y);
+    if (cmd == 0) return; // Utilizatorul a dat click în altă parte
+
+    HWND hEdit = m_richEdit->getHandle();
+    SetFocus(hEdit);
+
+    // 🔥 PRELUĂM ID-URILE DINAMIC
+    // Folosim metodele clasei pentru a întreba care este ID-ul numeric 
+    // pentru string-ul nostru de identificare ("ctx_cut", etc.)
+    int idCut = m_contextMenu->getMenuItemId("ctx_cut_" + m_id);
+    int idCopy = m_contextMenu->getMenuItemId("ctx_copy_" + m_id);
+    int idPaste = m_contextMenu->getMenuItemId("ctx_paste_" + m_id);
+    int idDelete = m_contextMenu->getMenuItemId("ctx_delete_" + m_id);
+	int idComment = m_contextMenu->getMenuItemId("ctx_comment_" + m_id);
+    int idUncomment = m_contextMenu->getMenuItemId("ctx_uncomment_" + m_id);
+
+    // Comparăm ID-ul returnat de meniu cu ID-urile noastre
+    if (cmd == idCut) {
+        SendMessage(hEdit, WM_CUT, 0, 0);
+    }
+    else if (cmd == idCopy) {
+        SendMessage(hEdit, WM_COPY, 0, 0);
+    }
+    else if (cmd == idPaste) {
+        SendMessage(hEdit, WM_PASTE, 0, 0);
+    }
+    else if (cmd == idDelete) {
+        SendMessage(hEdit, WM_CLEAR, 0, 0);
+    }
+	else if (cmd == idComment) {
+        this->commentLines(true);
+    }
+    else if (cmd == idUncomment) {
+        this->commentLines(false);
+    }
+}
+
+
+
+void vCodeView::commentLines(bool comment) {
+    if (!m_richEdit || !m_richEdit->getHandle()) return;
+    HWND hEdit = m_richEdit->getHandle();
+
+    CHARRANGE cr;
+    SendMessage(hEdit, EM_EXGETSEL, 0, (LPARAM)&cr);
+    
+    int len = cr.cpMax - cr.cpMin;
+    if (len <= 0) return;
+
+    std::vector<wchar_t> buffer(len + 1);
+    TEXTRANGEW tr;
+    tr.chrg = cr;
+    tr.lpstrText = buffer.data();
+    SendMessageW(hEdit, EM_GETTEXTRANGE, 0, (LPARAM)&tr);
+    std::wstring text(buffer.data());
+
+    // 1. Împărțim textul în linii, eliminând \r și \n
+    std::vector<std::wstring> lines;
+    std::wstringstream ss(text);
+    std::wstring line;
+    while (std::getline(ss, line, L'\n')) {
+        // Eliminăm manual și \r dacă există (pentru a curăța linia)
+        if (!line.empty() && line.back() == L'\r') line.pop_back();
+        lines.push_back(line);
+    }
+
+    // 2. Procesăm liniile
+    std::wstring newText;
+    for (size_t i = 0; i < lines.size(); ++i) {
+        if (comment) {
+            // Adăugăm # doar dacă nu este deja comentată (opțional, dar recomandat)
+            if (lines[i].find(L"#") != 0) {
+                newText += L"# " + lines[i];
+            } else {
+                newText += lines[i]; // Deja comentată
+            }
+        } else {
+            // Uncomment: Eliminăm '#' și spațiul de după
+            if (lines[i].find(L"# ") == 0) {
+                newText += lines[i].substr(2);
+            } else if (lines[i].find(L"#") == 0) {
+                newText += lines[i].substr(1);
+            } else {
+                newText += lines[i];
+            }
+        }
+        
+        // Adăugăm \r\n înapoi (Windows style) pentru toate liniile
+        if (i < lines.size() - 1) newText += L"\r\n";
+    }
+
+    // 3. Înlocuim
+    SendMessageW(hEdit, EM_REPLACESEL, TRUE, (LPARAM)newText.c_str());
+    m_lexer.highlight(m_richEdit);
+}

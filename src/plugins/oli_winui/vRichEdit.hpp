@@ -37,6 +37,13 @@ public:
     void scaleFont(int newDpi) override; // FOARTE IMPORTANT pentru scalare
 	
 	HFONT getActiveFont() const { return m_activeFont; }
+	
+	bool setProperty(const std::wstring& name, const vData& value) override;
+	vData getProperty(const std::wstring& name) const override;
+	bool callMethod(const std::wstring& methodName, const std::vector<vData>& args) override;
+
+	void appendText(const std::wstring& text); // Helper pentru consolă
+	
 };
 
 #endif

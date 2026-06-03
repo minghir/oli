@@ -3,6 +3,7 @@
 #include "vRichEdit.hpp"
 #include "Layouts/AnchorLayout.hpp"
 #include "CodeLexer.hpp"
+#include "vPopupMenu.hpp"
 #include <memory>
 
 class vCodeView : public vPanel {
@@ -17,6 +18,11 @@ private:
 
     void drawLineNumbers(HDC hdc);
 	int calculateGutterWidth();
+	
+	std::unique_ptr<vPopupMenu> m_contextMenu; // Obiectul de meniu
+    void initContextMenu(); // Metoda pentru setup
+	
+	
 public:
     vCodeView(HINSTANCE hInstance, const std::string& id, int x, int y, int width, int height, EventDispatcher& dispatcher)
         : vPanel(hInstance, id, x, y, width, height, dispatcher)
@@ -24,6 +30,7 @@ public:
         // Nu uita: vPanel va fi părintele pentru RichEdit
         //LOG_DEBUG(L"[vCodeView] Initializare vCodeView");
         //m_lexer.loadSyntaxes("olide\\syntaxes");
+		
     }
     
     virtual ~vCodeView();
@@ -64,4 +71,7 @@ public:
      void moveAndResize(int x, int y, int width, int height);
      void applyLayout() override; // 🔥 Adaugă această linie pentru a suprascrie layout-ul părintelui
      void triggerHighlight();
+	 
+	  void showContextMenu(int x, int y);
+	  void commentLines(bool comment);
 };

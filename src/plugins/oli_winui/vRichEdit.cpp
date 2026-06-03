@@ -1,6 +1,7 @@
 ﻿#include "vRichEdit.hpp"
 #include "ConsoleManager.hpp"
 #include <vector>
+#include <algorithm>
 
 // Inițializăm membrul static
 HMODULE vRichEdit::s_richEditModule = nullptr;
@@ -204,4 +205,73 @@ void vRichEdit::scaleFont(int newDpi) {
     // 2. Pentru RichEdit, trebuie să aplicăm formatarea recalculată
     int scaledSize = MulDiv(m_baseFontSize, newDpi, 96);
     setFontSize(scaledSize);
+}
+
+void vRichEdit::appendText(const std::wstring& text) {
+    if (!m_handle) return;
+    // 1. Mergem la sfârșitul documentului (-1, -1 selectează sfârșitul)
+    SendMessage(m_handle, EM_SETSEL, -1, -1);
+    // 2. Inserăm textul
+    SendMessage(m_handle, EM_REPLACESEL, FALSE, (LPARAM)text.c_str());
+    // 3. Scroll automat
+    SendMessage(m_handle, EM_SCROLLCARET, 0, 0);
+}
+
+bool vRichEdit::setProperty(const std::wstring& name, const vData& value) {
+    std::wstring prop = name;
+    std::transform(prop.begin(), prop.end(), prop.begin(), ::tolower);
+
+    if (prop == L"text") {
+        this->setText(value.toWString());
+        return true;
+    }
+    if (prop == L"read_only") {
+        this->setReadOnly(value.toBool());
+        return true;
+    }
+    if (prop == L"font_size") {
+        this->setFontSize(value.toInt());
+        return true;
+    }
+    return vControl::setProperty(name, value);
+}
+
+vData vRichEdit::getProperty(const std::wstring& name) const {
+    std::wstring prop = name;
+    std::transform(prop.begin(), prop.end(), prop.begin(), ::tolower);
+
+    if (prop == L"text") return vData(this->getText());
+    if (prop == L"read_only") return vData(m_isReadOnly);
+    
+    return vControl::getProperty(name);
+}
+
+bool vRichEdit::callMethod(const std::wstring& methodName, const std::vector<vData>& args) {
+    std::wstring method = methodName;
+    std::transform(method.begin(), method.end(), method.begin(), ::tolower);
+
+    if (method == L"append_text") {
+        if (args.empty()) return false;
+        this->appendText(args[0].toWString());
+        return true;
+    }
+    if (method == L"set_text") {
+        if (args.empty()) return false;
+        this->setText(args[0].toWString());
+        return true;
+    }
+    if (method == L"set_read_only") {
+        if (args.empty()) return false;
+        this->setReadOnly(args[0].toBool());
+        return true;
+    }
+
+    return vControl::callMethod(methodName, args);
+}
+
+void vRichEdit::setReadOnly(bool readOnly) {
+    m_isReadOnly = readOnly; // Actualizăm variabila internă
+    if (m_handle) {
+        SendMessage(m_handle, EM_SETREADONLY, (WPARAM)readOnly, 0);
+    }
 }

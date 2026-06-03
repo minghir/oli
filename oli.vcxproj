@@ -112,7 +112,10 @@
       <StackReserveSize>8388608</StackReserveSize>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "$(TargetPath)" "$(SolutionDir)oli.exe"</Command>
+      <Command>taskkill /IM oli.exe /F &gt;nul 2&gt;&amp;1
+del /F /Q "$(SolutionDir)\oli.exe" &gt;nul 2&gt;&amp;1
+copy /Y "$(TargetPath)" "$(SolutionDir)\oli.exe"
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -131,7 +134,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "$(TargetPath)" "$(SolutionDir)oli.exe"</Command>
+      <Command>taskkill /IM oli.exe /F &gt;nul 2&gt;&amp;1
+del /F /Q "$(SolutionDir)\oli.exe" &gt;nul 2&gt;&amp;1
+copy /Y "$(TargetPath)" "$(SolutionDir)\oli.exe"
+</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

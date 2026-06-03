@@ -1,4 +1,4 @@
-config win_app 1
+config win_app 0
 
 # --- SETUP ---
 

@@ -1,4 +1,5 @@
 #include "../../OliEngine.hpp"
+#include "../../ConsoleManager.hpp"
 #include <thread>
 #include <iostream>
 

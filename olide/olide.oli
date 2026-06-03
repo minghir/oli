@@ -1,4 +1,4 @@
-﻿config win_app 0
+config win_app 0
 
 plugin oli_system
 plugin oli_filesys
@@ -58,10 +58,10 @@ func run_click()
     echo "=== LANSARE COMPILARE ==="
     echo "Fișier sursă: " .. @file
     
-    #$compile_command = @oli_path .. " -c " .. @file
-	#echo "Compilez:" .. $compile_command
-    #$res = SYS($compile_command)
-    #echo $res
+    $compile_command = @oli_path .. " -c " .. @file
+	echo "Compilez:" .. $compile_command
+    $res = SYS($compile_command)
+    echo $res
     
     $build_command = @oli_path .. " -b " .. @file
     echo "Rulez comanda: " .. $build_command
@@ -428,3 +428,4 @@ $app.run()
 
 
 echo "=== Aplicație închisă cu succes ==="
+input()

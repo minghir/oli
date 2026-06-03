@@ -46,5 +46,4 @@ endfunc
 $l.print_linie = "prt_linie"
 
 $l.print_linie()
-	
-	
+input()	

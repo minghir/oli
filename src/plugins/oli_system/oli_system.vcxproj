@@ -145,7 +145,13 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\ConsoleManager.cpp" />
+    <ClCompile Include="..\..\StringUtils.cpp" />
     <ClCompile Include="oli_system.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\ConsoleManager.hpp" />
+    <ClInclude Include="..\..\StringUtils.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

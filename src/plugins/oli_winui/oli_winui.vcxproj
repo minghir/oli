@@ -151,6 +151,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\ConsoleManager.cpp" />
     <ClCompile Include="CodeLexer.cpp" />
     <ClCompile Include="ConsoleManager.cpp" />
     <ClCompile Include="ControlIdManager.cpp" />
@@ -180,6 +181,7 @@
     <ClCompile Include="WindowManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\ConsoleManager.hpp" />
     <ClInclude Include="CodeLexer.hpp" />
     <ClInclude Include="ConsoleManager.hpp" />
     <ClInclude Include="ControlIdManager.hpp" />

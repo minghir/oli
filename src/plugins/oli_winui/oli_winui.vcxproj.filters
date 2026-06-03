@@ -95,6 +95,9 @@
     <ClCompile Include="vTabControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\ConsoleManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ConsoleManager.hpp">
@@ -215,6 +218,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="vTabControl.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\ConsoleManager.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

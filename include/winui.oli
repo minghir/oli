@@ -174,4 +174,43 @@ func WinTabControl::select_tab_by_id($panelId)
     return UI_CALL_METHOD($this.id, "select_tab_by_id", $panelId)
 endfunc
 
+
+# =================================================================
+# CLASA WINRICHEDIT (Consolă / Editor)
+# =================================================================
+def class WinRichEdit extends UiControl { 
+    init($id, $parentId, $x, $y, $w, $h), 
+    append_text($text),
+    set_read_only($bool) 
+}
+
+func WinRichEdit::init($id, $parentId, $x, $y, $w, $h)
+    $this.id = $id
+    UI_CREATE_CONTROL("RICHEDIT", $id, $parentId, $x, $y, $w, $h)
+endfunc
+
+func WinRichEdit::append_text($text)
+    # Acesta apelează vRichEdit::callMethod("append_text") din C++
+    return UI_CALL_METHOD($this.id, "append_text", $text)
+endfunc
+
+func WinRichEdit::set_read_only($bool)
+    return UI_CALL_METHOD($this.id, "set_read_only", $bool)
+endfunc
+
+
+# =================================================================
+# CLASA WINRICHCONSOLE (Consolă Automată)
+# =================================================================
+# Extinde WinRichEdit pentru a refolosi funcțiile de text
+def class WinRichConsole extends WinRichEdit { 
+    init($id, $parentId, $x, $y, $w, $h)
+}
+
+func WinRichConsole::init($id, $parentId, $x, $y, $w, $h)
+    $this.id = $id
+    # Atenție: În C++ Factory va trebui să folosești tipul "RICHCONSOLE"
+    UI_CREATE_CONTROL("RICHCONSOLE", $id, $parentId, $x, $y, $w, $h)
+endfunc
+
 echo "AM DEFINIT CLASELE"

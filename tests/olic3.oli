@@ -26,3 +26,4 @@ WHILE $i > 0 DO
 ENDWHILE
 
 ECHO "BOOM! Racheta a decolat."
+input()

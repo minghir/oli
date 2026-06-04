@@ -1,0 +1,143 @@
+﻿--- OLI ASSEMBLY LISTING ---
+Source: tests/cls.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_DEF_TYPE      0000 (Type: PUNCT, STRUCT, Fields: 4, Methods: 0)
+    Field [0]: 0002 (Name: x)
+    Field [1]: 0003 (Name: y)
+    Field [2]: 0004 (Name: print_x)
+    Field [3]: 0005 (Name: print_y)
+0016: OP_DEF_TYPE      0006 (Type: LINIE, STRUCT, Fields: 3, Methods: 0)
+    Field [0]: 0007 (Name: a)
+    Field [1]: 0008 (Name: b)
+    Field [2]: 0009 (Name: print_linie)
+0030: OP_CONSTANT     0010 (Value: Linie)
+0033: OP_CALL_NATIVE  0011 (Name: NEW, Args: 1)
+0037: OP_SET_GLOBAL   0012 (Name: l)
+0040: OP_GET_GLOBAL   0012 (Name: l)
+0043: OP_CONSTANT     0007 (Value: a)
+0046: OP_CONSTANT     0013 (Value: Punct)
+0049: OP_CALL_NATIVE  0011 (Name: NEW, Args: 1)
+0053: OP_SET_INDIRECT
+0054: OP_GET_GLOBAL   0012 (Name: l)
+0057: OP_CONSTANT     0008 (Value: b)
+0060: OP_CONSTANT     0013 (Value: Punct)
+0063: OP_CALL_NATIVE  0011 (Name: NEW, Args: 1)
+0067: OP_SET_INDIRECT
+0068: OP_GET_GLOBAL   0012 (Name: l)
+0071: OP_CONSTANT     0007 (Value: a)
+0074: OP_GET_INDIRECT
+0075: OP_CONSTANT     0002 (Value: x)
+0078: OP_CONSTANT     0014 (Value: 10)
+0081: OP_SET_INDIRECT
+0082: OP_GET_GLOBAL   0012 (Name: l)
+0085: OP_CONSTANT     0007 (Value: a)
+0088: OP_GET_INDIRECT
+0089: OP_CONSTANT     0003 (Value: y)
+0092: OP_CONSTANT     0015 (Value: 20)
+0095: OP_SET_INDIRECT
+0096: OP_GET_GLOBAL   0012 (Name: l)
+0099: OP_CONSTANT     0008 (Value: b)
+0102: OP_GET_INDIRECT
+0103: OP_CONSTANT     0002 (Value: x)
+0106: OP_CONSTANT     0016 (Value: 50)
+0109: OP_SET_INDIRECT
+0110: OP_GET_GLOBAL   0012 (Name: l)
+0113: OP_CONSTANT     0008 (Value: b)
+0116: OP_GET_INDIRECT
+0117: OP_CONSTANT     0003 (Value: y)
+0120: OP_CONSTANT     0017 (Value: 100)
+0123: OP_SET_INDIRECT
+0124: OP_GET_GLOBAL   0012 (Name: l)
+0127: OP_CONSTANT     0007 (Value: a)
+0130: OP_GET_INDIRECT
+0131: OP_CONSTANT     0004 (Value: print_x)
+0134: OP_CONSTANT     0018 (Value: prt_x)
+0137: OP_SET_INDIRECT
+0138: OP_GET_GLOBAL   0012 (Name: l)
+0141: OP_CONSTANT     0007 (Value: a)
+0144: OP_GET_INDIRECT
+0145: OP_CONSTANT     0005 (Value: print_y)
+0148: OP_CONSTANT     0019 (Value: prt_y)
+0151: OP_SET_INDIRECT
+0152: OP_GET_GLOBAL   0012 (Name: l)
+0155: OP_CONSTANT     0008 (Value: b)
+0158: OP_GET_INDIRECT
+0159: OP_CONSTANT     0004 (Value: print_x)
+0162: OP_CONSTANT     0018 (Value: prt_x)
+0165: OP_SET_INDIRECT
+0166: OP_GET_GLOBAL   0012 (Name: l)
+0169: OP_CONSTANT     0008 (Value: b)
+0172: OP_GET_INDIRECT
+0173: OP_CONSTANT     0005 (Value: print_y)
+0176: OP_CONSTANT     0019 (Value: prt_y)
+0179: OP_SET_INDIRECT
+0180: OP_GET_GLOBAL   0012 (Name: l)
+0183: OP_CONSTANT     0009 (Value: print_linie)
+0186: OP_CONSTANT     0020 (Value: prt_linie)
+0189: OP_SET_INDIRECT
+0190: OP_GET_GLOBAL   0012 (Name: l)
+0193: OP_CONSTANT     0009 (Value: print_linie)
+0196: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0198: OP_POP
+0199: OP_CALL_NATIVE  0021 (Name: INPUT, Args: 0)
+0203: OP_POP
+0204: OP_RETURN
+
+--- FUNCTION: PRT_X (Params: ) ---
+=== DISASSEMBLY: PRT_X ===
+0000: OP_CONSTANT     0000 (Value: x=)
+0003: OP_GET_GLOBAL   0001 (Name: this)
+0006: OP_CONSTANT     0002 (Value: x)
+0009: OP_GET_INDIRECT
+0010: OP_CONCAT
+0011: OP_RETURN
+
+--- FUNCTION: PRT_Y (Params: ) ---
+=== DISASSEMBLY: PRT_Y ===
+0000: OP_CONSTANT     0000 (Value: y=)
+0003: OP_GET_GLOBAL   0001 (Name: this)
+0006: OP_CONSTANT     0002 (Value: y)
+0009: OP_GET_INDIRECT
+0010: OP_CONCAT
+0011: OP_RETURN
+
+--- FUNCTION: PRT_LINIE (Params: ) ---
+=== DISASSEMBLY: PRT_LINIE ===
+0000: OP_CONSTANT     0000 (Value: Linie de la ()
+0003: OP_GET_GLOBAL   0001 (Name: this)
+0006: OP_CONSTANT     0002 (Value: a)
+0009: OP_GET_INDIRECT
+0010: OP_CONSTANT     0003 (Value: print_x)
+0013: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0015: OP_CONCAT
+0016: OP_CONSTANT     0004 (Value: ,)
+0019: OP_CONCAT
+0020: OP_GET_GLOBAL   0001 (Name: this)
+0023: OP_CONSTANT     0002 (Value: a)
+0026: OP_GET_INDIRECT
+0027: OP_CONSTANT     0005 (Value: print_y)
+0030: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0032: OP_CONCAT
+0033: OP_CONSTANT     0006 (Value: ) la ()
+0036: OP_CONCAT
+0037: OP_GET_GLOBAL   0001 (Name: this)
+0040: OP_CONSTANT     0007 (Value: b)
+0043: OP_GET_INDIRECT
+0044: OP_CONSTANT     0003 (Value: print_x)
+0047: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0049: OP_CONCAT
+0050: OP_CONSTANT     0004 (Value: ,)
+0053: OP_CONCAT
+0054: OP_GET_GLOBAL   0001 (Name: this)
+0057: OP_CONSTANT     0007 (Value: b)
+0060: OP_GET_INDIRECT
+0061: OP_CONSTANT     0005 (Value: print_y)
+0064: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0066: OP_CONCAT
+0067: OP_CONSTANT     0008 (Value: ))
+0070: OP_CONCAT
+0071: OP_ECHO
+0072: OP_RETURN

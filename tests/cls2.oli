@@ -17,3 +17,4 @@ $i2.hp = 20
 $i2.x = 22
 $i2.y = 33
 $i2.ataca()
+input()

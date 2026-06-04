@@ -1,18 +1,13 @@
+plugin "oli_time"
 
-plugin "oli_plugin/oli_plugin.so"
-#plugin oli_plugin.dll
 # 1. Resetăm mediul
 unset all
-set $memo = []
+# 🔥 FIX 1: Pentru a calcula F(100), avem nevoie de indicii 0...100, deci dimensiunea trebuie să fie 101!
+set $memo = array(101)
 
 # 2. Definim funcția cu Memoization
-func FIBO_MEMO n
+func FIBO_MEMO($n)
     if $n <= 1 then 
-        # Când ajungem la finalul recursivității, vedem drumul parcurs
-        if $n == 0 then
-            #echo "--- Debug: Am ajuns la baza n=0. Trace stivă: ---"
-            #trace
-        endif
         return $n 
     endif
 
@@ -21,17 +16,17 @@ func FIBO_MEMO n
     endif
 
     set $res = FIBO_MEMO($n - 1) + FIBO_MEMO($n - 2)
-    set global @memo[$n] = $res
+    set @memo[$n] = $res
     
     return $res
 endfunc
 
 
-
 # 3. Test de Scoping (Verificăm dacă funcțiile pot scrie în Global)
 set $test_global = "Original"
-func TEST_SCOPE
-    set $test_global = "Modificat"
+func TEST_SCOPE()
+    # 🔥 FIX 2: Folosim '@' pentru a forța scrierea în SCOPE-ul GLOBAL din interiorul funcției
+    set @test_global = "Modificat"
 endfunc
 
 # --- EXECUȚIE ---
@@ -39,7 +34,7 @@ endfunc
 echo "--- Test 1: Scoping ---"
 TEST_SCOPE()
 echo "Valoare globala dupa apel: " + $test_global
-# Daca afiseaza "Original", inseamna ca setVariable NU urca in Call Stack.
+# Acum va afișa corect "Modificat"!
 
 echo ""
 echo "--- Test 2: Fibonacci cu Memoization ---"
@@ -53,4 +48,5 @@ echo "Timp: " + $durata + " ms"
 
 echo ""
 echo "--- Test 3: Starea Cache-ului ---"
-dm
+dm 
+input()

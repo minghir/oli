@@ -95,3 +95,4 @@ echo "Rulez salutes2"
 $tb2.salutes2()
 echo "Rulez salutes"
 $tb2.salutes()
+input()

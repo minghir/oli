@@ -1858,7 +1858,8 @@ void OliCompiler::emitLoadOrConstant(const std::wstring& arg, OliChunk& chunk) {
         // --- FALLBACK LA GLOBALE ---
         // Dacă nu e locală sau suntem în Main, căutăm în tabelul global de simboluri.
         LOG_DEBUG(L"[EMIT_LOAD] Identificat GLOBAL: " + baseName);
-        uint16_t nameIdx = chunk.addConstant(vData(baseName));
+        // 🔥 FIX: Curățăm prefixul $ pentru compatibilitate cu OP_GET_INDIRECT
+        uint16_t nameIdx = chunk.addConstant(vData(cleanVariableName(baseName)));
         chunk.addByte((uint8_t)OpCode::OP_GET_GLOBAL, 0);
         chunk.addByte((uint8_t)(nameIdx >> 8), 0);
         chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
@@ -1872,7 +1873,8 @@ void OliCompiler::emitLoadOrConstant(const std::wstring& arg, OliChunk& chunk) {
 
     // --- 6. CAZ DEFAULT (Tratat ca Global) ---
     LOG_DEBUG(L"[EMIT_LOAD] Fallback global pentru identificator: " + normalizedArg);
-    uint16_t nameIdx = chunk.addConstant(vData(normalizedArg));
+    // 🔥 FIX: Curățăm și aici identificatorul default
+    uint16_t nameIdx = chunk.addConstant(vData(cleanVariableName(normalizedArg)));
     chunk.addByte((uint8_t)OpCode::OP_GET_GLOBAL, 0);
     chunk.addByte((uint8_t)(nameIdx >> 8), 0);
     chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
@@ -2622,9 +2624,9 @@ void OliCompiler::emitStore(const std::wstring& varName, OliChunk& chunk) {
 
     // --- 0. TRATARE SCOPE GLOBAL FORȚAT (@var = valoare) ---
     if (varName[0] == L'@') {
-        std::wstring globalName = L"$" + varName.substr(1);
-        LOG_DEBUG(L"[DEBUG_EMIT] -> Forțăm GLOBAL pentru: " + globalName);
-        uint16_t nameIdx = chunk.addConstant(vData(globalName));
+        LOG_DEBUG(L"[DEBUG_EMIT] -> Forțăm GLOBAL pentru: " + varName);
+        // 🔥 FIX: Curățăm prefixul '@' înainte de salvare, pentru ca OP_GET_INDIRECT să îl poată găsi prin string-uri dinamice
+        uint16_t nameIdx = chunk.addConstant(vData(cleanVariableName(varName)));
         chunk.addByte((uint8_t)OpCode::OP_SET_GLOBAL, 0);
         chunk.addByte((uint8_t)(nameIdx >> 8), 0);
         chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
@@ -2645,29 +2647,28 @@ void OliCompiler::emitStore(const std::wstring& varName, OliChunk& chunk) {
         // Dacă nu există, o adăugăm (auto-alocare pe stivă)
         if (stackIndex == -1) {
             stackIndex = (int)locals.size();
-            locals.push_back({varName, 0});
+            locals.push_back({ varName, 0 });
             LOG_DEBUG(L"[DEBUG_EMIT] -> Alocare variabilă LOCALĂ nouă: " + varName + L" la index: " + std::to_wstring(stackIndex));
         }
 
         // Emitem instrucțiunea de scriere pe stivă
         chunk.addByte((uint8_t)OpCode::OP_SET_LOCAL, 0);
-        chunk.addByte((uint8_t)stackIndex, 0); 
+        chunk.addByte((uint8_t)stackIndex, 0);
         return;
     }
 
     // --- 2. DEREFERENȚIERE POINTER (*$ptr = valoare) ---
     if (varName[0] == L'*') {
         std::wstring targetVar = varName.substr(1);
-        // Aici poți adăuga logică să verifice dacă targetVar e local sau global, 
-        // dar pentru simplitate folosim GET_GLOBAL/LOCAL existent
-        emitLoadOrConstant(targetVar, chunk); 
+        emitLoadOrConstant(targetVar, chunk);
         chunk.addByte((uint8_t)OpCode::OP_SET_PTR, 0);
         return;
     }
 
     // --- 3. ATRIBUIRE GLOBALĂ (Implicită, când nu suntem în funcție) ---
     LOG_DEBUG(L"[DEBUG_EMIT] -> Emitem OP_SET_GLOBAL (Default) pentru: " + varName);
-    uint16_t nameIdx = chunk.addConstant(vData(varName));
+    // 🔥 FIX: Curățăm prefixul '$' (ex: "$a" devine "a"). La runtime, rezoluția dinamică ($$b) va funcționa impecabil!
+    uint16_t nameIdx = chunk.addConstant(vData(cleanVariableName(varName)));
     chunk.addByte((uint8_t)OpCode::OP_SET_GLOBAL, 0);
     chunk.addByte((uint8_t)(nameIdx >> 8), 0);
     chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);

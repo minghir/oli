@@ -92,13 +92,7 @@ endfunc
 func menu_save_as_click()
     UPDATE_ACTIVE_CONTEXT()
 	
-	if @file == "" then
-        #SHOW_MESSAGE("IDE Error", "Nu există niciun fișier deschis în editor pentru a fi rulat!")
-		menu_save_as_click()
-        if @file != "" then run_click() endif
-		return
-    endif
-	
+    # Dacă nu avem nicio zonă de text activă, nu avem ce salva
     if @activeCodeView == null then return endif
 
     set $dlg = new("FileDialog")
@@ -108,7 +102,7 @@ func menu_save_as_click()
     $path = $dlg.show()
     if $path != "" then
         @file = $path  
-        $activeCodeView.set_prop("file_path", $path) # Actualizăm proprietatea internă
+        $activeCodeView.set_prop("file_path", $path) # Actualizăm proprietatea internă în tab-ul curent
         execute_save_to_disk(@file)
     endif
 endfunc
@@ -333,7 +327,7 @@ $saveButton.set_width_mode("FIXED")
 $saveButton.set_margin(1)
 
 set $openButton = new("WinButton")
-openButton.init("btn_open", "act_panel", 95, 4, 30, 30, "📂")
+$openButton.init("btn_open", "act_panel", 95, 4, 30, 30, "📂")
 $openButton.set_anchor("RIGHT|BOTTOM")
 $openButton.set_width_mode("FIXED")
 $openButton.set_margin(1)

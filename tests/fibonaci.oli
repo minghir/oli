@@ -1,7 +1,7 @@
 unset all
 
 # --- Varianta Iterativă (Eficientă) ---
-func FIBO_ITER n
+func FIBO_ITER($n)
     if $n <= 0 then return 0 endif
     if $n == 1 then return 1 endif
     
@@ -20,7 +20,7 @@ func FIBO_ITER n
 endfunc
 
 # --- Varianta Recursivă (Testul de Foc pentru Sandbox) ---
-func FIBO_REC n
+func FIBO_REC($n)
     if $n <= 0 then return 0 endif
     if $n == 1 then return 1 endif
     
@@ -48,14 +48,14 @@ while $j <= 10 do
     set $j = $j + 1 
 endwhile
 
-plugin "oli_plugin/oli_plugin.so"
+plugin "oli_time"
 #plugin oli_plugin.dll
 # 1. Resetăm mediul
 unset all
-set $memo = []
+set $memo = array(101)
 
 # 2. Definim funcția cu Memoization
-func FIBO_MEMO n
+func FIBO_MEMO($n)
     if $n <= 1 then 
         # Când ajungem la finalul recursivității, vedem drumul parcurs
         if $n == 0 then
@@ -70,7 +70,7 @@ func FIBO_MEMO n
     endif
 
     set $res = FIBO_MEMO($n - 1) + FIBO_MEMO($n - 2)
-    set global @memo[$n] = $res
+    set @memo[$n] = $res
     
     return $res
 endfunc
@@ -79,7 +79,7 @@ endfunc
 
 # 3. Test de Scoping (Verificăm dacă funcțiile pot scrie în Global)
 set $test_global = "Original"
-func TEST_SCOPE
+func TEST_SCOPE()
     set $test_global = "Modificat"
 endfunc
 
@@ -102,4 +102,4 @@ echo "Timp: " + $durata + " ms"
 
 echo ""
 echo "--- Test 3: Starea Cache-ului ---"
-dm
+input()

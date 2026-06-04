@@ -8,3 +8,4 @@ IF $a > $b THEN
 	ENDIF
     ELSE ECHO "Sfarsit program" 
 ENDIF
+input()

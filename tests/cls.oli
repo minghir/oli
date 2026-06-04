@@ -1,6 +1,6 @@
 # 1. Definim structura
-DEF struct Punct { x, y, print_x, print_y }
-DEF struct Linie { a, b, print_linie }
+DEF struct Punct { x, y, PRINT_X, PRINT_Y }
+DEF struct Linie { a, b, PRINT_LINIE }
 
 
 

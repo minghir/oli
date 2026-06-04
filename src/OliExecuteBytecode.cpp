@@ -61,13 +61,15 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
         }
 
         case OpCode::OP_GET_INDIRECT: {
-            if (stack.size() < 1) break;
+            if (stack.empty()) break;
 
             vData indexOrPtr = stack.back();
             stack.pop_back();
 
             // 1. Cazul ACCES CONTAINER: [Container, Index]
-            if (!stack.empty() && (stack.back().isArray() || stack.back().isMap()) || stack.back().isString()) {
+            // 🔥 FIX CRITIC PARANTEZE: Codul tău vechi risca crash (undefined behavior) dacă stiva era goală, 
+            // deoarece ordinea operatorilor (&& înainte de ||) evalua stack.back() pe stivă goală!
+            if (!stack.empty() && (stack.back().isArray() || stack.back().isMap() || stack.back().isString())) {
                 vData container = stack.back();
                 stack.pop_back();
 
@@ -96,22 +98,34 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
                     long long idx = indexOrPtr.toInt();
 
                     if (idx >= 0 && idx < (long long)str.length()) {
-                        // IMPORTANT: Construim un std::wstring din caracterul de la poziția respectivă.
-                        // Asta forțează variant-ul din vDataValue să aleagă ramura de String, 
-                        // evitând transformarea eronată a lui wchar_t în bool (1/true).
                         stack.push_back(vData{ std::wstring(1, str[idx]) });
                     }
                     else {
-                        // Index out of bounds (în afara limitelor textului) -> returnăm un șir vid
                         stack.push_back(vData{ L"" });
                     }
                 }
-
             }
-            // 2. Cazul DEREFERENȚIERE POINTER (*$ptr)
+            // 🔥 2. Cazul EVALUARE DINAMICĂ VARIABILĂ ($$b unde indexOrPtr este un text, ex: "a")
+            else if (indexOrPtr.isString()) {
+                std::wstring rawName = indexOrPtr.toWString();
+                std::wstring cleanName = this->cleanVariableName(rawName);
+
+                vData val;
+                // Căutăm variabila dinamică în localele funcției curente
+                if (!m_callStack.empty() && m_callStack.back().localVariables.count(cleanName)) {
+                    val = m_callStack.back().localVariables[cleanName];
+                }
+                // Dacă nu e locală, o căutăm în globale
+                else if (m_globalVariables.count(cleanName)) {
+                    val = m_globalVariables[cleanName];
+                }
+
+                // Punem pe stivă valoarea variabilei găsite (ex: 22)
+                stack.push_back(val);
+            }
+            // 3. Cazul DEREFERENȚIERE POINTER (*$ptr)
             else {
                 // Folosim DOAR getTrueData(). Dacă e pointer, obținem spre ce arată.
-                // Dacă e un Map cu un element, RĂMÂNE un Map cu un element.
                 stack.push_back(indexOrPtr.getTrueData());
             }
             break;
@@ -649,6 +663,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             return;
         }
                               // În switch(op) din executeBytecode:
+        /*
         case OpCode::OP_CALL: {
             uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
             ip += 2;
@@ -674,6 +689,109 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
                 LOG_DEBUG(L"VM_DEBUG: OP_CALL - Funcția apelată: " + funcName);
             }
+            // Punem rezultatul înapoi pe stivă
+            stack.push_back(result);
+            break;
+        }
+        */
+        case OpCode::OP_CALL: {
+            uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
+            ip += 2;
+            uint8_t argCount = chunk.code[ip++];
+
+            std::wstring rawName = chunk.constants[nameIdx].toWString();
+            std::wstring funcName = rawName;
+
+            // 🔥 FIX CRITIC: DECOJIRE IERARHIE ȘI LOOKUP IMUN LA CASE-SENSITIVITY
+            if (!funcName.empty() && (funcName[0] == L'$' || funcName[0] == L'@')) {
+                std::wstring cleanVarName = this->cleanVariableName(rawName); // Ex: "A"
+                std::wstring lowerVarName = to_lower(cleanVarName);           // Ex: "a"
+
+                vData varContent;
+
+                // 1. Căutăm în stiva locală (atât varianta originală, cât și cea lowercase)
+                if (!m_callStack.empty()) {
+                    auto& locals = m_callStack.back().localVariables;
+                    if (locals.count(cleanVarName)) {
+                        varContent = locals[cleanVarName];
+                    }
+                    else if (locals.count(lowerVarName)) {
+                        varContent = locals[lowerVarName];
+                    }
+                }
+
+                // 2. Căutăm în globale dacă nu a fost găsită local
+                if (varContent.isNull() || std::holds_alternative<std::monostate>(varContent.value)) {
+                    if (m_globalVariables.count(cleanVarName)) {
+                        varContent = m_globalVariables[cleanVarName];
+                    }
+                    else if (m_globalVariables.count(lowerVarName)) {
+                        varContent = m_globalVariables[lowerVarName];
+                    }
+                }
+
+                // 3. Dacă am găsit variabila cu succes, îi extragem valoarea text (numele funcției țintă)
+                if (!varContent.isNull() && !std::holds_alternative<std::monostate>(varContent.value)) {
+                    if (varContent.isMap()) {
+                        auto m = varContent.rawMap();
+                        if (m && m->count(cleanVarName)) {
+                            funcName = (*m).at(cleanVarName).toWString();
+                        }
+                        else if (m && m->count(lowerVarName)) {
+                            funcName = (*m).at(lowerVarName).toWString();
+                        }
+                        else {
+                            funcName = varContent.toWString();
+                        }
+                    }
+                    else {
+                        funcName = varContent.toWString();
+                    }
+                }
+            }
+
+            // Normalizăm numele funcției finale în caractere mari (ex: din "test" devine "TEST")
+            funcName = to_upper(funcName);
+
+            // Colectăm argumentele de pe stivă (LIFO)
+            std::vector<vData> callArgs(argCount);
+            for (int i = argCount - 1; i >= 0; --i) {
+                callArgs[i] = stack.back();
+                stack.pop_back();
+            }
+
+            if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                LOG_DEBUG(L"VM_DEBUG: OP_CALL - Funcția apelată: " + funcName);
+            }
+
+            vData result;
+
+            // Executăm funcția nativă (dacă există)
+            if (this->m_functionsHandlers.count(funcName)) {
+                try {
+                    result = this->m_functionsHandlers[funcName](callArgs);
+                }
+                catch (...) {
+                    LOG_ERROR(L"VM: Crash in functia nativa apelata dinamic: " + funcName);
+                    this->m_executionStatus = OliStatus::ERR;
+                    return;
+                }
+            }
+            // Sau executăm funcția din Oli Bytecode
+            else if (this->m_bytecodeFunctions.count(funcName)) {
+                result = this->callUserByteCodeFunction(
+                    funcName.c_str(),   // const wchar_t*
+                    callArgs.data(),    // const vData*
+                    callArgs.size(),    // size_t
+                    vData()             // context implicit
+                );
+            }
+            else {
+                LOG_ERROR(L"Runtime Error: Funcția '" + funcName + L"' nu este înregistrată (nici nativă, nici bytecode)!");
+                this->m_executionStatus = OliStatus::ERR;
+                return;
+            }
+
             // Punem rezultatul înapoi pe stivă
             stack.push_back(result);
             break;
@@ -1457,7 +1575,7 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
 
 
 bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
-	 ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
+	 //ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
     LOG_INFO(L"=== internalLoadPlugin APELAT === Nume: " + pluginName);
 
     if (pluginName.empty()) {

@@ -1,5 +1,5 @@
 ﻿#include "vCodeView.hpp"
-#include "ConsoleManager.hpp" 
+#include "../../ConsoleManager.hpp" 
 #include "stringUtils.hpp"
 #include <fstream>
 #include <sstream>

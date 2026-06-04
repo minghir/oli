@@ -20,17 +20,7 @@
 #include <unistd.h>
 #endif
 
-// Funcție utilitară pentru citirea nativă a fișierelor în format UTF-8 (Fără dependențe de Locales OS)
-static std::wstring citeste_fisier_utf8(const std::string& path) {
-    std::ifstream ifs(path, std::ios::binary);
-    if (!ifs.is_open()) return L"";
 
-    std::stringstream ss;
-    ss << ifs.rdbuf();
-
-    // Convertim fluxul de bytes UTF-8 într-un wstring curat
-    return str_to_wstr(ss.str());
-}
 
 class oli : public App {
 public:
@@ -73,7 +63,7 @@ int main(int argc, char* argv[]) {
                 std::wcout << L"Building: " << str_to_wstr(inputPath) << std::endl;
 
                 // 🔥 FIX: Citim direct prin UTF-8 helper, eliminând obiectul wif blocant
-                std::wstring sourceCode = citeste_fisier_utf8(inputPath);
+                std::wstring sourceCode = citeste_fisier_utf8(str_to_wstr(inputPath));
                 if (sourceCode.empty()) throw std::runtime_error("Fisier sursa inexistent sau gol.");
 
                 std::wstring upperSource = sourceCode;
@@ -141,7 +131,7 @@ int main(int argc, char* argv[]) {
             std::string outputPath = (argc > 3) ? argv[3] : inputPath + "c";
 
             try {
-                std::wstring sourceCode = citeste_fisier_utf8(inputPath);
+                std::wstring sourceCode = citeste_fisier_utf8(str_to_wstr(inputPath));
                 if (sourceCode.empty()) {
                     throw std::runtime_error("Fisier sursa inexistent sau gol.");
                 }
@@ -159,17 +149,23 @@ int main(int argc, char* argv[]) {
 
                 // B. Salvare Assembly Listing (.olia)
                 std::wstring assemblyPath = str_to_wstr(outputPath) + L".olia";
-                std::wofstream asmf(assemblyPath.c_str());
+                std::ofstream asmf(assemblyPath.c_str());
 
                 try { asmf.imbue(std::locale("")); }
                 catch (...) { asmf.imbue(std::locale::classic()); }
 
                 if (asmf.is_open()) {
-                    asmf << L"--- OLI ASSEMBLY LISTING ---\n";
-                    asmf << L"Source: " << str_to_wstr(inputPath) << L"\n";
-                    asmf << L"Generated: " << L"2026-05-11\n\n";
+                    asmf << "\xEF\xBB\xBF"; 
 
-                    asmf << disassembleChunk(chunk);
+					// 2. Construim string-ul și îl convertim
+					std::wstring content = L"--- OLI ASSEMBLY LISTING ---\n";
+					content += L"Source: " + str_to_wstr(inputPath) + L"\n";
+					content += L"Generated: 2026-05-11\n\n";
+					content += disassembleChunk(chunk);
+
+					// 3. Convertim la UTF-8 folosind funcția ta `utf8_encode` 
+					// (pe care o ai deja în ConsoleManager)
+					asmf << wstring_to_utf8(content);
                     asmf.close();
                     LOG_SUCCESS(L"Assembly listing generat: " + assemblyPath);
                 }
@@ -197,7 +193,7 @@ int main(int argc, char* argv[]) {
             engine.loadAndRunBytecode(scriptPath);
         }
         else {
-            std::wstring scriptContent = citeste_fisier_utf8(scriptPath);
+            std::wstring scriptContent = citeste_fisier_utf8(str_to_wstr(scriptPath));
             if (scriptContent.empty()) {
                 std::wcerr << L"[ERROR] Fisierul sursa '" << str_to_wstr(scriptPath) << L"' nu exista sau este gol." << std::endl;
                 return 1;

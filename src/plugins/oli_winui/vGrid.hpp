@@ -13,7 +13,7 @@
 #pragma once
 
 #include "vControl.hpp"
-#include "ConsoleManager.hpp"
+#include "../../ConsoleManager.hpp"
 
 #include <string>
 #include <vector>

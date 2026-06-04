@@ -1,4 +1,5 @@
 #include "../../OliEngine.hpp" 
+#include "../../ConsoleManager.hpp" 
 
 #if defined(_WIN32) || defined(_WIN64)
 #define OLI_EXPORT extern "C" __declspec(dllexport)
@@ -182,3 +183,9 @@ void RegisterFileSystemFunctions(std::unordered_map<std::wstring, std::function<
 OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
     RegisterFileSystemFunctions(registry);
 }
+
+/*
+OLI_EXPORT void SetPluginConsoleManager(ConsoleManager* hostCm) {
+    ConsoleManager::setInstance(hostCm);
+}
+*/

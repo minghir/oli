@@ -1,5 +1,5 @@
 ﻿#include "IconManager.hpp"
-#include "ConsoleManager.hpp" // Presupunem că folosești această clasă pentru logare
+#include "../../ConsoleManager.hpp" // Presupunem că folosești această clasă pentru logare
 
 // Inițializarea statică a instanței
 IconManager& IconManager::getInstance() {

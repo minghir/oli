@@ -3,7 +3,7 @@
 
 #include "vWindow.hpp"        // Pentru clasa vWindow
 #include "WindowManager.hpp"  // Pentru gestionarea ferestrelor
-#include "ConsoleManager.hpp" // Pentru funcționalitățile de logare
+#include "../../ConsoleManager.hpp" // Pentru funcționalitățile de logare
 
 #include <windows.h> // Declarații WinAPI
 #include <string>    // Pentru std::string

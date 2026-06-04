@@ -4,7 +4,7 @@
 #pragma once
 
 #include "vControl.hpp"      // vContainer moștenește de la vControl, deci este necesar
-#include "ConsoleManager.hpp" // Pentru logare
+#include "../../ConsoleManager.hpp" // Pentru logare
 #include "ILayoutStrategy.hpp"
 
 // Nota: m_children și metodele asociate (addChild, getChild, removeChild)

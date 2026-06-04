@@ -1,7 +1,7 @@
 ﻿#include "stringUtils.hpp"
 #include "vControl.hpp"
 #include "vContainer.hpp"
-#include "ConsoleManager.hpp"
+//#include "ConsoleManager.hpp"
 #include "ControlIdManager.hpp"
 #include "FontManager.hpp"
 #include "TooltipManager.hpp" 

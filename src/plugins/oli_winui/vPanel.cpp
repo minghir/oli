@@ -416,7 +416,7 @@ vData vPanel::getProperty(const std::wstring& name) const {
 
 
 void vPanel::moveAndResize(int x, int y, int width, int height) {
-    LOG_DEBUG(L"[Panel " + str_to_wstr(m_id) + L"] Resize la " + std::to_wstring(width));
+    //LOG_DEBUG(L"[Panel " + str_to_wstr(m_id) + L"] Resize la " + std::to_wstring(width));
     vControl::moveAndResize(x, y, width, height);
     this->applyLayout();
 }

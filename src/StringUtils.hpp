@@ -162,5 +162,8 @@ bool iequals(std::wstring_view a, std::wstring_view b);
 std::wstring unescape(const std::wstring& s);
 
 std::vector<std::wstring> splitWBySemicolon(const std::wstring& s);
+
+std::wstring citeste_fisier_utf8(const std::wstring& path);
+
 #endif // STRINGUTILS_HPP
 

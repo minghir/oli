@@ -1,5 +1,5 @@
 ﻿#include "vRichEdit.hpp"
-#include "ConsoleManager.hpp"
+#include "../../ConsoleManager.hpp"
 #include <vector>
 #include <algorithm>
 

@@ -57,3 +57,4 @@ cycle $comm as $input do
         echo "MAP:" .. @tb_program
 	endif
 endcycle
+input()

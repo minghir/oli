@@ -1,5 +1,5 @@
 ﻿#include "FontManager.hpp"
-#include "ConsoleManager.hpp" // Pentru logare
+#include "../../ConsoleManager.hpp" // Pentru logare
 
 // Inițializarea statică a instanței (va fi creată la primul apel getInstance)
 FontManager& FontManager::getInstance() {

@@ -7,6 +7,7 @@
 #include <sstream>
 
 
+ConsoleManager* ConsoleManager::s_instance = nullptr;
 
 // --- Implementarea metodei initialize ---
 void ConsoleManager::initialize() {

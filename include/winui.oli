@@ -211,7 +211,7 @@ func WinRichConsole::init($id, $parentId, $x, $y, $w, $h)
     $this.id = $id
     # Atenție: În C++ Factory va trebui să folosești tipul "RICHCONSOLE"
     #UI_CREATE_CONTROL("RICHCONSOLE", $id, $parentId, $x, $y, $w, $h)
-	UI_CREATE_CONTROL("RICHEDIT", $id, $parentId, $x, $y, $w, $h)
+	UI_CREATE_CONTROL("RICHCONSOLE", $id, $parentId, $x, $y, $w, $h)
 endfunc
 
 echo "AM DEFINIT CLASELE"

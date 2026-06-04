@@ -7,7 +7,7 @@
 #include <string>         // Pentru std::string și std::wstring
 
 #include "vContainer.hpp" // vWindow moștenește de la vContainer
-#include "ConsoleManager.hpp" // Pentru logare
+#include "../../ConsoleManager.hpp" // Pentru logare
 
 enum class DbDialogMode { Insert, Update, Delete, View };
 

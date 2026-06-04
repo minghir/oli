@@ -1,7 +1,7 @@
 ﻿#include "vContainer.hpp"
 #include "vSpacer.hpp"
 #include "vComboBox.hpp"
-#include "ConsoleManager.hpp"
+#include "../../ConsoleManager.hpp"
 #include "ControlIdManager.hpp" // Adăugat pentru a accesa ControlIdManager::getInstance().getId()
 #include "stringUtils.hpp"
 

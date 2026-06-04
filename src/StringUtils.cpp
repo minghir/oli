@@ -12,6 +12,7 @@
 #include <cctype>
 #include <unordered_map>
 #include <regex>
+#include <filesystem>
 
 #include <cmath>
 
@@ -1375,4 +1376,16 @@ std::vector<std::wstring> splitWBySemicolon(const std::wstring& s) {
         }
     }
     return elems;
+}
+
+std::wstring citeste_fisier_utf8(const std::wstring& path) {
+    // 🔥 FIX: Adaugă .c_str() pentru a potrivi constructorul (const wchar_t*) din MinGW
+    std::ifstream file(path.c_str(), std::ios::binary); 
+    
+    if (!file.is_open()) return L"";
+    
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    
+    return utf8_to_wstring(buffer.str());
 }

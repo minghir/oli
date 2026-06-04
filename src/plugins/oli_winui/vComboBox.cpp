@@ -1,7 +1,7 @@
 ﻿// vComboBox.cpp
 
 #include "vComboBox.hpp"
-#include "ConsoleManager.hpp" // Pentru logare
+#include "../../ConsoleManager.hpp" // Pentru logare
 
 // Constructor
 vComboBox::vComboBox(HINSTANCE hInstance, const std::string& id, int x, int y, int width, int height, EventDispatcher& dispatcher, int dropdownHeight)

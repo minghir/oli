@@ -4,7 +4,7 @@
 #pragma once
 
 #include "vContainer.hpp"
-#include "ConsoleManager.hpp"
+#include "../../ConsoleManager.hpp"
 
 // Clasa vPanel reprezintă un control de tip panou WinAPI,
 // care poate găzdui alte controale.

@@ -491,3 +491,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             return vData(L""); // Returnează string gol la Cancel
             };
 }
+
+OLI_EXPORT void SetPluginConsoleManager(ConsoleManager* hostCm) {
+    ConsoleManager::setInstance(hostCm);
+}

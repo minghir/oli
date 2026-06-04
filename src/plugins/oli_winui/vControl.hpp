@@ -10,7 +10,7 @@
 #include <functional>     // Pentru std::function (EventCallback)
 
 #include "EventDispatcher.hpp" // Pentru sistemul de evenimente
-#include "ConsoleManager.hpp"
+#include "../../ConsoleManager.hpp"
 #include "stringUtils.hpp"
 #include "../../OliEngine.hpp"
 #include "../../IOliEngine.hpp"

@@ -1344,6 +1344,21 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
         return false;
     }
 
+	// Încercăm să vedem dacă plugin-ul exportă funcția de sincronizare a consolei
+    typedef void (*SetConsoleManagerFunc)(ConsoleManager*);
+    SetConsoleManagerFunc setConsoleFn = (SetConsoleManagerFunc)PortTools::getFunctionSymbol(hLib, "SetPluginConsoleManager");
+    
+    if (setConsoleFn) {
+        // Trimitem pointerul instanței active din EXE către interiorul DLL-ului
+        setConsoleFn(&ConsoleManager::getInstance());
+        
+        if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+            LOG_DEBUG(L"ConsoleManager shared with plugin: " + pluginName);
+        }
+    }else{
+		 LOG_ERROR(L"setConsoleFn missing! Is not shared with plugin: " + pluginName);
+	}
+
     bool loadedAnything = false;
 
     // --- A. ÎNCĂRCARE FUNCȚII (NATIVE CALLS) ---

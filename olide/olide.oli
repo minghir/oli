@@ -2,6 +2,7 @@ config win_app 0
 
 plugin oli_system
 plugin oli_filesys
+plugin oli_compiler
 
 include ("include\winui.oli")
 
@@ -193,22 +194,18 @@ func menu_compile_click()
     UPDATE_ACTIVE_CONTEXT()
     if @file == "" then return endif
 
-    $consoleOutput.set_text("=== [COMPILE] START ===\n")
+    # 1. Curățăm consola grafică înainte de a începe
+    $consoleOutput.set_text("")
     
-    $compile_command = @oli_path .. " -c " .. @file
-    echo "Execut: " .. $compile_command
+    # 2. Apelăm direct funcția nativă din plugin!
+    # Aceasta va rula instant și va trimite LOG-urile direct în vRichConsole
+    $res = COMPILE(@file)
     
-    $res = SYS($compile_command)
-    
-    # Verificăm dacă rezultatul conține text sau dacă este gol
-    if $res != "" then
-        $consoleOutput.append_text($res .. "\n")
-    else
-        # Dacă $res este gol, compilarea a reușit fără avertismente/erori
-        $consoleOutput.append_text("Compilare finalizată cu succes (fără erori).\n")
+    # 3. Opțional, poți verifica valoarea returnată pentru o logică suplimentară
+    if $res != "SUCCESS" then
+        # Acest mesaj va apărea doar dacă vrei o notificare extra în UI
+        echo "A apărut o eroare la compilarea fișierului."
     endif
-    
-    $consoleOutput.append_text("=== [COMPILE] END ===\n")
 endfunc
 
 echo "CREEZ APP"
@@ -306,19 +303,44 @@ $tabs.set_height_mode("FILL")
 echo "CREEZ run button"
 set $runButton = new("WinButton")
 
-$runButton.init("btn_run", "act_panel", 10, 4, 80, 40, "▶")
+$runButton.init("btn_run", "act_panel", 10, 4, 30, 30, "▶")
 $runButton.set_prop("font_name","Segoe UI Symbol")
 $runButton.set_anchor("RIGHT|BOTTOM")
 $runButton.set_width_mode("FIXED")
+$runButton.set_margin(1)
+
+set $newButton = new("WinButton")
+$newButton.init("btn_new", "act_panel", 60, 4, 30, 30, "🆕")
+$newButton.set_anchor("RIGHT|BOTTOM")
+$newButton.set_width_mode("FIXED")
+$newButton.set_margin(1)
 
 set $saveButton = new("WinButton")
-$saveButton.init("btn_save", "act_panel", 95, 4, 80, 40, "💾")
+$saveButton.init("btn_save", "act_panel", 95, 4, 30, 30, "💾")
 $saveButton.set_anchor("RIGHT|BOTTOM")
 $saveButton.set_width_mode("FIXED")
+$saveButton.set_margin(1)
+
+set $openButton = new("WinButton")
+openButton.init("btn_open", "act_panel", 95, 4, 30, 30, "📂")
+$openButton.set_anchor("RIGHT|BOTTOM")
+$openButton.set_width_mode("FIXED")
+$openButton.set_margin(1)
+
+set $closeButton = new("WinButton")
+$closeButton.init("btn_close", "act_panel", 130, 4, 30, 30, "❌")
+$closeButton.set_anchor("RIGHT|BOTTOM")
+$closeButton.set_width_mode("FIXED")
+$closeButton.set_margin(1)
+
+
 
 $runButton.bind("click", "run_click")
 $saveButton.bind("click", "save_click")
-
+$saveButton.bind("click", "save_click")
+$newButton.bind("click", "menu_new_click")
+$openButton.bind("click", "menu_open_click")
+$closeButton.bind("click", "menu_close_click")
 
 
 # =================================================================
@@ -338,7 +360,7 @@ $consoleOutput.set_width_mode("FILL")
 $consolePanel.set_height_mode("FIXED")
 $consoleOutput.set_read_only(true) # Utilizatorul nu poate scrie în ea
 $consoleOutput.set_font_size(12)
-$consoleOutput.set_text("Gata pentru compilare...")
+$consoleOutput.set_text("Oli ready...")
 
 
 # =================================================================
@@ -428,4 +450,4 @@ $app.run()
 
 
 echo "=== Aplicație închisă cu succes ==="
-input()
+#input()

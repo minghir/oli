@@ -5,7 +5,7 @@
 #define _WIN32_IE 0x0600 // This is also good practice to include
 
 #include "TooltipManager.hpp"
-#include "ConsoleManager.hpp" // Adjust the path
+#include "../../ConsoleManager.hpp" // Adjust the path
 
 #include <windows.h>
 #include <CommCtrl.h>

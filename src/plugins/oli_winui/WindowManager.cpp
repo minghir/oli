@@ -1,5 +1,5 @@
 ﻿#include "WindowManager.hpp"
-#include "ConsoleManager.hpp"
+#include "../../ConsoleManager.hpp"
 // #include <iostream> // Nu este necesar dacă folosești ConsoleManager
 
 // --- Metoda Add ---

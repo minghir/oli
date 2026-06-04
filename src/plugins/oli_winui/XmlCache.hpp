@@ -4,7 +4,7 @@
 #include <memory>
 #include "pugixml-1.15/src/pugixml.hpp"
 #include "stringUtils.hpp"
-#include "ConsoleManager.hpp"
+#include "../../ConsoleManager.hpp"
 
 class XmlCache {
 private:

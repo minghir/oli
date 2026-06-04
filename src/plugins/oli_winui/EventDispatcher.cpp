@@ -1,5 +1,5 @@
 ﻿#include "EventDispatcher.hpp"
-#include "ConsoleManager.hpp" // Esențial pentru logare
+#include "../../ConsoleManager.hpp" // Esențial pentru logare
 #include "stringUtils.hpp"
 
 // -----------------------------------------------------------------------------

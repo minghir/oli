@@ -4,7 +4,7 @@
 #pragma once
 
 #include "vControl.hpp"       // vButton moștenește direct de la vControl
-#include "ConsoleManager.hpp" // Pentru logare (poate fi inclus și prin vControl.hpp)
+#include "../../ConsoleManager.hpp" // Pentru logare (poate fi inclus și prin vControl.hpp)
 #include <string>             // Pentru std::string (ID) și std::wstring (text buton)
 
 

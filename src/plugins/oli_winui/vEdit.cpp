@@ -1,5 +1,5 @@
 ﻿#include "vEdit.hpp"
-#include "ConsoleManager.hpp" // Pentru logare
+#include "../../ConsoleManager.hpp" // Pentru logare
 #include "FontManager.hpp" // Pentru logare
 #include "stringUtils.hpp"
 

@@ -5414,7 +5414,7 @@ void vOliEngine::handleDefCommand(const ShellCommand& sc) {
   }
   
  
-  
+ /* 
   bool vOliEngine::runEmbeddedIfPresent(const std::string& exePath) {
       std::ifstream file(exePath, std::ios::binary | std::ios::ate);
       if (!file.is_open()) return false;
@@ -5477,4 +5477,160 @@ void vOliEngine::handleDefCommand(const ShellCommand& sc) {
           return false;
       }
   }
+ 
   
+  bool vOliEngine::runEmbeddedIfPresent(const std::string& exePath) {
+    std::ifstream file(exePath, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) return false;
+
+    std::streamsize fileSize = file.tellg();
+
+    // FIX: static_cast pentru a elimina warning-ul de signed/unsigned comparison
+    if (fileSize < static_cast<std::streamsize>(sizeof(uint64_t))) return false;
+
+    // 1. Citim ultimii 8 octeți (footer-ul brut care conține și dimensiunea și flag-ul GUI)
+    file.seekg(-8, std::ios::end);
+    uint64_t footer = 0;
+    file.read(reinterpret_cast<char*>(&footer), sizeof(uint64_t));
+
+    // 🔥 PASUL A: Extragem flag-ul de aplicație Windows din bitul 63
+    bool isGuiApp = (footer & (1ULL << 63)) != 0;
+
+    // 🔥 PASUL B: Curățăm bitul 63 pentru a obține dimensiunea reală a bytecode-ului
+    uint64_t bytecodeSize = footer & ~(1ULL << 63);
+
+    // 2. Verificăm dacă dimensiunea reală este plauzibilă
+    if (bytecodeSize == 0 || bytecodeSize > static_cast<uint64_t>(fileSize) - 1024) {
+        return false;
+    }
+
+    // 🔥 PASUL C: Dacă s-a cerut "config win_app 1", ascundem și DETAȘĂM consola!
+    if (isGuiApp) {
+#ifdef _WIN32
+        HWND hConsole = GetConsoleWindow();
+        if (hConsole) {
+            // Folosim ShowWindowAsync deoarece Terminalul modern rulează în alt proces
+            ShowWindowAsync(hConsole, SW_HIDE);
+        }
+        // Eliberăm consola complet. Această linie elimină definitiv procesul din Taskbar!
+        FreeConsole();
+#endif
+    }
+
+    // 3. Ne poziționăm la începutul bytecode-ului folosind dimensiunea curățată
+    file.seekg(static_cast<std::streamoff>(fileSize) - 8 - static_cast<std::streamoff>(bytecodeSize));
+
+    // 4. Încărcăm și rulăm
+    try {
+        // Deserializăm chunk-ul din fișier
+        OliChunk chunk = vDataSerialize::deserializeChunk(file);
+
+        // Creăm o instanță a motorului
+        vOliEngine engine;
+
+        // =========================================================================
+        // 🔥 FIX PENTRU STANDALONE: Încărcăm automat toate plugin-urile de lângă EXE
+        // înainte ca instanța locală 'engine' să înceapă execuția bytecode-ului!
+        // =========================================================================
+        try {
+            std::filesystem::path currentExe(exePath);
+            // Obținem calea absolută către folderul unde se află aa.exe
+            std::filesystem::path exeDir = std::filesystem::absolute(currentExe).parent_path();
+            std::filesystem::path pluginsDir = exeDir / "plugins";
+
+            if (std::filesystem::exists(pluginsDir)) {
+                for (const auto& entry : std::filesystem::directory_iterator(pluginsDir)) {
+                    // Căutăm doar fișierele .dll (sau .so pe Linux, dar folosim extension() pentru siguranță)
+                    if (entry.path().extension() == L".dll") {
+                        // Extragem doar numele curat (ex: "oli_math" din "plugins/oli_math.dll")
+                        std::wstring pluginName = entry.path().stem().wstring();
+                        
+                        // Încărcăm pluginul în noua instanță
+                        engine.internalLoadPlugin(pluginName);
+                    }
+                }
+            }
+        } catch (...) {
+            // Prevenim crash-ul general dacă folderul plugins lipsește sau e blocat
+            LOG_ERROR(L"Eroare la scanarea automată a folderului de plugin-uri.");
+        }
+        // =========================================================================
+
+        // FIX: Transmitem și al doilea argument (framePtr = 0)
+        // Deoarece acesta este punctul de intrare (Main), stiva începe de la 0.
+        engine.executeBytecode(chunk, 0);
+
+        return true;
+    }
+    catch (...) {
+        LOG_ERROR(L"Eroare critică la încărcarea bytecode-ului embedded.");
+        return false;
+    }
+}
+*/
+
+bool vOliEngine::runEmbeddedIfPresent(const std::string& exePath) {
+    std::ifstream file(exePath, std::ios::binary | std::ios::ate);
+    if (!file.is_open()) return false;
+
+    std::streamsize fileSize = file.tellg();
+
+    // FIX: static_cast pentru a elimina warning-ul de signed/unsigned comparison
+    if (fileSize < static_cast<std::streamsize>(sizeof(uint64_t))) return false;
+
+    // 1. Citim ultimii 8 octeți (footer-ul brut care conține și dimensiunea și flag-ul GUI)
+    file.seekg(-8, std::ios::end);
+    uint64_t footer = 0;
+    file.read(reinterpret_cast<char*>(&footer), sizeof(uint64_t));
+
+    // 🔥 PASUL A: Extragem flag-ul de aplicație Windows din bitul 63
+    bool isGuiApp = (footer & (1ULL << 63)) != 0;
+
+    // 🔥 PASUL B: Curățăm bitul 63 pentru a obține dimensiunea reală a bytecode-ului
+    uint64_t bytecodeSize = footer & ~(1ULL << 63);
+
+    // 2. Verificăm dacă dimensiunea reală este plauzibilă
+    if (bytecodeSize == 0 || bytecodeSize > static_cast<uint64_t>(fileSize) - 1024) {
+        return false;
+    }
+
+    // 🔥 PASUL C: Dacă s-a cerut "config win_app 1", ascundem și DETAȘĂM consola!
+    if (isGuiApp) {
+#ifdef _WIN32
+        HWND hConsole = GetConsoleWindow();
+        if (hConsole) {
+            // Folosim ShowWindowAsync deoarece Terminalul modern rulează în alt proces
+            ShowWindowAsync(hConsole, SW_HIDE);
+        }
+        // Eliberăm consola complet. Această linie elimină definitiv procesul din Taskbar!
+        FreeConsole();
+#endif
+    }
+
+    // 3. Ne poziționăm la începutul bytecode-ului folosind dimensiunea curățată
+    file.seekg(static_cast<std::streamoff>(fileSize) - 8 - static_cast<std::streamoff>(bytecodeSize));
+
+    // 4. Încărcăm și rulăm
+    try {
+        // Deserializăm chunk-ul din fișier
+        OliChunk chunk = vDataSerialize::deserializeChunk(file);
+
+        // Creăm o instanță a motorului (tabula rasa)
+        vOliEngine engine;
+
+        // Recul: Nu mai avem nevoie de scanarea forțată a folderului aici!
+        // Atunci când engine.executeBytecode va rula instrucțiunile scriptului,
+        // apelurile interne către `internalLoadPlugin` vor rezolva automat calea absolută 
+        // bazată pe locația reală a executabilului.
+
+        // FIX: Transmitem și al doilea argument (framePtr = 0)
+        // Deoarece acesta este punctul de intrare (Main), stiva începe de la 0.
+        engine.executeBytecode(chunk, 0);
+
+        return true;
+    }
+    catch (...) {
+        LOG_ERROR(L"Eroare critică la încărcarea bytecode-ului embedded.");
+        return false;
+    }
+}

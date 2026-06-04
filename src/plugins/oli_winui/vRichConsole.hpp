@@ -30,7 +30,7 @@ public:
                 break;
             case LogLevel::INFO:
                 prefix = L"[INFO] ";
-                color = RGB(240, 240, 240); // Gri deschis
+                color = RGB(140, 140, 140); // Gri deschis
                 break;
             case LogLevel::SUCCESS:
                 prefix = L"[SUCCESS] ";

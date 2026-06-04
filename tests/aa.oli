@@ -2,7 +2,6 @@ $a= "mimi"
 $b = $a[1] 
 echo "a[1]=" .. $a[1]
 echo "b=".. $b
-
 cycle $a as $v do 
 echo $v; 
 endcycle 

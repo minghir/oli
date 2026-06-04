@@ -2,6 +2,7 @@
 #include "../../ConsoleManager.hpp"
 #include <vector>
 #include <algorithm>
+#include <commctrl.h>
 
 // Inițializăm membrul static
 HMODULE vRichEdit::s_richEditModule = nullptr;
@@ -27,10 +28,44 @@ vRichEdit::~vRichEdit() {
     if (s_richEditModule) FreeLibrary(s_richEditModule); // Atenție: s_richEditModule este static
 }
 
+LRESULT CALLBACK RichEditTabSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+    switch (uMsg) {
+        case WM_GETDLGCODE: {
+            // 🔥 PASUL 1: Îi spunem sistemului să trimită toate tastele (Tab, Enter etc.) direct la control,
+            // combinând flag-urile native ale RichEdit-ului cu cererea noastră explicită.
+            return DefSubclassProc(hWnd, uMsg, wParam, lParam) | DLGC_WANTALLKEYS | DLGC_WANTTAB;
+        }
+
+        case WM_KEYDOWN: {
+            if (wParam == VK_TAB) {
+                // 🔥 PASUL 2: Deoarece sistemul ne lasă acum să primim tasta TAB, o interceptăm 
+                // și inserăm manual caracterul '\t' exact la poziția curentă a cursorului.
+                // (Dacă vrei în viitor, aici poți înlocui L"\t" cu L"    " pentru space-indentation!)
+                SendMessageW(hWnd, EM_REPLACESEL, TRUE, (LPARAM)L"\t");
+                
+                return 0; // Returnăm 0 pentru a consuma mesajul și a bloca mutarea focusului la alt control
+            }
+            break;
+        }
+
+        case WM_CHAR: {
+            if (wParam == VK_TAB) {
+                // 🔥 PASUL 3: Mâncăm mesajul WM_CHAR pentru Tab pentru a preveni sunetul de alertă al sistemului (beep)
+                // sau eventuale inserări duble generate de TranslateMessage.
+                return 0;
+            }
+            break;
+        }
+    }
+    
+    // Pentru tasta Enter și restul tastelor, lăsăm RichEdit să își ruleze logica lui nativă
+    return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}
+
 void vRichEdit::create(HWND parent) {
     if (!parent) return;
 
-    // Stiluri: Adăugăm scrollbar-uri și forțăm comportamentul de editor de cod
+    // Stiluri corecte: Am eliminat ES_WANTTAB-ul problematic
     DWORD dwStyle = WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL | WS_HSCROLL |
         ES_MULTILINE | ES_WANTRETURN | ES_AUTOVSCROLL | ES_AUTOHSCROLL | WS_CLIPSIBLINGS;
 
@@ -49,6 +84,10 @@ void vRichEdit::create(HWND parent) {
     );
 
     if (m_handle) {
+        // 🔥 FIX: Aplicăm subclassing-ul pe handle-ul nou creat. 
+        // ID-ul subclass-ului este 1, nu avem nevoie de date suplimentare (0)
+        SetWindowSubclass(m_handle, RichEditTabSubclassProc, 1, 0);
+
         // Setăm o limită de text mai mare (implicit e mică)
         SendMessage(m_handle, EM_EXLIMITTEXT, 0, (LPARAM)-1);
 
@@ -57,9 +96,10 @@ void vRichEdit::create(HWND parent) {
             OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY,
             FIXED_PITCH | FF_MODERN, L"Consolas");
         SendMessage(m_handle, WM_SETFONT, (WPARAM)hFont, TRUE);
-		RECT rc;
-		GetClientRect(m_handle, &rc);
-		SendMessage(m_handle, EM_SETRECT, 0, (LPARAM)&rc);
+        
+        RECT rc;
+        GetClientRect(m_handle, &rc);
+        SendMessage(m_handle, EM_SETRECT, 0, (LPARAM)&rc);
     }
 }
 

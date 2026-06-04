@@ -3,7 +3,7 @@ CXXFLAGS = -std=c++20 -DUNICODE -D_UNICODE -Wall -Wextra -O3 -Iinclude -MMD -MP
 # -MMD -MP generează automat dependențele (.d) pentru headere
 
 # Ordinea LDFLAGS este critică: bibliotecile se pun DUPĂ obiecte
-LDFLAGS = -lreadline -static -static-libgcc -static-libstdc++
+LDFLAGS = -lreadline -static-libgcc -static-libstdc++
 
 SRC_DIR = src
 #OLIC_DIR = src/olic

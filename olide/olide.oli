@@ -1,5 +1,4 @@
-config win_app 0
-
+config win_app 1
 plugin oli_system
 plugin oli_filesys
 plugin oli_compiler
@@ -44,10 +43,9 @@ func run_click()
     UPDATE_ACTIVE_CONTEXT()
 
     if @file == "" then
-        #SHOW_MESSAGE("IDE Error", "Nu există niciun fișier deschis în editor pentru a fi rulat!")
-		menu_save_as_click()
+        menu_save_as_click()
         if @file != "" then run_click() endif
-		return
+        return
     endif
 
     # 1. AUTO-SALVARE SILENȚIOASĂ
@@ -55,20 +53,12 @@ func run_click()
     $cod_curent = $activeCodeView.get_text()
     WRITEFILE(@file, $cod_curent)
 
-    # 2. COMPILAREA ȘI EXECUTAREA
-    echo "=== LANSARE COMPILARE ==="
-    echo "Fișier sursă: " .. @file
+    # 2. COMPILAREA ȘI EXECUTAREA VIA PLUGIN
+    menu_build_click()
     
-    $compile_command = @oli_path .. " -c " .. @file
-	echo "Compilez:" .. $compile_command
-    $res = SYS($compile_command)
-    echo $res
-    
-    $build_command = @oli_path .. " -b " .. @file
-    echo "Rulez comanda: " .. $build_command
-    
-    $res = SYS($build_command)
-    echo $res
+    # 🔥 FIX: Am șters "echo $res" de aici! 
+    # $res-ul de aici era null pentru că apelul SYS e comentat, 
+    # iar menu_build_click() își scrie singur succesul/eroarea în consolă.
     
     $exe_file = GET_EXE_NAME(@file)
     echo "LANSARE PROCES: " .. $exe_file
@@ -208,6 +198,26 @@ func menu_compile_click()
     endif
 endfunc
 
+func menu_build_click()
+    UPDATE_ACTIVE_CONTEXT()
+    if @file == "" then return endif
+
+    # 1. Curățăm consola grafică înainte de a începe
+    $consoleOutput.set_text("")
+    
+    # 2. Apelăm direct funcția nativă trimitând doar un SINGUR argument (@file).
+    # Lăsăm plugin-ul în C++ să extragă automat numele curat și să-l creeze în CWD!
+    $res = BUILD(@file)
+    
+    # 3. Verificăm rezultatul
+    if $res != "SUCCESS" then
+        echo "A apărut o eroare în timpul procesului de Build standalone."
+    else
+        # Mesajul de succes din C++ va afișa deja calea corectă curată (ex: Build complet: aa.exe)
+        echo "Procesul de generare a fost finalizat."
+    endif
+endfunc
+
 echo "CREEZ APP"
 set $app = new("WinApp")
 $app.init() 
@@ -275,6 +285,7 @@ $win.bind("menu_about", "menu_about_click")
 $win.bind("menu_interpreter", "menu_interpreter_click")
 $win.bind("menu_command", "menu_command_click")
 $win.bind("menu_compile", "menu_compile_click")
+$win.bind("menu_build", "menu_build_click")
 
 # =================================================================
 # INTERFAȚA GRAFICĂ (PANELS & CONTROLS)

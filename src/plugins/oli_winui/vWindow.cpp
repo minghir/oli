@@ -1,7 +1,7 @@
 ﻿#include "vWindow.hpp"
 #include "vMenu.hpp" 
 #include "vApp.hpp" 
-#include "ConsoleManager.hpp"
+#include "../../ConsoleManager.hpp"
 #include "stringUtils.hpp"
 // stringUtils.hpp -- Eliminat, corect dacă nu e utilizat.
 

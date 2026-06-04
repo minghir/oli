@@ -5,6 +5,8 @@
 #include "StringUtils.hpp"
 #include "PortTools.hpp"
 #include <iostream>
+#include <filesystem>
+
 #undef min
 // Helper pentru tokenizare rapidă (adaugă-l deasupra metodei compile)
 static std::vector<std::wstring> splitW(const std::wstring& s, const std::wstring& delimiters) {
@@ -2733,7 +2735,7 @@ std::wstring OliCompiler::reconstructRawName(ASTPtr node) {
     return L"";
 }
 
-
+/*
 void OliCompiler::loadPluginMetadata(std::wstring pluginName) {
     // 1. Curățare cale (deja implementat de tine)
     if (pluginName.size() >= 2 && pluginName.front() == L'"' && pluginName.back() == L'"') {
@@ -2777,6 +2779,83 @@ void OliCompiler::loadPluginMetadata(std::wstring pluginName) {
                 if (!name.empty()) {
                     // Înregistrăm numele ca fiind o funcție nativă (C++)
                     vOliKeyWords::registerNativeFunction(name);
+                }
+            }
+        }
+        catch (...) {}
+    }
+}
+*/
+void OliCompiler::loadPluginMetadata(std::wstring pluginName) {
+    // 1. Curățare cale și ghilimele
+    if (pluginName.size() >= 2 && pluginName.front() == L'"' && pluginName.back() == L'"') {
+        pluginName = pluginName.substr(1, pluginName.size() - 2);
+    }
+    if (pluginName.empty()) return;
+
+    // 2. 🔥 FIX CRITIC: Determinăm folderul executabilului principal (Exact ca în VM!)
+    wchar_t exePathBuffer[MAX_PATH];
+    GetModuleFileNameW(NULL, exePathBuffer, MAX_PATH);
+
+    std::filesystem::path exeFullPath(exePathBuffer);
+    std::filesystem::path exeDir = exeFullPath.parent_path();
+
+    // 3. Extragem numele curat al DLL-ului
+    std::filesystem::path rawPath(pluginName);
+    std::wstring pureName = rawPath.stem().wstring();
+
+    // 4. 🔥 FIX CRITIC: Construim calea absolută orientată către subfolderul 'plugins'
+    std::filesystem::path finalDllPath = exeDir / "plugins" / pureName;
+    std::wstring dllPath = finalDllPath.wstring();
+
+    std::wstring ext = PortTools::getPluginExtension();
+    if (dllPath.size() < ext.size() || dllPath.substr(dllPath.size() - ext.size()) != ext) {
+        dllPath += ext;
+    }
+
+    // Încercăm încărcarea bibliotecii din folderul corect
+    PortTools::LibHandle hLib = PortTools::loadDynamicLibrary(dllPath);
+    if (!hLib) {
+        std::wcerr << L"[COMPILER ERROR] Nu s-a putut incarca metadata din plugin-ul: " << dllPath
+            << L" (Cod: " << PortTools::getLastErrorString() << L")" << std::endl;
+        return;
+    }
+
+    // --- A. ÎNCĂRCARE COMENZI DIN PLUGIN ---
+    typedef void (*LoadCommandsFunc)(std::unordered_map<std::wstring, OliCommandHandler>&, void*);
+    LoadCommandsFunc regCmds = (LoadCommandsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliCommandPlugin");
+
+    if (regCmds) {
+        std::unordered_map<std::wstring, OliCommandHandler> dummyCmds;
+        try {
+            regCmds(dummyCmds, nullptr);
+            for (auto const& [name, handler] : dummyCmds) {
+                if (!name.empty()) vOliKeyWords::registerDynamicCommand(name);
+            }
+        }
+        catch (...) {}
+    }
+
+    // --- B. ÎNCĂRCARE FUNCȚII DIN PLUGIN ---
+    typedef void (*LoadFunctionsFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&, void*);
+    LoadFunctionsFunc regFuncs = (LoadFunctionsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliPlugin");
+
+    if (regFuncs) {
+        std::unordered_map<std::wstring, OliFunctionHandler> dummyFuncs;
+        try {
+            regFuncs(dummyFuncs, nullptr);
+
+            for (auto const& [name, handler] : dummyFuncs) {
+                if (!name.empty()) {
+                    // Convertim la UPPERCASE pentru consistență totală cu parserul general
+                    std::wstring upFuncName = name;
+                    for (auto& c : upFuncName) c = std::towupper(c);
+
+                    // Înregistrăm funcția în tabela globală de cuvinte cheie a compilatorului
+                    vOliKeyWords::registerNativeFunction(upFuncName);
+
+                    // Dezactivează acest log în producție, e doar pentru confirmare vizuală acum
+                    std::wcout << L"[COMPILER METADATA] Inregistrat nativ: " << upFuncName << std::endl;
                 }
             }
         }

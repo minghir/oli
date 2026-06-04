@@ -17,9 +17,6 @@
     <ClCompile Include="oli_winui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ConsoleManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ControlIdManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -100,9 +97,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ConsoleManager.hpp">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="ControlIdManager.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>

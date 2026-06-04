@@ -1,5 +1,5 @@
 ﻿#include "vLabel.hpp"
-#include "ConsoleManager.hpp" // Pentru logare
+#include "../../ConsoleManager.hpp" // Pentru logare
 #include "FontManager.hpp" // Pentru logare
 
 // Constructor

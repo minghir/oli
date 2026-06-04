@@ -14,7 +14,7 @@
 #include "vGrid.hpp"
 #include "vPopupMenu.hpp"
 #include "FontManager.hpp"
-#include "ConsoleManager.hpp"
+#include "../../ConsoleManager.hpp"
 #include "stringUtils.hpp"
 
 #ifndef LVS_EX_COLUMNSHADOWS

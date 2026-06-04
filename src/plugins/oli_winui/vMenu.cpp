@@ -1,6 +1,6 @@
 ﻿#include "vMenu.hpp"
 #include "vApp.hpp"
-#include "ConsoleManager.hpp"
+#include "../../ConsoleManager.hpp"
 #include "ControlIdManager.hpp"
 #include <sstream>
 

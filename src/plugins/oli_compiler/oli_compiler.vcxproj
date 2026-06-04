@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{4568e897-b889-4a38-8e00-936ceb20d75e}</ProjectGuid>
-    <RootNamespace>oliwinui</RootNamespace>
+    <ProjectGuid>{0fe03d72-f041-4409-928c-67fc5ccc52bd}</ProjectGuid>
+    <RootNamespace>olicompiler</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -111,13 +111,10 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>D:\Programming\lib_winui\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\Programming\lib_winui\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>lib_winui.lib;Shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -135,13 +132,10 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>D:\Programming\lib_winui\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\Programming\lib_winui\x64\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>lib_winui.lib;Shcore.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -151,75 +145,25 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\ASTNode.cpp" />
     <ClCompile Include="..\..\ConsoleManager.cpp" />
-    <ClCompile Include="CodeLexer.cpp" />
-    <ClCompile Include="ControlIdManager.cpp" />
-    <ClCompile Include="EventDispatcher.cpp" />
-    <ClCompile Include="FontManager.cpp" />
-    <ClCompile Include="IconManager.cpp" />
-    <ClCompile Include="oli_winui.cpp" />
-    <ClCompile Include="pugixml-1.15\src\pugixml.cpp" />
-    <ClCompile Include="stringUtils.cpp" />
-    <ClCompile Include="TooltipManager.cpp" />
-    <ClCompile Include="vApp.cpp" />
-    <ClCompile Include="vButton.cpp" />
-    <ClCompile Include="vCodeView.cpp" />
-    <ClCompile Include="vComboBox.cpp" />
-    <ClCompile Include="vContainer.cpp" />
-    <ClCompile Include="vControl.cpp" />
-    <ClCompile Include="vEdit.cpp" />
-    <ClCompile Include="vGrid.cpp" />
-    <ClCompile Include="vLabel.cpp" />
-    <ClCompile Include="vMenu.cpp" />
-    <ClCompile Include="vPanel.cpp" />
-    <ClCompile Include="vRichEdit.cpp" />
-    <ClCompile Include="vSeparator.cpp" />
-    <ClCompile Include="vSpacer.cpp" />
-    <ClCompile Include="vTabControl.cpp" />
-    <ClCompile Include="vWindow.cpp" />
-    <ClCompile Include="WindowManager.cpp" />
+    <ClCompile Include="..\..\OliCompiler.cpp" />
+    <ClCompile Include="..\..\OliEngine.cpp" />
+    <ClCompile Include="..\..\OliExecuteBytecode.cpp" />
+    <ClCompile Include="..\..\OliFuncHandlers.cpp" />
+    <ClCompile Include="..\..\PortTools.cpp" />
+    <ClCompile Include="..\..\StringUtils.cpp" />
+    <ClCompile Include="oli_compiler.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\ASTNode.hpp" />
     <ClInclude Include="..\..\ConsoleManager.hpp" />
-    <ClInclude Include="CodeLexer.hpp" />
-    <ClInclude Include="ControlIdManager.hpp" />
-    <ClInclude Include="EventDispatcher.hpp" />
-    <ClInclude Include="FontManager.hpp" />
-    <ClInclude Include="IconManager.hpp" />
-    <ClInclude Include="ILayoutStrategy.hpp" />
-    <ClInclude Include="Layouts\AnchorLayout.hpp" />
-    <ClInclude Include="Layouts\FlexStackLayout.hpp" />
-    <ClInclude Include="Layouts\FlowLayout.hpp" />
-    <ClInclude Include="Layouts\FormLayout.hpp" />
-    <ClInclude Include="Layouts\GridLayout.hpp" />
-    <ClInclude Include="Layouts\HorizontalPercentStackLayout.hpp" />
-    <ClInclude Include="Layouts\Layouts.hpp" />
-    <ClInclude Include="Layouts\VerticalPercentStackLayout.hpp" />
-    <ClInclude Include="Layouts\VerticalStackLayout.hpp" />
-    <ClInclude Include="Layouts\XmlDlgAnchorLayout.hpp" />
-    <ClInclude Include="pugixml-1.15\src\pugiconfig.hpp" />
-    <ClInclude Include="pugixml-1.15\src\pugixml.hpp" />
-    <ClInclude Include="stringUtils.hpp" />
-    <ClInclude Include="TooltipManager.hpp" />
-    <ClInclude Include="vApp.hpp" />
-    <ClInclude Include="vButton.hpp" />
-    <ClInclude Include="vCodeView.hpp" />
-    <ClInclude Include="vComboBox.hpp" />
-    <ClInclude Include="vContainer.hpp" />
-    <ClInclude Include="vControl.hpp" />
-    <ClInclude Include="vEdit.hpp" />
-    <ClInclude Include="vGrid.hpp" />
-    <ClInclude Include="vLabel.hpp" />
-    <ClInclude Include="vMenu.hpp" />
-    <ClInclude Include="vPanel.hpp" />
-    <ClInclude Include="vPopupMenu.hpp" />
-    <ClInclude Include="vRichEdit.hpp" />
-    <ClInclude Include="vSeparator.hpp" />
-    <ClInclude Include="vSpacer.hpp" />
-    <ClInclude Include="vTabControl.hpp" />
-    <ClInclude Include="vWindow.hpp" />
-    <ClInclude Include="WindowManager.hpp" />
-    <ClInclude Include="XmlCache.hpp" />
+    <ClInclude Include="..\..\IOliEngine.hpp" />
+    <ClInclude Include="..\..\IShellEngine.hpp" />
+    <ClInclude Include="..\..\OliCompiler.hpp" />
+    <ClInclude Include="..\..\OliEngine.hpp" />
+    <ClInclude Include="..\..\PortTools.hpp" />
+    <ClInclude Include="..\..\StringUtils.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

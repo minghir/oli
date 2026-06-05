@@ -11,7 +11,7 @@ echo "Dupa modificare (*$p_a = 50), a este: " + $a
 
 # ---------------------------------------------------------
 # 2. TEST: Pass-by-Reference in Functii
-func upgrade_item ptr
+func upgrade_item($ptr)
     set (*$ptr).val = (*$ptr).val + 100
     set (*$ptr).calitate = "Epica"
 endfunc
@@ -45,7 +45,7 @@ echo "Self-pointer (nu ar trebui sa inghete): " + $self
 echo "--- TEST FINALIZAT CU SUCCES ---"
 dm
 
-func print_list ptr
+func print_list($ptr)
     if $ptr == null then
         return 0
     endif

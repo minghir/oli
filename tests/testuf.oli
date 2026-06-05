@@ -13,3 +13,4 @@ SET $input = 5
 SET $rez = FACTORIAL($input)
 
 ECHO "Factorialul lui " + $input + " este: " + $rez
+input()

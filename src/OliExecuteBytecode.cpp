@@ -1473,7 +1473,7 @@ case OpCode::OP_CALL_METHOD: {
         this->m_executionStatus = OliStatus::ERR;
         break;
     }
-
+    /*
      case OpCode::OP_SET_PTR: {
             // Stiva la noi este: [Valoare_Noua, Adresa]
             if (stack.size() < 2) {
@@ -1500,6 +1500,76 @@ case OpCode::OP_CALL_METHOD: {
             }
             break;
         }
+    */
+
+    case OpCode::OP_SET_PTR: {
+        // Stiva conține: [Valoare_Noua, Adresa/Numele_Variabilei] <- top
+        if (stack.size() < 2) {
+            LOG_ERROR(L"OP_SET_PTR Error: Stiva are prea putine elemente!");
+            this->m_executionStatus = OliStatus::ERR;
+            break;
+        }
+
+        vData ptrData = stack.back(); stack.pop_back();   // Extragem adresa (Pointer sau String)
+        vData newValue = stack.back(); stack.pop_back(); // Extragem valoarea nouă
+
+        // 1. Compatibilitate înapoi: Dacă este un pointer brut C++ (vData*)
+        if (vData** addrPtr = std::get_if<vData*>(&ptrData.value)) {
+            if (*addrPtr) {
+                **addrPtr = newValue;
+                if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                    LOG_DEBUG(L"[VM] Pointer brut Write SUCCESS: " + newValue.toWString());
+                }
+            }
+            else {
+                LOG_ERROR(L"Runtime Error: Încercare scriere prin Null Pointer brut.");
+                this->m_executionStatus = OliStatus::ERR;
+            }
+        }
+        // 2. 🔥 NOU: Suport pentru noua arhitectură dinamică bazată pe String-uri ("a")
+        else if (ptrData.isString()) {
+            std::wstring rawName = ptrData.toWString();
+            std::wstring cleanName = this->cleanVariableName(rawName);
+
+            bool assigned = false;
+
+            // A. Încercăm să scriem în tabela de variabile globale
+            if (m_globalVariables.count(cleanName)) {
+                m_globalVariables[cleanName] = newValue;
+                assigned = true;
+            }
+            // B. Altfel, căutăm variabila în parametrii locali ai funcției Bytecode curente
+            else {
+                for (auto const& [funcName, proc] : this->m_bytecodeFunctions) {
+                    if (proc.compiledBody.get() == &chunk) {
+                        bool isMethod = (funcName.find(L"::") != std::wstring::npos);
+                        for (size_t i = 0; i < proc.params.size(); ++i) {
+                            if (this->cleanVariableName(proc.params[i]) == cleanName) {
+                                size_t slot = i + (isMethod ? 1 : 0);
+                                if (framePtr + slot < stack.size()) {
+                                    stack[framePtr + slot] = newValue;
+                                    assigned = true;
+                                }
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // C. Fallback: Dacă variabila nu a fost găsită (ex: pointer către o variabilă nouă), o creăm global
+            if (!assigned) {
+                m_globalVariables[cleanName] = newValue;
+            }
+        }
+        else {
+            LOG_ERROR(L"Runtime Error: Se astepta un Pointer sau String pentru OP_SET_PTR, dar s-a primit: " + getVariantTypeName(ptrData));
+            this->m_executionStatus = OliStatus::ERR;
+        }
+        break;
+    }
+
         case OpCode::OP_SWAP: {
             if (stack.size() < 2) break;
             vData a = stack.back(); stack.pop_back();

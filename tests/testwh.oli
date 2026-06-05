@@ -24,3 +24,4 @@ WHILE $row <= 3 DO
 ENDWHILE
 
 ECHO "--- TEST FINALIZAT CU SUCCES ---"
+input()

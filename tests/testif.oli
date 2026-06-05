@@ -36,3 +36,4 @@ ENDIF
 
 ECHO "--- SFARSIT TEST ---"
 
+input()

@@ -10,3 +10,4 @@ echo $d
 
 echo 5 & 3
 echo 5 | 3
+input()

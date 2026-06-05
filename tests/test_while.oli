@@ -48,3 +48,4 @@ while $y < 2 do
     set $y = $y + 1
 endwhile
 echo "Gata!"
+input()

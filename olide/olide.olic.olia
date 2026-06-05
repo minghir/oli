@@ -1,5 +1,5 @@
 ﻿--- OLI ASSEMBLY LISTING ---
-Source: olide/olide.oli
+Source: ./olide/olide.oli
 Generated: 2026-05-11
 
 
@@ -64,721 +64,640 @@ Generated: 2026-05-11
     Method [0]: 0022 (Name: INIT)
     Method [1]: 0045 (Name: APPEND_TEXT)
     Method [2]: 0046 (Name: SET_READ_ONLY)
-0186: OP_DEF_TYPE      0047 (Type: WINRICHCONSOLE EXTENDS WINRICHEDIT, CLASS, Fields: 0, Methods: 1)
+0186: OP_DEF_TYPE      0047 (Type: WINRICHCONSOLE EXTENDS WINRICHEDIT, CLASS, Fields: 0, Methods: 2)
     Method [0]: 0022 (Name: INIT)
-0196: OP_CONSTANT     0048 (Value: AM DEFINIT CLASELE)
-0199: OP_ECHO
-0200: OP_CONSTANT     0007 (Value: )
-0203: OP_SET_GLOBAL   0049 (Name: file)
-0206: OP_CONSTANT     0050 (Value: oli.exe)
-0209: OP_SET_GLOBAL   0051 (Name: oli_path)
-0212: OP_CONSTANT     0052 (Value: null)
-0215: OP_SET_GLOBAL   0053 (Name: activeCodeView)
-0218: OP_CONSTANT     0054 (Value: CREEZ APP)
-0221: OP_ECHO
-0222: OP_CONSTANT     0055 (Value: WinApp)
-0225: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-0229: OP_SET_GLOBAL   0057 (Name: app)
-0232: OP_GET_GLOBAL   0057 (Name: app)
-0235: OP_CONSTANT     0058 (Value: init)
-0238: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
-0240: OP_POP
-0241: OP_CONSTANT     0059 (Value: CREEZ WIN)
-0244: OP_ECHO
-0245: OP_CONSTANT     0060 (Value: WinWindow)
-0248: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-0252: OP_SET_GLOBAL   0061 (Name: win)
-0255: OP_CONSTANT     0062 (Value: fereastra_principala)
-0258: OP_CONSTANT     0063 (Value: Oli WINUI)
-0261: OP_GET_GLOBAL   0061 (Name: win)
-0264: OP_CONSTANT     0058 (Value: init)
-0267: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0269: OP_POP
-0270: OP_CONSTANT     0064 (Value: ./olide/assets/Oli_Icon.ico)
-0273: OP_GET_GLOBAL   0061 (Name: win)
-0276: OP_CONSTANT     0065 (Value: set_icon)
-0279: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0281: OP_POP
-0282: OP_CONSTANT     0066 (Value: GRID)
-0285: OP_GET_GLOBAL   0061 (Name: win)
-0288: OP_CONSTANT     0067 (Value: set_layout)
-0291: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0293: OP_POP
-0294: OP_CONSTANT     0068 (Value: CREEZ STRUCTURA DE MENIURI)
-0297: OP_ECHO
-0298: OP_CONSTANT     0069 (Value: WinMenu)
-0301: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-0305: OP_SET_GLOBAL   0070 (Name: mainMenu)
-0308: OP_CONSTANT     0071 (Value: menu_principal)
-0311: OP_CONSTANT     0062 (Value: fereastra_principala)
-0314: OP_GET_GLOBAL   0070 (Name: mainMenu)
-0317: OP_CONSTANT     0058 (Value: init)
-0320: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0322: OP_POP
-0323: OP_CONSTANT     0069 (Value: WinMenu)
-0326: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-0330: OP_SET_GLOBAL   0072 (Name: fileMenu)
-0333: OP_CONSTANT     0073 (Value: menu_file)
-0336: OP_CONSTANT     0071 (Value: menu_principal)
-0339: OP_GET_GLOBAL   0072 (Name: fileMenu)
-0342: OP_CONSTANT     0058 (Value: init)
-0345: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0347: OP_POP
-0348: OP_CONSTANT     0074 (Value: menu_new)
-0351: OP_CONSTANT     0075 (Value: New)
-0354: OP_GET_GLOBAL   0072 (Name: fileMenu)
-0357: OP_CONSTANT     0076 (Value: add_item)
-0360: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0362: OP_POP
-0363: OP_CONSTANT     0077 (Value: menu_open)
-0366: OP_CONSTANT     0078 (Value: Open...)
-0369: OP_GET_GLOBAL   0072 (Name: fileMenu)
-0372: OP_CONSTANT     0076 (Value: add_item)
-0375: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0377: OP_POP
-0378: OP_CONSTANT     0079 (Value: menu_save)
-0381: OP_CONSTANT     0080 (Value: Save)
-0384: OP_GET_GLOBAL   0072 (Name: fileMenu)
-0387: OP_CONSTANT     0076 (Value: add_item)
-0390: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0392: OP_POP
-0393: OP_CONSTANT     0081 (Value: menu_save_as)
-0396: OP_CONSTANT     0082 (Value: Save As...)
-0399: OP_GET_GLOBAL   0072 (Name: fileMenu)
-0402: OP_CONSTANT     0076 (Value: add_item)
-0405: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0407: OP_POP
-0408: OP_CONSTANT     0083 (Value: menu_close)
-0411: OP_CONSTANT     0084 (Value: Close File)
-0414: OP_GET_GLOBAL   0072 (Name: fileMenu)
-0417: OP_CONSTANT     0076 (Value: add_item)
-0420: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0422: OP_POP
-0423: OP_CONSTANT     0085 (Value: sep_1)
-0426: OP_GET_GLOBAL   0072 (Name: fileMenu)
-0429: OP_CONSTANT     0086 (Value: add_separator)
-0432: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0434: OP_POP
-0435: OP_CONSTANT     0087 (Value: menu_exit)
-0438: OP_CONSTANT     0088 (Value: Exit Application)
-0441: OP_GET_GLOBAL   0072 (Name: fileMenu)
-0444: OP_CONSTANT     0076 (Value: add_item)
-0447: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0449: OP_POP
-0450: OP_CONSTANT     0069 (Value: WinMenu)
-0453: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-0457: OP_SET_GLOBAL   0089 (Name: helpMenu)
-0460: OP_CONSTANT     0090 (Value: menu_help)
-0463: OP_CONSTANT     0071 (Value: menu_principal)
-0466: OP_GET_GLOBAL   0089 (Name: helpMenu)
-0469: OP_CONSTANT     0058 (Value: init)
-0472: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0474: OP_POP
-0475: OP_CONSTANT     0091 (Value: menu_about)
-0478: OP_CONSTANT     0092 (Value: About Oli IDE)
-0481: OP_GET_GLOBAL   0089 (Name: helpMenu)
-0484: OP_CONSTANT     0076 (Value: add_item)
-0487: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0489: OP_POP
-0490: OP_CONSTANT     0069 (Value: WinMenu)
-0493: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-0497: OP_SET_GLOBAL   0093 (Name: toolsMenu)
-0500: OP_CONSTANT     0094 (Value: menu_tools)
-0503: OP_CONSTANT     0071 (Value: menu_principal)
-0506: OP_GET_GLOBAL   0093 (Name: toolsMenu)
-0509: OP_CONSTANT     0058 (Value: init)
-0512: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0514: OP_POP
-0515: OP_CONSTANT     0095 (Value: menu_interpreter)
-0518: OP_CONSTANT     0096 (Value: Interpreter)
-0521: OP_GET_GLOBAL   0093 (Name: toolsMenu)
-0524: OP_CONSTANT     0076 (Value: add_item)
-0527: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0529: OP_POP
-0530: OP_CONSTANT     0097 (Value: menu_command)
-0533: OP_CONSTANT     0098 (Value: Command prompt)
-0536: OP_GET_GLOBAL   0093 (Name: toolsMenu)
-0539: OP_CONSTANT     0076 (Value: add_item)
-0542: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0544: OP_POP
-0545: OP_CONSTANT     0069 (Value: WinMenu)
-0548: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-0552: OP_SET_GLOBAL   0099 (Name: buildMenu)
-0555: OP_CONSTANT     0100 (Value: menu_build)
-0558: OP_CONSTANT     0071 (Value: menu_principal)
-0561: OP_GET_GLOBAL   0099 (Name: buildMenu)
-0564: OP_CONSTANT     0058 (Value: init)
-0567: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0569: OP_POP
-0570: OP_CONSTANT     0100 (Value: menu_build)
-0573: OP_CONSTANT     0101 (Value: Build)
-0576: OP_GET_GLOBAL   0099 (Name: buildMenu)
-0579: OP_CONSTANT     0076 (Value: add_item)
-0582: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0584: OP_POP
-0585: OP_CONSTANT     0102 (Value: menu_compile)
-0588: OP_CONSTANT     0103 (Value: Compile)
-0591: OP_GET_GLOBAL   0099 (Name: buildMenu)
-0594: OP_CONSTANT     0076 (Value: add_item)
-0597: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0599: OP_POP
-0600: OP_CONSTANT     0104 (Value: File)
-0603: OP_GET_GLOBAL   0072 (Name: fileMenu)
-0606: OP_GET_GLOBAL   0070 (Name: mainMenu)
-0609: OP_CONSTANT     0105 (Value: add_submenu)
-0612: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0614: OP_POP
-0615: OP_CONSTANT     0101 (Value: Build)
-0618: OP_GET_GLOBAL   0099 (Name: buildMenu)
-0621: OP_GET_GLOBAL   0070 (Name: mainMenu)
-0624: OP_CONSTANT     0105 (Value: add_submenu)
-0627: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0629: OP_POP
-0630: OP_CONSTANT     0106 (Value: Tools)
-0633: OP_GET_GLOBAL   0093 (Name: toolsMenu)
-0636: OP_GET_GLOBAL   0070 (Name: mainMenu)
-0639: OP_CONSTANT     0105 (Value: add_submenu)
-0642: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0644: OP_POP
-0645: OP_CONSTANT     0107 (Value: Help)
-0648: OP_GET_GLOBAL   0089 (Name: helpMenu)
-0651: OP_GET_GLOBAL   0070 (Name: mainMenu)
-0654: OP_CONSTANT     0105 (Value: add_submenu)
-0657: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0659: OP_POP
-0660: OP_CONSTANT     0108 (Value: menu)
-0663: OP_CONSTANT     0071 (Value: menu_principal)
-0666: OP_GET_GLOBAL   0061 (Name: win)
-0669: OP_CONSTANT     0109 (Value: set_prop)
-0672: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0674: OP_POP
-0675: OP_CONSTANT     0074 (Value: menu_new)
-0678: OP_CONSTANT     0110 (Value: menu_new_click)
-0681: OP_GET_GLOBAL   0061 (Name: win)
-0684: OP_CONSTANT     0111 (Value: bind)
-0687: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0689: OP_POP
-0690: OP_CONSTANT     0077 (Value: menu_open)
-0693: OP_CONSTANT     0112 (Value: menu_open_click)
-0696: OP_GET_GLOBAL   0061 (Name: win)
-0699: OP_CONSTANT     0111 (Value: bind)
-0702: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0704: OP_POP
-0705: OP_CONSTANT     0079 (Value: menu_save)
-0708: OP_CONSTANT     0113 (Value: menu_save_click)
-0711: OP_GET_GLOBAL   0061 (Name: win)
-0714: OP_CONSTANT     0111 (Value: bind)
-0717: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0719: OP_POP
-0720: OP_CONSTANT     0081 (Value: menu_save_as)
-0723: OP_CONSTANT     0114 (Value: menu_save_as_click)
-0726: OP_GET_GLOBAL   0061 (Name: win)
-0729: OP_CONSTANT     0111 (Value: bind)
-0732: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0734: OP_POP
-0735: OP_CONSTANT     0083 (Value: menu_close)
-0738: OP_CONSTANT     0115 (Value: menu_close_click)
-0741: OP_GET_GLOBAL   0061 (Name: win)
-0744: OP_CONSTANT     0111 (Value: bind)
-0747: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0749: OP_POP
-0750: OP_CONSTANT     0087 (Value: menu_exit)
-0753: OP_CONSTANT     0116 (Value: menu_exit_click)
-0756: OP_GET_GLOBAL   0061 (Name: win)
-0759: OP_CONSTANT     0111 (Value: bind)
-0762: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0764: OP_POP
-0765: OP_CONSTANT     0091 (Value: menu_about)
-0768: OP_CONSTANT     0117 (Value: menu_about_click)
-0771: OP_GET_GLOBAL   0061 (Name: win)
-0774: OP_CONSTANT     0111 (Value: bind)
-0777: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0779: OP_POP
-0780: OP_CONSTANT     0095 (Value: menu_interpreter)
-0783: OP_CONSTANT     0118 (Value: menu_interpreter_click)
-0786: OP_GET_GLOBAL   0061 (Name: win)
-0789: OP_CONSTANT     0111 (Value: bind)
-0792: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0794: OP_POP
-0795: OP_CONSTANT     0097 (Value: menu_command)
-0798: OP_CONSTANT     0119 (Value: menu_command_click)
-0801: OP_GET_GLOBAL   0061 (Name: win)
-0804: OP_CONSTANT     0111 (Value: bind)
-0807: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0809: OP_POP
-0810: OP_CONSTANT     0102 (Value: menu_compile)
-0813: OP_CONSTANT     0120 (Value: menu_compile_click)
-0816: OP_GET_GLOBAL   0061 (Name: win)
-0819: OP_CONSTANT     0111 (Value: bind)
-0822: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0824: OP_POP
-0825: OP_CONSTANT     0100 (Value: menu_build)
-0828: OP_CONSTANT     0121 (Value: menu_build_click)
-0831: OP_GET_GLOBAL   0061 (Name: win)
-0834: OP_CONSTANT     0111 (Value: bind)
-0837: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0839: OP_POP
-0840: OP_CONSTANT     0122 (Value: CREEZ Main panel)
-0843: OP_ECHO
-0844: OP_CONSTANT     0123 (Value: WinPanel)
-0847: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-0851: OP_SET_GLOBAL   0124 (Name: mainPanel)
-0854: OP_CONSTANT     0125 (Value: main_panel)
-0857: OP_CONSTANT     0062 (Value: fereastra_principala)
-0860: OP_CONSTANT     0126 (Value: 0)
-0863: OP_CONSTANT     0126 (Value: 0)
-0866: OP_CONSTANT     0127 (Value: 40)
-0869: OP_CONSTANT     0127 (Value: 40)
-0872: OP_GET_GLOBAL   0124 (Name: mainPanel)
-0875: OP_CONSTANT     0058 (Value: init)
-0878: OP_CALL_METHOD     (Args: 6, Context & Name on Stack)
-0880: OP_POP
-0881: OP_CONSTANT     0128 (Value: VSTACK)
-0884: OP_GET_GLOBAL   0124 (Name: mainPanel)
-0887: OP_CONSTANT     0067 (Value: set_layout)
-0890: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0892: OP_POP
-0893: OP_CONSTANT     0129 (Value: FILL)
-0896: OP_GET_GLOBAL   0124 (Name: mainPanel)
-0899: OP_CONSTANT     0130 (Value: set_width_mode)
-0902: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0904: OP_POP
-0905: OP_CONSTANT     0129 (Value: FILL)
-0908: OP_GET_GLOBAL   0124 (Name: mainPanel)
-0911: OP_CONSTANT     0131 (Value: set_height_mode)
-0914: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0916: OP_POP
-0917: OP_CONSTANT     0132 (Value: 10)
-0920: OP_GET_GLOBAL   0124 (Name: mainPanel)
-0923: OP_CONSTANT     0133 (Value: set_margin)
-0926: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0928: OP_POP
-0929: OP_CONSTANT     0134 (Value: CREEZ act panel)
-0932: OP_ECHO
-0933: OP_CONSTANT     0123 (Value: WinPanel)
-0936: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-0940: OP_SET_GLOBAL   0135 (Name: actPanel)
-0943: OP_CONSTANT     0136 (Value: act_panel)
-0946: OP_CONSTANT     0125 (Value: main_panel)
-0949: OP_CONSTANT     0126 (Value: 0)
-0952: OP_CONSTANT     0126 (Value: 0)
-0955: OP_CONSTANT     0127 (Value: 40)
-0958: OP_CONSTANT     0127 (Value: 40)
-0961: OP_GET_GLOBAL   0135 (Name: actPanel)
-0964: OP_CONSTANT     0058 (Value: init)
-0967: OP_CALL_METHOD     (Args: 6, Context & Name on Stack)
-0969: OP_POP
-0970: OP_CONSTANT     0137 (Value: HSTACK)
-0973: OP_GET_GLOBAL   0135 (Name: actPanel)
-0976: OP_CONSTANT     0067 (Value: set_layout)
-0979: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0981: OP_POP
-0982: OP_CONSTANT     0129 (Value: FILL)
-0985: OP_GET_GLOBAL   0135 (Name: actPanel)
-0988: OP_CONSTANT     0130 (Value: set_width_mode)
-0991: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0993: OP_POP
-0994: OP_CONSTANT     0138 (Value: FIXED)
-0997: OP_GET_GLOBAL   0135 (Name: actPanel)
-1000: OP_CONSTANT     0131 (Value: set_height_mode)
-1003: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1005: OP_POP
-1006: OP_CONSTANT     0132 (Value: 10)
-1009: OP_GET_GLOBAL   0135 (Name: actPanel)
-1012: OP_CONSTANT     0133 (Value: set_margin)
-1015: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1017: OP_POP
-1018: OP_CONSTANT     0139 (Value: WinTabControl)
-1021: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-1025: OP_SET_GLOBAL   0140 (Name: tabs)
-1028: OP_CONSTANT     0141 (Value: main_tabs)
-1031: OP_CONSTANT     0125 (Value: main_panel)
-1034: OP_CONSTANT     0126 (Value: 0)
-1037: OP_CONSTANT     0126 (Value: 0)
-1040: OP_CONSTANT     0142 (Value: 600)
-1043: OP_CONSTANT     0143 (Value: 400)
-1046: OP_GET_GLOBAL   0140 (Name: tabs)
-1049: OP_CONSTANT     0058 (Value: init)
-1052: OP_CALL_METHOD     (Args: 6, Context & Name on Stack)
-1054: OP_POP
-1055: OP_CONSTANT     0129 (Value: FILL)
-1058: OP_GET_GLOBAL   0140 (Name: tabs)
-1061: OP_CONSTANT     0130 (Value: set_width_mode)
-1064: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1066: OP_POP
-1067: OP_CONSTANT     0129 (Value: FILL)
-1070: OP_GET_GLOBAL   0140 (Name: tabs)
-1073: OP_CONSTANT     0131 (Value: set_height_mode)
-1076: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1078: OP_POP
-1079: OP_CONSTANT     0144 (Value: CREEZ run button)
-1082: OP_ECHO
-1083: OP_CONSTANT     0145 (Value: WinButton)
-1086: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-1090: OP_SET_GLOBAL   0146 (Name: runButton)
-1093: OP_CONSTANT     0147 (Value: btn_run)
-1096: OP_CONSTANT     0136 (Value: act_panel)
-1099: OP_CONSTANT     0132 (Value: 10)
-1102: OP_CONSTANT     0148 (Value: 4)
-1105: OP_CONSTANT     0149 (Value: 30)
-1108: OP_CONSTANT     0149 (Value: 30)
-1111: OP_CONSTANT     0150 (Value: ▶)
-1114: OP_GET_GLOBAL   0146 (Name: runButton)
-1117: OP_CONSTANT     0058 (Value: init)
-1120: OP_CALL_METHOD     (Args: 7, Context & Name on Stack)
-1122: OP_POP
-1123: OP_CONSTANT     0151 (Value: font_name)
-1126: OP_CONSTANT     0152 (Value: Segoe UI Symbol)
-1129: OP_GET_GLOBAL   0146 (Name: runButton)
-1132: OP_CONSTANT     0109 (Value: set_prop)
-1135: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-1137: OP_POP
-1138: OP_CONSTANT     0153 (Value: RIGHT|BOTTOM)
-1141: OP_GET_GLOBAL   0146 (Name: runButton)
-1144: OP_CONSTANT     0154 (Value: set_anchor)
-1147: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1149: OP_POP
-1150: OP_CONSTANT     0138 (Value: FIXED)
-1153: OP_GET_GLOBAL   0146 (Name: runButton)
-1156: OP_CONSTANT     0130 (Value: set_width_mode)
-1159: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1161: OP_POP
-1162: OP_CONSTANT     0155 (Value: 1)
-1165: OP_GET_GLOBAL   0146 (Name: runButton)
-1168: OP_CONSTANT     0133 (Value: set_margin)
-1171: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1173: OP_POP
-1174: OP_CONSTANT     0145 (Value: WinButton)
-1177: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-1181: OP_SET_GLOBAL   0156 (Name: newButton)
-1184: OP_CONSTANT     0157 (Value: btn_new)
-1187: OP_CONSTANT     0136 (Value: act_panel)
-1190: OP_CONSTANT     0158 (Value: 60)
-1193: OP_CONSTANT     0148 (Value: 4)
-1196: OP_CONSTANT     0149 (Value: 30)
-1199: OP_CONSTANT     0149 (Value: 30)
-1202: OP_CONSTANT     0159 (Value: 🆕)
-1205: OP_GET_GLOBAL   0156 (Name: newButton)
-1208: OP_CONSTANT     0058 (Value: init)
-1211: OP_CALL_METHOD     (Args: 7, Context & Name on Stack)
-1213: OP_POP
-1214: OP_CONSTANT     0153 (Value: RIGHT|BOTTOM)
-1217: OP_GET_GLOBAL   0156 (Name: newButton)
-1220: OP_CONSTANT     0154 (Value: set_anchor)
-1223: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1225: OP_POP
-1226: OP_CONSTANT     0138 (Value: FIXED)
-1229: OP_GET_GLOBAL   0156 (Name: newButton)
-1232: OP_CONSTANT     0130 (Value: set_width_mode)
-1235: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1237: OP_POP
-1238: OP_CONSTANT     0155 (Value: 1)
-1241: OP_GET_GLOBAL   0156 (Name: newButton)
-1244: OP_CONSTANT     0133 (Value: set_margin)
-1247: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1249: OP_POP
-1250: OP_CONSTANT     0145 (Value: WinButton)
-1253: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-1257: OP_SET_GLOBAL   0160 (Name: saveButton)
-1260: OP_CONSTANT     0161 (Value: btn_save)
-1263: OP_CONSTANT     0136 (Value: act_panel)
-1266: OP_CONSTANT     0162 (Value: 95)
-1269: OP_CONSTANT     0148 (Value: 4)
-1272: OP_CONSTANT     0149 (Value: 30)
-1275: OP_CONSTANT     0149 (Value: 30)
-1278: OP_CONSTANT     0163 (Value: 💾)
-1281: OP_GET_GLOBAL   0160 (Name: saveButton)
-1284: OP_CONSTANT     0058 (Value: init)
-1287: OP_CALL_METHOD     (Args: 7, Context & Name on Stack)
-1289: OP_POP
-1290: OP_CONSTANT     0153 (Value: RIGHT|BOTTOM)
-1293: OP_GET_GLOBAL   0160 (Name: saveButton)
-1296: OP_CONSTANT     0154 (Value: set_anchor)
-1299: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1301: OP_POP
-1302: OP_CONSTANT     0138 (Value: FIXED)
-1305: OP_GET_GLOBAL   0160 (Name: saveButton)
-1308: OP_CONSTANT     0130 (Value: set_width_mode)
-1311: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1313: OP_POP
-1314: OP_CONSTANT     0155 (Value: 1)
-1317: OP_GET_GLOBAL   0160 (Name: saveButton)
-1320: OP_CONSTANT     0133 (Value: set_margin)
-1323: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1325: OP_POP
-1326: OP_CONSTANT     0145 (Value: WinButton)
-1329: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-1333: OP_SET_GLOBAL   0164 (Name: openButton)
-1336: OP_CONSTANT     0165 (Value: btn_open)
-1339: OP_CONSTANT     0136 (Value: act_panel)
-1342: OP_CONSTANT     0162 (Value: 95)
-1345: OP_CONSTANT     0148 (Value: 4)
-1348: OP_CONSTANT     0149 (Value: 30)
-1351: OP_CONSTANT     0149 (Value: 30)
-1354: OP_CONSTANT     0166 (Value: 📂)
-1357: OP_GET_GLOBAL   0164 (Name: openButton)
-1360: OP_CONSTANT     0058 (Value: init)
-1363: OP_CALL_METHOD     (Args: 7, Context & Name on Stack)
-1365: OP_POP
-1366: OP_CONSTANT     0153 (Value: RIGHT|BOTTOM)
-1369: OP_GET_GLOBAL   0164 (Name: openButton)
-1372: OP_CONSTANT     0154 (Value: set_anchor)
-1375: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1377: OP_POP
-1378: OP_CONSTANT     0138 (Value: FIXED)
-1381: OP_GET_GLOBAL   0164 (Name: openButton)
-1384: OP_CONSTANT     0130 (Value: set_width_mode)
-1387: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1389: OP_POP
-1390: OP_CONSTANT     0155 (Value: 1)
-1393: OP_GET_GLOBAL   0164 (Name: openButton)
-1396: OP_CONSTANT     0133 (Value: set_margin)
-1399: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1401: OP_POP
-1402: OP_CONSTANT     0145 (Value: WinButton)
-1405: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-1409: OP_SET_GLOBAL   0167 (Name: closeButton)
-1412: OP_CONSTANT     0168 (Value: btn_close)
-1415: OP_CONSTANT     0136 (Value: act_panel)
-1418: OP_CONSTANT     0169 (Value: 130)
-1421: OP_CONSTANT     0148 (Value: 4)
-1424: OP_CONSTANT     0149 (Value: 30)
-1427: OP_CONSTANT     0149 (Value: 30)
-1430: OP_CONSTANT     0170 (Value: ❌)
-1433: OP_GET_GLOBAL   0167 (Name: closeButton)
-1436: OP_CONSTANT     0058 (Value: init)
-1439: OP_CALL_METHOD     (Args: 7, Context & Name on Stack)
-1441: OP_POP
-1442: OP_CONSTANT     0153 (Value: RIGHT|BOTTOM)
-1445: OP_GET_GLOBAL   0167 (Name: closeButton)
-1448: OP_CONSTANT     0154 (Value: set_anchor)
-1451: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1453: OP_POP
-1454: OP_CONSTANT     0138 (Value: FIXED)
-1457: OP_GET_GLOBAL   0167 (Name: closeButton)
-1460: OP_CONSTANT     0130 (Value: set_width_mode)
-1463: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1465: OP_POP
-1466: OP_CONSTANT     0155 (Value: 1)
-1469: OP_GET_GLOBAL   0167 (Name: closeButton)
-1472: OP_CONSTANT     0133 (Value: set_margin)
-1475: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1477: OP_POP
-1478: OP_CONSTANT     0171 (Value: click)
-1481: OP_CONSTANT     0172 (Value: run_click)
-1484: OP_GET_GLOBAL   0146 (Name: runButton)
-1487: OP_CONSTANT     0111 (Value: bind)
-1490: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-1492: OP_POP
-1493: OP_CONSTANT     0171 (Value: click)
-1496: OP_CONSTANT     0173 (Value: save_click)
-1499: OP_GET_GLOBAL   0160 (Name: saveButton)
-1502: OP_CONSTANT     0111 (Value: bind)
-1505: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-1507: OP_POP
-1508: OP_CONSTANT     0171 (Value: click)
-1511: OP_CONSTANT     0173 (Value: save_click)
-1514: OP_GET_GLOBAL   0160 (Name: saveButton)
-1517: OP_CONSTANT     0111 (Value: bind)
-1520: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-1522: OP_POP
-1523: OP_CONSTANT     0171 (Value: click)
-1526: OP_CONSTANT     0110 (Value: menu_new_click)
-1529: OP_GET_GLOBAL   0156 (Name: newButton)
-1532: OP_CONSTANT     0111 (Value: bind)
-1535: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-1537: OP_POP
-1538: OP_CONSTANT     0171 (Value: click)
-1541: OP_CONSTANT     0112 (Value: menu_open_click)
-1544: OP_GET_GLOBAL   0164 (Name: openButton)
-1547: OP_CONSTANT     0111 (Value: bind)
-1550: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-1552: OP_POP
-1553: OP_CONSTANT     0171 (Value: click)
-1556: OP_CONSTANT     0115 (Value: menu_close_click)
-1559: OP_GET_GLOBAL   0167 (Name: closeButton)
-1562: OP_CONSTANT     0111 (Value: bind)
-1565: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-1567: OP_POP
-1568: OP_CONSTANT     0174 (Value: CREEZ Consolă...)
-1571: OP_ECHO
-1572: OP_CONSTANT     0123 (Value: WinPanel)
-1575: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-1579: OP_SET_GLOBAL   0175 (Name: consolePanel)
-1582: OP_CONSTANT     0176 (Value: console_panel)
-1585: OP_CONSTANT     0125 (Value: main_panel)
-1588: OP_CONSTANT     0126 (Value: 0)
-1591: OP_CONSTANT     0126 (Value: 0)
-1594: OP_CONSTANT     0126 (Value: 0)
-1597: OP_CONSTANT     0177 (Value: 150)
-1600: OP_GET_GLOBAL   0175 (Name: consolePanel)
-1603: OP_CONSTANT     0058 (Value: init)
-1606: OP_CALL_METHOD     (Args: 6, Context & Name on Stack)
-1608: OP_POP
-1609: OP_CONSTANT     0066 (Value: GRID)
-1612: OP_GET_GLOBAL   0175 (Name: consolePanel)
-1615: OP_CONSTANT     0067 (Value: set_layout)
-1618: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1620: OP_POP
-1621: OP_CONSTANT     0129 (Value: FILL)
-1624: OP_GET_GLOBAL   0175 (Name: consolePanel)
-1627: OP_CONSTANT     0130 (Value: set_width_mode)
-1630: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1632: OP_POP
-1633: OP_CONSTANT     0138 (Value: FIXED)
-1636: OP_GET_GLOBAL   0175 (Name: consolePanel)
-1639: OP_CONSTANT     0131 (Value: set_height_mode)
-1642: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1644: OP_POP
-1645: OP_CONSTANT     0178 (Value: WinRichConsole)
-1648: OP_CALL_NATIVE  0056 (Name: NEW, Args: 1)
-1652: OP_SET_GLOBAL   0179 (Name: consoleOutput)
-1655: OP_CONSTANT     0180 (Value: console_output)
-1658: OP_CONSTANT     0176 (Value: console_panel)
-1661: OP_CONSTANT     0126 (Value: 0)
-1664: OP_CONSTANT     0126 (Value: 0)
-1667: OP_CONSTANT     0181 (Value: 100)
-1670: OP_CONSTANT     0177 (Value: 150)
-1673: OP_GET_GLOBAL   0179 (Name: consoleOutput)
-1676: OP_CONSTANT     0058 (Value: init)
-1679: OP_CALL_METHOD     (Args: 6, Context & Name on Stack)
-1681: OP_POP
-1682: OP_CONSTANT     0129 (Value: FILL)
-1685: OP_GET_GLOBAL   0179 (Name: consoleOutput)
-1688: OP_CONSTANT     0130 (Value: set_width_mode)
-1691: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1693: OP_POP
-1694: OP_CONSTANT     0138 (Value: FIXED)
-1697: OP_GET_GLOBAL   0175 (Name: consolePanel)
-1700: OP_CONSTANT     0131 (Value: set_height_mode)
-1703: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1705: OP_POP
-1706: OP_CONSTANT     0182 (Value: true)
-1709: OP_GET_GLOBAL   0179 (Name: consoleOutput)
-1712: OP_CONSTANT     0183 (Value: set_read_only)
-1715: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1717: OP_POP
-1718: OP_CONSTANT     0184 (Value: 12)
-1721: OP_GET_GLOBAL   0179 (Name: consoleOutput)
-1724: OP_CONSTANT     0185 (Value: set_font_size)
-1727: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1729: OP_POP
-1730: OP_CONSTANT     0186 (Value: Oli ready...)
-1733: OP_GET_GLOBAL   0179 (Name: consoleOutput)
-1736: OP_CONSTANT     0187 (Value: set_text)
-1739: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-1741: OP_POP
-1742: OP_CONSTANT     0126 (Value: 0)
-1745: OP_SET_GLOBAL   0188 (Name: counter)
-1748: OP_CONSTANT     0189 (Value: tab_changed)
-1751: OP_CONSTANT     0190 (Value: on_tab_changed)
-1754: OP_GET_GLOBAL   0140 (Name: tabs)
-1757: OP_CONSTANT     0111 (Value: bind)
-1760: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-1762: OP_POP
-1763: OP_CALL         0191 (Name: INIT_FIRST_TAB, Args: 0)
-1767: OP_POP
-1768: OP_GET_GLOBAL   0061 (Name: win)
-1771: OP_CONSTANT     0192 (Value: show)
-1774: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+    Method [1]: 0048 (Name: SET_RESIZABLE)
+0198: OP_CONSTANT     0049 (Value: AM DEFINIT CLASELE)
+0201: OP_ECHO
+0202: OP_CONSTANT     0007 (Value: )
+0205: OP_SET_GLOBAL   0050 (Name: file)
+0208: OP_CONSTANT     0051 (Value: oli.exe)
+0211: OP_SET_GLOBAL   0052 (Name: oli_path)
+0214: OP_CONSTANT     0053 (Value: null)
+0217: OP_SET_GLOBAL   0054 (Name: activeCodeView)
+0220: OP_CONSTANT     0055 (Value: CREEZ APP)
+0223: OP_ECHO
+0224: OP_CONSTANT     0056 (Value: WinApp)
+0227: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+0231: OP_SET_GLOBAL   0058 (Name: app)
+0234: OP_GET_GLOBAL   0058 (Name: app)
+0237: OP_CONSTANT     0059 (Value: init)
+0240: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0242: OP_POP
+0243: OP_CONSTANT     0060 (Value: CREEZ WIN)
+0246: OP_ECHO
+0247: OP_CONSTANT     0061 (Value: WinWindow)
+0250: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+0254: OP_SET_GLOBAL   0062 (Name: win)
+0257: OP_CONSTANT     0063 (Value: fereastra_principala)
+0260: OP_CONSTANT     0064 (Value: Oli WINUI)
+0263: OP_GET_GLOBAL   0062 (Name: win)
+0266: OP_CONSTANT     0059 (Value: init)
+0269: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0271: OP_POP
+0272: OP_CONSTANT     0065 (Value: ./olide/assets/Oli_Icon.ico)
+0275: OP_GET_GLOBAL   0062 (Name: win)
+0278: OP_CONSTANT     0066 (Value: set_icon)
+0281: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0283: OP_POP
+0284: OP_CONSTANT     0067 (Value: GRID)
+0287: OP_GET_GLOBAL   0062 (Name: win)
+0290: OP_CONSTANT     0068 (Value: set_layout)
+0293: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0295: OP_POP
+0296: OP_CONSTANT     0069 (Value: CREEZ STRUCTURA DE MENIURI)
+0299: OP_ECHO
+0300: OP_CONSTANT     0070 (Value: WinMenu)
+0303: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+0307: OP_SET_GLOBAL   0071 (Name: mainMenu)
+0310: OP_CONSTANT     0072 (Value: menu_principal)
+0313: OP_CONSTANT     0063 (Value: fereastra_principala)
+0316: OP_GET_GLOBAL   0071 (Name: mainMenu)
+0319: OP_CONSTANT     0059 (Value: init)
+0322: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0324: OP_POP
+0325: OP_CONSTANT     0070 (Value: WinMenu)
+0328: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+0332: OP_SET_GLOBAL   0073 (Name: fileMenu)
+0335: OP_CONSTANT     0074 (Value: menu_file)
+0338: OP_CONSTANT     0072 (Value: menu_principal)
+0341: OP_GET_GLOBAL   0073 (Name: fileMenu)
+0344: OP_CONSTANT     0059 (Value: init)
+0347: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0349: OP_POP
+0350: OP_CONSTANT     0075 (Value: menu_new)
+0353: OP_CONSTANT     0076 (Value: New)
+0356: OP_GET_GLOBAL   0073 (Name: fileMenu)
+0359: OP_CONSTANT     0077 (Value: add_item)
+0362: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0364: OP_POP
+0365: OP_CONSTANT     0078 (Value: menu_open)
+0368: OP_CONSTANT     0079 (Value: Open...)
+0371: OP_GET_GLOBAL   0073 (Name: fileMenu)
+0374: OP_CONSTANT     0077 (Value: add_item)
+0377: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0379: OP_POP
+0380: OP_CONSTANT     0080 (Value: menu_save)
+0383: OP_CONSTANT     0081 (Value: Save)
+0386: OP_GET_GLOBAL   0073 (Name: fileMenu)
+0389: OP_CONSTANT     0077 (Value: add_item)
+0392: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0394: OP_POP
+0395: OP_CONSTANT     0082 (Value: menu_save_as)
+0398: OP_CONSTANT     0083 (Value: Save As...)
+0401: OP_GET_GLOBAL   0073 (Name: fileMenu)
+0404: OP_CONSTANT     0077 (Value: add_item)
+0407: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0409: OP_POP
+0410: OP_CONSTANT     0084 (Value: menu_close)
+0413: OP_CONSTANT     0085 (Value: Close File)
+0416: OP_GET_GLOBAL   0073 (Name: fileMenu)
+0419: OP_CONSTANT     0077 (Value: add_item)
+0422: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0424: OP_POP
+0425: OP_CONSTANT     0086 (Value: sep_1)
+0428: OP_GET_GLOBAL   0073 (Name: fileMenu)
+0431: OP_CONSTANT     0087 (Value: add_separator)
+0434: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0436: OP_POP
+0437: OP_CONSTANT     0088 (Value: menu_exit)
+0440: OP_CONSTANT     0089 (Value: Exit Application)
+0443: OP_GET_GLOBAL   0073 (Name: fileMenu)
+0446: OP_CONSTANT     0077 (Value: add_item)
+0449: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0451: OP_POP
+0452: OP_CONSTANT     0070 (Value: WinMenu)
+0455: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+0459: OP_SET_GLOBAL   0090 (Name: helpMenu)
+0462: OP_CONSTANT     0091 (Value: menu_help)
+0465: OP_CONSTANT     0072 (Value: menu_principal)
+0468: OP_GET_GLOBAL   0090 (Name: helpMenu)
+0471: OP_CONSTANT     0059 (Value: init)
+0474: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0476: OP_POP
+0477: OP_CONSTANT     0092 (Value: menu_about)
+0480: OP_CONSTANT     0093 (Value: About Oli IDE)
+0483: OP_GET_GLOBAL   0090 (Name: helpMenu)
+0486: OP_CONSTANT     0077 (Value: add_item)
+0489: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0491: OP_POP
+0492: OP_CONSTANT     0070 (Value: WinMenu)
+0495: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+0499: OP_SET_GLOBAL   0094 (Name: toolsMenu)
+0502: OP_CONSTANT     0095 (Value: menu_tools)
+0505: OP_CONSTANT     0072 (Value: menu_principal)
+0508: OP_GET_GLOBAL   0094 (Name: toolsMenu)
+0511: OP_CONSTANT     0059 (Value: init)
+0514: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0516: OP_POP
+0517: OP_CONSTANT     0096 (Value: menu_interpreter)
+0520: OP_CONSTANT     0097 (Value: Interpreter)
+0523: OP_GET_GLOBAL   0094 (Name: toolsMenu)
+0526: OP_CONSTANT     0077 (Value: add_item)
+0529: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0531: OP_POP
+0532: OP_CONSTANT     0098 (Value: menu_command)
+0535: OP_CONSTANT     0099 (Value: Command prompt)
+0538: OP_GET_GLOBAL   0094 (Name: toolsMenu)
+0541: OP_CONSTANT     0077 (Value: add_item)
+0544: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0546: OP_POP
+0547: OP_CONSTANT     0070 (Value: WinMenu)
+0550: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+0554: OP_SET_GLOBAL   0100 (Name: buildMenu)
+0557: OP_CONSTANT     0101 (Value: menu_build)
+0560: OP_CONSTANT     0072 (Value: menu_principal)
+0563: OP_GET_GLOBAL   0100 (Name: buildMenu)
+0566: OP_CONSTANT     0059 (Value: init)
+0569: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0571: OP_POP
+0572: OP_CONSTANT     0101 (Value: menu_build)
+0575: OP_CONSTANT     0102 (Value: Build)
+0578: OP_GET_GLOBAL   0100 (Name: buildMenu)
+0581: OP_CONSTANT     0077 (Value: add_item)
+0584: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0586: OP_POP
+0587: OP_CONSTANT     0103 (Value: menu_compile)
+0590: OP_CONSTANT     0104 (Value: Compile)
+0593: OP_GET_GLOBAL   0100 (Name: buildMenu)
+0596: OP_CONSTANT     0077 (Value: add_item)
+0599: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0601: OP_POP
+0602: OP_CONSTANT     0105 (Value: File)
+0605: OP_GET_GLOBAL   0073 (Name: fileMenu)
+0608: OP_GET_GLOBAL   0071 (Name: mainMenu)
+0611: OP_CONSTANT     0106 (Value: add_submenu)
+0614: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0616: OP_POP
+0617: OP_CONSTANT     0102 (Value: Build)
+0620: OP_GET_GLOBAL   0100 (Name: buildMenu)
+0623: OP_GET_GLOBAL   0071 (Name: mainMenu)
+0626: OP_CONSTANT     0106 (Value: add_submenu)
+0629: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0631: OP_POP
+0632: OP_CONSTANT     0107 (Value: Tools)
+0635: OP_GET_GLOBAL   0094 (Name: toolsMenu)
+0638: OP_GET_GLOBAL   0071 (Name: mainMenu)
+0641: OP_CONSTANT     0106 (Value: add_submenu)
+0644: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0646: OP_POP
+0647: OP_CONSTANT     0108 (Value: Help)
+0650: OP_GET_GLOBAL   0090 (Name: helpMenu)
+0653: OP_GET_GLOBAL   0071 (Name: mainMenu)
+0656: OP_CONSTANT     0106 (Value: add_submenu)
+0659: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0661: OP_POP
+0662: OP_CONSTANT     0109 (Value: menu)
+0665: OP_CONSTANT     0072 (Value: menu_principal)
+0668: OP_GET_GLOBAL   0062 (Name: win)
+0671: OP_CONSTANT     0110 (Value: set_prop)
+0674: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0676: OP_POP
+0677: OP_CONSTANT     0075 (Value: menu_new)
+0680: OP_CONSTANT     0111 (Value: menu_new_click)
+0683: OP_GET_GLOBAL   0062 (Name: win)
+0686: OP_CONSTANT     0112 (Value: bind)
+0689: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0691: OP_POP
+0692: OP_CONSTANT     0078 (Value: menu_open)
+0695: OP_CONSTANT     0113 (Value: menu_open_click)
+0698: OP_GET_GLOBAL   0062 (Name: win)
+0701: OP_CONSTANT     0112 (Value: bind)
+0704: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0706: OP_POP
+0707: OP_CONSTANT     0080 (Value: menu_save)
+0710: OP_CONSTANT     0114 (Value: menu_save_click)
+0713: OP_GET_GLOBAL   0062 (Name: win)
+0716: OP_CONSTANT     0112 (Value: bind)
+0719: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0721: OP_POP
+0722: OP_CONSTANT     0082 (Value: menu_save_as)
+0725: OP_CONSTANT     0115 (Value: menu_save_as_click)
+0728: OP_GET_GLOBAL   0062 (Name: win)
+0731: OP_CONSTANT     0112 (Value: bind)
+0734: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0736: OP_POP
+0737: OP_CONSTANT     0084 (Value: menu_close)
+0740: OP_CONSTANT     0116 (Value: menu_close_click)
+0743: OP_GET_GLOBAL   0062 (Name: win)
+0746: OP_CONSTANT     0112 (Value: bind)
+0749: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0751: OP_POP
+0752: OP_CONSTANT     0088 (Value: menu_exit)
+0755: OP_CONSTANT     0117 (Value: menu_exit_click)
+0758: OP_GET_GLOBAL   0062 (Name: win)
+0761: OP_CONSTANT     0112 (Value: bind)
+0764: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0766: OP_POP
+0767: OP_CONSTANT     0092 (Value: menu_about)
+0770: OP_CONSTANT     0118 (Value: menu_about_click)
+0773: OP_GET_GLOBAL   0062 (Name: win)
+0776: OP_CONSTANT     0112 (Value: bind)
+0779: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0781: OP_POP
+0782: OP_CONSTANT     0096 (Value: menu_interpreter)
+0785: OP_CONSTANT     0119 (Value: menu_interpreter_click)
+0788: OP_GET_GLOBAL   0062 (Name: win)
+0791: OP_CONSTANT     0112 (Value: bind)
+0794: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0796: OP_POP
+0797: OP_CONSTANT     0098 (Value: menu_command)
+0800: OP_CONSTANT     0120 (Value: menu_command_click)
+0803: OP_GET_GLOBAL   0062 (Name: win)
+0806: OP_CONSTANT     0112 (Value: bind)
+0809: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0811: OP_POP
+0812: OP_CONSTANT     0103 (Value: menu_compile)
+0815: OP_CONSTANT     0121 (Value: menu_compile_click)
+0818: OP_GET_GLOBAL   0062 (Name: win)
+0821: OP_CONSTANT     0112 (Value: bind)
+0824: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0826: OP_POP
+0827: OP_CONSTANT     0101 (Value: menu_build)
+0830: OP_CONSTANT     0122 (Value: menu_build_click)
+0833: OP_GET_GLOBAL   0062 (Name: win)
+0836: OP_CONSTANT     0112 (Value: bind)
+0839: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0841: OP_POP
+0842: OP_CONSTANT     0123 (Value: CREEZ Main panel)
+0845: OP_ECHO
+0846: OP_CONSTANT     0124 (Value: WinPanel)
+0849: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+0853: OP_SET_GLOBAL   0125 (Name: mainPanel)
+0856: OP_CONSTANT     0126 (Value: main_panel)
+0859: OP_CONSTANT     0063 (Value: fereastra_principala)
+0862: OP_CONSTANT     0127 (Value: 0)
+0865: OP_CONSTANT     0127 (Value: 0)
+0868: OP_CONSTANT     0128 (Value: 40)
+0871: OP_CONSTANT     0128 (Value: 40)
+0874: OP_GET_GLOBAL   0125 (Name: mainPanel)
+0877: OP_CONSTANT     0059 (Value: init)
+0880: OP_CALL_METHOD     (Args: 6, Context & Name on Stack)
+0882: OP_POP
+0883: OP_CONSTANT     0129 (Value: VSTACK)
+0886: OP_GET_GLOBAL   0125 (Name: mainPanel)
+0889: OP_CONSTANT     0068 (Value: set_layout)
+0892: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0894: OP_POP
+0895: OP_CONSTANT     0130 (Value: FILL)
+0898: OP_GET_GLOBAL   0125 (Name: mainPanel)
+0901: OP_CONSTANT     0131 (Value: set_width_mode)
+0904: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0906: OP_POP
+0907: OP_CONSTANT     0130 (Value: FILL)
+0910: OP_GET_GLOBAL   0125 (Name: mainPanel)
+0913: OP_CONSTANT     0132 (Value: set_height_mode)
+0916: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0918: OP_POP
+0919: OP_CONSTANT     0133 (Value: 10)
+0922: OP_GET_GLOBAL   0125 (Name: mainPanel)
+0925: OP_CONSTANT     0134 (Value: set_margin)
+0928: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0930: OP_POP
+0931: OP_CONSTANT     0135 (Value: CREEZ act panel)
+0934: OP_ECHO
+0935: OP_CONSTANT     0124 (Value: WinPanel)
+0938: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+0942: OP_SET_GLOBAL   0136 (Name: actPanel)
+0945: OP_CONSTANT     0137 (Value: act_panel)
+0948: OP_CONSTANT     0126 (Value: main_panel)
+0951: OP_CONSTANT     0127 (Value: 0)
+0954: OP_CONSTANT     0127 (Value: 0)
+0957: OP_CONSTANT     0128 (Value: 40)
+0960: OP_CONSTANT     0128 (Value: 40)
+0963: OP_GET_GLOBAL   0136 (Name: actPanel)
+0966: OP_CONSTANT     0059 (Value: init)
+0969: OP_CALL_METHOD     (Args: 6, Context & Name on Stack)
+0971: OP_POP
+0972: OP_CONSTANT     0138 (Value: HSTACK)
+0975: OP_GET_GLOBAL   0136 (Name: actPanel)
+0978: OP_CONSTANT     0068 (Value: set_layout)
+0981: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0983: OP_POP
+0984: OP_CONSTANT     0130 (Value: FILL)
+0987: OP_GET_GLOBAL   0136 (Name: actPanel)
+0990: OP_CONSTANT     0131 (Value: set_width_mode)
+0993: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0995: OP_POP
+0996: OP_CONSTANT     0139 (Value: FIXED)
+0999: OP_GET_GLOBAL   0136 (Name: actPanel)
+1002: OP_CONSTANT     0132 (Value: set_height_mode)
+1005: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1007: OP_POP
+1008: OP_CONSTANT     0133 (Value: 10)
+1011: OP_GET_GLOBAL   0136 (Name: actPanel)
+1014: OP_CONSTANT     0134 (Value: set_margin)
+1017: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1019: OP_POP
+1020: OP_CONSTANT     0140 (Value: WinTabControl)
+1023: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+1027: OP_SET_GLOBAL   0141 (Name: tabs)
+1030: OP_CONSTANT     0142 (Value: main_tabs)
+1033: OP_CONSTANT     0126 (Value: main_panel)
+1036: OP_CONSTANT     0127 (Value: 0)
+1039: OP_CONSTANT     0127 (Value: 0)
+1042: OP_CONSTANT     0143 (Value: 600)
+1045: OP_CONSTANT     0144 (Value: 400)
+1048: OP_GET_GLOBAL   0141 (Name: tabs)
+1051: OP_CONSTANT     0059 (Value: init)
+1054: OP_CALL_METHOD     (Args: 6, Context & Name on Stack)
+1056: OP_POP
+1057: OP_CONSTANT     0130 (Value: FILL)
+1060: OP_GET_GLOBAL   0141 (Name: tabs)
+1063: OP_CONSTANT     0131 (Value: set_width_mode)
+1066: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1068: OP_POP
+1069: OP_CONSTANT     0130 (Value: FILL)
+1072: OP_GET_GLOBAL   0141 (Name: tabs)
+1075: OP_CONSTANT     0132 (Value: set_height_mode)
+1078: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1080: OP_POP
+1081: OP_CONSTANT     0145 (Value: CREEZ run button)
+1084: OP_ECHO
+1085: OP_CONSTANT     0146 (Value: WinButton)
+1088: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+1092: OP_SET_GLOBAL   0147 (Name: runButton)
+1095: OP_CONSTANT     0148 (Value: btn_run)
+1098: OP_CONSTANT     0137 (Value: act_panel)
+1101: OP_CONSTANT     0133 (Value: 10)
+1104: OP_CONSTANT     0149 (Value: 4)
+1107: OP_CONSTANT     0150 (Value: 30)
+1110: OP_CONSTANT     0150 (Value: 30)
+1113: OP_CONSTANT     0151 (Value: ▶)
+1116: OP_GET_GLOBAL   0147 (Name: runButton)
+1119: OP_CONSTANT     0059 (Value: init)
+1122: OP_CALL_METHOD     (Args: 7, Context & Name on Stack)
+1124: OP_POP
+1125: OP_CONSTANT     0152 (Value: font_name)
+1128: OP_CONSTANT     0153 (Value: Segoe UI Symbol)
+1131: OP_GET_GLOBAL   0147 (Name: runButton)
+1134: OP_CONSTANT     0110 (Value: set_prop)
+1137: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+1139: OP_POP
+1140: OP_CONSTANT     0154 (Value: RIGHT|BOTTOM)
+1143: OP_GET_GLOBAL   0147 (Name: runButton)
+1146: OP_CONSTANT     0155 (Value: set_anchor)
+1149: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1151: OP_POP
+1152: OP_CONSTANT     0139 (Value: FIXED)
+1155: OP_GET_GLOBAL   0147 (Name: runButton)
+1158: OP_CONSTANT     0131 (Value: set_width_mode)
+1161: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1163: OP_POP
+1164: OP_CONSTANT     0156 (Value: 1)
+1167: OP_GET_GLOBAL   0147 (Name: runButton)
+1170: OP_CONSTANT     0134 (Value: set_margin)
+1173: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1175: OP_POP
+1176: OP_CONSTANT     0146 (Value: WinButton)
+1179: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+1183: OP_SET_GLOBAL   0157 (Name: newButton)
+1186: OP_CONSTANT     0158 (Value: btn_new)
+1189: OP_CONSTANT     0137 (Value: act_panel)
+1192: OP_CONSTANT     0159 (Value: 60)
+1195: OP_CONSTANT     0149 (Value: 4)
+1198: OP_CONSTANT     0150 (Value: 30)
+1201: OP_CONSTANT     0150 (Value: 30)
+1204: OP_CONSTANT     0160 (Value: 🆕)
+1207: OP_GET_GLOBAL   0157 (Name: newButton)
+1210: OP_CONSTANT     0059 (Value: init)
+1213: OP_CALL_METHOD     (Args: 7, Context & Name on Stack)
+1215: OP_POP
+1216: OP_CONSTANT     0154 (Value: RIGHT|BOTTOM)
+1219: OP_GET_GLOBAL   0157 (Name: newButton)
+1222: OP_CONSTANT     0155 (Value: set_anchor)
+1225: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1227: OP_POP
+1228: OP_CONSTANT     0139 (Value: FIXED)
+1231: OP_GET_GLOBAL   0157 (Name: newButton)
+1234: OP_CONSTANT     0131 (Value: set_width_mode)
+1237: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1239: OP_POP
+1240: OP_CONSTANT     0156 (Value: 1)
+1243: OP_GET_GLOBAL   0157 (Name: newButton)
+1246: OP_CONSTANT     0134 (Value: set_margin)
+1249: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1251: OP_POP
+1252: OP_CONSTANT     0146 (Value: WinButton)
+1255: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+1259: OP_SET_GLOBAL   0161 (Name: saveButton)
+1262: OP_CONSTANT     0162 (Value: btn_save)
+1265: OP_CONSTANT     0137 (Value: act_panel)
+1268: OP_CONSTANT     0163 (Value: 95)
+1271: OP_CONSTANT     0149 (Value: 4)
+1274: OP_CONSTANT     0150 (Value: 30)
+1277: OP_CONSTANT     0150 (Value: 30)
+1280: OP_CONSTANT     0164 (Value: 💾)
+1283: OP_GET_GLOBAL   0161 (Name: saveButton)
+1286: OP_CONSTANT     0059 (Value: init)
+1289: OP_CALL_METHOD     (Args: 7, Context & Name on Stack)
+1291: OP_POP
+1292: OP_CONSTANT     0154 (Value: RIGHT|BOTTOM)
+1295: OP_GET_GLOBAL   0161 (Name: saveButton)
+1298: OP_CONSTANT     0155 (Value: set_anchor)
+1301: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1303: OP_POP
+1304: OP_CONSTANT     0139 (Value: FIXED)
+1307: OP_GET_GLOBAL   0161 (Name: saveButton)
+1310: OP_CONSTANT     0131 (Value: set_width_mode)
+1313: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1315: OP_POP
+1316: OP_CONSTANT     0156 (Value: 1)
+1319: OP_GET_GLOBAL   0161 (Name: saveButton)
+1322: OP_CONSTANT     0134 (Value: set_margin)
+1325: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1327: OP_POP
+1328: OP_CONSTANT     0146 (Value: WinButton)
+1331: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+1335: OP_SET_GLOBAL   0165 (Name: openButton)
+1338: OP_CONSTANT     0166 (Value: btn_open)
+1341: OP_CONSTANT     0137 (Value: act_panel)
+1344: OP_CONSTANT     0163 (Value: 95)
+1347: OP_CONSTANT     0149 (Value: 4)
+1350: OP_CONSTANT     0150 (Value: 30)
+1353: OP_CONSTANT     0150 (Value: 30)
+1356: OP_CONSTANT     0167 (Value: 📂)
+1359: OP_GET_GLOBAL   0165 (Name: openButton)
+1362: OP_CONSTANT     0059 (Value: init)
+1365: OP_CALL_METHOD     (Args: 7, Context & Name on Stack)
+1367: OP_POP
+1368: OP_CONSTANT     0154 (Value: RIGHT|BOTTOM)
+1371: OP_GET_GLOBAL   0165 (Name: openButton)
+1374: OP_CONSTANT     0155 (Value: set_anchor)
+1377: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1379: OP_POP
+1380: OP_CONSTANT     0139 (Value: FIXED)
+1383: OP_GET_GLOBAL   0165 (Name: openButton)
+1386: OP_CONSTANT     0131 (Value: set_width_mode)
+1389: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1391: OP_POP
+1392: OP_CONSTANT     0156 (Value: 1)
+1395: OP_GET_GLOBAL   0165 (Name: openButton)
+1398: OP_CONSTANT     0134 (Value: set_margin)
+1401: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1403: OP_POP
+1404: OP_CONSTANT     0146 (Value: WinButton)
+1407: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+1411: OP_SET_GLOBAL   0168 (Name: closeButton)
+1414: OP_CONSTANT     0169 (Value: btn_close)
+1417: OP_CONSTANT     0137 (Value: act_panel)
+1420: OP_CONSTANT     0170 (Value: 130)
+1423: OP_CONSTANT     0149 (Value: 4)
+1426: OP_CONSTANT     0150 (Value: 30)
+1429: OP_CONSTANT     0150 (Value: 30)
+1432: OP_CONSTANT     0171 (Value: ❌)
+1435: OP_GET_GLOBAL   0168 (Name: closeButton)
+1438: OP_CONSTANT     0059 (Value: init)
+1441: OP_CALL_METHOD     (Args: 7, Context & Name on Stack)
+1443: OP_POP
+1444: OP_CONSTANT     0154 (Value: RIGHT|BOTTOM)
+1447: OP_GET_GLOBAL   0168 (Name: closeButton)
+1450: OP_CONSTANT     0155 (Value: set_anchor)
+1453: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1455: OP_POP
+1456: OP_CONSTANT     0139 (Value: FIXED)
+1459: OP_GET_GLOBAL   0168 (Name: closeButton)
+1462: OP_CONSTANT     0131 (Value: set_width_mode)
+1465: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1467: OP_POP
+1468: OP_CONSTANT     0156 (Value: 1)
+1471: OP_GET_GLOBAL   0168 (Name: closeButton)
+1474: OP_CONSTANT     0134 (Value: set_margin)
+1477: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1479: OP_POP
+1480: OP_CONSTANT     0172 (Value: click)
+1483: OP_CONSTANT     0173 (Value: run_click)
+1486: OP_GET_GLOBAL   0147 (Name: runButton)
+1489: OP_CONSTANT     0112 (Value: bind)
+1492: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+1494: OP_POP
+1495: OP_CONSTANT     0172 (Value: click)
+1498: OP_CONSTANT     0174 (Value: save_click)
+1501: OP_GET_GLOBAL   0161 (Name: saveButton)
+1504: OP_CONSTANT     0112 (Value: bind)
+1507: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+1509: OP_POP
+1510: OP_CONSTANT     0172 (Value: click)
+1513: OP_CONSTANT     0174 (Value: save_click)
+1516: OP_GET_GLOBAL   0161 (Name: saveButton)
+1519: OP_CONSTANT     0112 (Value: bind)
+1522: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+1524: OP_POP
+1525: OP_CONSTANT     0172 (Value: click)
+1528: OP_CONSTANT     0111 (Value: menu_new_click)
+1531: OP_GET_GLOBAL   0157 (Name: newButton)
+1534: OP_CONSTANT     0112 (Value: bind)
+1537: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+1539: OP_POP
+1540: OP_CONSTANT     0172 (Value: click)
+1543: OP_CONSTANT     0113 (Value: menu_open_click)
+1546: OP_GET_GLOBAL   0165 (Name: openButton)
+1549: OP_CONSTANT     0112 (Value: bind)
+1552: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+1554: OP_POP
+1555: OP_CONSTANT     0172 (Value: click)
+1558: OP_CONSTANT     0116 (Value: menu_close_click)
+1561: OP_GET_GLOBAL   0168 (Name: closeButton)
+1564: OP_CONSTANT     0112 (Value: bind)
+1567: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+1569: OP_POP
+1570: OP_CONSTANT     0175 (Value: CREEZ Consolă...)
+1573: OP_ECHO
+1574: OP_CONSTANT     0124 (Value: WinPanel)
+1577: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+1581: OP_SET_GLOBAL   0176 (Name: consolePanel)
+1584: OP_CONSTANT     0177 (Value: console_panel)
+1587: OP_CONSTANT     0126 (Value: main_panel)
+1590: OP_CONSTANT     0127 (Value: 0)
+1593: OP_CONSTANT     0127 (Value: 0)
+1596: OP_CONSTANT     0127 (Value: 0)
+1599: OP_CONSTANT     0178 (Value: 150)
+1602: OP_GET_GLOBAL   0176 (Name: consolePanel)
+1605: OP_CONSTANT     0059 (Value: init)
+1608: OP_CALL_METHOD     (Args: 6, Context & Name on Stack)
+1610: OP_POP
+1611: OP_CONSTANT     0067 (Value: GRID)
+1614: OP_GET_GLOBAL   0176 (Name: consolePanel)
+1617: OP_CONSTANT     0068 (Value: set_layout)
+1620: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1622: OP_POP
+1623: OP_CONSTANT     0130 (Value: FILL)
+1626: OP_GET_GLOBAL   0176 (Name: consolePanel)
+1629: OP_CONSTANT     0131 (Value: set_width_mode)
+1632: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1634: OP_POP
+1635: OP_CONSTANT     0139 (Value: FIXED)
+1638: OP_GET_GLOBAL   0176 (Name: consolePanel)
+1641: OP_CONSTANT     0132 (Value: set_height_mode)
+1644: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1646: OP_POP
+1647: OP_CONSTANT     0179 (Value: WinRichConsole)
+1650: OP_CALL_NATIVE  0057 (Name: NEW, Args: 1)
+1654: OP_SET_GLOBAL   0180 (Name: consoleOutput)
+1657: OP_CONSTANT     0181 (Value: console_output)
+1660: OP_CONSTANT     0177 (Value: console_panel)
+1663: OP_CONSTANT     0127 (Value: 0)
+1666: OP_CONSTANT     0127 (Value: 0)
+1669: OP_CONSTANT     0182 (Value: 100)
+1672: OP_CONSTANT     0178 (Value: 150)
+1675: OP_GET_GLOBAL   0180 (Name: consoleOutput)
+1678: OP_CONSTANT     0059 (Value: init)
+1681: OP_CALL_METHOD     (Args: 6, Context & Name on Stack)
+1683: OP_POP
+1684: OP_CONSTANT     0130 (Value: FILL)
+1687: OP_GET_GLOBAL   0180 (Name: consoleOutput)
+1690: OP_CONSTANT     0131 (Value: set_width_mode)
+1693: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1695: OP_POP
+1696: OP_CONSTANT     0139 (Value: FIXED)
+1699: OP_GET_GLOBAL   0176 (Name: consolePanel)
+1702: OP_CONSTANT     0132 (Value: set_height_mode)
+1705: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1707: OP_POP
+1708: OP_CONSTANT     0183 (Value: true)
+1711: OP_GET_GLOBAL   0180 (Name: consoleOutput)
+1714: OP_CONSTANT     0184 (Value: set_read_only)
+1717: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1719: OP_POP
+1720: OP_CONSTANT     0185 (Value: 12)
+1723: OP_GET_GLOBAL   0180 (Name: consoleOutput)
+1726: OP_CONSTANT     0186 (Value: set_font_size)
+1729: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1731: OP_POP
+1732: OP_CONSTANT     0183 (Value: true)
+1735: OP_GET_GLOBAL   0180 (Name: consoleOutput)
+1738: OP_CONSTANT     0187 (Value: set_resizable)
+1741: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1743: OP_POP
+1744: OP_CONSTANT     0188 (Value: Oli ready...)
+1747: OP_GET_GLOBAL   0180 (Name: consoleOutput)
+1750: OP_CONSTANT     0189 (Value: set_text)
+1753: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+1755: OP_POP
+1756: OP_CONSTANT     0127 (Value: 0)
+1759: OP_SET_GLOBAL   0190 (Name: counter)
+1762: OP_CONSTANT     0191 (Value: tab_changed)
+1765: OP_CONSTANT     0192 (Value: on_tab_changed)
+1768: OP_GET_GLOBAL   0141 (Name: tabs)
+1771: OP_CONSTANT     0112 (Value: bind)
+1774: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
 1776: OP_POP
-1777: OP_GET_GLOBAL   0057 (Name: app)
-1780: OP_CONSTANT     0193 (Value: run)
-1783: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
-1785: OP_POP
-1786: OP_CONSTANT     0194 (Value: === Aplicație închisă cu succes ===)
-1789: OP_ECHO
-1790: OP_RETURN
+1777: OP_CALL         0193 (Name: INIT_FIRST_TAB, Args: 0)
+1781: OP_POP
+1782: OP_GET_GLOBAL   0062 (Name: win)
+1785: OP_CONSTANT     0194 (Value: show)
+1788: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+1790: OP_POP
+1791: OP_GET_GLOBAL   0058 (Name: app)
+1794: OP_CONSTANT     0195 (Value: run)
+1797: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+1799: OP_POP
+1800: OP_CONSTANT     0196 (Value: === Aplicație închisă cu succes ===)
+1803: OP_ECHO
+1804: OP_RETURN
 
---- FUNCTION: UICONTROL::SET_PROP (Params: $name, $val) ---
-=== DISASSEMBLY: UICONTROL::SET_PROP ===
-0000: OP_GET_LOCAL     0000
-0002: OP_GET_LOCAL     0001
-0004: OP_GET_LOCAL     0002
-0006: OP_CALL_NATIVE  0000 (Name: UI_SET_PROPERTY, Args: 3)
-0010: OP_RETURN
-
---- FUNCTION: WINWINDOW::SET_LAYOUT (Params: $style) ---
-=== DISASSEMBLY: WINWINDOW::SET_LAYOUT ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: layout)
-0005: OP_GET_LOCAL     0001
-0007: OP_CALL_NATIVE  0001 (Name: UI_SET_PROPERTY, Args: 3)
-0011: OP_RETURN
-
---- FUNCTION: UICONTROL::SET_TEXT (Params: $text) ---
-=== DISASSEMBLY: UICONTROL::SET_TEXT ===
-0000: OP_CONSTANT     0000 (Value: text)
-0003: OP_GET_LOCAL     0001
-0005: OP_GET_LOCAL     0000
-0007: OP_CONSTANT     0001 (Value: set_prop)
-0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0012: OP_RETURN
-
---- FUNCTION: WINWINDOW::SHOW (Params: ) ---
-=== DISASSEMBLY: WINWINDOW::SHOW ===
-0000: OP_GET_GLOBAL   0000 (Name: WINWINDOW)
-0003: OP_RETURN
-
---- FUNCTION: UICONTROL::GET_PROP (Params: $name) ---
-=== DISASSEMBLY: UICONTROL::GET_PROP ===
-0000: OP_GET_LOCAL     0000
-0002: OP_GET_LOCAL     0001
-0004: OP_CALL_NATIVE  0000 (Name: UI_GET_PROPERTY, Args: 2)
-0008: OP_RETURN
-
---- FUNCTION: UICONTROL::GET_TEXT (Params: ) ---
-=== DISASSEMBLY: UICONTROL::GET_TEXT ===
-0000: OP_CONSTANT     0000 (Value: text)
-0003: OP_GET_LOCAL     0000
-0005: OP_CONSTANT     0001 (Value: get_prop)
-0008: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0010: OP_RETURN
-
---- FUNCTION: UICONTROL::SET_ANCHOR (Params: $type) ---
-=== DISASSEMBLY: UICONTROL::SET_ANCHOR ===
-0000: OP_CONSTANT     0000 (Value: anchor)
-0003: OP_GET_LOCAL     0001
-0005: OP_GET_LOCAL     0000
-0007: OP_CONSTANT     0001 (Value: set_prop)
-0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0012: OP_RETURN
-
---- FUNCTION: MENU_COMMAND_CLICK (Params: ) ---
-=== DISASSEMBLY: MENU_COMMAND_CLICK ===
-0000: OP_CALL_NATIVE  0000 (Name: OPEN_TERMINAL, Args: 0)
-0004: OP_POP
-0005: OP_RETURN
-
---- FUNCTION: UICONTROL::BIND (Params: $event, $func) ---
-=== DISASSEMBLY: UICONTROL::BIND ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_INDIRECT
-0006: OP_GET_LOCAL     0001
-0008: OP_GET_LOCAL     0002
-0010: OP_CALL_NATIVE  0001 (Name: UI_BIND_EVENT, Args: 3)
-0014: OP_RETURN
-
---- FUNCTION: WINCODEVIEW::INIT (Params: $id, $parentId, $x, $y, $w, $h) ---
-=== DISASSEMBLY: WINCODEVIEW::INIT ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_LOCAL     0001
-0007: OP_SET_INDIRECT
-0008: OP_CONSTANT     0001 (Value: CODEVIEW)
-0011: OP_GET_LOCAL     0001
-0013: OP_GET_LOCAL     0002
-0015: OP_GET_LOCAL     0003
-0017: OP_GET_LOCAL     0004
-0019: OP_GET_LOCAL     0005
-0021: OP_GET_LOCAL     0006
-0023: OP_CALL_NATIVE  0002 (Name: UI_CREATE_CONTROL, Args: 7)
-0027: OP_POP
-0028: OP_RETURN
-
---- FUNCTION: MENU_COMPILE_CLICK (Params: ) ---
-=== DISASSEMBLY: MENU_COMPILE_CLICK ===
+--- FUNCTION: MENU_BUILD_CLICK (Params: ) ---
+=== DISASSEMBLY: MENU_BUILD_CLICK ===
 0000: OP_CALL         0000 (Name: UPDATE_ACTIVE_CONTEXT, Args: 0)
 0004: OP_POP
 0005: OP_GET_GLOBAL   0001 (Name: file)
@@ -793,121 +712,56 @@ Generated: 2026-05-11
 0028: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
 0030: OP_POP
 0031: OP_GET_GLOBAL   0001 (Name: file)
-0034: OP_CALL_NATIVE  0006 (Name: COMPILE, Args: 1)
+0034: OP_CALL_NATIVE  0006 (Name: BUILD, Args: 1)
 0038: OP_SET_LOCAL     0000
 0040: OP_GET_LOCAL     0000
 0042: OP_CONSTANT     0007 (Value: SUCCESS)
 0045: OP_NOT_EQUAL
-0046: OP_JUMP_IF_FALSE 0004 (Sari la: 53)
-0049: OP_CONSTANT     0008 (Value: A apărut o eroare la compilarea fișierului.)
+0046: OP_JUMP_IF_FALSE 0007 (Sari la: 56)
+0049: OP_CONSTANT     0008 (Value: A apărut o eroare în timpul procesului de Build standalone.)
 0052: OP_ECHO
-0053: OP_RETURN
+0053: OP_JUMP          0004 (Sari la: 60)
+0056: OP_CONSTANT     0009 (Value: Procesul de generare a fost finalizat.)
+0059: OP_ECHO
+0060: OP_RETURN
 
---- FUNCTION: UICONTROL::SET_WIDTH_MODE (Params: $mode) ---
-=== DISASSEMBLY: UICONTROL::SET_WIDTH_MODE ===
-0000: OP_CONSTANT     0000 (Value: width_mode)
-0003: OP_GET_LOCAL     0001
-0005: OP_GET_LOCAL     0000
-0007: OP_CONSTANT     0001 (Value: set_prop)
-0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0012: OP_RETURN
+--- FUNCTION: MENU_COMMAND_CLICK (Params: ) ---
+=== DISASSEMBLY: MENU_COMMAND_CLICK ===
+0000: OP_CALL_NATIVE  0000 (Name: OPEN_TERMINAL, Args: 0)
+0004: OP_POP
+0005: OP_RETURN
 
---- FUNCTION: WINPANEL::INIT (Params: $id, $parentId, $x, $y, $w, $h) ---
-=== DISASSEMBLY: WINPANEL::INIT ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_LOCAL     0001
-0007: OP_SET_INDIRECT
-0008: OP_CONSTANT     0001 (Value: PANEL)
-0011: OP_GET_LOCAL     0001
-0013: OP_GET_LOCAL     0002
-0015: OP_GET_LOCAL     0003
-0017: OP_GET_LOCAL     0004
-0019: OP_GET_LOCAL     0005
-0021: OP_GET_LOCAL     0006
-0023: OP_CALL_NATIVE  0002 (Name: UI_CREATE_CONTROL, Args: 7)
-0027: OP_POP
-0028: OP_RETURN
+--- FUNCTION: MENU_ABOUT_CLICK (Params: ) ---
+=== DISASSEMBLY: MENU_ABOUT_CLICK ===
+0000: OP_CONSTANT     0000 (Value: Oli Engine v0.1)
+0003: OP_SET_LOCAL     0000
+0005: OP_CONSTANT     0001 (Value: About oli:)
+0008: OP_GET_LOCAL     0000
+0010: OP_CALL_NATIVE  0002 (Name: SHOW_MESSAGE, Args: 2)
+0014: OP_POP
+0015: OP_RETURN
 
---- FUNCTION: UICONTROL::SET_HEIGHT_MODE (Params: $mode) ---
-=== DISASSEMBLY: UICONTROL::SET_HEIGHT_MODE ===
-0000: OP_CONSTANT     0000 (Value: height_mode)
-0003: OP_GET_LOCAL     0001
-0005: OP_GET_LOCAL     0000
-0007: OP_CONSTANT     0001 (Value: set_prop)
-0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0012: OP_RETURN
+--- FUNCTION: SAVE_CLICK (Params: ) ---
+=== DISASSEMBLY: SAVE_CLICK ===
+0000: OP_CALL         0000 (Name: MENU_SAVE_CLICK, Args: 0)
+0004: OP_POP
+0005: OP_RETURN
 
---- FUNCTION: UICONTROL::SET_MARGIN (Params: $val) ---
-=== DISASSEMBLY: UICONTROL::SET_MARGIN ===
-0000: OP_CONSTANT     0000 (Value: margin)
-0003: OP_GET_LOCAL     0001
-0005: OP_GET_LOCAL     0000
-0007: OP_CONSTANT     0001 (Value: set_prop)
-0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0012: OP_RETURN
-
---- FUNCTION: UICONTROL::SET_VISIBLE (Params: $bool) ---
-=== DISASSEMBLY: UICONTROL::SET_VISIBLE ===
-0000: OP_CONSTANT     0000 (Value: visible)
-0003: OP_GET_LOCAL     0001
-0005: OP_GET_LOCAL     0000
-0007: OP_CONSTANT     0001 (Value: set_prop)
-0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0012: OP_RETURN
-
---- FUNCTION: UICONTROL::SET_FONT_SIZE (Params: $size) ---
-=== DISASSEMBLY: UICONTROL::SET_FONT_SIZE ===
-0000: OP_CONSTANT     0000 (Value: font_size)
-0003: OP_GET_LOCAL     0001
-0005: OP_GET_LOCAL     0000
-0007: OP_CONSTANT     0001 (Value: set_prop)
-0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0012: OP_RETURN
-
---- FUNCTION: WINAPP::CREATE (Params: ) ---
-=== DISASSEMBLY: WINAPP::CREATE ===
-0000: OP_CALL_NATIVE  0000 (Name: CREATE_WINAPP, Args: 0)
-0004: OP_SET_LOCAL     0000
-0006: OP_GET_LOCAL     0000
-0008: OP_RETURN
-
---- FUNCTION: FILEDIALOG::SHOW (Params: ) ---
-=== DISASSEMBLY: FILEDIALOG::SHOW ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: type)
-0005: OP_GET_INDIRECT
-0006: OP_GET_LOCAL     0000
-0008: OP_CONSTANT     0001 (Value: title)
-0011: OP_GET_INDIRECT
-0012: OP_CALL_NATIVE  0002 (Name: UI_FILE_DIALOG, Args: 2)
-0016: OP_RETURN
-
---- FUNCTION: WINRICHCONSOLE::INIT (Params: $id, $parentId, $x, $y, $w, $h) ---
-=== DISASSEMBLY: WINRICHCONSOLE::INIT ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_LOCAL     0001
-0007: OP_SET_INDIRECT
-0008: OP_CONSTANT     0001 (Value: RICHCONSOLE)
-0011: OP_GET_LOCAL     0001
-0013: OP_GET_LOCAL     0002
-0015: OP_GET_LOCAL     0003
-0017: OP_GET_LOCAL     0004
-0019: OP_GET_LOCAL     0005
-0021: OP_GET_LOCAL     0006
-0023: OP_CALL_NATIVE  0002 (Name: UI_CREATE_CONTROL, Args: 7)
-0027: OP_POP
-0028: OP_RETURN
-
---- FUNCTION: WINAPP::INIT (Params: ) ---
-=== DISASSEMBLY: WINAPP::INIT ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: create)
-0005: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
-0007: OP_SET_LOCAL     0000
-0009: OP_GET_GLOBAL   0001 (Name: WINAPP)
-0012: OP_RETURN
+--- FUNCTION: MENU_SAVE_CLICK (Params: ) ---
+=== DISASSEMBLY: MENU_SAVE_CLICK ===
+0000: OP_CALL         0000 (Name: UPDATE_ACTIVE_CONTEXT, Args: 0)
+0004: OP_POP
+0005: OP_GET_GLOBAL   0001 (Name: file)
+0008: OP_CONSTANT     0002 (Value: )
+0011: OP_NOT_EQUAL
+0012: OP_JUMP_IF_FALSE 0011 (Sari la: 26)
+0015: OP_GET_GLOBAL   0001 (Name: file)
+0018: OP_CALL         0003 (Name: EXECUTE_SAVE_TO_DISK, Args: 1)
+0022: OP_POP
+0023: OP_JUMP          0005 (Sari la: 31)
+0026: OP_CALL         0004 (Name: MENU_SAVE_AS_CLICK, Args: 0)
+0030: OP_POP
+0031: OP_RETURN
 
 --- FUNCTION: RUN_CLICK (Params: ) ---
 === DISASSEMBLY: RUN_CLICK ===
@@ -953,218 +807,16 @@ Generated: 2026-05-11
 0094: OP_POP
 0095: OP_RETURN
 
---- FUNCTION: WINAPP::RUN (Params: ) ---
-=== DISASSEMBLY: WINAPP::RUN ===
-0000: OP_GET_GLOBAL   0000 (Name: WINAPP)
-0003: OP_RETURN
-
---- FUNCTION: WINMENU::ADD_ITEM (Params: $itemId, $text) ---
-=== DISASSEMBLY: WINMENU::ADD_ITEM ===
-0000: OP_CONSTANT     0000 (Value: APEL UI_CALL_METHOD pentru )
-0003: OP_GET_LOCAL     0001
-0005: OP_CONCAT
-0006: OP_ECHO
-0007: OP_GET_LOCAL     0000
-0009: OP_CONSTANT     0001 (Value: id)
-0012: OP_GET_INDIRECT
-0013: OP_CONSTANT     0002 (Value: add_item)
-0016: OP_GET_LOCAL     0001
-0018: OP_GET_LOCAL     0002
-0020: OP_CALL_NATIVE  0003 (Name: UI_CALL_METHOD, Args: 4)
-0024: OP_RETURN
-
---- FUNCTION: WINWINDOW::INIT (Params: $id, $title) ---
-=== DISASSEMBLY: WINWINDOW::INIT ===
+--- FUNCTION: GET_EXE_NAME (Params: $cale) ---
+=== DISASSEMBLY: GET_EXE_NAME ===
 0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_LOCAL     0001
-0007: OP_SET_INDIRECT
-0008: OP_CONSTANT     0001 (Value: INAINTE DE CREATE WIN)
-0011: OP_ECHO
-0012: OP_GET_LOCAL     0001
-0014: OP_GET_LOCAL     0002
-0016: OP_CALL_NATIVE  0002 (Name: CREATE_WINWINDOW, Args: 2)
-0020: OP_SET_LOCAL     0000
-0022: OP_CONSTANT     0003 (Value: DUPA  CREATE WIN)
-0025: OP_ECHO
-0026: OP_GET_LOCAL     0000
-0028: OP_RETURN
-
---- FUNCTION: WINCODEVIEW::SET_SYNTAX_PATH (Params: $path) ---
-=== DISASSEMBLY: WINCODEVIEW::SET_SYNTAX_PATH ===
-0000: OP_CONSTANT     0000 (Value: syntax_path)
-0003: OP_GET_LOCAL     0001
-0005: OP_GET_LOCAL     0000
-0007: OP_CONSTANT     0001 (Value: set_prop)
-0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0012: OP_RETURN
-
---- FUNCTION: WINTABCONTROL::SWITCH_PAGE (Params: $index) ---
-=== DISASSEMBLY: WINTABCONTROL::SWITCH_PAGE ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_INDIRECT
-0006: OP_CONSTANT     0001 (Value: switch_page)
-0009: OP_GET_LOCAL     0001
-0011: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 3)
-0015: OP_RETURN
-
---- FUNCTION: WINWINDOW::SET_ICON (Params: $path) ---
-=== DISASSEMBLY: WINWINDOW::SET_ICON ===
-0000: OP_CONSTANT     0000 (Value: icon)
-0003: OP_GET_LOCAL     0001
-0005: OP_GET_LOCAL     0000
-0007: OP_CONSTANT     0001 (Value: set_prop)
-0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0012: OP_RETURN
-
---- FUNCTION: WINPANEL::SET_LAYOUT (Params: $style) ---
-=== DISASSEMBLY: WINPANEL::SET_LAYOUT ===
-0000: OP_CONSTANT     0000 (Value: layout)
-0003: OP_GET_LOCAL     0001
-0005: OP_GET_LOCAL     0000
-0007: OP_CONSTANT     0001 (Value: set_prop)
-0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0012: OP_RETURN
-
---- FUNCTION: WINBUTTON::INIT (Params: $id, $parentId, $x, $y, $w, $h, $text) ---
-=== DISASSEMBLY: WINBUTTON::INIT ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_LOCAL     0001
-0007: OP_SET_INDIRECT
-0008: OP_CONSTANT     0001 (Value: BUTTON)
-0011: OP_GET_LOCAL     0001
-0013: OP_GET_LOCAL     0002
-0015: OP_GET_LOCAL     0003
-0017: OP_GET_LOCAL     0004
-0019: OP_GET_LOCAL     0005
-0021: OP_GET_LOCAL     0006
-0023: OP_GET_LOCAL     0007
-0025: OP_CALL_NATIVE  0002 (Name: UI_CREATE_CONTROL, Args: 8)
-0029: OP_POP
-0030: OP_RETURN
-
---- FUNCTION: WINMENU::INIT (Params: $id, $parentId) ---
-=== DISASSEMBLY: WINMENU::INIT ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_LOCAL     0001
-0007: OP_SET_INDIRECT
-0008: OP_CONSTANT     0001 (Value: MENU)
-0011: OP_GET_LOCAL     0001
-0013: OP_GET_LOCAL     0002
-0015: OP_CALL_NATIVE  0002 (Name: UI_CREATE_CONTROL, Args: 3)
-0019: OP_POP
-0020: OP_GET_LOCAL     0000
-0022: OP_RETURN
-
---- FUNCTION: WINTABCONTROL::ADD_TAB (Params: $title, $panelId) ---
-=== DISASSEMBLY: WINTABCONTROL::ADD_TAB ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_INDIRECT
-0006: OP_CONSTANT     0001 (Value: add_tab_page)
-0009: OP_GET_LOCAL     0001
-0011: OP_GET_LOCAL     0002
-0013: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 4)
-0017: OP_RETURN
-
---- FUNCTION: WINMENU::ADD_SEPARATOR (Params: $sepId) ---
-=== DISASSEMBLY: WINMENU::ADD_SEPARATOR ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_INDIRECT
-0006: OP_CONSTANT     0001 (Value: add_separator)
-0009: OP_GET_LOCAL     0001
-0011: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 3)
-0015: OP_RETURN
-
---- FUNCTION: WINMENU::ADD_SUBMENU (Params: $text, $childMenuObj) ---
-=== DISASSEMBLY: WINMENU::ADD_SUBMENU ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_INDIRECT
-0006: OP_CONSTANT     0001 (Value: add_submenu)
-0009: OP_GET_LOCAL     0001
-0011: OP_GET_LOCAL     0002
-0013: OP_CONSTANT     0000 (Value: id)
-0016: OP_GET_INDIRECT
-0017: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 4)
-0021: OP_RETURN
-
---- FUNCTION: WINTABCONTROL::INIT (Params: $id, $parentId, $x, $y, $w, $h) ---
-=== DISASSEMBLY: WINTABCONTROL::INIT ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_LOCAL     0001
-0007: OP_SET_INDIRECT
-0008: OP_CONSTANT     0001 (Value: TABCONTROL)
-0011: OP_GET_LOCAL     0001
-0013: OP_GET_LOCAL     0002
-0015: OP_GET_LOCAL     0003
-0017: OP_GET_LOCAL     0004
-0019: OP_GET_LOCAL     0005
-0021: OP_GET_LOCAL     0006
-0023: OP_CALL_NATIVE  0002 (Name: UI_CREATE_CONTROL, Args: 7)
-0027: OP_POP
-0028: OP_RETURN
-
---- FUNCTION: WINTABCONTROL::REFRESH (Params: ) ---
-=== DISASSEMBLY: WINTABCONTROL::REFRESH ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_INDIRECT
-0006: OP_CONSTANT     0001 (Value: refresh)
-0009: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 2)
-0013: OP_RETURN
-
---- FUNCTION: WINTABCONTROL::SELECT_TAB_BY_ID (Params: $panelId) ---
-=== DISASSEMBLY: WINTABCONTROL::SELECT_TAB_BY_ID ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_INDIRECT
-0006: OP_CONSTANT     0001 (Value: select_tab_by_id)
-0009: OP_GET_LOCAL     0001
-0011: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 3)
-0015: OP_RETURN
-
---- FUNCTION: WINRICHEDIT::INIT (Params: $id, $parentId, $x, $y, $w, $h) ---
-=== DISASSEMBLY: WINRICHEDIT::INIT ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_LOCAL     0001
-0007: OP_SET_INDIRECT
-0008: OP_CONSTANT     0001 (Value: RICHEDIT)
-0011: OP_GET_LOCAL     0001
-0013: OP_GET_LOCAL     0002
-0015: OP_GET_LOCAL     0003
-0017: OP_GET_LOCAL     0004
-0019: OP_GET_LOCAL     0005
-0021: OP_GET_LOCAL     0006
-0023: OP_CALL_NATIVE  0002 (Name: UI_CREATE_CONTROL, Args: 7)
-0027: OP_POP
-0028: OP_RETURN
-
---- FUNCTION: WINRICHEDIT::APPEND_TEXT (Params: $text) ---
-=== DISASSEMBLY: WINRICHEDIT::APPEND_TEXT ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_INDIRECT
-0006: OP_CONSTANT     0001 (Value: append_text)
-0009: OP_GET_LOCAL     0001
-0011: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 3)
-0015: OP_RETURN
-
---- FUNCTION: WINRICHEDIT::SET_READ_ONLY (Params: $bool) ---
-=== DISASSEMBLY: WINRICHEDIT::SET_READ_ONLY ===
-0000: OP_GET_LOCAL     0000
-0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_INDIRECT
-0006: OP_CONSTANT     0001 (Value: set_read_only)
-0009: OP_GET_LOCAL     0001
-0011: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 3)
-0015: OP_RETURN
+0002: OP_CALL_NATIVE  0000 (Name: FS_GET_FILENAME, Args: 1)
+0006: OP_SET_LOCAL     0001
+0008: OP_GET_LOCAL     0001
+0010: OP_CONSTANT     0001 (Value: .oli)
+0013: OP_CONSTANT     0002 (Value: .exe)
+0016: OP_CALL_NATIVE  0003 (Name: REPLACE, Args: 3)
+0020: OP_RETURN
 
 --- FUNCTION: UPDATE_ACTIVE_CONTEXT (Params: ) ---
 === DISASSEMBLY: UPDATE_ACTIVE_CONTEXT ===
@@ -1200,117 +852,117 @@ Generated: 2026-05-11
 0076: OP_POP
 0077: OP_RETURN
 
---- FUNCTION: GET_EXE_NAME (Params: $cale) ---
-=== DISASSEMBLY: GET_EXE_NAME ===
+--- FUNCTION: ON_TAB_CHANGED (Params: ) ---
+=== DISASSEMBLY: ON_TAB_CHANGED ===
+0000: OP_CONSTANT     0000 (Value: [IDE] Tab-ul a fost schimbat de utilizator! Actualizez contextul...)
+0003: OP_ECHO
+0004: OP_CALL         0001 (Name: UPDATE_ACTIVE_CONTEXT, Args: 0)
+0008: OP_POP
+0009: OP_GET_GLOBAL   0002 (Name: file)
+0012: OP_CONSTANT     0003 (Value: )
+0015: OP_NOT_EQUAL
+0016: OP_JUMP_IF_FALSE 0011 (Sari la: 30)
+0019: OP_CONSTANT     0004 (Value: [IDE] Context nou activat: )
+0022: OP_GET_GLOBAL   0002 (Name: file)
+0025: OP_CONCAT
+0026: OP_ECHO
+0027: OP_JUMP          0004 (Sari la: 34)
+0030: OP_CONSTANT     0005 (Value: [IDE] Ecran gol, nu există fișier activ.)
+0033: OP_ECHO
+0034: OP_RETURN
+
+--- FUNCTION: WINTABCONTROL::INIT (Params: $id, $parentId, $x, $y, $w, $h) ---
+=== DISASSEMBLY: WINTABCONTROL::INIT ===
 0000: OP_GET_LOCAL     0000
-0002: OP_CALL_NATIVE  0000 (Name: FS_GET_FILENAME, Args: 1)
-0006: OP_SET_LOCAL     0001
-0008: OP_GET_LOCAL     0001
-0010: OP_CONSTANT     0001 (Value: .oli)
-0013: OP_CONSTANT     0002 (Value: .exe)
-0016: OP_CALL_NATIVE  0003 (Name: REPLACE, Args: 3)
-0020: OP_RETURN
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_LOCAL     0001
+0007: OP_SET_INDIRECT
+0008: OP_CONSTANT     0001 (Value: TABCONTROL)
+0011: OP_GET_LOCAL     0001
+0013: OP_GET_LOCAL     0002
+0015: OP_GET_LOCAL     0003
+0017: OP_GET_LOCAL     0004
+0019: OP_GET_LOCAL     0005
+0021: OP_GET_LOCAL     0006
+0023: OP_CALL_NATIVE  0002 (Name: UI_CREATE_CONTROL, Args: 7)
+0027: OP_POP
+0028: OP_RETURN
 
---- FUNCTION: INIT_FIRST_TAB (Params: ) ---
-=== DISASSEMBLY: INIT_FIRST_TAB ===
-0000: OP_CONSTANT     0000 (Value: tab_page_)
-0003: OP_CONSTANT     0001 (Value: untitled.oli)
-0006: OP_CONCAT
-0007: OP_SET_LOCAL     0000
-0009: OP_CONSTANT     0002 (Value: WinCodeView)
-0012: OP_CALL_NATIVE  0003 (Name: NEW, Args: 1)
-0016: OP_SET_LOCAL     0001
-0018: OP_GET_LOCAL     0000
-0020: OP_CONSTANT     0004 (Value: main_tabs)
-0023: OP_CONSTANT     0005 (Value: 0)
-0026: OP_CONSTANT     0005 (Value: 0)
-0029: OP_CONSTANT     0005 (Value: 0)
-0032: OP_CONSTANT     0005 (Value: 0)
-0035: OP_GET_LOCAL     0001
-0037: OP_CONSTANT     0006 (Value: init)
-0040: OP_CALL_METHOD     (Args: 6, Context & Name on Stack)
-0042: OP_POP
-0043: OP_CONSTANT     0007 (Value: FILL)
-0046: OP_GET_LOCAL     0001
-0048: OP_CONSTANT     0008 (Value: set_width_mode)
-0051: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0053: OP_POP
-0054: OP_CONSTANT     0007 (Value: FILL)
-0057: OP_GET_LOCAL     0001
-0059: OP_CONSTANT     0009 (Value: set_height_mode)
-0062: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0064: OP_POP
-0065: OP_CONSTANT     0010 (Value: ./olide/syntaxes/oli.xml)
-0068: OP_GET_LOCAL     0001
-0070: OP_CONSTANT     0011 (Value: set_syntax_path)
-0073: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0075: OP_POP
-0076: OP_CONSTANT     0001 (Value: untitled.oli)
-0079: OP_GET_LOCAL     0000
-0081: OP_GET_GLOBAL   0012 (Name: tabs)
-0084: OP_CONSTANT     0013 (Value: add_tab)
-0087: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0089: OP_POP
-0090: OP_CONSTANT     0014 (Value: 12)
-0093: OP_GET_LOCAL     0001
-0095: OP_CONSTANT     0015 (Value: set_font_size)
-0098: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0100: OP_POP
-0101: OP_CALL         0016 (Name: UPDATE_ACTIVE_CONTEXT, Args: 0)
-0105: OP_POP
-0106: OP_GET_GLOBAL   0012 (Name: tabs)
-0109: OP_CONSTANT     0017 (Value: refresh)
-0112: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
-0114: OP_POP
-0115: OP_GET_GLOBAL   0018 (Name: counter)
-0118: OP_GET_GLOBAL   0018 (Name: counter)
-0121: OP_DUP
-0122: OP_CONSTANT     0019 (Value: 1)
-0125: OP_ADD
-0126: OP_SET_GLOBAL   0018 (Name: counter)
-0129: OP_RETURN
+--- FUNCTION: FILEDIALOG::SHOW (Params: ) ---
+=== DISASSEMBLY: FILEDIALOG::SHOW ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: type)
+0005: OP_GET_INDIRECT
+0006: OP_GET_LOCAL     0000
+0008: OP_CONSTANT     0001 (Value: title)
+0011: OP_GET_INDIRECT
+0012: OP_CALL_NATIVE  0002 (Name: UI_FILE_DIALOG, Args: 2)
+0016: OP_RETURN
 
---- FUNCTION: EXECUTE_SAVE_TO_DISK (Params: $calea_fisiere) ---
-=== DISASSEMBLY: EXECUTE_SAVE_TO_DISK ===
-0000: OP_GET_GLOBAL   0000 (Name: activeCodeView)
-0003: OP_CONSTANT     0001 (Value: null)
-0006: OP_EQUAL
-0007: OP_JUMP_IF_FALSE 0004 (Sari la: 14)
-0010: OP_CONSTANT     0001 (Value: null)
-0013: OP_RETURN
-0014: OP_GET_GLOBAL   0000 (Name: activeCodeView)
-0017: OP_CONSTANT     0002 (Value: get_text)
-0020: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
-0022: OP_SET_LOCAL     0001
-0024: OP_GET_LOCAL     0000
-0026: OP_GET_LOCAL     0001
-0028: OP_CALL_NATIVE  0003 (Name: WRITEFILE, Args: 2)
-0032: OP_POP
-0033: OP_CONSTANT     0004 (Value: [SUCCESS] Fișier salvat cu succes la: )
-0036: OP_GET_LOCAL     0000
-0038: OP_CONCAT
-0039: OP_ECHO
-0040: OP_CONSTANT     0005 (Value: Salvare)
-0043: OP_CONSTANT     0006 (Value: Fișierul a fost salvat cu succes!)
-0046: OP_CALL_NATIVE  0007 (Name: SHOW_MESSAGE, Args: 2)
-0050: OP_POP
-0051: OP_RETURN
+--- FUNCTION: UICONTROL::GET_TEXT (Params: ) ---
+=== DISASSEMBLY: UICONTROL::GET_TEXT ===
+0000: OP_CONSTANT     0000 (Value: text)
+0003: OP_GET_LOCAL     0000
+0005: OP_CONSTANT     0001 (Value: get_prop)
+0008: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0010: OP_RETURN
 
---- FUNCTION: MENU_SAVE_CLICK (Params: ) ---
-=== DISASSEMBLY: MENU_SAVE_CLICK ===
-0000: OP_CALL         0000 (Name: UPDATE_ACTIVE_CONTEXT, Args: 0)
-0004: OP_POP
-0005: OP_GET_GLOBAL   0001 (Name: file)
-0008: OP_CONSTANT     0002 (Value: )
-0011: OP_NOT_EQUAL
-0012: OP_JUMP_IF_FALSE 0011 (Sari la: 26)
-0015: OP_GET_GLOBAL   0001 (Name: file)
-0018: OP_CALL         0003 (Name: EXECUTE_SAVE_TO_DISK, Args: 1)
-0022: OP_POP
-0023: OP_JUMP          0005 (Sari la: 31)
-0026: OP_CALL         0004 (Name: MENU_SAVE_AS_CLICK, Args: 0)
-0030: OP_POP
-0031: OP_RETURN
+--- FUNCTION: WINMENU::ADD_ITEM (Params: $itemId, $text) ---
+=== DISASSEMBLY: WINMENU::ADD_ITEM ===
+0000: OP_CONSTANT     0000 (Value: APEL UI_CALL_METHOD pentru )
+0003: OP_GET_LOCAL     0001
+0005: OP_CONCAT
+0006: OP_ECHO
+0007: OP_GET_LOCAL     0000
+0009: OP_CONSTANT     0001 (Value: id)
+0012: OP_GET_INDIRECT
+0013: OP_CONSTANT     0002 (Value: add_item)
+0016: OP_GET_LOCAL     0001
+0018: OP_GET_LOCAL     0002
+0020: OP_CALL_NATIVE  0003 (Name: UI_CALL_METHOD, Args: 4)
+0024: OP_RETURN
+
+--- FUNCTION: WINCODEVIEW::SET_SYNTAX_PATH (Params: $path) ---
+=== DISASSEMBLY: WINCODEVIEW::SET_SYNTAX_PATH ===
+0000: OP_CONSTANT     0000 (Value: syntax_path)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_ANCHOR (Params: $type) ---
+=== DISASSEMBLY: UICONTROL::SET_ANCHOR ===
+0000: OP_CONSTANT     0000 (Value: anchor)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: MENU_INTERPRETER_CLICK (Params: ) ---
+=== DISASSEMBLY: MENU_INTERPRETER_CLICK ===
+0000: OP_GET_GLOBAL   0000 (Name: oli_path)
+0003: OP_CALL_NATIVE  0001 (Name: START_PROCESS, Args: 1)
+0007: OP_POP
+0008: OP_RETURN
+
+--- FUNCTION: WINCODEVIEW::INIT (Params: $id, $parentId, $x, $y, $w, $h) ---
+=== DISASSEMBLY: WINCODEVIEW::INIT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_LOCAL     0001
+0007: OP_SET_INDIRECT
+0008: OP_CONSTANT     0001 (Value: CODEVIEW)
+0011: OP_GET_LOCAL     0001
+0013: OP_GET_LOCAL     0002
+0015: OP_GET_LOCAL     0003
+0017: OP_GET_LOCAL     0004
+0019: OP_GET_LOCAL     0005
+0021: OP_GET_LOCAL     0006
+0023: OP_CALL_NATIVE  0002 (Name: UI_CREATE_CONTROL, Args: 7)
+0027: OP_POP
+0028: OP_RETURN
 
 --- FUNCTION: MENU_NEW_CLICK (Params: ) ---
 === DISASSEMBLY: MENU_NEW_CLICK ===
@@ -1417,130 +1069,22 @@ Generated: 2026-05-11
 0242: OP_POP
 0243: OP_RETURN
 
---- FUNCTION: MENU_SAVE_AS_CLICK (Params: ) ---
-=== DISASSEMBLY: MENU_SAVE_AS_CLICK ===
-0000: OP_CALL         0000 (Name: UPDATE_ACTIVE_CONTEXT, Args: 0)
-0004: OP_POP
-0005: OP_GET_GLOBAL   0001 (Name: activeCodeView)
-0008: OP_CONSTANT     0002 (Value: null)
-0011: OP_EQUAL
-0012: OP_JUMP_IF_FALSE 0004 (Sari la: 19)
-0015: OP_CONSTANT     0002 (Value: null)
-0018: OP_RETURN
-0019: OP_CONSTANT     0003 (Value: FileDialog)
-0022: OP_CALL_NATIVE  0004 (Name: NEW, Args: 1)
-0026: OP_SET_LOCAL     0000
-0028: OP_GET_LOCAL     0000
-0030: OP_CONSTANT     0005 (Value: title)
-0033: OP_CONSTANT     0006 (Value: Salvează fișierul sub alt nume...)
-0036: OP_SET_INDIRECT
-0037: OP_GET_LOCAL     0000
-0039: OP_CONSTANT     0007 (Value: type)
-0042: OP_CONSTANT     0008 (Value: 1)
-0045: OP_SET_INDIRECT
-0046: OP_GET_LOCAL     0000
-0048: OP_CONSTANT     0009 (Value: show)
-0051: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
-0053: OP_SET_LOCAL     0001
-0055: OP_GET_LOCAL     0001
-0057: OP_CONSTANT     0010 (Value: )
-0060: OP_NOT_EQUAL
-0061: OP_JUMP_IF_FALSE 0027 (Sari la: 91)
-0064: OP_GET_LOCAL     0001
-0066: OP_SET_GLOBAL   0011 (Name: file)
-0069: OP_CONSTANT     0012 (Value: file_path)
-0072: OP_GET_LOCAL     0001
-0074: OP_GET_GLOBAL   0001 (Name: activeCodeView)
-0077: OP_CONSTANT     0013 (Value: set_prop)
-0080: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0082: OP_POP
-0083: OP_GET_GLOBAL   0011 (Name: file)
-0086: OP_CALL         0014 (Name: EXECUTE_SAVE_TO_DISK, Args: 1)
-0090: OP_POP
-0091: OP_RETURN
-
---- FUNCTION: MENU_ABOUT_CLICK (Params: ) ---
-=== DISASSEMBLY: MENU_ABOUT_CLICK ===
-0000: OP_CONSTANT     0000 (Value: Oli Engine v0.1)
-0003: OP_SET_LOCAL     0000
-0005: OP_CONSTANT     0001 (Value: About oli:)
-0008: OP_GET_LOCAL     0000
-0010: OP_CALL_NATIVE  0002 (Name: SHOW_MESSAGE, Args: 2)
-0014: OP_POP
-0015: OP_RETURN
-
---- FUNCTION: SAVE_CLICK (Params: ) ---
-=== DISASSEMBLY: SAVE_CLICK ===
-0000: OP_CALL         0000 (Name: MENU_SAVE_CLICK, Args: 0)
-0004: OP_POP
-0005: OP_RETURN
-
---- FUNCTION: MENU_CLOSE_CLICK (Params: ) ---
-=== DISASSEMBLY: MENU_CLOSE_CLICK ===
-0000: OP_CONSTANT     0000 (Value: active_tab_id)
-0003: OP_GET_GLOBAL   0001 (Name: tabs)
-0006: OP_CONSTANT     0002 (Value: get_prop)
-0009: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0011: OP_SET_LOCAL     0000
-0013: OP_GET_LOCAL     0000
-0015: OP_CONSTANT     0003 (Value: )
-0018: OP_NOT_EQUAL
-0019: OP_JUMP_IF_FALSE 0027 (Sari la: 49)
-0022: OP_CONSTANT     0004 (Value: [IDE] Închid tab-ul curent: )
-0025: OP_GET_LOCAL     0000
-0027: OP_CONCAT
-0028: OP_ECHO
-0029: OP_GET_GLOBAL   0001 (Name: tabs)
-0032: OP_CONSTANT     0005 (Value: id)
-0035: OP_GET_INDIRECT
-0036: OP_CONSTANT     0006 (Value: remove_tab)
-0039: OP_CALL_NATIVE  0007 (Name: UI_CALL_METHOD, Args: 2)
-0043: OP_POP
-0044: OP_CALL         0008 (Name: UPDATE_ACTIVE_CONTEXT, Args: 0)
-0048: OP_POP
-0049: OP_RETURN
-
---- FUNCTION: MENU_EXIT_CLICK (Params: ) ---
-=== DISASSEMBLY: MENU_EXIT_CLICK ===
-0000: OP_CALL_NATIVE  0000 (Name: EXIT, Args: 0)
-0004: OP_POP
-0005: OP_RETURN
-
---- FUNCTION: MENU_INTERPRETER_CLICK (Params: ) ---
-=== DISASSEMBLY: MENU_INTERPRETER_CLICK ===
-0000: OP_GET_GLOBAL   0000 (Name: oli_path)
-0003: OP_CALL_NATIVE  0001 (Name: START_PROCESS, Args: 1)
-0007: OP_POP
-0008: OP_RETURN
-
---- FUNCTION: MENU_BUILD_CLICK (Params: ) ---
-=== DISASSEMBLY: MENU_BUILD_CLICK ===
-0000: OP_CALL         0000 (Name: UPDATE_ACTIVE_CONTEXT, Args: 0)
-0004: OP_POP
-0005: OP_GET_GLOBAL   0001 (Name: file)
-0008: OP_CONSTANT     0002 (Value: )
-0011: OP_EQUAL
-0012: OP_JUMP_IF_FALSE 0004 (Sari la: 19)
-0015: OP_CONSTANT     0003 (Value: null)
-0018: OP_RETURN
-0019: OP_CONSTANT     0002 (Value: )
-0022: OP_GET_GLOBAL   0004 (Name: consoleOutput)
-0025: OP_CONSTANT     0005 (Value: set_text)
-0028: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
-0030: OP_POP
-0031: OP_GET_GLOBAL   0001 (Name: file)
-0034: OP_CALL_NATIVE  0006 (Name: BUILD, Args: 1)
-0038: OP_SET_LOCAL     0000
-0040: OP_GET_LOCAL     0000
-0042: OP_CONSTANT     0007 (Value: SUCCESS)
-0045: OP_NOT_EQUAL
-0046: OP_JUMP_IF_FALSE 0007 (Sari la: 56)
-0049: OP_CONSTANT     0008 (Value: A apărut o eroare în timpul procesului de Build standalone.)
-0052: OP_ECHO
-0053: OP_JUMP          0004 (Sari la: 60)
-0056: OP_CONSTANT     0009 (Value: Procesul de generare a fost finalizat.)
-0059: OP_ECHO
-0060: OP_RETURN
+--- FUNCTION: WINPANEL::INIT (Params: $id, $parentId, $x, $y, $w, $h) ---
+=== DISASSEMBLY: WINPANEL::INIT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_LOCAL     0001
+0007: OP_SET_INDIRECT
+0008: OP_CONSTANT     0001 (Value: PANEL)
+0011: OP_GET_LOCAL     0001
+0013: OP_GET_LOCAL     0002
+0015: OP_GET_LOCAL     0003
+0017: OP_GET_LOCAL     0004
+0019: OP_GET_LOCAL     0005
+0021: OP_GET_LOCAL     0006
+0023: OP_CALL_NATIVE  0002 (Name: UI_CREATE_CONTROL, Args: 7)
+0027: OP_POP
+0028: OP_RETURN
 
 --- FUNCTION: MENU_OPEN_CLICK (Params: ) ---
 === DISASSEMBLY: MENU_OPEN_CLICK ===
@@ -1664,21 +1208,493 @@ Generated: 2026-05-11
 0272: OP_SET_GLOBAL   0037 (Name: counter)
 0275: OP_RETURN
 
---- FUNCTION: ON_TAB_CHANGED (Params: ) ---
-=== DISASSEMBLY: ON_TAB_CHANGED ===
-0000: OP_CONSTANT     0000 (Value: [IDE] Tab-ul a fost schimbat de utilizator! Actualizez contextul...)
-0003: OP_ECHO
-0004: OP_CALL         0001 (Name: UPDATE_ACTIVE_CONTEXT, Args: 0)
-0008: OP_POP
-0009: OP_GET_GLOBAL   0002 (Name: file)
-0012: OP_CONSTANT     0003 (Value: )
-0015: OP_NOT_EQUAL
-0016: OP_JUMP_IF_FALSE 0011 (Sari la: 30)
-0019: OP_CONSTANT     0004 (Value: [IDE] Context nou activat: )
-0022: OP_GET_GLOBAL   0002 (Name: file)
-0025: OP_CONCAT
-0026: OP_ECHO
-0027: OP_JUMP          0004 (Sari la: 34)
-0030: OP_CONSTANT     0005 (Value: [IDE] Ecran gol, nu există fișier activ.)
-0033: OP_ECHO
-0034: OP_RETURN
+--- FUNCTION: WINWINDOW::SET_ICON (Params: $path) ---
+=== DISASSEMBLY: WINWINDOW::SET_ICON ===
+0000: OP_CONSTANT     0000 (Value: icon)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: MENU_SAVE_AS_CLICK (Params: ) ---
+=== DISASSEMBLY: MENU_SAVE_AS_CLICK ===
+0000: OP_CALL         0000 (Name: UPDATE_ACTIVE_CONTEXT, Args: 0)
+0004: OP_POP
+0005: OP_GET_GLOBAL   0001 (Name: activeCodeView)
+0008: OP_CONSTANT     0002 (Value: null)
+0011: OP_EQUAL
+0012: OP_JUMP_IF_FALSE 0004 (Sari la: 19)
+0015: OP_CONSTANT     0002 (Value: null)
+0018: OP_RETURN
+0019: OP_CONSTANT     0003 (Value: FileDialog)
+0022: OP_CALL_NATIVE  0004 (Name: NEW, Args: 1)
+0026: OP_SET_LOCAL     0000
+0028: OP_GET_LOCAL     0000
+0030: OP_CONSTANT     0005 (Value: title)
+0033: OP_CONSTANT     0006 (Value: Salvează fișierul sub alt nume...)
+0036: OP_SET_INDIRECT
+0037: OP_GET_LOCAL     0000
+0039: OP_CONSTANT     0007 (Value: type)
+0042: OP_CONSTANT     0008 (Value: 1)
+0045: OP_SET_INDIRECT
+0046: OP_GET_LOCAL     0000
+0048: OP_CONSTANT     0009 (Value: show)
+0051: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0053: OP_SET_LOCAL     0001
+0055: OP_GET_LOCAL     0001
+0057: OP_CONSTANT     0010 (Value: )
+0060: OP_NOT_EQUAL
+0061: OP_JUMP_IF_FALSE 0027 (Sari la: 91)
+0064: OP_GET_LOCAL     0001
+0066: OP_SET_GLOBAL   0011 (Name: file)
+0069: OP_CONSTANT     0012 (Value: file_path)
+0072: OP_GET_LOCAL     0001
+0074: OP_GET_GLOBAL   0001 (Name: activeCodeView)
+0077: OP_CONSTANT     0013 (Value: set_prop)
+0080: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0082: OP_POP
+0083: OP_GET_GLOBAL   0011 (Name: file)
+0086: OP_CALL         0014 (Name: EXECUTE_SAVE_TO_DISK, Args: 1)
+0090: OP_POP
+0091: OP_RETURN
+
+--- FUNCTION: WINAPP::CREATE (Params: ) ---
+=== DISASSEMBLY: WINAPP::CREATE ===
+0000: OP_CALL_NATIVE  0000 (Name: CREATE_WINAPP, Args: 0)
+0004: OP_SET_LOCAL     0000
+0006: OP_GET_LOCAL     0000
+0008: OP_RETURN
+
+--- FUNCTION: MENU_COMPILE_CLICK (Params: ) ---
+=== DISASSEMBLY: MENU_COMPILE_CLICK ===
+0000: OP_CALL         0000 (Name: UPDATE_ACTIVE_CONTEXT, Args: 0)
+0004: OP_POP
+0005: OP_GET_GLOBAL   0001 (Name: file)
+0008: OP_CONSTANT     0002 (Value: )
+0011: OP_EQUAL
+0012: OP_JUMP_IF_FALSE 0004 (Sari la: 19)
+0015: OP_CONSTANT     0003 (Value: null)
+0018: OP_RETURN
+0019: OP_CONSTANT     0002 (Value: )
+0022: OP_GET_GLOBAL   0004 (Name: consoleOutput)
+0025: OP_CONSTANT     0005 (Value: set_text)
+0028: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0030: OP_POP
+0031: OP_GET_GLOBAL   0001 (Name: file)
+0034: OP_CALL_NATIVE  0006 (Name: COMPILE, Args: 1)
+0038: OP_SET_LOCAL     0000
+0040: OP_GET_LOCAL     0000
+0042: OP_CONSTANT     0007 (Value: SUCCESS)
+0045: OP_NOT_EQUAL
+0046: OP_JUMP_IF_FALSE 0004 (Sari la: 53)
+0049: OP_CONSTANT     0008 (Value: A apărut o eroare la compilarea fișierului.)
+0052: OP_ECHO
+0053: OP_RETURN
+
+--- FUNCTION: MENU_EXIT_CLICK (Params: ) ---
+=== DISASSEMBLY: MENU_EXIT_CLICK ===
+0000: OP_CALL_NATIVE  0000 (Name: EXIT, Args: 0)
+0004: OP_POP
+0005: OP_RETURN
+
+--- FUNCTION: WINBUTTON::INIT (Params: $id, $parentId, $x, $y, $w, $h, $text) ---
+=== DISASSEMBLY: WINBUTTON::INIT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_LOCAL     0001
+0007: OP_SET_INDIRECT
+0008: OP_CONSTANT     0001 (Value: BUTTON)
+0011: OP_GET_LOCAL     0001
+0013: OP_GET_LOCAL     0002
+0015: OP_GET_LOCAL     0003
+0017: OP_GET_LOCAL     0004
+0019: OP_GET_LOCAL     0005
+0021: OP_GET_LOCAL     0006
+0023: OP_GET_LOCAL     0007
+0025: OP_CALL_NATIVE  0002 (Name: UI_CREATE_CONTROL, Args: 8)
+0029: OP_POP
+0030: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_VISIBLE (Params: $bool) ---
+=== DISASSEMBLY: UICONTROL::SET_VISIBLE ===
+0000: OP_CONSTANT     0000 (Value: visible)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: WINMENU::ADD_SUBMENU (Params: $text, $childMenuObj) ---
+=== DISASSEMBLY: WINMENU::ADD_SUBMENU ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_INDIRECT
+0006: OP_CONSTANT     0001 (Value: add_submenu)
+0009: OP_GET_LOCAL     0001
+0011: OP_GET_LOCAL     0002
+0013: OP_CONSTANT     0000 (Value: id)
+0016: OP_GET_INDIRECT
+0017: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 4)
+0021: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_MARGIN (Params: $val) ---
+=== DISASSEMBLY: UICONTROL::SET_MARGIN ===
+0000: OP_CONSTANT     0000 (Value: margin)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: WINAPP::RUN (Params: ) ---
+=== DISASSEMBLY: WINAPP::RUN ===
+0000: OP_GET_GLOBAL   0000 (Name: WINAPP)
+0003: OP_RETURN
+
+--- FUNCTION: UICONTROL::GET_PROP (Params: $name) ---
+=== DISASSEMBLY: UICONTROL::GET_PROP ===
+0000: OP_GET_LOCAL     0000
+0002: OP_GET_LOCAL     0001
+0004: OP_CALL_NATIVE  0000 (Name: UI_GET_PROPERTY, Args: 2)
+0008: OP_RETURN
+
+--- FUNCTION: WINRICHCONSOLE::INIT (Params: $id, $parentId, $x, $y, $w, $h) ---
+=== DISASSEMBLY: WINRICHCONSOLE::INIT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_LOCAL     0001
+0007: OP_SET_INDIRECT
+0008: OP_CONSTANT     0001 (Value: RICHCONSOLE)
+0011: OP_GET_LOCAL     0001
+0013: OP_GET_LOCAL     0002
+0015: OP_GET_LOCAL     0003
+0017: OP_GET_LOCAL     0004
+0019: OP_GET_LOCAL     0005
+0021: OP_GET_LOCAL     0006
+0023: OP_CALL_NATIVE  0002 (Name: UI_CREATE_CONTROL, Args: 7)
+0027: OP_POP
+0028: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_TEXT (Params: $text) ---
+=== DISASSEMBLY: UICONTROL::SET_TEXT ===
+0000: OP_CONSTANT     0000 (Value: text)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: EXECUTE_SAVE_TO_DISK (Params: $calea_fisiere) ---
+=== DISASSEMBLY: EXECUTE_SAVE_TO_DISK ===
+0000: OP_GET_GLOBAL   0000 (Name: activeCodeView)
+0003: OP_CONSTANT     0001 (Value: null)
+0006: OP_EQUAL
+0007: OP_JUMP_IF_FALSE 0004 (Sari la: 14)
+0010: OP_CONSTANT     0001 (Value: null)
+0013: OP_RETURN
+0014: OP_GET_GLOBAL   0000 (Name: activeCodeView)
+0017: OP_CONSTANT     0002 (Value: get_text)
+0020: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0022: OP_SET_LOCAL     0001
+0024: OP_GET_LOCAL     0000
+0026: OP_GET_LOCAL     0001
+0028: OP_CALL_NATIVE  0003 (Name: WRITEFILE, Args: 2)
+0032: OP_POP
+0033: OP_CONSTANT     0004 (Value: [SUCCESS] Fișier salvat cu succes la: )
+0036: OP_GET_LOCAL     0000
+0038: OP_CONCAT
+0039: OP_ECHO
+0040: OP_CONSTANT     0005 (Value: Salvare)
+0043: OP_CONSTANT     0006 (Value: Fișierul a fost salvat cu succes!)
+0046: OP_CALL_NATIVE  0007 (Name: SHOW_MESSAGE, Args: 2)
+0050: OP_POP
+0051: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_FONT_SIZE (Params: $size) ---
+=== DISASSEMBLY: UICONTROL::SET_FONT_SIZE ===
+0000: OP_CONSTANT     0000 (Value: font_size)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: INIT_FIRST_TAB (Params: ) ---
+=== DISASSEMBLY: INIT_FIRST_TAB ===
+0000: OP_CONSTANT     0000 (Value: tab_page_)
+0003: OP_CONSTANT     0001 (Value: untitled.oli)
+0006: OP_CONCAT
+0007: OP_SET_LOCAL     0000
+0009: OP_CONSTANT     0002 (Value: WinCodeView)
+0012: OP_CALL_NATIVE  0003 (Name: NEW, Args: 1)
+0016: OP_SET_LOCAL     0001
+0018: OP_GET_LOCAL     0000
+0020: OP_CONSTANT     0004 (Value: main_tabs)
+0023: OP_CONSTANT     0005 (Value: 0)
+0026: OP_CONSTANT     0005 (Value: 0)
+0029: OP_CONSTANT     0005 (Value: 0)
+0032: OP_CONSTANT     0005 (Value: 0)
+0035: OP_GET_LOCAL     0001
+0037: OP_CONSTANT     0006 (Value: init)
+0040: OP_CALL_METHOD     (Args: 6, Context & Name on Stack)
+0042: OP_POP
+0043: OP_CONSTANT     0007 (Value: FILL)
+0046: OP_GET_LOCAL     0001
+0048: OP_CONSTANT     0008 (Value: set_width_mode)
+0051: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0053: OP_POP
+0054: OP_CONSTANT     0007 (Value: FILL)
+0057: OP_GET_LOCAL     0001
+0059: OP_CONSTANT     0009 (Value: set_height_mode)
+0062: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0064: OP_POP
+0065: OP_CONSTANT     0010 (Value: ./olide/syntaxes/oli.xml)
+0068: OP_GET_LOCAL     0001
+0070: OP_CONSTANT     0011 (Value: set_syntax_path)
+0073: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0075: OP_POP
+0076: OP_CONSTANT     0001 (Value: untitled.oli)
+0079: OP_GET_LOCAL     0000
+0081: OP_GET_GLOBAL   0012 (Name: tabs)
+0084: OP_CONSTANT     0013 (Value: add_tab)
+0087: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0089: OP_POP
+0090: OP_CONSTANT     0014 (Value: 12)
+0093: OP_GET_LOCAL     0001
+0095: OP_CONSTANT     0015 (Value: set_font_size)
+0098: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0100: OP_POP
+0101: OP_CALL         0016 (Name: UPDATE_ACTIVE_CONTEXT, Args: 0)
+0105: OP_POP
+0106: OP_GET_GLOBAL   0012 (Name: tabs)
+0109: OP_CONSTANT     0017 (Value: refresh)
+0112: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0114: OP_POP
+0115: OP_GET_GLOBAL   0018 (Name: counter)
+0118: OP_GET_GLOBAL   0018 (Name: counter)
+0121: OP_DUP
+0122: OP_CONSTANT     0019 (Value: 1)
+0125: OP_ADD
+0126: OP_SET_GLOBAL   0018 (Name: counter)
+0129: OP_RETURN
+
+--- FUNCTION: WINTABCONTROL::SWITCH_PAGE (Params: $index) ---
+=== DISASSEMBLY: WINTABCONTROL::SWITCH_PAGE ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_INDIRECT
+0006: OP_CONSTANT     0001 (Value: switch_page)
+0009: OP_GET_LOCAL     0001
+0011: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 3)
+0015: OP_RETURN
+
+--- FUNCTION: WINRICHEDIT::APPEND_TEXT (Params: $text) ---
+=== DISASSEMBLY: WINRICHEDIT::APPEND_TEXT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_INDIRECT
+0006: OP_CONSTANT     0001 (Value: append_text)
+0009: OP_GET_LOCAL     0001
+0011: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 3)
+0015: OP_RETURN
+
+--- FUNCTION: WINRICHCONSOLE::SET_RESIZABLE (Params: $bool) ---
+=== DISASSEMBLY: WINRICHCONSOLE::SET_RESIZABLE ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_INDIRECT
+0006: OP_CONSTANT     0001 (Value: set_resizable)
+0009: OP_GET_LOCAL     0001
+0011: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 3)
+0015: OP_RETURN
+
+--- FUNCTION: WINTABCONTROL::REFRESH (Params: ) ---
+=== DISASSEMBLY: WINTABCONTROL::REFRESH ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_INDIRECT
+0006: OP_CONSTANT     0001 (Value: refresh)
+0009: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 2)
+0013: OP_RETURN
+
+--- FUNCTION: WINRICHEDIT::INIT (Params: $id, $parentId, $x, $y, $w, $h) ---
+=== DISASSEMBLY: WINRICHEDIT::INIT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_LOCAL     0001
+0007: OP_SET_INDIRECT
+0008: OP_CONSTANT     0001 (Value: RICHEDIT)
+0011: OP_GET_LOCAL     0001
+0013: OP_GET_LOCAL     0002
+0015: OP_GET_LOCAL     0003
+0017: OP_GET_LOCAL     0004
+0019: OP_GET_LOCAL     0005
+0021: OP_GET_LOCAL     0006
+0023: OP_CALL_NATIVE  0002 (Name: UI_CREATE_CONTROL, Args: 7)
+0027: OP_POP
+0028: OP_RETURN
+
+--- FUNCTION: WINRICHEDIT::SET_READ_ONLY (Params: $bool) ---
+=== DISASSEMBLY: WINRICHEDIT::SET_READ_ONLY ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_INDIRECT
+0006: OP_CONSTANT     0001 (Value: set_read_only)
+0009: OP_GET_LOCAL     0001
+0011: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 3)
+0015: OP_RETURN
+
+--- FUNCTION: WINPANEL::SET_LAYOUT (Params: $style) ---
+=== DISASSEMBLY: WINPANEL::SET_LAYOUT ===
+0000: OP_CONSTANT     0000 (Value: layout)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_WIDTH_MODE (Params: $mode) ---
+=== DISASSEMBLY: UICONTROL::SET_WIDTH_MODE ===
+0000: OP_CONSTANT     0000 (Value: width_mode)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: WINWINDOW::SHOW (Params: ) ---
+=== DISASSEMBLY: WINWINDOW::SHOW ===
+0000: OP_GET_GLOBAL   0000 (Name: WINWINDOW)
+0003: OP_RETURN
+
+--- FUNCTION: WINMENU::INIT (Params: $id, $parentId) ---
+=== DISASSEMBLY: WINMENU::INIT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_LOCAL     0001
+0007: OP_SET_INDIRECT
+0008: OP_CONSTANT     0001 (Value: MENU)
+0011: OP_GET_LOCAL     0001
+0013: OP_GET_LOCAL     0002
+0015: OP_CALL_NATIVE  0002 (Name: UI_CREATE_CONTROL, Args: 3)
+0019: OP_POP
+0020: OP_GET_LOCAL     0000
+0022: OP_RETURN
+
+--- FUNCTION: WINTABCONTROL::ADD_TAB (Params: $title, $panelId) ---
+=== DISASSEMBLY: WINTABCONTROL::ADD_TAB ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_INDIRECT
+0006: OP_CONSTANT     0001 (Value: add_tab_page)
+0009: OP_GET_LOCAL     0001
+0011: OP_GET_LOCAL     0002
+0013: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 4)
+0017: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_HEIGHT_MODE (Params: $mode) ---
+=== DISASSEMBLY: UICONTROL::SET_HEIGHT_MODE ===
+0000: OP_CONSTANT     0000 (Value: height_mode)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: WINAPP::INIT (Params: ) ---
+=== DISASSEMBLY: WINAPP::INIT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: create)
+0005: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0007: OP_SET_LOCAL     0000
+0009: OP_GET_GLOBAL   0001 (Name: WINAPP)
+0012: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_PROP (Params: $name, $val) ---
+=== DISASSEMBLY: UICONTROL::SET_PROP ===
+0000: OP_GET_LOCAL     0000
+0002: OP_GET_LOCAL     0001
+0004: OP_GET_LOCAL     0002
+0006: OP_CALL_NATIVE  0000 (Name: UI_SET_PROPERTY, Args: 3)
+0010: OP_RETURN
+
+--- FUNCTION: MENU_CLOSE_CLICK (Params: ) ---
+=== DISASSEMBLY: MENU_CLOSE_CLICK ===
+0000: OP_CONSTANT     0000 (Value: active_tab_id)
+0003: OP_GET_GLOBAL   0001 (Name: tabs)
+0006: OP_CONSTANT     0002 (Value: get_prop)
+0009: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0011: OP_SET_LOCAL     0000
+0013: OP_GET_LOCAL     0000
+0015: OP_CONSTANT     0003 (Value: )
+0018: OP_NOT_EQUAL
+0019: OP_JUMP_IF_FALSE 0027 (Sari la: 49)
+0022: OP_CONSTANT     0004 (Value: [IDE] Închid tab-ul curent: )
+0025: OP_GET_LOCAL     0000
+0027: OP_CONCAT
+0028: OP_ECHO
+0029: OP_GET_GLOBAL   0001 (Name: tabs)
+0032: OP_CONSTANT     0005 (Value: id)
+0035: OP_GET_INDIRECT
+0036: OP_CONSTANT     0006 (Value: remove_tab)
+0039: OP_CALL_NATIVE  0007 (Name: UI_CALL_METHOD, Args: 2)
+0043: OP_POP
+0044: OP_CALL         0008 (Name: UPDATE_ACTIVE_CONTEXT, Args: 0)
+0048: OP_POP
+0049: OP_RETURN
+
+--- FUNCTION: WINTABCONTROL::SELECT_TAB_BY_ID (Params: $panelId) ---
+=== DISASSEMBLY: WINTABCONTROL::SELECT_TAB_BY_ID ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_INDIRECT
+0006: OP_CONSTANT     0001 (Value: select_tab_by_id)
+0009: OP_GET_LOCAL     0001
+0011: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 3)
+0015: OP_RETURN
+
+--- FUNCTION: WINWINDOW::INIT (Params: $id, $title) ---
+=== DISASSEMBLY: WINWINDOW::INIT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_LOCAL     0001
+0007: OP_SET_INDIRECT
+0008: OP_CONSTANT     0001 (Value: INAINTE DE CREATE WIN)
+0011: OP_ECHO
+0012: OP_GET_LOCAL     0001
+0014: OP_GET_LOCAL     0002
+0016: OP_CALL_NATIVE  0002 (Name: CREATE_WINWINDOW, Args: 2)
+0020: OP_SET_LOCAL     0000
+0022: OP_CONSTANT     0003 (Value: DUPA  CREATE WIN)
+0025: OP_ECHO
+0026: OP_GET_LOCAL     0000
+0028: OP_RETURN
+
+--- FUNCTION: WINMENU::ADD_SEPARATOR (Params: $sepId) ---
+=== DISASSEMBLY: WINMENU::ADD_SEPARATOR ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_INDIRECT
+0006: OP_CONSTANT     0001 (Value: add_separator)
+0009: OP_GET_LOCAL     0001
+0011: OP_CALL_NATIVE  0002 (Name: UI_CALL_METHOD, Args: 3)
+0015: OP_RETURN
+
+--- FUNCTION: WINWINDOW::SET_LAYOUT (Params: $style) ---
+=== DISASSEMBLY: WINWINDOW::SET_LAYOUT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: layout)
+0005: OP_GET_LOCAL     0001
+0007: OP_CALL_NATIVE  0001 (Name: UI_SET_PROPERTY, Args: 3)
+0011: OP_RETURN
+
+--- FUNCTION: UICONTROL::BIND (Params: $event, $func) ---
+=== DISASSEMBLY: UICONTROL::BIND ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_INDIRECT
+0006: OP_GET_LOCAL     0001
+0008: OP_GET_LOCAL     0002
+0010: OP_CALL_NATIVE  0001 (Name: UI_BIND_EVENT, Args: 3)
+0014: OP_RETURN

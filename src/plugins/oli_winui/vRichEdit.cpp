@@ -3,6 +3,7 @@
 #include <vector>
 #include <algorithm>
 #include <commctrl.h>
+#include <windowsx.h>
 
 // Inițializăm membrul static
 HMODULE vRichEdit::s_richEditModule = nullptr;
@@ -12,6 +13,8 @@ HMODULE vRichEdit::s_richEditModule = nullptr;
 
 vRichEdit::vRichEdit(HINSTANCE hInstance, const std::string& id, int x, int y, int width, int height, EventDispatcher& dispatcher)
     : vControl(hInstance, id, x, y, width, height, dispatcher) {
+
+ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG); 
 
     // Încărcăm DLL-ul necesar pentru Rich Edit 4.1 (sau versiuni mai noi)
     if (!s_richEditModule) {
@@ -27,7 +30,7 @@ vRichEdit::~vRichEdit() {
     if (m_activeFont) DeleteObject(m_activeFont);
     if (s_richEditModule) FreeLibrary(s_richEditModule); // Atenție: s_richEditModule este static
 }
-
+/*
 LRESULT CALLBACK RichEditTabSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
     switch (uMsg) {
         case WM_GETDLGCODE: {
@@ -61,6 +64,116 @@ LRESULT CALLBACK RichEditTabSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
     // Pentru tasta Enter și restul tastelor, lăsăm RichEdit să își ruleze logica lui nativă
     return DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }
+*/
+
+LRESULT CALLBACK RichEditTabSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+    vRichEdit* pControl = reinterpret_cast<vRichEdit*>(dwRefData);
+
+    switch (uMsg) {
+        case WM_GETDLGCODE: {
+            return DefSubclassProc(hWnd, uMsg, wParam, lParam) | DLGC_WANTALLKEYS | DLGC_WANTTAB;
+        }
+
+        case WM_KEYDOWN: {
+            if (wParam == VK_TAB) {
+                SendMessageW(hWnd, EM_REPLACESEL, TRUE, (LPARAM)L"\t");
+                return 0;
+            }
+            break;
+        }
+
+        case WM_CHAR: {
+            if (wParam == VK_TAB) return 0;
+            break;
+        }
+
+        // --- Logica de Redimensionare (Splitter) ---
+        case WM_SETCURSOR: {
+            // Accesăm direct m_isResizable pentru că este friend
+            if (pControl && pControl->m_isResizable) {
+                POINT pt; 
+                GetCursorPos(&pt);
+                ScreenToClient(hWnd, &pt);
+                if (pt.y >= 0 && pt.y < 5) {
+                    SetCursor(LoadCursor(NULL, IDC_SIZENS));
+                    return TRUE;
+                }
+            }
+            break;
+        }
+
+        case WM_LBUTTONDOWN: {
+            if (pControl && pControl->m_isResizable) {
+                POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+                if (pt.y >= 0 && pt.y < 5) {
+                    pControl->m_isResizing = true;
+                    SetCapture(hWnd);
+                    return 0;
+                }
+            }
+            break;
+        }
+
+		case WM_MOUSEMOVE: {
+			if (pControl && pControl->m_isResizing) {
+				static POINT lastGlobalPt;
+				POINT currentGlobalPt;
+				GetCursorPos(&currentGlobalPt);
+
+				int delta = currentGlobalPt.y - lastGlobalPt.y;
+				
+				if (delta != 0) {
+					// Pentru "Top Resizing":
+					// 1. Dacă delta este negativ (tragi în sus), Y scade (obiectul urcă)
+					// 2. Înălțimea crește cu valoarea absolută a delta-ului
+					
+					pControl->m_y += delta;      // Mutăm marginea de sus
+					pControl->m_height -= delta; // Compensăm înălțimea
+					
+					// Verifică limitele minime
+					if (pControl->m_height < 30) {
+						pControl->updateSize(pControl->m_width, pControl->m_height);
+    
+						// 🔥 PASUL 1: Ajustează și înălțimea panoului părinte
+						vControl* pParent = pControl->getParent();
+						if (pParent) {
+							// Dacă panoul părinte are înălțime fixă, trebuie să i-o schimbi și lui
+							pParent->updateSize(pParent->getWidth(), pControl->m_height); 
+							
+							// 🔥 PASUL 2: Forțează re-layout-ul
+							// Aici trebuie să apelezi metoda care resetează GRID-ul
+							pParent->update(); 
+						}
+					}
+
+					// Aplicăm schimbarea
+					MoveWindow(hWnd, pControl->m_x, pControl->m_y, 
+							   pControl->m_width, pControl->m_height, TRUE);
+					
+					// Notificăm părintele să își refacă layout-ul
+					if (pControl->getParent()) {
+						pControl->getParent()->update(); 
+					}
+				}
+				lastGlobalPt = currentGlobalPt;
+				return 0;
+			}
+			break;
+		}
+
+        case WM_LBUTTONUP: {
+            if (pControl && pControl->m_isResizing) {
+                pControl->m_isResizing = false;
+                ReleaseCapture();
+                return 0;
+            }
+            break;
+        }
+    }
+
+    return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}
+
 
 void vRichEdit::create(HWND parent) {
     if (!parent) return;
@@ -86,7 +199,7 @@ void vRichEdit::create(HWND parent) {
     if (m_handle) {
         // 🔥 FIX: Aplicăm subclassing-ul pe handle-ul nou creat. 
         // ID-ul subclass-ului este 1, nu avem nevoie de date suplimentare (0)
-        SetWindowSubclass(m_handle, RichEditTabSubclassProc, 1, 0);
+        SetWindowSubclass(m_handle, RichEditTabSubclassProc, 1, reinterpret_cast<DWORD_PTR>(this));
 
         // Setăm o limită de text mai mare (implicit e mică)
         SendMessage(m_handle, EM_EXLIMITTEXT, 0, (LPARAM)-1);
@@ -149,44 +262,7 @@ std::wstring vRichEdit::getText() const {
     GetWindowTextW(m_handle, buf.data(), len + 1);
     return std::wstring(buf.data());
 }
-/*
-void vRichEdit::setFontSize(int size) {
-    if (!m_handle) return;
 
-    // 1. Pregătim structura CHARFORMAT2
-    CHARFORMAT2 cf;
-    ZeroMemory(&cf, sizeof(cf));
-    cf.cbSize = sizeof(cf);
-    cf.dwMask = CFM_SIZE | CFM_FACE; // Mască pentru dimensiune și font
-    cf.yHeight = size * 20; // 24 puncte * 20 = 480 twips
-    
-    // Setăm numele fontului
-    //wcscpy_s(cf.szFaceName, L"Consolas"); 
-	// Setăm numele fontului
-#ifdef UNICODE
-    wcsncpy(cf.szFaceName, L"Consolas", LF_FACESIZE - 1);
-    cf.szFaceName[LF_FACESIZE - 1] = L'\0';
-#else
-    strncpy(cf.szFaceName, "Consolas", LF_FACESIZE - 1);
-    cf.szFaceName[LF_FACESIZE - 1] = '\0';
-#endif
-    cf.dwEffects = 0; 
-
-    // 2. Aplicăm formatarea:
-    // SCF_ALL = Modifică tot textul din editor
-    // SCF_DEFAULT = Modifică fontul default pentru tot ce vei scrie ulterior
-    SendMessage(m_handle, EM_SETCHARFORMAT, SCF_ALL | SCF_DEFAULT, (LPARAM)&cf);
-    
-    // 3. Opțional: Pentru a fi siguri, trimitem și WM_SETFONT
-    // Deși EM_SETCHARFORMAT este mai important pentru RichEdit
-    HFONT hFont = CreateFontW(
-        -MulDiv(size, 96, 72), 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
-        DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
-        CLEARTYPE_QUALITY, FIXED_PITCH | FF_MODERN, L"Consolas"
-    );
-    SendMessage(m_handle, WM_SETFONT, (WPARAM)hFont, TRUE);
-}
-*/
 
 void vRichEdit::setFont(const std::wstring& fontName, int baseFontSize, int weight, bool italic, bool underline) {
     // 1. Apelăm clasa de bază pentru ca vControl să salveze atributele (m_fontName, m_baseFontSize, etc.)
@@ -273,6 +349,11 @@ bool vRichEdit::setProperty(const std::wstring& name, const vData& value) {
         this->setFontSize(value.toInt());
         return true;
     }
+	if (name == L"resizable") {
+		LOG_DEBUG(L"DEBUG: Setare resizable: " + std::to_wstring(value.toBool()));
+        this->setResizable(value.toBool());
+        return true;
+    }
     return vControl::setProperty(name, value);
 }
 
@@ -303,6 +384,11 @@ bool vRichEdit::callMethod(const std::wstring& methodName, const std::vector<vDa
     if (method == L"set_read_only") {
         if (args.empty()) return false;
         this->setReadOnly(args[0].toBool());
+        return true;
+    }
+	if (method == L"set_resizable") {
+        if (args.empty()) return false;
+        this->setResizable(args[0].toBool()); // Folosești setter-ul creat anterior
         return true;
     }
 

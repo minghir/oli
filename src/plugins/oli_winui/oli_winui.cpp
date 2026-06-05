@@ -493,5 +493,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 }
 
 OLI_EXPORT void SetPluginConsoleManager(ConsoleManager* hostCm) {
-    ConsoleManager::setInstance(hostCm);
+    if (hostCm != nullptr) {
+        ConsoleManager::setInstance(hostCm);
+    }
 }

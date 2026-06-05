@@ -14,10 +14,17 @@ private:
     bool m_isReadOnly = false;
 
 	HFONT m_activeFont = nullptr; // Stocăm fontul aici
+	
+	bool m_isResizable = false;     // Flag-ul dorit
+    bool m_isResizing = false;      // Stare internă (mouse-ul este apăsat)
+    int m_resizeMargin = 5;         // Zona sensibilă la click (px)
+	
 public:
     vRichEdit(HINSTANCE hInstance, const std::string& id, int x, int y, int width, int height, EventDispatcher& dispatcher);
     ~vRichEdit();
-
+	
+	friend LRESULT CALLBACK RichEditTabSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
+	
     void create(HWND parent) override;
 
     // Metodă pentru a schimba culoarea unui text la o anumită poziție
@@ -43,6 +50,8 @@ public:
 	bool callMethod(const std::wstring& methodName, const std::vector<vData>& args) override;
 
 	void appendText(const std::wstring& text); // Helper pentru consolă
+	
+	void setResizable(bool resizable) { m_isResizable = resizable; }
 	
 };
 

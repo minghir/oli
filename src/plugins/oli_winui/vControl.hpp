@@ -433,6 +433,19 @@ public:
 	virtual bool callMethod(const std::wstring& methodName, const std::vector<vData>& args) {
 		return false; // Implementare default
 	}
+	
+		void updateSize(int newWidth, int newHeight) {
+			m_width = newWidth;
+			m_height = newHeight;
+			
+			// 🔥 VERIFICARE CRITICĂ
+			if (m_handle && IsWindow(m_handle)) {
+				MoveWindow(m_handle, m_x, m_y, m_width, m_height, TRUE);
+			} else {
+				LOG_ERROR(L"CRITIC: Încercare de redimensionare a unui HWND invalid!");
+			}
+		}
+	
 protected:
     
     std::function<void()> m_onClickCallback = nullptr;

@@ -1,4 +1,4 @@
-config win_app 1
+config win_app 0
 plugin oli_system
 plugin oli_filesys
 plugin oli_compiler
@@ -353,18 +353,19 @@ $closeButton.bind("click", "menu_close_click")
 # =================================================================
 echo "CREEZ Consolă..."
 set $consolePanel = new("WinPanel")
-$consolePanel.init("console_panel", "main_panel", 0, 0, 0, 150) # Înălțime fixă 150px
+$consolePanel.init("console_panel", "main_panel", 0, 0, 0, 250) # Înălțime fixă 150px
 #$consolePanel.set_layout("FILL") 
 $consolePanel.set_layout("GRID")
 $consolePanel.set_width_mode("FILL")
 $consolePanel.set_height_mode("FIXED") # Fixăm înălțimea ca să nu ocupe tot
 
 set $consoleOutput = new("WinRichConsole")
-$consoleOutput.init("console_output", "console_panel", 0, 0, 100, 150)
+$consoleOutput.init("console_output", "console_panel", 0, 0, 100, 250)
 $consoleOutput.set_width_mode("FILL")
 $consolePanel.set_height_mode("FIXED")
 $consoleOutput.set_read_only(true) # Utilizatorul nu poate scrie în ea
 $consoleOutput.set_font_size(12)
+$consoleOutput.set_resizable(true)
 $consoleOutput.set_text("Oli ready...")
 
 

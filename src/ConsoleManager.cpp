@@ -12,6 +12,10 @@ ConsoleManager* ConsoleManager::s_instance = nullptr;
 // --- Implementarea metodei initialize ---
 void ConsoleManager::initialize() {
 #ifdef _WIN32
+	if (GetConsoleWindow() == NULL) { 
+		return ;
+	}
+
     AllocConsole();
     SetConsoleOutputCP(CP_UTF8);
 
@@ -67,7 +71,6 @@ void ConsoleManager::log(const std::wstring& message, LogLevel level) {
 
     std::wstring prefix = L"[LOG]";
     WORD color = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE; // Alb (default)
-    bool isError = false; // Flag pentru a ști dacă trebuie să trimitem la stderr sau să folosim log-ul de erori
 
     switch (level) {
     case LogLevel::INFO:
@@ -88,13 +91,11 @@ void ConsoleManager::log(const std::wstring& message, LogLevel level) {
     case LogLevel::LOG_ERROR:
         prefix = L"[ERROR]";
         color = FOREGROUND_RED | FOREGROUND_INTENSITY;
-        isError = true;
         break;
 
     case LogLevel::FATAL_ERROR:
         prefix = L"[FATAL_ERROR]";
         color = BACKGROUND_RED | FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE | FOREGROUND_INTENSITY; // Roșu intens pe fond roșu
-        isError = true;
         break;
 
     case LogLevel::DEBUG:

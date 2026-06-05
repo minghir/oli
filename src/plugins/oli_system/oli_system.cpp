@@ -65,7 +65,12 @@ void RegisterSystemFunctions(PluginRegistry& registry) {
         */
 
     registry[L"START_PROCESS"] = [](const std::vector<vData>& args) -> vData {
-        if (args.empty()) return vData(0LL);
+        // 🔥 FIX SIGURANȚĂ: Verificăm argumentele înainte de a le accesa!
+        if (args.empty()) {
+            LOG_ERROR(L"START_PROCESS Error: Lipseste calea catre executabil.");
+            return vData(0LL);
+        }
+
         std::wstring path = vDataToWString(args[0]);
 
         // Structuri necesare pentru CreateProcess
@@ -75,9 +80,11 @@ void RegisterSystemFunctions(PluginRegistry& registry) {
         si.cb = sizeof(si);
         ZeroMemory(&pi, sizeof(pi));
 
-        // 🔥 Flag-ul magic: STARTF_USESHOWWINDOW + SW_HIDE pentru a nu deschide consolă
+        LOG_DEBUG(L"START_PROCESS: Path primit: " + path);
+
+        // Configurație pentru fereastră normală
         si.dwFlags = STARTF_USESHOWWINDOW;
-        si.wShowWindow = SW_SHOWNORMAL; // Fereastra aplicației tale va fi normală
+        si.wShowWindow = SW_SHOWNORMAL; // Fereastra aplicației va fi vizibilă normal
 
         // Convertim wstring la un buffer mutabil pentru CreateProcess
         std::vector<wchar_t> cmdLine(path.begin(), path.end());
@@ -90,8 +97,7 @@ void RegisterSystemFunctions(PluginRegistry& registry) {
             NULL,           // Process handle nu e moștenit
             NULL,           // Thread handle nu e moștenit
             FALSE,          // Nu moștenim handle-uri
-            //CREATE_NEW_CONSOLE, // Aici poți încerca DETACHED_PROCESS pentru a evita consola
-			DETACHED_PROCESS, // Flag pentru a nu deschide o consolă nouă
+            CREATE_NEW_CONSOLE, // 🔥 FIX: Deschide o consolă nouă, separată, vizibilă pentru utilizator!
             NULL,           // Mediu de lucru
             NULL,           // Director curent
             &si,            // Startup info
@@ -99,11 +105,15 @@ void RegisterSystemFunctions(PluginRegistry& registry) {
         );
 
         if (success) {
+            // Închidem handle-urile pentru a nu crea memory leaks. 
+            // Procesul va continua să ruleze independent în noua sa consolă!
             CloseHandle(pi.hProcess);
             CloseHandle(pi.hThread);
+            LOG_DEBUG(L"START_PROCESS a pornit cu succes: " + path);
             return vData(1LL);
         }
         else {
+            LOG_ERROR(L"START_PROCESS NU a reusit sa porneasca executabilul: " + path + L" (Cod eroare: " + std::to_wstring(GetLastError()) + L")");
             return vData(0LL);
         }
         };
@@ -207,4 +217,10 @@ void RegisterSystemFunctions(PluginRegistry& registry) {
 
 OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
     RegisterSystemFunctions(registry);
+}
+
+OLI_EXPORT void SetPluginConsoleManager(ConsoleManager* hostCm) {
+    if (hostCm != nullptr) {
+        ConsoleManager::setInstance(hostCm);
+    }
 }

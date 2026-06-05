@@ -30,3 +30,4 @@ echo "--- Status Dupa Upgrade ---"
 echo "HP: " .. $boss.hp
 echo "Armura: " .. $boss.armura
 echo "Furie: " .. $boss.furie
+input()

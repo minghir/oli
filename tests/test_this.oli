@@ -3,7 +3,7 @@ echo "--- START TEST CONTEXT $this ---"
 # 1. Definim functiile care vor rula ca "metode"
 # Acestea se bazeaza pe existenta variabilei $this in scope-ul local
 
-func afiseaza_status
+func afiseaza_status()
     echo "----------------------------"
     echo "Entitate: " + $this.nume
     echo "Viata:    " + $this.hp
@@ -11,7 +11,7 @@ func afiseaza_status
     echo "----------------------------"
 endfunc
 
-func primeste_damage puncte
+func primeste_damage($puncte)
     echo "[LOG] " + $this.nume + " a fost lovit cu " + $puncte + " dmg!"
     set $this.hp = $this.hp - $puncte
     if $this.hp < 0 then
@@ -45,3 +45,4 @@ $erou.status()
 $orc.status()
 
 echo "--- TEST FINALIZAT ---"
+input()

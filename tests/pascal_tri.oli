@@ -11,7 +11,7 @@ proc pascaltriangle $n
         set $j = 1
         while $j <= $spacesNeeded do
             set $rowText = $rowText + " "
-            set $j = $j + 1
+            $j++
         endwhile
 
         # 2. Calculate and format numbers
@@ -41,5 +41,5 @@ endproc
 
 # Main execution
 echo "--- Pascal's Triangle (Oli Edition) ---"
-pascaltriangle 8
+pascaltriangle 18
 input()

@@ -5,3 +5,4 @@ INJECT_HERO
 STATS
 
 echo $hero_name
+input()

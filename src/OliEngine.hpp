@@ -322,6 +322,8 @@ private:
 		std::vector<vData> m_stack; // Aceasta este stiva globală a VM-ului
 		std::vector<IterState> m_iterStack;
 		
+        std::vector<vData> m_methodContextStack;
+
 		static bool runEmbeddedIfPresent(const std::string& exePath);
 
        

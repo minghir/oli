@@ -9,7 +9,7 @@ set $boss = Entitate("Dragon", Pozitie(500, 500))
 
 # 2. Definim funcția de manipulare DINAMICĂ
 # Această funcție nu știe PE CINE va muta până la runtime
-func TELEPORT_DINAMIC tinta_nume nou_x nou_y
+func TELEPORT_DINAMIC($tinta_nume, $nou_x, $nou_y)
     echo "--- Initiere Salt Cuantic ---"
     echo "Identificator tinta: " + $tinta_nume
     
@@ -38,3 +38,4 @@ echo ""
 echo "--- VERIFICARE FINALA ---"
 echo "Pozitie Erou (Global): " + $erou.poz.x + "," + $erou.poz.y
 echo "Pozitie Boss (Global): " + $boss.poz.x + "," + $boss.poz.y
+input()

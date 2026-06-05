@@ -7,4 +7,5 @@ echo ADD(2,2)
 STATS
 INJECT_HERO
 echo  $hero_name
+input()
 

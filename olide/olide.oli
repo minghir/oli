@@ -369,14 +369,14 @@ endfunc
 
 echo "CREEZ Consolă..."
 set $consolePanel = new("WinPanel")
-$consolePanel.init("console_panel", "main_panel", 0, 0, 0, 250) # Înălțime fixă 150px
+$consolePanel.init("console_panel", "main_panel", 0, 0, 0, 150) # Înălțime fixă 150px
 #$consolePanel.set_layout("FILL") 
 $consolePanel.set_layout("GRID")
 $consolePanel.set_width_mode("FILL")
 $consolePanel.set_height_mode("FIXED") # Fixăm înălțimea ca să nu ocupe tot
 
 set $consoleOutput = new("WinRichConsole")
-$consoleOutput.init("console_output", "console_panel", 0, 0, 100, 250)
+$consoleOutput.init("console_output", "console_panel", 0, 0, 100, 150)
 $consoleOutput.set_width_mode("FILL")
 $consolePanel.set_height_mode("FIXED")
 $consoleOutput.set_read_only(true) # Utilizatorul nu poate scrie în ea

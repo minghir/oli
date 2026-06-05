@@ -415,8 +415,45 @@ vData vPanel::getProperty(const std::wstring& name) const {
 }
 
 
+bool vPanel::callMethod(const std::wstring& methodName, const std::vector<vData>& args) {
+    std::wstring method = methodName;
+    std::transform(method.begin(), method.end(), method.begin(), ::tolower);
+
+    if (method == L"refresh") {
+        // Aceasta este metoda care recalculează pozițiile copiilor
+        //this->updateLayout(); 
+		this->applyLayout();
+        return true;
+    }
+
+    // Dacă nu e "refresh", pasează mai departe la clasa de bază
+    return vControl::callMethod(methodName, args);
+}
+
+
 void vPanel::moveAndResize(int x, int y, int width, int height) {
     //LOG_DEBUG(L"[Panel " + str_to_wstr(m_id) + L"] Resize la " + std::to_wstring(width));
     vControl::moveAndResize(x, y, width, height);
     this->applyLayout();
+}
+
+void vPanel::updateLayout() {
+	LOG_DEBUG(L"[Panel " + str_to_wstr(m_id) + L"] updateLayout apelat pentru " + std::to_wstring(m_children.size()) + L" copii.");
+    int currentY = 0; // Pornim de sus
+    int panelWidth = m_width - (marginLeft + marginRight); // Luăm în calcul marginile
+    
+    for (auto& pair : m_children) {
+        vControl* child = pair.second.get();
+        if (!child || !child->isLogicVisible()) continue;
+
+        // Calculăm înălțimea copilului (dacă e FILL sau FIXED)
+        int childH = child->getHeight(); // Sau calculat din m_height-ul panoului
+        
+        // 🔥 AICI ESTE MAGIA:
+        // Spunem copilului exact unde să stea și cât să aibă
+        child->moveAndResize(marginLeft, currentY + marginTop, panelWidth, childH);
+        
+        // Incrementăm Y pentru următorul element (dacă ar fi VSTACK)
+        currentY += childH + marginTop + marginBottom;
+    }
 }

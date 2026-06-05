@@ -116,46 +116,20 @@ LRESULT CALLBACK RichEditTabSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LP
 
 		case WM_MOUSEMOVE: {
 			if (pControl && pControl->m_isResizing) {
-				static POINT lastGlobalPt;
-				POINT currentGlobalPt;
-				GetCursorPos(&currentGlobalPt);
+				POINT pt; GetCursorPos(&pt);
+				static POINT lastPt = pt;
+				int delta = pt.y - lastPt.y;
 
-				int delta = currentGlobalPt.y - lastGlobalPt.y;
-				
 				if (delta != 0) {
-					// Pentru "Top Resizing":
-					// 1. Dacă delta este negativ (tragi în sus), Y scade (obiectul urcă)
-					// 2. Înălțimea crește cu valoarea absolută a delta-ului
+					// Trimitem un eveniment generic către script
+					// Trimit delta-ul pentru ca scriptul să știe cu cât să modifice
+					std::vector<vData> args;
+					args.push_back(vData((long long)delta));
 					
-					pControl->m_y += delta;      // Mutăm marginea de sus
-					pControl->m_height -= delta; // Compensăm înălțimea
-					
-					// Verifică limitele minime
-					if (pControl->m_height < 30) {
-						pControl->updateSize(pControl->m_width, pControl->m_height);
-    
-						// 🔥 PASUL 1: Ajustează și înălțimea panoului părinte
-						vControl* pParent = pControl->getParent();
-						if (pParent) {
-							// Dacă panoul părinte are înălțime fixă, trebuie să i-o schimbi și lui
-							pParent->updateSize(pParent->getWidth(), pControl->m_height); 
-							
-							// 🔥 PASUL 2: Forțează re-layout-ul
-							// Aici trebuie să apelezi metoda care resetează GRID-ul
-							pParent->update(); 
-						}
-					}
-
-					// Aplicăm schimbarea
-					MoveWindow(hWnd, pControl->m_x, pControl->m_y, 
-							   pControl->m_width, pControl->m_height, TRUE);
-					
-					// Notificăm părintele să își refacă layout-ul
-					if (pControl->getParent()) {
-						pControl->getParent()->update(); 
-					}
+					// Dispatcherul execută funcția legată în Oli (ex: "on_console_resize")
+					pControl->getEventDispatcher().dispatch("RESIZE_VERTICAL", pControl->getId());
 				}
-				lastGlobalPt = currentGlobalPt;
+				lastPt = pt;
 				return 0;
 			}
 			break;

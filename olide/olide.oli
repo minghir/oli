@@ -351,6 +351,22 @@ $closeButton.bind("click", "menu_close_click")
 # =================================================================
 # CONSOLĂ COMPILARE (JOS)
 # =================================================================
+# În winui.oli, adaugi o funcție care știe ce panouri să ajusteze
+func on_console_resize($id, $delta)
+    # 1. Obținem înălțimea curentă a consolei
+    $h = $consoleOutput.get_prop("height")
+    
+    # 2. Calculăm și setăm noua înălțime (reține: delta e mișcarea mouse-ului)
+    # Tragem în sus -> delta negativ -> înălțime mai mare
+    $newH = $h - $delta
+    $consoleOutput.set_height($newH)
+    
+    # 3. Aplicăm Layout-ul (AICI SE ÎNTÂMPLĂ MAGIA)
+    # Spunem panoului părinte să își rearanjeze copiii
+    UI_CALL_METHOD("main_panel", "refresh") 
+endfunc
+
+
 echo "CREEZ Consolă..."
 set $consolePanel = new("WinPanel")
 $consolePanel.init("console_panel", "main_panel", 0, 0, 0, 250) # Înălțime fixă 150px
@@ -368,6 +384,7 @@ $consoleOutput.set_font_size(12)
 $consoleOutput.set_resizable(true)
 $consoleOutput.set_text("Oli ready...")
 
+$consoleOutput.bind("RESIZE_VERTICAL", "on_console_resize")
 
 # =================================================================
 # LOGICA DE DESCHIDERE DINAMICĂ ACTUALIZATĂ

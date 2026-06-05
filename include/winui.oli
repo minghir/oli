@@ -21,7 +21,8 @@ def class UiControl {
     set_height_mode($mode),
     set_margin($val),
     set_visible($bool),
-	set_font_size($size)
+	set_font_size($size),
+	set_height($val)
 }
 
 func UiControl::set_prop($name, $val) return UI_SET_PROPERTY($this, $name, $val) endfunc
@@ -35,6 +36,7 @@ func UiControl::set_height_mode($mode) return $this.set_prop("height_mode", $mod
 func UiControl::set_margin($val)      return $this.set_prop("margin", $val) endfunc
 func UiControl::set_visible($bool)    return $this.set_prop("visible", $bool) endfunc
 func UiControl::set_font_size($size)    return $this.set_prop("font_size", $size) endfunc
+func UiControl::set_height($val) return $this.set_prop("height", $val) endfunc
 
 # =================================================================
 # INCAPSULARE CORECTA PENTRU WINAPP 

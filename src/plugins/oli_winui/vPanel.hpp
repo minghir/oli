@@ -48,6 +48,7 @@ public:
 	
 	bool setProperty(const std::wstring& name, const vData& value) override;
     vData getProperty(const std::wstring& name) const override;
+	bool callMethod(const std::wstring& methodName, const std::vector<vData>& args);
 	void moveAndResize(int x, int y, int width, int height);
 protected:
     // S-a mutat m_hInstance aici pentru a fi accesibil claselor derivate.
@@ -66,6 +67,9 @@ private:
     // Metodă statică pentru a înregistra clasa de fereastră a panoului.
     static ATOM registerPanelClass(HINSTANCE hInstance);
     static ATOM s_panelClassAtom;
+	
+	void updateLayout();
+	
 };
 
 #endif // VPANEL_HPP

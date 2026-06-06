@@ -1378,14 +1378,25 @@ std::vector<std::wstring> splitWBySemicolon(const std::wstring& s) {
     return elems;
 }
 
-std::wstring citeste_fisier_utf8(const std::wstring& path) {
-    // 🔥 FIX: Adaugă .c_str() pentru a potrivi constructorul (const wchar_t*) din MinGW
-    std::ifstream file(path.c_str(), std::ios::binary); 
-    
-    if (!file.is_open()) return L"";
-    
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    
-    return utf8_to_wstring(buffer.str());
+std::wstring citeste_fisier_utf8(const std::wstring& path)
+{
+    std::string utf8path;
+
+#ifdef _WIN32
+    // Windows acceptă direct wchar_t*
+    const wchar_t* nativePath = path.c_str();
+#else
+    // Linux: convertim wstring → UTF‑8
+    utf8path = ws2utf8(path);
+    const char* nativePath = utf8path.c_str();
+#endif
+
+    std::ifstream file(nativePath, std::ios::binary);
+    if (!file.is_open())
+        return L"";
+
+    std::string buffer((std::istreambuf_iterator<char>(file)),
+        std::istreambuf_iterator<char>());
+
+    return utf8_to_wstring(buffer);
 }

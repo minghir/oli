@@ -2,49 +2,48 @@
 
 # 1. Încărcare Plugin
 
-/plugin ..\..\Release\oli_plugin.dll
+plugin oli_math
 
-/echo "--- Testare Funcții Matematice Native ---"
+echo "--- Testare Funcții Matematice Native ---"
 
 # 2. Testare Trigonometrie (Verificare SIN^2 + COS^2 = 1)
-/set unghi = 45
-/set s = SIN($unghi)
-/set c = COS($unghi)
-/set identitate = POW($s, 2) + POW($c, 2)
+set $unghi = 45
+set $s = SIN($unghi)
+set $c = COS($unghi)
+set $identitate = POW($s, 2) + POW($c, 2)
 
-/echo "Unghi: " + $unghi + " grade"
-/echo "SIN: " + $s
-/echo "COS: " + $c
-/echo "SIN^2 + COS^2 (trebuie sa fie 1.0000): " + $identitate
+echo "Unghi: " + $unghi + " grade"
+echo "SIN: " + $s
+echo "COS: " + $c
+echo "SIN^2 + COS^2 (trebuie sa fie 1.0000): " + $identitate
 
-/echo " "
+echo " "
 
 # 3. Testare Tangentă (TAN = SIN/COS)
-/set t = TAN($unghi)
-/set t_verif = $s / $c
-/echo "TAN direct: " + $t
-/echo "TAN calculat (SIN/COS): " + $t_verif
+set $t = TAN($unghi)
+set $t_verif = $s / $c
+echo "TAN direct: " + $t
+echo "TAN calculat (SIN/COS): " + $t_verif
 
-/echo " "
+echo " "
 
 # 4. Testare Rădăcină Pătrată și Putere
-/set n = 144
-/set rad = SQRT($n)
-/echo "Radacina patrata din " + $n + " este: " + $rad
-/echo "Verificare (Radacina^2): " + POW($rad, 2)
+set $n = 144
+set $rad = SQRT($n)
+echo "Radacina patrata din " + $n + " este: " + $rad
+echo "Verificare (Radacina^2): " + POW($rad, 2)
 
-/echo " "
+echo " "
 
 # 5. Testare compunere funcții (Complex)
 # Calculăm ipotenuza unui triunghi dreptunghic (a^2 + b^2 = c^2)
-/set cateta1 = 3
-/set cateta2 = 4
-/set ipotenuza = SQRT(POW($cateta1, 2) + POW($cateta2, 2))
-/echo "Triunghi (3,4,5). Ipotenuza calculata: " + $ipotenuza
+set $cateta1 = 3
+set $cateta2 = 4
+set $ipotenuza = SQRT(POW($cateta1, 2) + POW($cateta2, 2))
+echo "Triunghi (3,4,5). Ipotenuza calculata: " + $ipotenuza
 
-/set raza = 10
-/set cerc = 2 * PI() * $raza
-/echo $cerc
-
-/echo "--- Test Finalizat ---"
-
+set $raza = 10
+set $cerc = 2 * PI() * $raza
+echo $cerc
+echo "--- Test Finalizat ---"
+input()

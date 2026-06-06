@@ -18,7 +18,12 @@
 
 #endif
 
-
+#ifndef _WIN32
+std::string ws2utf8(const std::wstring& w) {
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
+    return conv.to_bytes(w);
+}
+#endif
 
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
 
@@ -396,12 +401,7 @@ registry[L"CAN_PRESENT"] = [](const std::vector<vData>&) -> vData {
             return vData{ 1LL };
             };
 
-#ifndef _WIN32
-        std::string ws2utf8(const std::wstring& w) {
-            std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
-            return conv.to_bytes(w);
-        }
-#endif
+
 
         registry[L"CAN_PUT_TXT"] = [](const std::vector<vData>& args) -> vData {
             if (args.size() < 3) return vData{ 0LL };

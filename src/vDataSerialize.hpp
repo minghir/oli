@@ -274,7 +274,7 @@ namespace vDataSerialize {
         return chunk;
     }
 
-
+    /*
     // Convertește WString (UTF-16) în String (UTF-8)
     inline std::string to_utf8(const std::wstring& wstr) {
         if (wstr.empty()) return "";
@@ -292,6 +292,94 @@ namespace vDataSerialize {
         MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
         return wstrTo;
     }
+    */
+
+    inline std::string to_utf8(const std::wstring& wstr) {
+#ifdef _WIN32
+        if (wstr.empty()) return "";
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(),
+            (int)wstr.size(), NULL, 0, NULL, NULL);
+        std::string result(size_needed, 0);
+        WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(),
+            (int)wstr.size(), &result[0], size_needed, NULL, NULL);
+        return result;
+#else
+        // UTF‑32 → UTF‑8 manual
+        std::string out;
+        out.reserve(wstr.size() * 4);
+
+        for (wchar_t wc : wstr) {
+            uint32_t c = (uint32_t)wc;
+
+            if (c <= 0x7F) {
+                out.push_back((char)c);
+            }
+            else if (c <= 0x7FF) {
+                out.push_back((char)(0xC0 | (c >> 6)));
+                out.push_back((char)(0x80 | (c & 0x3F)));
+            }
+            else if (c <= 0xFFFF) {
+                out.push_back((char)(0xE0 | (c >> 12)));
+                out.push_back((char)(0x80 | ((c >> 6) & 0x3F)));
+                out.push_back((char)(0x80 | (c & 0x3F)));
+            }
+            else {
+                out.push_back((char)(0xF0 | (c >> 18)));
+                out.push_back((char)(0x80 | ((c >> 12) & 0x3F)));
+                out.push_back((char)(0x80 | ((c >> 6) & 0x3F)));
+                out.push_back((char)(0x80 | (c & 0x3F)));
+            }
+        }
+
+        return out;
+#endif
+    }
+
+    inline std::wstring from_utf8(const std::string& str) {
+#ifdef _WIN32
+        if (str.empty()) return L"";
+        int size_needed = MultiByteToWideChar(CP_UTF8, 0, str.c_str(),
+            (int)str.size(), NULL, 0);
+        std::wstring result(size_needed, 0);
+        MultiByteToWideChar(CP_UTF8, 0, str.c_str(),
+            (int)str.size(), &result[0], size_needed);
+        return result;
+#else
+        // UTF‑8 → UTF‑32 manual
+        std::wstring out;
+        out.reserve(str.size());
+
+        uint32_t codepoint = 0;
+        int bytes = 0;
+
+        for (unsigned char c : str) {
+            if (c <= 0x7F) {
+                out.push_back((wchar_t)c);
+            }
+            else if ((c >> 5) == 0x6) {
+                codepoint = c & 0x1F;
+                bytes = 1;
+            }
+            else if ((c >> 4) == 0xE) {
+                codepoint = c & 0x0F;
+                bytes = 2;
+            }
+            else if ((c >> 3) == 0x1E) {
+                codepoint = c & 0x07;
+                bytes = 3;
+            }
+            else if ((c >> 6) == 0x2) {
+                codepoint = (codepoint << 6) | (c & 0x3F);
+                if (--bytes == 0) {
+                    out.push_back((wchar_t)codepoint);
+                }
+            }
+        }
+
+        return out;
+#endif
+    }
+
 
     // 1. Forțăm scrierea string-ului ca octeți simpli
     inline void serializeWString(const std::wstring& str, std::ostream& out) {

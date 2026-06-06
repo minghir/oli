@@ -1400,3 +1400,36 @@ std::wstring citeste_fisier_utf8(const std::wstring& path)
 
     return utf8_to_wstring(buffer);
 }
+
+#ifndef _WIN32
+std::string ws2utf8(const std::wstring& w) {
+    std::string out;
+    out.reserve(w.size() * 4);
+
+    for (wchar_t wc : w) {
+        uint32_t c = static_cast<uint32_t>(wc);
+
+        if (c <= 0x7F) {
+            out.push_back(static_cast<char>(c));
+        }
+        else if (c <= 0x7FF) {
+            out.push_back(static_cast<char>(0xC0 | (c >> 6)));
+            out.push_back(static_cast<char>(0x80 | (c & 0x3F)));
+        }
+        else if (c <= 0xFFFF) {
+            out.push_back(static_cast<char>(0xE0 | (c >> 12)));
+            out.push_back(static_cast<char>(0x80 | ((c >> 6) & 0x3F)));
+            out.push_back(static_cast<char>(0x80 | (c & 0x3F)));
+        }
+        else {
+            out.push_back(static_cast<char>(0xF0 | (c >> 18)));
+            out.push_back(static_cast<char>(0x80 | ((c >> 12) & 0x3F)));
+            out.push_back(static_cast<char>(0x80 | ((c >> 6) & 0x3F)));
+            out.push_back(static_cast<char>(0x80 | (c & 0x3F)));
+        }
+    }
+
+    return out;
+}
+
+#endif

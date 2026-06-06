@@ -396,22 +396,45 @@ registry[L"CAN_PRESENT"] = [](const std::vector<vData>&) -> vData {
             return vData{ 1LL };
             };
 
-registry[L"CAN_PUT_TXT"] = [](const std::vector<vData>& args) -> vData {
-    if (args.size() < 3 || !g_Canvas.hwnd) return vData{ 0LL };
-
-    int x = static_cast<int>(toDouble(args[0]));
-    int y = static_cast<int>(toDouble(args[1]));
-    std::wstring text = std::get<std::wstring>(args[2].value);
-
-#ifdef _WIN32
-    // Desenăm textul folosind GDI direct pe HDC-ul ferestrei sau pe hdcMem
-    SetTextColor(g_Canvas.hdcMem, RGB(255, 255, 0)); // Galben
-    SetBkMode(g_Canvas.hdcMem, TRANSPARENT);
-    TextOutW(g_Canvas.hdcMem, x, y, text.c_str(), (int)text.length());
+#ifndef _WIN32
+        std::string ws2utf8(const std::wstring& w) {
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
+            return conv.to_bytes(w);
+        }
 #endif
 
-    return vData{ 1LL };
-};
+        registry[L"CAN_PUT_TXT"] = [](const std::vector<vData>& args) -> vData {
+            if (args.size() < 3) return vData{ 0LL };
+
+            int x = static_cast<int>(toDouble(args[0]));
+            int y = static_cast<int>(toDouble(args[1]));
+            std::wstring text = std::get<std::wstring>(args[2].value);
+
+#ifdef _WIN32
+            if (!g_Canvas.hwnd) return vData{ 0LL };
+
+            SetTextColor(g_Canvas.hdcMem, RGB(255, 255, 0));
+            SetBkMode(g_Canvas.hdcMem, TRANSPARENT);
+            TextOutW(g_Canvas.hdcMem, x, y, text.c_str(), (int)text.length());
+#else
+            if (!g_Canvas.display || !g_Canvas.window) return vData{ 0LL };
+
+            // Convertim textul wide în UTF‑8
+            std::string utf8 = ws2utf8(text);
+
+            // Setăm culoarea (galben)
+            XSetForeground(g_Canvas.display, g_Canvas.gc, 0xFFFF00);
+
+            // Desenăm textul direct în fereastră
+            XDrawString(g_Canvas.display, g_Canvas.window, g_Canvas.gc,
+                x, y, utf8.c_str(), utf8.size());
+
+            XFlush(g_Canvas.display);
+#endif
+
+            return vData{ 1LL };
+            };
+
 
     registry[L"CAN_GET_PTR"] = [](const std::vector<vData>&) -> vData {
         // Returnăm adresa pointerului ca un număr (long long)

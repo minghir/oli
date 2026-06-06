@@ -1,7 +1,7 @@
 #ifndef VDATASERIALIZE_HPP
 #define VDATASERIALIZE_HPP
 
-#include <windows.h>
+//#include <windows.h>
 
 #include "vData.hpp"
 #include <iostream>

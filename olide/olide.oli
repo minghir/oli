@@ -1,4 +1,4 @@
-config win_app 0
+config win_app 1
 plugin oli_system
 plugin oli_filesys
 plugin oli_compiler

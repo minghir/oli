@@ -1,6 +1,6 @@
 unset all; cls
 
-func COUNT_ARR arr_to_count
+func COUNT_ARR($arr_to_count)
 set $i=0
   cycle $arr_to_count as val do 
 	set $i = $i + 1
@@ -8,7 +8,7 @@ set $i=0
   return $i
 endfunc
 
-func SORT_STRINGS array
+func SORT_STRINGS($array)
     set $arr = $array
     set $i = 0;
     set $n = COUNT_ARR($arr)
@@ -34,4 +34,4 @@ set $test=["unu","doi","trei","patru"]
 set $res = SORT_STRINGS($test)
 
 cycle $res as val do echo $val endcycle 
-
+input()

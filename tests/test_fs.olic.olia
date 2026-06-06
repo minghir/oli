@@ -1,0 +1,98 @@
+﻿--- OLI ASSEMBLY LISTING ---
+Source: tests/test_fs.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_PLUGIN       0000 (Path: oli_filesys)
+0003: OP_CONSTANT     0001 (Value: -----------------------------------------\n)
+0006: OP_ECHO
+0007: OP_CONSTANT     0001 (Value: -----------------------------------------\n)
+0010: OP_ECHO
+0011: OP_UNSET           0002 (Path: all)
+0014: OP_CONSTANT     0003 (Value: c:/)
+0017: OP_CONSTANT     0004 (Value: list_dir_rec)
+0020: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0022: OP_POP
+0023: OP_CONSTANT     0005 (Value: input)
+0026: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0028: OP_POP
+0029: OP_RETURN
+
+--- FUNCTION: LIST_DIR_REC (Params: $dir_path) ---
+=== DISASSEMBLY: LIST_DIR_REC ===
+0000: OP_CONSTANT     0000 (Value: Incep pt: )
+0003: OP_GET_LOCAL     0000
+0005: OP_ADD
+0006: OP_ECHO
+0007: OP_GET_LOCAL     0000
+0009: OP_CONSTANT     0001 (Value: FS_LIST_DIR)
+0012: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0014: OP_SET_LOCAL     0001
+0016: OP_GET_LOCAL     0001
+0018: OP_ITER_START
+0019: OP_ITER_NEXT
+0020: OP_JUMP_IF_TRUE  0128 (Sari la: 151)
+0023: OP_SET_LOCAL     0002
+0025: OP_GET_LOCAL     0000
+0027: OP_CONSTANT     0002 (Value: /)
+0030: OP_ADD
+0031: OP_GET_LOCAL     0002
+0033: OP_ADD
+0034: OP_SET_LOCAL     0003
+0036: OP_GET_LOCAL     0003
+0038: OP_CONSTANT     0003 (Value: FS_FILE_EXISTS)
+0041: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0043: OP_JUMP_IF_FALSE 0070 (Sari la: 116)
+0046: OP_GET_LOCAL     0003
+0048: OP_CONSTANT     0004 (Value: FS_IS_DIR)
+0051: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0053: OP_JUMP_IF_FALSE 0018 (Sari la: 74)
+0056: OP_CONSTANT     0005 (Value: Intram in: )
+0059: OP_GET_LOCAL     0003
+0061: OP_ADD
+0062: OP_ECHO
+0063: OP_GET_LOCAL     0003
+0065: OP_CONSTANT     0006 (Value: list_dir_rec)
+0068: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0070: OP_POP
+0071: OP_JUMP          0039 (Sari la: 113)
+0074: OP_CONSTANT     0007 (Value: Fisierul: )
+0077: OP_GET_LOCAL     0003
+0079: OP_ADD
+0080: OP_CONSTANT     0008 (Value:  exista si are dimensiunea: )
+0083: OP_ADD
+0084: OP_GET_LOCAL     0003
+0086: OP_CONSTANT     0009 (Value: FS_FILE_SIZE)
+0089: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0091: OP_CONSTANT     0010 (Value: 1024)
+0094: OP_DIV
+0095: OP_ADD
+0096: OP_CONSTANT     0011 (Value:  KB ()
+0099: OP_ADD
+0100: OP_GET_LOCAL     0003
+0102: OP_CONSTANT     0009 (Value: FS_FILE_SIZE)
+0105: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0107: OP_ADD
+0108: OP_CONSTANT     0012 (Value:  bytes))
+0111: OP_ADD
+0112: OP_ECHO
+0113: OP_JUMP          0032 (Sari la: 148)
+0116: OP_GET_LOCAL     0003
+0118: OP_CONSTANT     0004 (Value: FS_IS_DIR)
+0121: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0123: OP_JUMP_IF_FALSE 0011 (Sari la: 137)
+0126: OP_GET_LOCAL     0003
+0128: OP_CONSTANT     0006 (Value: list_dir_rec)
+0131: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0133: OP_POP
+0134: OP_JUMP          0011 (Sari la: 148)
+0137: OP_CONSTANT     0007 (Value: Fisierul: )
+0140: OP_GET_LOCAL     0003
+0142: OP_ADD
+0143: OP_CONSTANT     0013 (Value:  NU EXISTA!)
+0146: OP_ADD
+0147: OP_ECHO
+0148: OP_LOOP          0132 (Sari inapoi la: 19)
+0151: OP_ITER_FREE
+0152: OP_RETURN

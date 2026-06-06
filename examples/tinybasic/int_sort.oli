@@ -2,7 +2,6 @@ func SORT_NUMERIC_ARRAY($array)
     set $arr = $array 
     set $i = 0 
     set $n = LEN($arr) 
-    echo "CCCCCCCC" .. $arr
     while $i < $n do 
        set $j = $i + 1 
        while $j < $n do 

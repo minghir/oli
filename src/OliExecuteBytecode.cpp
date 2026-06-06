@@ -60,6 +60,7 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
             break;
         }
         */
+                                /*
         case OpCode::OP_GET_GLOBAL: {
             uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
             ip += 2;
@@ -105,6 +106,82 @@ void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
                         }
                         break;
                     }
+                }
+            }
+
+            stack.push_back(val);
+            break;
+        }
+        */
+
+        case OpCode::OP_GET_GLOBAL: {
+            uint16_t nameIdx = (uint16_t)((chunk.code[ip] << 8) | chunk.code[ip + 1]);
+            ip += 2;
+            std::wstring rawName = chunk.constants[nameIdx].toWString();
+            std::wstring cleanName = this->cleanVariableName(rawName);
+
+            vData val;
+
+            // 1. Rezolvarea dinamică și nativă a contextului $this
+            if (cleanName == L"this") {
+                if (!this->m_methodContextStack.empty() && !this->m_methodContextStack.back().isNull() && !std::holds_alternative<std::monostate>(this->m_methodContextStack.back().value)) {
+                    val = this->m_methodContextStack.back(); // Întoarce contextul din apelul dinamic
+                }
+                else if (framePtr < stack.size()) {
+                    val = stack[framePtr]; // Fallback pentru metodele statice de tip Clasa::Metoda
+                }
+            }
+            // 2. Căutăm direct în stack-ul local al interpretorului (dacă e cazul)
+            else if (!m_callStack.empty() && m_callStack.back().localVariables.count(cleanName)) {
+                val = m_callStack.back().localVariables[cleanName];
+            }
+            // 3. Căutăm în globalele motorului
+            else if (m_globalVariables.count(cleanName)) {
+                val = m_globalVariables[cleanName];
+            }
+
+            // 🔥 FIX CRITIC COMPLET PENTRU BUG-UL DE SCOPING AL COMPILATORULUI (@$tinta_nume)
+            // Dacă variabila nu a fost găsită în globale, dar suntem în interiorul unei funcții din Bytecode,
+            // verificăm dacă numele căutat aparține de fapt unui parametru local alocat pe stivă.
+            if (val.isNull() || std::holds_alternative<std::monostate>(val.value)) {
+                for (auto const& [funcName, proc] : this->m_bytecodeFunctions) {
+                    if (proc.compiledBody.get() == &chunk) {
+                        bool isMethod = (funcName.find(L"::") != std::wstring::npos);
+                        for (size_t i = 0; i < proc.params.size(); ++i) {
+                            std::wstring cleanParam = this->cleanVariableName(proc.params[i]);
+                            if (cleanParam == cleanName) {
+                                size_t slot = i + (isMethod ? 1 : 0);
+                                if (framePtr + slot < stack.size()) {
+                                    val = stack[framePtr + slot];
+                                }
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // =========================================================================
+            // 🔥 NOUA ZONĂ DE INTERCEPTARE: Căutăm în Comenzile de Plugin (Command Plugins)
+            // =========================================================================
+            // Dacă valoarea este în continuare un vData gol (null/monostate) după toate verificările,
+            // înseamnă că am dat peste o comandă din plugin tratată pasiv de compilator ca identificator.
+            if (val.isNull() || std::holds_alternative<std::monostate>(val.value)) {
+                std::wstring upperCleanName = cleanName;
+                for (auto& c : upperCleanName) c = std::towupper(c); // Forțăm UPPERCASE pentru map-ul de handlere
+
+                if (this->m_commandHandlers.count(upperCleanName)) {
+                    if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                        LOG_DEBUG(L"VM: Interceptat apel de comanda globala din bytecode: " + upperCleanName);
+                    }
+
+                    // 1. Executăm instant handlerul din plugin (îi pasăm o linie goală de argumente L"")
+                    this->m_commandHandlers[upperCleanName](L"");
+
+                    // 2. Lăsăm 'val' ca fiind null (monostate). 
+                    // Când va fi împins pe stivă mai jos, va asigura că stiva de expresii a mașinii 
+                    // virtuale rămâne perfect echilibrată, prevenind orice desincronizare.
                 }
             }
 
@@ -1664,7 +1741,7 @@ case OpCode::OP_CALL_METHOD: {
             }
             break;
         }
-
+        /*
         case OpCode::OP_CALL_DYNAMIC: {
             // Scoatem numărul de argumente de după OpCode
             uint8_t argCount = chunk.code[ip++];
@@ -1690,6 +1767,63 @@ case OpCode::OP_CALL_METHOD: {
             if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
                 LOG_DEBUG(L"VM_DEBUG: OP_CALL - Funcția apelată: " + funcName);
             }
+            stack.push_back(result);
+            break;
+        }
+        */
+        case OpCode::OP_CALL_DYNAMIC: {
+            // 1. Extragem numărul de argumente din bytecode
+            uint8_t argCount = chunk.code[ip++];
+
+            if (stack.empty()) {
+                LOG_ERROR(L"Runtime Error: Stiva este goala! Lipseste numele functiei pentru apelul dinamic.");
+                this->m_executionStatus = OliStatus::ERR;
+                break;
+            }
+
+            // 2. Extragem numele funcției (aflat în vârful stivei)
+            vData funcVal = stack.back();
+            stack.pop_back();
+
+            std::wstring funcName = to_upper(funcVal.toWString());
+
+            // 3. Extragem argumentele de pe stivă (Logica ta LIFO perfectă)
+            std::vector<vData> args(argCount);
+            for (int i = argCount - 1; i >= 0; --i) {
+                if (stack.empty()) {
+                    LOG_ERROR(L"Runtime Error: Stiva s-a golit prematur in timpul colectarii argumentelor pentru: " + funcName);
+                    this->m_executionStatus = OliStatus::ERR;
+                    break;
+                }
+                args[i] = stack.back();
+                stack.pop_back();
+            }
+            if (this->m_executionStatus == OliStatus::ERR) break;
+
+            vData result;
+
+            // 4. 🔥 Rutare nativă direct prin map-ul clasei vOliEngine
+            if (this->m_functionsHandlers.count(funcName)) {
+                if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                    LOG_DEBUG(L"VM_DEBUG: OP_CALL_DYNAMIC (NATIV) - Funcția: " + funcName);
+                }
+                // Apelăm direct handlerul C++ înregistrat, trimițându-i vectorul de argumente
+                result = this->m_functionsHandlers[funcName](args);
+            }
+            else {
+                // Rutare către funcțiile utilizator (Bytecode)
+                if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
+                    LOG_DEBUG(L"VM_DEBUG: OP_CALL_DYNAMIC (BYTECODE) - Funcția: " + funcName);
+                }
+                result = this->callUserByteCodeFunction(
+                    funcName.c_str(),   // Transformă std::wstring în const wchar_t*
+                    args.data(),        // Pointer brut către primul element (const vData*)
+                    args.size(),        // Numărul de elemente (size_t)
+                    vData()             // Contextul implicit rămâne neschimbat
+                );
+            }
+
+            // 5. Împingem rezultatul înapoi pe stiva mașinii virtuale
             stack.push_back(result);
             break;
         }
@@ -1893,29 +2027,26 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
         LOG_INFO(L"LoadOliPlugin nu a fost gasit (optional).");
     }
 
-    // --- B. ÎNCĂRCARE COMENZI ---
-    typedef void (*LoadCommandsFunc)(std::unordered_map<std::wstring, OliCommandHandler>&, void*);
+    // --- B. ÎNCĂRCARE COMENZI (Aliniat 100% cu interpretorul) ---
     LoadCommandsFunc regCmds = (LoadCommandsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliCommandPlugin");
 
     if (regCmds) {
-        LOG_INFO(L"Gasit LoadOliCommandPlugin. Se injecteaza...");
-        std::unordered_map<std::wstring, OliCommandHandler> pluginCmds;
+        LOG_INFO(L"Gasit LoadOliCommandPlugin. Se injecteaza direct...");
         try {
-            regCmds(pluginCmds, this);
-            for (auto const& [name, handler] : pluginCmds) {
-                this->m_commandHandlers[name] = [handler, name](const std::wstring& line) {
-                    ShellCommand cmd;
-                    cmd.name = name; cmd.isValid = true;
-                    std::wstringstream ss(line); std::wstring arg;
-                    while (ss >> arg) cmd.args.push_back(arg);
-                    handler(cmd);
-                };
+            // Trimitem direct map-ul principal al motorului, exact ca în handlePluginCommand!
+            regCmds(this->m_commandHandlers, this);
+
+            // Înregistrăm noile chei în vOliKeyWords
+            for (auto const& [name, handler] : this->m_commandHandlers) {
                 vOliKeyWords::registerDynamicCommand(name);
             }
+
             loadedAnything = true;
-            LOG_SUCCESS(L"Comenzi injectate.");
+            LOG_SUCCESS(L"Comenzi injectate cu succes direct in structura VM.");
         }
-        catch (...) { LOG_ERROR(L"Exception in LoadOliCommandPlugin"); }
+        catch (...) {
+            LOG_ERROR(L"Exception in LoadOliCommandPlugin");
+        }
     }
 
     if (loadedAnything) {

@@ -18,3 +18,4 @@ ECHO "--- RAPORT ENGINE ---"
 ECHO "Adresa ptr: " .. $ptr
 ECHO "Valoare finala: " .. $valoare
 ECHO "Calcul complex ( (100^2)/4 ): " .. $rezultat
+input()

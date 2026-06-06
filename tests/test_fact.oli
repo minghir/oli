@@ -1,4 +1,4 @@
-proc count n
+proc count $n
  #echo $n
  set $next = $n - 1
  echo $next
@@ -11,7 +11,7 @@ endproc
 
 set $res = 1
 
-proc fact n
+proc fact $n
    set $res = $res * $n
   set $next = $n - 1
   if $next > 1 then 
@@ -36,9 +36,10 @@ echo "Gata! Rezultatul pentru 10 este: " + INT($fact)
 echo INT(FACT(5))
 
 
-func factorial n
+func factorial($n)
   if $n <= 1 then return 1 endif
   return $n * factorial($n - 1)
 endfunc
 
 echo INT(factorial(5))
+input()

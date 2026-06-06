@@ -1,0 +1,8 @@
+func test($t)
+	echo $t
+endfunc
+
+set $var = "test"
+$var("MERGE")
+input()
+

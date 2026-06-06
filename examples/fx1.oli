@@ -30,3 +30,4 @@ endwhile
 
 set $void = CAN_CLOSE()
 echo "Consola Oli este pregatită."
+dm

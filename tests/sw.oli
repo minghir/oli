@@ -10,3 +10,4 @@ switch $nota
     default
         echo "Mai invata"
 endswitch
+input()

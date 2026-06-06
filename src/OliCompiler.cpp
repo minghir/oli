@@ -2018,6 +2018,59 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk, const std::unord
             return;
         }
 
+        // =========================================================================
+        // 🔥 RAMURĂ APEL DINAMIC PUR (ex: $var()("MERGE") sau $f($val))
+        // =========================================================================
+        if (isDynamic) {
+            LOG_DEBUG(L"  -> Generare apel dinamic bazat pe stivă.");
+
+            // 1. Punem argumentele funcției pe stivă
+            uint8_t finalArgCount = 0;
+            for (size_t i = 0; i < realArgs.size(); ++i) {
+                ASTPtr arg = realArgs[i];
+                if (arg->value == L"&" || arg->value == L"ADDRESS_OF") {
+                    if (i + 1 < realArgs.size()) {
+                        ASTPtr varNode = realArgs[i + 1];
+                        uint16_t nameIdx = chunk.addConstant(vData(varNode->value));
+                        chunk.addByte((uint8_t)OpCode::OP_GET_ADDR, 0);
+                        chunk.addByte((nameIdx >> 8) & 0xFF, 0);
+                        chunk.addByte(nameIdx & 0xFF, 0);
+                        i++; finalArgCount++;
+                        continue;
+                    }
+                }
+                generateFromAST(arg, chunk, externalProcs);
+                finalArgCount++;
+            }
+
+            // 2. 🔥 REPARARE CRITICĂ: Evaluăm expresia care determină funcția țintă
+            std::wstring sourceVal = funcSource->value;
+
+            // Adăugăm verificări stricte: sursa NU trebuie să fie un alt operator, NU trebuie să fie un alt apel de funcție (FunctionCall)
+            // și NU trebuie să fie string-ul de control "DYNAMIC_CALL"
+            if (funcSource->type != ASTNodeType::Operator &&
+                funcSource->type != ASTNodeType::FunctionCall &&
+                sourceVal != L"DYNAMIC_CALL" &&
+                !sourceVal.empty() &&
+                sourceVal[0] != L'$' &&
+                sourceVal[0] != L'@')
+            {
+                LOG_DEBUG(L"  -> Identificator literal de functie detectat: " + sourceVal);
+                emitConstant(vData(sourceVal), chunk, 0); // Pune direct string-ul "FACT" pe stivă
+            }
+            else {
+                // Dacă este o variabilă ($var) sau un sub-apel înlănțuit ($var()), o evaluăm normal (recursiv)
+                LOG_DEBUG(L"  -> Expresie complexa/variabila pentru functie. Evaluare AST recursiva.");
+                generateFromAST(funcSource, chunk, externalProcs);
+            }
+
+            // 3. Emitem OpCode-ul care îi spune VM-ului să citească numele funcției direct de pe stivă
+            chunk.addByte((uint8_t)OpCode::OP_CALL_DYNAMIC, 0);
+            chunk.addByte(finalArgCount, 0);
+            return;
+        }
+
+
         // E. APEL NORMAL (GLOBAL SAU NATIV)
         uint8_t finalArgCount = 0;
         LOG_DEBUG(L"  -> Procesare argumente (" + std::to_wstring(realArgs.size()) + L" gasite)");

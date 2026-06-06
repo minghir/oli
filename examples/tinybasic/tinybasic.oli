@@ -8,7 +8,6 @@ config max_iterations 0
 include "examples/tinybasic/int_sort.oli"
 cls; unset all
 config echo off
-config max_iterations 0
 
 # --- INIȚIALIZARE MEMORIE ---
 set @tb_program = MAP()

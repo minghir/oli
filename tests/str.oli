@@ -13,3 +13,4 @@ test2()
 
 echo "dupa func:" .. $str
 
+input()

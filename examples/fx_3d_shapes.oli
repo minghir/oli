@@ -31,3 +31,4 @@ endwhile
 
 set $v = CAN_CLOSE()
 echo "Revenire in consola."
+list funcs

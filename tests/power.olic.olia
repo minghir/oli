@@ -1,0 +1,15 @@
+﻿--- OLI ASSEMBLY LISTING ---
+Source: tests\power.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_PLUGIN       0000 (Path: oli_power)
+0003: OP_GET_GLOBAL   0001 (Name: INJECT_HERO)
+0006: OP_GET_GLOBAL   0002 (Name: STATS)
+0009: OP_GET_GLOBAL   0003 (Name: hero_name)
+0012: OP_ECHO
+0013: OP_CONSTANT     0004 (Value: input)
+0016: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0018: OP_POP
+0019: OP_RETURN

@@ -1,21 +1,21 @@
 unset all;cls
-func test t
+func test($t)
 echo $t
 endfunc
 
-func test2
+func test2()
 return "test"
 endfunc
 
-set $var = "test2"
-$var()("MERGE")
+set $var = "test"
+$$var("MERGE")
 
 
-func double it
+func double($it)
   return $it * 2
 endfunc
 
-func fact n
+func fact($n)
   if $n <= 1 then return 1 endif
   return $n * fact($n - 1)
 endfunc
@@ -30,14 +30,14 @@ echo $x
 
 
 set $a = "mimi"
-func test
+func test()
 	set $a="fifi"
 endfunc
 
 test()
 dm
 
-func test3
+func test3()
 	set @a = "fifi dar global"
 	set $a = "fifi dar local"
 endfunc
@@ -51,3 +51,4 @@ $a = 1
 $b = a
 $c = b
 echo $$$c
+input()

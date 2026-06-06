@@ -32,7 +32,7 @@ struct GuiState {
 } g_Gui;
 
 // Pointerul global legitim către mașina virtuală din EXE
-static vOliEngine* g_LinkedOliEngine = nullptr;
+inline vOliEngine* g_LinkedOliEngine = nullptr;
 
 // Memoria persistentă a callback-urilor din script
 static std::map<std::string, std::wstring> g_PersistentScriptCallbacks;
@@ -49,14 +49,18 @@ vControl* LocateAnyControl(const std::string& id) {
 // ✅ PUNCTUL UNIC DE INTRARE: Compilatorul și Linkerul vor expune doar această semnătură curată
 OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 
-    // Salvăm și castăm corect pointerul motorului primit direct din internalLoadPlugin-ul EXE-ului
-    g_LinkedOliEngine = static_cast<vOliEngine*>(enginePtr);
+    if (g_LinkedOliEngine == nullptr) {
+        g_LinkedOliEngine = static_cast<vOliEngine*>(enginePtr);
 
-    if (g_LinkedOliEngine) {
-        LOG_SUCCESS(L"✅ [DLL] Conexiune stabilă cu OliEngine! Pointer salvat.");
+        if (g_LinkedOliEngine) {
+            LOG_SUCCESS(L"✅ [DLL] Conexiune stabilă stabilită cu OliEngine-ul Gazdă!");
+        }
+        else {
+            LOG_ERROR(L"❌ [DLL] Eroare critică: Am primit un pointer enginePtr de tip NULL!");
+        }
     }
     else {
-        LOG_ERROR(L"❌ [DLL] Eroare critică: Am primit un pointer enginePtr de tip NULL!");
+        LOG_INFO(L"ℹ️ [DLL] LoadOliPlugin re-apelat (Compilare/Context secundar). Păstrăm engine-ul gazdă intact.");
     }
 
     // ==========================================

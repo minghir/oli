@@ -21,3 +21,4 @@ for $i = 1 to 3 do
         echo "Diagonala: [" + INT($i) + "," + INT($j) + "]" 
     endfor 
 endfor
+input()

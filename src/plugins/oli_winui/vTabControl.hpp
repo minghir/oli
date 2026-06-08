@@ -64,6 +64,7 @@ private:
     std::vector<vTabPage> m_pages;
     RECT getDisplayRect();
 	void refresh();
+	void drawTab(LPDRAWITEMSTRUCT dis);
    // COLORREF m_backgroundColor;
 };
 

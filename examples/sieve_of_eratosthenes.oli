@@ -43,5 +43,5 @@ echo "--------------------------------"
 echo "Total numere prime gasite: " + STR($count)
 echo "Speram la: 25"
 dm
-LIST FUNCs
+LIST FUNCS
 input()

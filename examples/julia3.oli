@@ -11,9 +11,9 @@ plugin oli_time
 func RENDER_JULIA_HD()
 set $SW = 400
 set $SH = 400
-set $v = CAN_INIT($SW, $SH, "Oli Engine - Julia Test")
+CAN_INIT($SW, $SH, "Oli Engine - Julia Test")
     
-    set $maxIter = 32
+    set $maxIter = 30
     set $t = 0
 
     while true do
@@ -45,7 +45,7 @@ set $v = CAN_INIT($SW, $SH, "Oli Engine - Julia Test")
                     
                     set $zy = 2.0 * $zx * $zy + $cY
                     set $zx = $zx2 - $zy2 + $cX
-                    set $i = $i + 1
+                    $i += 1
                 endwhile
                 
                 # --- LOGICĂ CULORI RGB ---
@@ -65,12 +65,12 @@ set $v = CAN_INIT($SW, $SH, "Oli Engine - Julia Test")
                 endif
                 
                 # Punem pixelul direct în buffer-ul de memorie
-                set $v = CAN_PUT($x, $y, $color)
+                CAN_PUT($x, $y, $color)
             endfor
         endfor
         
         # Transferăm tot buffer-ul pe ecran și procesăm mesajele Windows
-        set $v = CAN_PRESENT()
+        CAN_PRESENT()
         set $state = KEY_STATE(81)
         if $state > 0.5 then # Q pentru ieșire
             break

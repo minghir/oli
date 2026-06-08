@@ -32,7 +32,7 @@ void vTabControl::create(HWND parent) {
         WS_EX_CONTROLPARENT, // Permite navigarea prin tab în interiorul paginilor
         WC_TABCONTROL,
         L"",
-        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, // Elimină TCS_BUTTONS dacă vrei aspect de tab-uri lipite
+        WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | TCS_OWNERDRAWFIXED, // Elimină TCS_BUTTONS dacă vrei aspect de tab-uri lipite
         getX(), getY(), getWidth(), getHeight(),
         parent,
         (HMENU)(uintptr_t)getWin32Id(),
@@ -254,6 +254,14 @@ vPanel* vTabControl::getCurrentPage() const {
 
 LRESULT vTabControl::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
+	if (msg == WM_DRAWITEM) {
+        LPDRAWITEMSTRUCT dis = (LPDRAWITEMSTRUCT)lParam;
+        if (dis->CtlType == ODT_TAB) {
+            drawTab(dis);
+            return TRUE;
+        }
+    }
+
     // Tratăm notificările specifice (click pe tab)
     if (msg == WM_NOTIFY) {
         LPNMHDR lpnmhdr = reinterpret_cast<LPNMHDR>(lParam);
@@ -263,6 +271,27 @@ LRESULT vTabControl::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
             m_dispatcher.dispatch("tab_changed", m_id);
             return 0;
         }
+		if (lpnmhdr->code == NM_CLICK) {
+			DWORD pos = GetMessagePos();
+			POINT pt = { GET_X_LPARAM(pos), GET_Y_LPARAM(pos) };
+			ScreenToClient(m_handle, &pt);
+
+			TCHITTESTINFO hit = { 0 };
+			hit.pt = pt;
+			int index = TabCtrl_HitTest(m_handle, &hit);
+
+			if (index != -1) {
+				// Calculează rect-ul tab-ului pentru a vedea dacă X-ul a fost atins
+				RECT tabRect;
+				TabCtrl_GetItemRect(m_handle, index, &tabRect);
+				
+				// Dacă punctul e în dreapta (unde am desenat X-ul)
+				if (pt.x > tabRect.right - 20) {
+					// Aici declanșezi ștergerea
+					LOG_SUCCESS(L"Inchid TAB");
+				}
+			}
+		}
         else {
            // return getCurrentPage()->handleMessage(hwnd, msg, wParam, lParam);
         }
@@ -284,6 +313,8 @@ LRESULT vTabControl::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
         switchPage(getSelectedIndex());
         return res;
     }
+	
+	
    
 
     return vContainer::handleMessage(hwnd, msg, wParam, lParam);
@@ -478,4 +509,34 @@ void vTabControl::refresh() {
     // să fie forțat să se randeze din nou.
     RedrawWindow(m_handle, nullptr, nullptr, 
                  RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+}
+
+
+void vTabControl::drawTab(LPDRAWITEMSTRUCT dis) {
+    HDC hdc = dis->hDC;
+    RECT rect = dis->rcItem;
+    int index = dis->itemID;
+
+    // 1. Fundalul tab-ului
+    FillRect(hdc, &rect, (HBRUSH)(COLOR_3DFACE + 1));
+
+    // 2. Textul tab-ului
+    TCITEMW item = { 0 };
+    item.mask = TCIF_TEXT;
+    wchar_t buffer[256];
+    item.pszText = buffer;
+    item.cchTextMax = 256;
+    TabCtrl_GetItem(m_handle, index, &item);
+    
+    RECT textRect = rect;
+    textRect.left += 5;
+    DrawTextW(hdc, item.pszText, -1, &textRect, DT_SINGLELINE | DT_VCENTER);
+
+    // 3. Desenează "X"-ul (în dreapta)
+    RECT closeRect = rect;
+    closeRect.left = closeRect.right - 20; // 20px lățime pentru buton
+    
+    // Desenăm un X simplu
+    SetTextColor(hdc, RGB(0, 0, 0));
+    DrawTextW(hdc, L"×", -1, &closeRect, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
 }

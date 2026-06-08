@@ -1,4 +1,4 @@
-config win_app 1
+config win_app 0
 plugin oli_system
 plugin oli_filesys
 plugin oli_compiler
@@ -89,23 +89,43 @@ func menu_save_click()
     endif
 endfunc
 
+# func menu_save_as_click()
+    # UPDATE_ACTIVE_CONTEXT()
+	
+    # # Dacă nu avem nicio zonă de text activă, nu avem ce salva
+    # if @activeCodeView == null then return endif
+
+    # set $dlg = new("FileDialog")
+    # $dlg.title = "Salvează fișierul sub alt nume..."
+    # $dlg.type = 1  
+    
+    # $path = $dlg.show()
+    # if $path != "" then
+        # @file = $path  
+        # $activeCodeView.set_prop("file_path", $path) # Actualizăm proprietatea internă în tab-ul curent
+        # execute_save_to_disk(@file)
+    # endif
+# endfunc
+
 func menu_save_as_click()
     UPDATE_ACTIVE_CONTEXT()
-	
-    # Dacă nu avem nicio zonă de text activă, nu avem ce salva
     if @activeCodeView == null then return endif
 
-    set $dlg = new("FileDialog")
-    $dlg.title = "Salvează fișierul sub alt nume..."
-    $dlg.type = 1  
+    set $dlg = new("FileDialog") # (Notă: Verifică dacă în codul tău 'new("FileDialog")' 
+                                 # apelează UI_FILE_DIALOG în spate)
+
+    # Dacă folosești direct funcția din plugin:
+    # Parametri: 1 (pentru SAVE), Titlu, Calea curentă
+	if @file == "" then @file = "untitled.oli" endif
+    $path = UI_FILE_DIALOG(1, "Salvează fișierul...", @file) 
     
-    $path = $dlg.show()
     if $path != "" then
         @file = $path  
-        $activeCodeView.set_prop("file_path", $path) # Actualizăm proprietatea internă în tab-ul curent
+        $activeCodeView.set_prop("file_path", $path)
         execute_save_to_disk(@file)
     endif
 endfunc
+
 
 func save_click()
     menu_save_click()

@@ -9,6 +9,7 @@ private:
     std::wstring m_title;
     std::wstring m_filter;
     std::wstring m_resultPath;
+	std::wstring m_initialPath;
 
 public:
     WinFileDialog(const std::wstring& title = L"Select File")
@@ -16,6 +17,7 @@ public:
     }
 
     void setFilter(const std::wstring& filter) { m_filter = filter; }
+	void setInitialPath(const std::wstring& path) { m_initialPath = path; }
 
     bool showOpen(HWND parent = nullptr) {
         wchar_t szFile[MAX_PATH] = { 0 };
@@ -44,6 +46,7 @@ public:
         return false;
     }
 
+	/*
     bool showSave(HWND parent = nullptr) {
         wchar_t szFile[MAX_PATH] = { 0 };
         OPENFILENAMEW ofn = { 0 };
@@ -59,6 +62,31 @@ public:
         // 🔥 Extensia implicită în caz că utilizatorul uită să o scrie în căsuță
         ofn.lpstrDefExt = L"oli";
 
+        ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_NOCHANGEDIR;
+
+        if (GetSaveFileNameW(&ofn)) {
+            m_resultPath = szFile;
+            return true;
+        }
+        return false;
+    }
+	*/
+	bool showSave(HWND parent = nullptr) {
+        wchar_t szFile[MAX_PATH] = { 0 };
+        
+        // Copiem calea inițială în buffer-ul de ieșire
+        if (!m_initialPath.empty()) {
+            wcsncpy_s(szFile, m_initialPath.c_str(), MAX_PATH);
+        }
+
+        OPENFILENAMEW ofn = { 0 };
+        ofn.lStructSize = sizeof(ofn);
+        ofn.hwndOwner = parent;
+        ofn.lpstrFile = szFile; // Acesta va conține calea inițială
+        ofn.nMaxFile = MAX_PATH;
+        ofn.lpstrFilter = L"Oli Files (*.oli)\0*.oli\0All Files (*.*)\0*.*\0";
+        ofn.nFilterIndex = 1;
+        ofn.lpstrDefExt = L"oli";
         ofn.Flags = OFN_OVERWRITEPROMPT | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY | OFN_NOCHANGEDIR;
 
         if (GetSaveFileNameW(&ofn)) {

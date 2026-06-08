@@ -37,9 +37,11 @@ echo ">>> Baza de date a fost salvată în: " + $db_file
 
 # 4. RESETARE ȘI RESTAURARE (Testăm dacă persistă)
 set $users = NULL
+
 echo ">>> Memorie curățată. Încercăm restaurarea de pe disc..."
 
 if EXISTSFILE($db_file) then
+	$users = []
     set $raw_content = READFILE($db_file)
     set $restored_db = JSON_DECODE($raw_content)
     
@@ -48,6 +50,7 @@ if EXISTSFILE($db_file) then
     while $k < LEN($restored_db) do
         set $u = $restored_db[$k]
         echo "User [" + STR($u["id"]) + "]: " + $u["name"] + " (" + $u["role"] + ")"
+		PUSH($users, $u)
         set $k++
     endwhile
 else
@@ -55,3 +58,4 @@ else
 endif
 
 dm
+input()

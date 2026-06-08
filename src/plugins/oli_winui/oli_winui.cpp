@@ -148,7 +148,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 
             // Apelăm crearea nativă transmițând explicit HINSTANCE-ul procesului gazdă
             bool created = newWindow->create(L"VOliWindowClass", wTitle,
-                WS_OVERLAPPEDWINDOW, 200, 200, 800, 600, nullptr, nullptr);
+                WS_OVERLAPPEDWINDOW, 200, 200, 800, 900, nullptr, nullptr);
 
             if (created) {
                 vWindow* winPtr = newWindow.get();
@@ -480,11 +480,16 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         registry[L"UI_FILE_DIALOG"] = [](const std::vector<vData>& args) -> vData {
             // Arg 0: tip (0 = OPEN, 1 = SAVE)
             // Arg 1: Titlu
+			// Arg 2 (Opțional): Calea inițială
             int type = (int)args[0].toDouble();
             std::wstring title = args[1].toWString();
 
             WinFileDialog dlg(title);
-
+			
+			if (args.size() > 2) {
+				dlg.setInitialPath(args[2].toWString());
+			}
+			
             if (type == 0) { // OPEN
                 if (dlg.showOpen(nullptr)) return vData(dlg.getFilePath());
             }

@@ -4,9 +4,13 @@ plugin "oli_winui" # sau numele pe care l-ai dat DLL-ului tău grafic
 echo "=== Lansare Subsistem Grafic Oli ==="
 
 # 2. Inițializăm GUI (Verifică dacă rulează din consolă sau host grafic)
-set $initialized = GUI_INIT()
 
-if $initialized == 1 then
+def class WinApp { init(), run() }
+$app = CREATE_WINAPP()
+$app.INIT()
+
+
+if $app != null then
     echo "[GUI] Subsistem inițializat cu succes!"
     
     # Id-ul ferestrei trebuie să fie string, titlul la fel
@@ -16,19 +20,19 @@ if $initialized == 1 then
     echo "[GUI] Se creează fereastra..."
     
     # 3. Creăm fereastra reală (HWND în spate)
-    set $created = WIN_CREATE($winId, $winTitle)
-    
-    if $created == 1 then
+    set $win = CREATE_WINWINDOW($winId, $winTitle)
+    dm
+    if $win != null then
         echo "[GUI] Fereastra a fost creată. O afișăm pe ecran..."
         
         # 4. Forțăm afișarea ferestrei (SW_SHOW în spate)
-        WIN_SHOW($winId)
+        #$created.SHOW($winId)
         
         echo "[GUI] Intrare în bucla principală de mesaje Windows (Pump Loop)..."
         
         # 5. Pasăm controlul către bucla WinAPI (g_Gui.appInstance->run())
         # Scriptul va "îngheța" (aștepta) aici până când închizi fereastra (X)
-        set $exitCode = GUI_RUN()
+        $exitCode = $app.RUN()
         
         echo "[GUI] Aplicația s-a închis cu codul: " .. $exitCode
     else
@@ -40,3 +44,4 @@ else
 endif
 
 echo "=== Programul Oli s-a terminat ==="
+input()

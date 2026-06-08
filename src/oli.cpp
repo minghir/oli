@@ -19,6 +19,7 @@
 #define fileno _fileno
 #else
 #include <unistd.h>
+#include <sys/stat.h>
 #endif
 
 
@@ -56,8 +57,11 @@ int main(int argc, char* argv[]) {
             if (argc < 3) return 1;
             std::string inputPath = argv[2];
 
-            // Generăm .exe-ul în directorul curent de lucru
-            std::string outputPath = (argc > 3) ? argv[3] : std::filesystem::path(inputPath).stem().string() + ".exe";
+            // Generăm executabilul în directorul curent de lucru
+            std::string outputPath = (argc > 3) ? argv[3] : std::filesystem::path(inputPath).stem().string();
+#ifdef _WIN32
+            outputPath += ".exe";
+#endif
 
             try {
                 std::wcout << L"Oli Engine v0.1\nBuild Date: " << __DATE__ << std::endl;
@@ -115,6 +119,12 @@ int main(int argc, char* argv[]) {
                 }
 
                 dst.close();
+
+#ifndef _WIN32
+                // Pe Linux, setează drepturi de execuție folosind chmod
+                chmod(outputPath.c_str(), 0755);
+#endif
+
                 std::wcout << L"Building completed." << std::endl;
                 return 0;
             }

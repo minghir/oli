@@ -288,7 +288,10 @@ LRESULT vTabControl::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lP
 				// Dacă punctul e în dreapta (unde am desenat X-ul)
 				if (pt.x > tabRect.right - 20) {
 					// Aici declanșezi ștergerea
-					LOG_SUCCESS(L"Inchid TAB");
+					//this->callMethod(L"remove_tab", { vData((long long)index) });
+					std::string tabId = m_pages[index].panel->getId();
+					m_dispatcher.dispatch("close_tab", m_id, tabId);
+					return 0;
 				}
 			}
 		}
@@ -420,6 +423,20 @@ bool vTabControl::callMethod(const std::wstring& methodName, const std::vector<v
         if (args.empty()) return false;
         this->switchPage(args[0].toInt());
         return true;
+    }
+	
+	if (method == L"remove_tab_page_by_id") {
+        if (args.empty()) return false;
+        std::string targetId(args[0].toWString().begin(), args[0].toWString().end());
+
+        // Căutăm indexul tab-ului după ID
+        for (int i = 0; i < (int)m_pages.size(); ++i) {
+            if (m_pages[i].panel->getId() == targetId) {
+                // Acum apelăm metoda remove_tab cu indexul găsit
+                return this->callMethod(L"remove_tab", { vData((long long)i) });
+            }
+        }
+        return false;
     }
 
     // =================================================================

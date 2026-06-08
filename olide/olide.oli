@@ -232,6 +232,21 @@ func menu_build_click()
     endif
 endfunc
 
+func on_tab_close_requested($tab_id)
+    echo "[IDE] Se închide tab-ul: " .. $tab_id
+    
+    # 1. Apelăm metoda nativă din C++ care face distrugerea reală
+    UI_CALL_METHOD("main_tabs", "remove_tab_page_by_id", $tab_id)
+    
+    # 2. Re-sincronizăm IDE-ul pentru a curăța variabila @file 
+    # și a actualiza interfața după ce tab-ul a dispărut
+    UPDATE_ACTIVE_CONTEXT()
+    
+    echo "[IDE] Tab-ul " .. $tab_id .. " a fost șters din UI."
+endfunc
+# Legătura (binding-ul)
+
+
 echo "CREEZ APP"
 set $app = new("WinApp")
 $app.init() 
@@ -366,7 +381,7 @@ $saveButton.bind("click", "save_click")
 $newButton.bind("click", "menu_new_click")
 $openButton.bind("click", "menu_open_click")
 $closeButton.bind("click", "menu_close_click")
-
+$tabs.bind_arg("close_tab", "on_tab_close_requested")
 
 # =================================================================
 # CONSOLĂ COMPILARE (JOS)

@@ -14,6 +14,7 @@ def class UiControl {
     set_prop($name, $val), 
     get_prop($name), 
     bind($event, $func),
+	bind_arg($event, $func),
     set_text($text),
     get_text(),
     set_anchor($type),
@@ -28,6 +29,7 @@ def class UiControl {
 func UiControl::set_prop($name, $val) return UI_SET_PROPERTY($this, $name, $val) endfunc
 func UiControl::get_prop($name)       return UI_GET_PROPERTY($this, $name) endfunc
 func UiControl::bind($event, $func)   return UI_BIND_EVENT($this.id, $event, $func) endfunc
+func UiControl::bind_arg($event, $func) return UI_BIND_ARG_EVENT($this.id, $event, $func) endfunc
 func UiControl::set_text($text)       return $this.set_prop("text", $text) endfunc
 func UiControl::get_text()            return $this.get_prop("text") endfunc
 func UiControl::set_anchor($type)     return $this.set_prop("anchor", $type) endfunc

@@ -441,6 +441,40 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         return vData{ 1LL };
         };
 		
+		
+		registry[L"UI_BIND_ARG_EVENT"] = [](const std::vector<vData>& args) -> vData {
+			if (args.size() < 3) return vData{ 0LL };
+
+			std::wstring wId = args[0].toWString();
+			std::wstring wEventName = args[1].toWString();
+			std::wstring wScriptFunc = args[2].toWString();
+
+			std::string id(wId.begin(), wId.end());
+			std::string eventName(wEventName.begin(), wEventName.end());
+
+			if (!g_Gui.appInstance) return vData{ 0LL };
+
+			// Înregistrăm un callback care știe să primească un string (argumentul)
+			auto olicallback = [wScriptFunc](const std::string& arg) {
+				if (g_LinkedOliEngine) {
+					std::vector<vData> callArgs;
+					// Convertim argumentul C++ în vData pentru Oli
+					callArgs.push_back(vData(std::wstring(arg.begin(), arg.end())));
+					
+					g_LinkedOliEngine->callUserByteCodeFunction(
+						wScriptFunc.c_str(),
+						callArgs.data(),
+						(int)callArgs.size(),
+						vData(0LL)
+					);
+				}
+			};
+
+			// Folosim dispatcher-ul pentru handlere cu argumente
+			g_Gui.appInstance->getEventDispatcher().registerHandler(eventName, id, olicallback);
+			return vData{ 1LL };
+		};
+		
 		registry[L"UI_CALL_METHOD"] = [](const std::vector<vData>& args) -> vData {
 			if (args.size() < 2) return vData{ 0LL };
 

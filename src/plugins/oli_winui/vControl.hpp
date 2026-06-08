@@ -188,7 +188,7 @@ public:
   //  int getHeight() const { return m_height; }
    // int getWidth() const { return m_width; }
 
-    static WNDPROC getOriginalWndProc();
+    WNDPROC getOriginalWndProc();
 
     //using EventCallback = std::function<void()>;
     //void registerHandler(const std::string& eventName, EventCallback callback);
@@ -448,6 +448,8 @@ public:
 	
 protected:
     
+    WNDPROC m_originalWndProc = nullptr;
+
     std::function<void()> m_onClickCallback = nullptr;
 
     RECT m_originalClientRect{};

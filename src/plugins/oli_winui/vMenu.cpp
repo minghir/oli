@@ -3,11 +3,11 @@
 #include "../../ConsoleManager.hpp"
 #include "ControlIdManager.hpp"
 #include <sstream>
+#include <algorithm>
 
 // Constructor
 vMenu::vMenu(const std::string& id, EventDispatcher& dispatcher)
     : vControl(nullptr, id, dispatcher), m_handle(NULL) {
-   // ConsoleManager::getInstance().log(L"[vMenu::Constructor] Apelat pentru ID: " + std::wstring(id.begin(), id.end()));
 }
 
 // Destructor
@@ -17,23 +17,35 @@ vMenu::~vMenu() {
     }
 }
 
+// 🔥 Helper local pentru a converti stringul literal "\\t" într-un tab real L'\t'
+static std::wstring ConvertEscapeSequences(const std::wstring& text) {
+    std::wstring result = text;
+    size_t pos = 0;
+    // Căutăm secvența de 2 caractere: backslash și 't'
+    while ((pos = result.find(L"\\t", pos)) != std::wstring::npos) {
+        result.replace(pos, 2, L"\t"); // Înlocuim cu caracterul real de tabulare
+        pos += 1; // Avansăm cursorul
+    }
+    return result;
+}
+
 void vMenu::create(HWND parent) {
-    if (m_handle) return; 
-    
-    // Folosim CreateMenu() pentru că SetMenu() se așteaptă la un meniu bară
-    HMENU hMenu = CreateMenu(); 
+    if (m_handle) return;
+
+    HMENU hMenu = CreateMenu();
     if (!hMenu) {
         LOG_ERROR(L"[vMenu::create] Eroare critica: CreateMenu a returnat NULL!");
         return;
     }
-    
-    m_handle = hMenu; 
+
+    m_handle = hMenu;
 
     // Populare...
     for (const auto& item : m_menuItems) {
         if (item.isSeparator) {
             AppendMenuW(hMenu, MF_SEPARATOR, 0, NULL);
-        } else {
+        }
+        else {
             UINT flags = MF_STRING;
             if (!item.enabled) flags |= (MF_DISABLED | MF_GRAYED);
             AppendMenuW(hMenu, flags, item.win32Id, item.text.c_str());
@@ -42,16 +54,16 @@ void vMenu::create(HWND parent) {
     LOG_DEBUG(L"[vMenu::create] Meniu creat cu succes. HMENU: " + std::to_wstring(reinterpret_cast<uintptr_t>(m_handle)));
 }
 
-
 void vMenu::addItem(const std::string& id, const std::wstring& text) {
-    // În acest design, addItem doar stochează elementul în vector
-    // Apoi, create() se ocupă de adăugarea lor la meniul WinAPI
+    // 🔥 Convertim textul din script pentru a suporta tab-ul nativ Win32
+    std::wstring cleanText = ConvertEscapeSequences(text);
+
     int win32Id = ControlIdManager::allocate(id);
-    m_menuItems.push_back({ id, text, win32Id, false });
+    m_menuItems.push_back({ id, cleanText, win32Id, false });
+
     if (m_handle) {
-        AppendMenuW(m_handle, MF_STRING, win32Id, text.c_str());
+        AppendMenuW(m_handle, MF_STRING, win32Id, cleanText.c_str());
     }
-   // ConsoleManager::getInstance().log(L"[vMenu::addItem] Added item: '" + text + L"' with internal ID: '" + std::wstring(id.begin(), id.end()) + L"' and Win32 ID: " + std::to_wstring(win32Id));
 }
 
 void vMenu::addSeparator(const std::string& id) {
@@ -59,10 +71,8 @@ void vMenu::addSeparator(const std::string& id) {
     if (m_handle) {
         AppendMenuW(m_handle, MF_SEPARATOR, 0, NULL);
     }
-  //  ConsoleManager::getInstance().log(L"[vMenu::addSeparator] Adăugat separator cu ID: " + std::wstring(id.begin(), id.end()));
 }
 
-// Obține ID-ul numeric după ID-ul string
 int vMenu::getMenuItemId(const std::string& id) const {
     for (const auto& item : m_menuItems) {
         if (item.id == id) {
@@ -71,7 +81,6 @@ int vMenu::getMenuItemId(const std::string& id) const {
     }
     return -1;
 }
-
 
 std::string vMenu::getItemIdByWin32Id(int win32Id) const {
     for (const auto& item : m_menuItems) {
@@ -83,28 +92,24 @@ std::string vMenu::getItemIdByWin32Id(int win32Id) const {
 void vMenu::addSubMenu(const std::wstring& text, vMenu* subMenu) {
     if (!m_handle || !subMenu || !subMenu->getHandle()) return;
 
-    // 🔥 FIX: Folosește DOAR MF_POPUP. 
-    // În Win32, la MF_POPUP, parametrul 'text' (lpNewItem) este folosit pentru titlu, 
-    // iar 'subMenu->getHandle()' este ID-ul.
+    // 🔥 Convertim textul și pentru submeniuri (în caz că pui scurtături pe textul principal)
+    std::wstring cleanText = ConvertEscapeSequences(text);
+
     AppendMenuW(
         m_handle,
-        MF_POPUP, 
+        MF_POPUP,
         (UINT_PTR)subMenu->getHandle(),
-        text.c_str()
+        cleanText.c_str()
     );
 }
 
 void vMenu::setEnabled(const std::string& id, bool enabled) {
-    // 1. Găsim elementul în vectorul nostru intern pentru a-i actualiza starea
     for (auto& item : m_menuItems) {
         if (item.id == id) {
             item.enabled = enabled;
 
-            // 2. Dacă meniul WinAPI este deja creat, aplicăm schimbarea imediat
             if (m_handle) {
                 UINT uEnable = enabled ? MF_ENABLED : (MF_DISABLED | MF_GRAYED);
-
-                // Folosim MF_BYCOMMAND pentru că identificăm elementul prin win32Id (ID-ul numeric)
                 EnableMenuItem(m_handle, item.win32Id, MF_BYCOMMAND | uEnable);
             }
             break;
@@ -117,8 +122,6 @@ bool vMenu::setProperty(const std::wstring& name, const vData& value) {
     std::transform(prop.begin(), prop.end(), prop.begin(), ::tolower);
 
     if (prop == L"enabled_item") {
-        // Presupunem că valoarea primită este un array sau un string separat cu ID-ul elementului și starea
-        // Pentru simplitate, dacă vrei să controlezi meniul per-ansamblu sau elemente din el:
         return true;
     }
     return vControl::setProperty(name, value);
@@ -128,18 +131,15 @@ vData vMenu::getProperty(const std::wstring& name) const {
     return vControl::getProperty(name);
 }
 
-
 bool vMenu::callMethod(const std::wstring& methodName, const std::vector<vData>& args) {
-	// 1. Verificăm dacă methodName este gol
     if (methodName.empty()) {
         LOG_ERROR(L"[vMenu::callMethod] EROARE: methodName este GOL!");
         return false;
     }
-	
+
     std::wstring method = methodName;
     std::transform(method.begin(), method.end(), method.begin(), ::tolower);
-    
-    // Log pentru a vedea ce metodă a fost apelată și cu câți parametri
+
     LOG_DEBUG(L"[vMenu::callMethod] Metoda primita: '" + method + L"', Nr arg: " + std::to_wstring(args.size()));
 
     if (method == L"add_item") {
@@ -147,11 +147,11 @@ bool vMenu::callMethod(const std::wstring& methodName, const std::vector<vData>&
             LOG_ERROR(L"[vMenu::callMethod] Eroare: add_item necesita cel putin 2 argumente (id, text).");
             return false;
         }
-        
+
         std::wstring wItemId = args[0].toWString();
         std::string itemId(wItemId.begin(), wItemId.end());
         std::wstring itemText = args[1].toWString();
-        
+
         LOG_DEBUG(L"[vMenu::callMethod] Execut addItem. ID: " + wItemId + L", Text: " + itemText);
         this->addItem(itemId, itemText);
         return true;
@@ -161,10 +161,10 @@ bool vMenu::callMethod(const std::wstring& methodName, const std::vector<vData>&
             LOG_ERROR(L"[vMenu::callMethod] Eroare: add_separator necesita ID.");
             return false;
         }
-        
+
         std::wstring wSepId = args[0].toWString();
         std::string sepId(wSepId.begin(), wSepId.end());
-        
+
         LOG_DEBUG(L"[vMenu::callMethod] Execut addSeparator. ID: " + wSepId);
         this->addSeparator(sepId);
         return true;
@@ -174,22 +174,22 @@ bool vMenu::callMethod(const std::wstring& methodName, const std::vector<vData>&
             LOG_ERROR(L"[vMenu::callMethod] Eroare: add_submenu necesita 2 argumente (text, childMenuId).");
             return false;
         }
-        
+
         std::wstring subMenuText = args[0].toWString();
         std::wstring wChildMenuId = args[1].toWString();
         std::string childMenuId(wChildMenuId.begin(), wChildMenuId.end());
 
         LOG_DEBUG(L"[vMenu::callMethod] Execut addSubMenu. Text: " + subMenuText + L", ChildID: " + wChildMenuId);
 
-        extern vControl* LocateAnyControl(const std::string& id);
+        extern vControl* LocateAnyControl(const std::string & id);
         vControl* ctrl = LocateAnyControl(childMenuId);
         vMenu* childMenu = dynamic_cast<vMenu*>(ctrl);
-        
+
         if (!childMenu) {
             LOG_ERROR(L"[vMenu::callMethod] Eroare: Submeniul cu ID '" + wChildMenuId + L"' nu a fost gasit sau nu e de tip vMenu!");
             return false;
         }
-        
+
         this->addSubMenu(subMenuText, childMenu);
         return true;
     }

@@ -50,4 +50,5 @@ while $running == 1 do
     if KEY_STATE(27) == 1 then break endif
 endwhile
 
+
 GL_CLOSE()

@@ -126,28 +126,7 @@ bool vContainer::routeMessageToChild(int controlId, UINT msg, WPARAM wParam, LPA
     return false;
 }
 
-/*
-void vContainer::scale(int newDpi) {
-    // 1. Scalează panelul/containerul curent
-    vControl::scale(newDpi);
 
-    // 2. Propagă la copii
-    for (auto& pair : m_children) {
-        vControl* child = pair.second.get();
-        if (child) {
-            //LOG_ERROR(L"PROPAGARE: Trimit scale la " + str_to_wstr(child->getId()));
-            child->scale(newDpi);
-            //child->scaleFont(newDpi);
-        }
-         // scale se propaga la copii nu trebuie tratat diferit    
-        //vContainer* containerChild = dynamic_cast<vContainer*>(child);
-        //if (containerChild) {    }
-    }
-
-    // 3. Re-aliniază copiii conform layout-ului
-    applyLayout();
-}
-*/
 
 void vContainer::scale(int newDpi) {
     // 1. Apelăm logica de bază din vControl.

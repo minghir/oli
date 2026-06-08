@@ -11,11 +11,11 @@
 
 
 
-WNDPROC vControl::s_originalWndProc = NULL;
+//WNDPROC vControl::s_originalWndProc = NULL;
 
 
 WNDPROC vControl::getOriginalWndProc() {
-    return s_originalWndProc;
+    return m_originalWndProc; // 🔥 Returnează membrul nou de instanță
 }
 // --- Accesor pentru Win32 ID ---
 int vControl::getWin32Id() const {
@@ -25,7 +25,7 @@ int vControl::getWin32Id() const {
 
 // --- Constructors ---
 vControl::vControl(HINSTANCE hInst, const std::string& id, EventDispatcher& dispatcher)
-    : m_id(id), m_handle(nullptr), m_win32Id(ControlIdManager::allocate(id)),
+    : m_id(id), m_handle(nullptr), m_win32Id(ControlIdManager::allocate(id)), m_originalWndProc(nullptr),
     m_base_x(0), m_base_y(0), m_base_width(0), m_base_height(0),
     m_x(0), m_y(0), m_width(0), m_height(0),
     m_dispatcher(dispatcher), m_parent(nullptr),
@@ -38,7 +38,7 @@ vControl::vControl(HINSTANCE hInst, const std::string& id, EventDispatcher& disp
 }
 
 vControl::vControl(HINSTANCE hInst, const std::string& id, int x, int y, int width, int height, EventDispatcher& dispatcher)
-    : m_id(id), m_handle(nullptr), m_win32Id(ControlIdManager::allocate(id)),
+    : m_id(id), m_handle(nullptr), m_win32Id(ControlIdManager::allocate(id)), m_originalWndProc(nullptr),
     m_base_x(x), m_base_y(y), m_base_width(width), m_base_height(height),
     m_x(x), m_y(y), m_width(width), m_height(height),
     m_dispatcher(dispatcher), m_parent(nullptr),
@@ -233,13 +233,7 @@ vControl* vControl::getChild(const std::string& id) {
     return nullptr;
 }
 
-// --- Eliminare Copil ---
-/*
-void vControl::removeChild(const std::string& id) {
-    // Șterge elementul din mapă, declanșând distrugerea unique_ptr-ului și a obiectului vControl.
-    m_children.erase(id);
-}
-*/
+
 
 void vControl::removeChild(const std::string& id) {
     // Folosim un iterator pentru a găsi elementul în vector
@@ -379,33 +373,15 @@ LRESULT vControl::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
    
 
     if (hwnd) {
-        return DefWindowProc(hwnd, msg, wParam, lParam);
+        if (m_originalWndProc != nullptr) {
+            // Dacă acest control specific a fost subclassed, trimitem mesajele neprocesate către părintele lui nativ
+            return ::CallWindowProcW(m_originalWndProc, hwnd, msg, wParam, lParam);
+        }
+        return DefWindowProcW(hwnd, msg, wParam, lParam);
     }
     return 0; // Returnează 0 dacă hwnd nu este valid.
 }
-/*
-// --- Procedura Statică de Fereastră (StaticWndProc) ---
-LRESULT CALLBACK vControl::StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-    vControl* self = nullptr;
 
-    if (msg == WM_NCCREATE) {
-        LPCREATESTRUCT pcs = reinterpret_cast<LPCREATESTRUCT>(lParam);
-        self = static_cast<vControl*>(pcs->lpCreateParams);
-        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(self));
-        if (self) {
-            self->m_handle = hwnd;
-        }
-    }
-    else {
-        self = reinterpret_cast<vControl*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-    }
-
-    if (self) {
-        return self->handleMessage(hwnd, msg, wParam, lParam);
-    }
-    return DefWindowProc(hwnd, msg, wParam, lParam);
-}
-*/
 LRESULT CALLBACK vControl::StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     vControl* self = reinterpret_cast<vControl*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
@@ -422,8 +398,7 @@ LRESULT CALLBACK vControl::StaticWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPA
         return self->handleMessage(hwnd, msg, wParam, lParam);
     }
 
-    // Foarte important: Pentru controalele cu subclassing, 
-    // dacă nu avem 'self', lăsăm procedura originală să se ocupe, nu DefWindowProc direct.
+    // Dacă self este cu adevărat null, lăsăm doar Windows standard să curețe
     return DefWindowProcW(hwnd, msg, wParam, lParam);
 }
 
@@ -453,26 +428,6 @@ vControl* vControl::getChildByWin32Id(int win32Id) {
     }
     return nullptr;
 }
-/*
-void vControl::setEnabled(bool enable) {
-    m_enabled = enable;
-    if (m_handle && IsWindow(m_handle)) {
-        if (enable) {
-           // LOG_SUCCESS(L"[vControl::setEnabled] Activare control ID: " + str_to_wstr(m_id));
-        }
-        else {
-           // LOG_SUCCESS(L"[vControl::setEnabled] Dezactivare control ID: " + str_to_wstr(m_id));
-        }
-        // Folosește funcția WinAPI pentru a activa/dezactiva fereastra
-        //LOG_WARNING(L"vControl::setEnabled: SETEZ starea pentru un handle null. ID: " + str_to_wstr(m_id));
-        EnableWindow(m_handle, enable ? TRUE : FALSE);
-        RedrawWindow(m_handle, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ERASE);
-    }
-    else {
-        LOG_WARNING(L"vControl::setEnabled: Tentativă de a seta starea pentru un handle null. ID: " + str_to_wstr(m_id));
-    }
-}
-*/
 
 void vControl::setEnabled(bool enable) {
     m_enabled = enable;
@@ -511,61 +466,7 @@ void vControl::setTooltipText(const std::wstring& text) {
 
 }
 
-/*
-void vControl::scale(int newDpi) {
-    if (m_currentDpi == newDpi) return;
 
-    // Recalculăm dimensiunile
-    m_width = MulDiv(m_base_width, newDpi, 96);
-    m_height = MulDiv(m_base_height, newDpi, 96);
-
-    // REPOZIȚIONARE: Doar dacă NU este o fereastră principală (vWindow)
-    // Controalele copil (butoane, paneluri) trebuie mutate, 
-    // dar fereastra principală este deja mutată de WM_DPICHANGED
-    if (getType() != ControlType::Window) {
-        m_x = MulDiv(m_base_x, newDpi, 96);
-        m_y = MulDiv(m_base_y, newDpi, 96);
-    }
-
-    m_currentDpi = newDpi;
-
-    if (m_handle) {
-        // Dacă e fereastră principală, schimbăm DOAR mărimea, nu și poziția (x, y)
-        UINT flags = SWP_NOZORDER | SWP_NOACTIVATE;
-        if (getType() == ControlType::Window) flags |= SWP_NOMOVE;
-
-        SetWindowPos(m_handle, NULL, m_x, m_y, m_width, m_height, flags);
-    }
-}
-*/
-/*
-void vControl::scale(int newDpi) {
-    // Logica de return trebuie să fie atentă: 
-    // chiar dacă DPI-ul e același, dacă e prima rulare, copiii tot trebuie scalați.
-    //if (m_currentDpi == newDpi && m_handle != nullptr) return;
-    //LOG_INFO(L"vControl::scale: scalez dimensiuni pentru: " + str_to_wstr(this->getId()));
-    m_currentDpi = newDpi;
-
-    m_width = MulDiv(m_base_width, newDpi, 96);
-    m_height = MulDiv(m_base_height, newDpi, 96);
-
-    if (getType() != ControlType::Window) {
-        m_x = MulDiv(m_base_x, newDpi, 96);
-        m_y = MulDiv(m_base_y, newDpi, 96);
-    }
-
-    if (m_hasCustomFont) {
-        scaleFont(newDpi);
-    }
-
-    if (m_handle) {
-        UINT flags = SWP_NOZORDER | SWP_NOACTIVATE;
-        if (getType() == ControlType::Window) flags |= SWP_NOMOVE;
-        SetWindowPos(m_handle, NULL, m_x, m_y, m_width, m_height, flags);
-    }
-    
-}
-*/
 
 void vControl::scale(int newDpi) {
     m_currentDpi = newDpi;
@@ -648,92 +549,7 @@ void vControl::scaleFont(int newDpi) {
     }
 }
 
-/*
-void vControl::scaleFont(int newDpi) {
-    m_currentDpi = newDpi;
-    if (m_fontName.empty()) return;
 
-    // Calculăm înălțimea logică (MulDiv e cea mai precisă metodă în Win32)
-    int logicalHeight = -MulDiv(m_baseFontSize, newDpi, 72);
-
-    // Cerem fontul de la manager folosind TOATE stilurile salvate în vControl
-    m_hFont = FontManager::getInstance().getFont(
-        m_fontName,
-        logicalHeight,
-        m_fontWeight,    // TRIMITEM GREUTATEA (ex: 700 pentru Bold)
-        m_fontItalic,
-        m_fontUnderline,
-        false            // strikeout implicit false
-    );
-
-    if (m_handle && m_hFont) {
-        SendMessage(m_handle, WM_SETFONT, (WPARAM)m_hFont, TRUE);
-    }
-}
-*/
-
-/*
-// Supraincarcare pentru a permite setarea stilului
-void vControl::setFont(const std::wstring& fontName, int baseFontSize, int weight, bool italic, bool underline) {
-    // Pasul 1: Salvăm toate proprietățile în membrii clasei
-    m_fontName = fontName;
-    m_baseFontSize = baseFontSize;
-    m_fontWeight = weight;    // Aici se salvează FW_BOLD (700)
-    m_fontItalic = italic;
-    m_fontUnderline = underline;
-
-    // Pasul 2: Aplicăm fontul folosind DPI-ul curent
-    // Chiar dacă fereastra nu e creată încă, datele rămân salvate în membri
-    if (m_handle) {
-
-        scaleFont(m_currentDpi);
-
-        SendMessage(m_handle, WM_SETFONT, (WPARAM)m_hFont, TRUE);
-
-        // IMPORTANT: Spunem tuturor copiilor să se redeseneze deoarece 
-        // ei ar putea moșteni acest font nou
-        InvalidateRect(m_handle, NULL, TRUE);
-        for (auto& pair : m_children) {
-            pair.second->update(); // Sau InvalidateRect pe handle-ul copilului
-        }
-
-        // Forțăm redesenarea pentru a vedea schimbarea imediat
-       
-        UpdateWindow(m_handle);
-    }
-}
-*/
-/*
-void vControl::setFont(const std::wstring& fontName, int baseFontSize, int weight, bool italic, bool underline) {
-    // 1. Marcăm că acest control are acum propriul său stil de font
-    m_hasCustomFont = true;
-
-    m_fontName = fontName;
-    m_baseFontSize = baseFontSize;
-    m_fontWeight = weight;
-    m_fontItalic = italic;
-    m_fontUnderline = underline;
-
-    if (m_handle) {
-        scaleFont(m_currentDpi); // Aceasta va crea m_hFont-ul real
-
-        // Aplicăm vizual controlului curent
-        SendMessage(m_handle, WM_SETFONT, (WPARAM)m_hFont, TRUE);
-
-        // Notificăm copiii care ar putea moșteni acest font
-        for (auto& pair : m_children) {
-            // Doar copiii care NU au fontul lor custom vor fi afectați vizual
-            if (!pair.second->m_hasCustomFont) {
-                // Forțăm redesenarea copilului pentru a declanșa WM_CTLCOLOR... 
-                // unde getEffectiveFont() va returna noul font al părintelui (this)
-                InvalidateRect(pair.second->getHandle(), NULL, TRUE);
-            }
-        }
-
-        UpdateWindow(m_handle);
-    }
-}
-*/
 
 void vControl::setFont(const std::wstring& fontName, int baseFontSize, int weight, bool italic, bool underline) {
     m_hasCustomFont = true;
@@ -1060,13 +876,23 @@ bool vControl::setProperty(const std::wstring& name, const vData& value) {
         if (m_handle) MoveWindow(m_handle, m_x, m_y, m_width, m_height, TRUE);
         return true;
     }
-    else if (prop == L"width") {
-        this->setWidth(static_cast<int>(value.toInt()));
+    else if (prop == L"width" || prop == L"base_width") {
+        int w = static_cast<int>(value.toInt());
+        this->setWidth(w);
+
+        // 🔥 FIX: Actualizăm și lățimea de bază folosită de Layout-uri
+        this->m_base_width = w; // sau: this->setBaseWidth(w); în funcție de cum e definit în vControl.hpp
+
         if (m_handle) MoveWindow(m_handle, m_x, m_y, m_width, m_height, TRUE);
         return true;
     }
-    else if (prop == L"height") {
-        this->setHeight(static_cast<int>(value.toInt()));
+    else if (prop == L"height" || prop == L"base_height") {
+        int h = static_cast<int>(value.toInt());
+        this->setHeight(h);
+
+        // 🔥 FIX: Actualizăm înălțimea de bază pe care o citește VerticalStackLayout!
+        this->m_base_height = h; // sau: this->setBaseHeight(h); în funcție de cum e definit în vControl.hpp
+
         if (m_handle) MoveWindow(m_handle, m_x, m_y, m_width, m_height, TRUE);
         return true;
     }

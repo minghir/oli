@@ -27,8 +27,8 @@ endfor
 	
 unset all
 set $memo = array(93)
-set $memo[0] = 0
-set $memo[1] = 1
+$memo[0] = 0
+$memo[1] = 1
 
 func fib_memo($n)
 	if @memo[$n] != null then

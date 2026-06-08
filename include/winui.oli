@@ -155,7 +155,8 @@ endfunc
 # CLASA TABCONTROL
 # =================================================================
 
-def class WinTabControl extends UiControl { init($id, $parentId, $x, $y, $w, $h), add_tab($title, $panelId), switch_page($index),select_tab_by_id($panelId), refresh() }
+#def class WinTabControl extends UiControl { init($id, $parentId, $x, $y, $w, $h), add_tab($title, $panelId), switch_page($index),select_tab_by_id($panelId), refresh() }
+def class WinTabControl extends UiControl { init($id, $parentId, $x, $y, $w, $h), add_tab($title, $panelId), switch_page($index),select_tab_by_id($panelId), refresh(), set_title_by_id($panelId, $title) }
 
 func WinTabControl::init($id, $parentId, $x, $y, $w, $h)
     $this.id = $id
@@ -178,6 +179,9 @@ func WinTabControl::select_tab_by_id($panelId)
     return UI_CALL_METHOD($this.id, "select_tab_by_id", $panelId)
 endfunc
 
+func WinTabControl::set_title_by_id($panelId, $title)
+    return UI_CALL_METHOD($this.id, "set_tab_title_by_id", $panelId, $title)
+endfunc
 
 # =================================================================
 # CLASA WINRICHEDIT (Consolă / Editor)

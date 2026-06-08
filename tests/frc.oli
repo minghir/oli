@@ -10,4 +10,5 @@ endfunc
 # Example usage
 set $result = fibonacci(10)
 echo "The 10th Fibonacci number is: " .. $result
+
 input()

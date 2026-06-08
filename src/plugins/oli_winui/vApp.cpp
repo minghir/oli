@@ -50,7 +50,74 @@ int vApp::run(int nCmdShow) {
 
         MSG msg;
         while (GetMessage(&msg, nullptr, 0, 0)) {
-            // 1. Obținem fereastra care deține focusul în mod activ (poate fi Main sau Dialogul)
+
+            // =================================================================
+            // 🔥 INTERCEPTARE CORECTĂ: KEYDOWN ȘI SYSKEYDOWN (PENTRU TASTA ALT)
+            // =================================================================
+            if (msg.message == WM_KEYDOWN || msg.message == WM_SYSKEYDOWN) {
+                bool ctrlPressed = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+                bool altPressed = (GetKeyState(VK_MENU) & 0x8000) != 0; // State-ul tastei ALT
+
+                // 1. 🎹 SCURTĂTURI CARE CONȚIN TASTA CTRL
+                if (ctrlPressed) {
+                    // 💾 CTRL + ALT + S -> Save As... (Nou adăugat!)
+                    if (altPressed && (msg.wParam == 'S' || msg.wParam == 's')) {
+                        ConsoleManager::getInstance().log(L"[vApp::run] Scurtătură: CTRL + ALT + S (Save As)");
+                        this->getEventDispatcher().dispatch("menu_save_as", "fereastra_principala");
+                        continue;
+                    }
+                    // 💾 CTRL + S -> Save (doar dacă NU e apasat și ALT)
+                    else if (!altPressed && (msg.wParam == 'S' || msg.wParam == 's')) {
+                        this->getEventDispatcher().dispatch("menu_save", "fereastra_principala");
+                        continue;
+                    }
+                    // 🆕 CTRL + N -> New File
+                    else if (msg.wParam == 'N' || msg.wParam == 'n') {
+                        this->getEventDispatcher().dispatch("menu_new", "fereastra_principala");
+                        continue;
+                    }
+                    // 📂 CTRL + O -> Open File
+                    else if (msg.wParam == 'O' || msg.wParam == 'o') {
+                        this->getEventDispatcher().dispatch("menu_open", "fereastra_principala");
+                        continue;
+                    }
+                    // ❌ CTRL + W -> Close File
+                    else if (msg.wParam == 'W' || msg.wParam == 'w') {
+                        this->getEventDispatcher().dispatch("menu_close", "fereastra_principala");
+                        continue;
+                    }
+                    // ⚙️ CTRL + F7 -> Compile
+                    else if (msg.wParam == VK_F7) {
+                        this->getEventDispatcher().dispatch("menu_compile", "fereastra_principala");
+                        continue;
+                    }
+                }
+                // 2. 🎹 SCURTĂTURI CARE CONȚIN DOAR TASTA ALT (FĂRĂ CTRL)
+                else if (altPressed) {
+                    // 🚪 ALT + F4 -> Exit Application (Nou adăugat!)
+                    if (msg.wParam == VK_F4) {
+                        ConsoleManager::getInstance().log(L"[vApp::run] Scurtătură: ALT + F4 (Exit Application)");
+                        this->getEventDispatcher().dispatch("menu_exit", "fereastra_principala");
+                        continue; // Consumăm mesajul ca să nu ruleze comportamentul default de Windows
+                    }
+                }
+                // 3. 🎹 SCURTĂTURI SIMPLE (FĂRĂ CTRL, FĂRĂ ALT)
+                else {
+                    // ▶️ F5 -> Run
+                    if (msg.wParam == VK_F5) {
+                        this->getEventDispatcher().dispatch("click", "btn_run");
+                        continue;
+                    }
+                    // 🔨 F7 -> Build
+                    else if (msg.wParam == VK_F7) {
+                        this->getEventDispatcher().dispatch("menu_build", "fereastra_principala");
+                        continue;
+                    }
+                }
+            }
+            // =================================================================
+
+            // 1. Obținem ferestrele care dețin focusul în mod activ (poate fi Main sau Dialogul)
             HWND hActive = GetActiveWindow();
 
             // 2. IsDialogMessage are nevoie de handle-ul ferestrei TOP-LEVEL active
@@ -68,7 +135,7 @@ int vApp::run(int nCmdShow) {
     }
     else if (m_runMode == RunMode::CONSOLE) {
         //LOG_INFO(L"[vApp::run] Rulează în modul consolă...");
-       
+
         return 0;
     }
 

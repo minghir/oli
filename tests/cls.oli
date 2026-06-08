@@ -2,8 +2,6 @@
 DEF struct Punct { x, y, PRINT_X, PRINT_Y }
 DEF struct Linie { a, b, PRINT_LINIE }
 
-
-
 func prt_x()
 	return "x="..$this.x
 endfunc

@@ -1,7 +1,6 @@
 # --- SETUP ---
 config echo off
 config max_iterations 0
-
 plugin oli_canvas
 plugin oli_fract   # Unde ai înregistrat FX_3D_SHAPES
 plugin oli_keyboard

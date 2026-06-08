@@ -21,103 +21,7 @@ vWindow::~vWindow() {
     }
 }
 
-/*
-// --- Metoda Create (detaliată) ---
-bool vWindow::create(const std::wstring& className, const std::wstring& title,
-    DWORD style, int x, int y, int w, int h,
-    HWND parent, HMENU menu) {
-		
-		m_hInstance = GetModuleHandle(nullptr);
-		
-    
-    DWORD dwExStyle = 0; // Variabilă nouă pentru stiluri extinse
-   // LOG_WARNING()
-    switch (m_WindowType) {
-    case WindowType::StandardWindow:
-        style |= WS_OVERLAPPEDWINDOW;
-        break;
 
-    case WindowType::DialogWindow:
-        style = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_BORDER;
-        break;
-
-    case WindowType::ToolWindow:
-        // WS_SYSMENU aduce butonul X
-        style = WS_POPUP | WS_CAPTION | WS_SYSMENU;
-        dwExStyle = WS_EX_TOOLWINDOW; // Mutat aici
-        break;
-
-    case WindowType::PopupWindow:
-        style = WS_POPUP;
-        break;
-    }
-
-
-    m_base_x = x;
-    m_base_y = y;
-    m_base_width = w;
-    m_base_height = h;
-
-
-
-    // Folosește versiunea EXW pentru siguranță maximă
-    WNDCLASSEXW wc = { 0 };
-    wc.cbSize = sizeof(WNDCLASSEXW);
-    wc.lpfnWndProc = vControl::StaticWndProc;
-    wc.hInstance = m_hInstance;
-    wc.lpszClassName = className.c_str();
-    wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-    wc.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
-
-    WNDCLASSEXW existingWc = { 0 };
-    existingWc.cbSize = sizeof(WNDCLASSEXW);
-
-    // Folosește GetClassInfoExW și RegisterClassExW
-    if (!GetClassInfoExW(m_hInstance, className.c_str(), &existingWc)) {
-        if (!RegisterClassExW(&wc)) {
-            return false;
-        }
-    }
-	
-
-
-    // Creează fereastra WinAPI. `this` este pasat ca lpCreateParams.
-
-   // double scaleFactor = static_cast<double>(getPrimaryMonitorDpi()) / 96.0;
-    //int scaled_w = static_cast<int>(w * scaleFactor);
-    //int scaled_h = static_cast<int>(h * scaleFactor);
-    //UINT parentDpi = GetDpiForWindow(parent);
-    // Apelează metoda de scalare cu DPI-ul obținut
-    
-	scale(GetDpiForSystem());
-    
-  //  ConsoleManager::getInstance().log(L"[ERROR] vWindow creation: Error creating panel HWND for ID '" + str_to_wstr(m_id) + L"'. Error code: " + std::to_wstring(GetLastError()));
-  //  ConsoleManager::getInstance().log(L"[ERROR]\t\t\t x,y,width,height(" + std::to_wstring(getX()) + L"," + std::to_wstring(getY()) + L"," + std::to_wstring(getWidth()) + L"," + //std::to_wstring(getHeight()) + L")");
-    
-
-    m_handle = CreateWindowExW(
-        dwExStyle, // Transmitem stilul extins aici!
-        className.c_str(),
-        title.c_str(),
-        style | WS_CLIPCHILDREN,
-        getX(), getY(), getWidth(), getHeight(),
-        parent,
-        menu,
-        m_hInstance,
-        this);
-    if (!m_handle) {
-        //ConsoleManager::getInstance().log(L"[ERROR] Creare vWindow: Eroare la crearea ferestrei '" + title + L"'. Cod eroare: " + std::to_wstring(GetLastError()));
-		return false;
-    }
-    else {
-        centerWindow();
-        //ConsoleManager::getInstance().log(L"[vWindow::create] Fereastra '" + title + L"' (ID: " + std::wstring(m_id.begin(), m_id.end()) + L") a fost creată cu succes. HWND: " + std::to_wstring(reinterpret_cast<uintptr_t>(m_handle)));
-    }
-	scale(GetDpiForSystem());
-    return m_handle != nullptr;
-}
-*/
 bool vWindow::create(const std::wstring& className, const std::wstring& title,
     DWORD style, int x, int y, int w, int h,
     HWND parent, HMENU menu) {
@@ -298,34 +202,7 @@ LRESULT vWindow::handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
                     return TRUE;
                 }
 
-    /*
-    case WM_DPICHANGED: {
-
-        int newDpi = HIWORD(wParam);
-        RECT* suggested = (RECT*)lParam;
-
-
-        //LOG_DEBUG(L"vWindow::handleMessage : AM PRIMIT WM_DPICHANGED incep scalarea la:" + to_wstring<int>(newDpi));
-
-        SetWindowPos(hwnd, NULL,
-            suggested->left,
-            suggested->top,
-            suggested->right - suggested->left,
-            suggested->bottom - suggested->top,
-            SWP_NOZORDER | SWP_NOACTIVATE);
-
-
-      
-
-        // 3. Propagăm noul DPI în toată ierarhia (fonturi, coloane grid, etc.)
-        this->scale(newDpi);
-
-        // 4. Forțăm layout-ul să se recalculeze pentru noile dimensiuni și noul DPI
-        //this->applyLayout();
-
-        return 0;
-    }
-    */
+    
 
     case WM_DPICHANGED: {
         int newDpi = HIWORD(wParam);

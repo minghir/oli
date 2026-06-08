@@ -1,0 +1,547 @@
+config win_app 0
+plugin oli_system
+plugin oli_filesys
+plugin oli_compiler
+
+include ("include\winui.oli")
+
+# =================================================================
+# CODUL PRINCIPAL (LOGICA DE SINCRONIZARE MULTI-TAB)
+# =================================================================
+
+$file = "" 
+$oli_path = "oli.exe"
+set $activeCodeView = null
+
+# Funcție de sincronizare: Află ce tab e pe ecran și actualizează contextul IDE-ului
+func UPDATE_ACTIVE_CONTEXT()
+    # Întrebăm componenta C++ care este ID-ul panelului activ în acest moment
+    $active_id = $tabs.get_prop("active_tab_id")
+    
+    if $active_id != "" then
+        # Re-ancorăm dinamic obiectul de control pe ID-ul curent
+        set $currentView = new("WinCodeView")
+        $currentView.id = $active_id
+        
+        # Preluăm calea absolută pe care am salvat-o în el la deschidere
+        @file = $currentView.get_prop("file_path")
+        @activeCodeView = $currentView
+    else
+        @file = ""
+        @activeCodeView = null
+		init_first_tab()
+    endif
+endfunc
+
+func GET_EXE_NAME($cale)
+    $nume_fisier = FS_GET_FILENAME($cale)
+    return REPLACE($nume_fisier, ".oli", ".exe")
+endfunc
+
+func run_click()
+    # Sincronizăm contextul înainte de rulare ca să fim siguri că rulăm tab-ul corect
+    UPDATE_ACTIVE_CONTEXT()
+
+    if @file == "" then
+        menu_save_as_click()
+        if @file != "" then run_click() endif
+        return
+    endif
+
+    # 1. AUTO-SALVARE SILENȚIOASĂ
+    echo "[IDE] Auto-salvare în fundal pentru: " .. @file
+    $cod_curent = $activeCodeView.get_text()
+    WRITEFILE(@file, $cod_curent)
+
+	# 🔥 RESETARE STARE ȘI UI LA RUN
+    $activeCodeView.set_prop("modified", false)
+    $tabs.set_title_by_id(@activeCodeView.id, FS_GET_FILENAME(@file))
+
+    # 2. COMPILAREA ȘI EXECUTAREA VIA PLUGIN
+    menu_build_click()
+    
+    # 🔥 FIX: Am șters "echo $res" de aici! 
+    # $res-ul de aici era null pentru că apelul SYS e comentat, 
+    # iar menu_build_click() își scrie singur succesul/eroarea în consolă.
+    
+    $exe_file = GET_EXE_NAME(@file)
+    echo "LANSARE PROCES: " .. $exe_file
+    
+    START_PROCESS($exe_file)
+endfunc
+
+# =================================================================
+# LOGICA DE SALVARE (SAVE / SAVE AS)
+# =================================================================
+
+func execute_save_to_disk($calea_fisiere)
+    if @activeCodeView == null then return endif
+    
+    $cod_curent = $activeCodeView.get_text()
+    WRITEFILE($calea_fisiere, $cod_curent)
+    
+    # 🔥 RESETARE STARE: Îi spunem lui C++ că fișierul e curat acum
+    $activeCodeView.set_prop("modified", false)
+    
+    # 🔥 RESETARE UI: Scoatem asteriscul și lăsăm doar numele curat
+    $tab_id = @activeCodeView.id
+    $tabs.set_title_by_id($tab_id, FS_GET_FILENAME($calea_fisiere))
+    
+    echo "[SUCCESS] Fișier salvat cu succes la: " .. $calea_fisiere
+    SHOW_MESSAGE("Salvare", "Fișierul a fost salvat cu succes!")
+endfunc
+
+func menu_save_click()
+    UPDATE_ACTIVE_CONTEXT()
+    if @file != "" then
+        execute_save_to_disk(@file)
+    else
+        menu_save_as_click()
+    endif
+endfunc
+
+# func menu_save_as_click()
+    # UPDATE_ACTIVE_CONTEXT()
+	
+    # # Dacă nu avem nicio zonă de text activă, nu avem ce salva
+    # if @activeCodeView == null then return endif
+
+    # set $dlg = new("FileDialog")
+    # $dlg.title = "Salvează fișierul sub alt nume..."
+    # $dlg.type = 1  
+    
+    # $path = $dlg.show()
+    # if $path != "" then
+        # @file = $path  
+        # $activeCodeView.set_prop("file_path", $path) # Actualizăm proprietatea internă în tab-ul curent
+        # execute_save_to_disk(@file)
+    # endif
+# endfunc
+
+func menu_save_as_click()
+    UPDATE_ACTIVE_CONTEXT()
+    if @activeCodeView == null then return endif
+
+    set $dlg = new("FileDialog") # (Notă: Verifică dacă în codul tău 'new("FileDialog")' 
+                                 # apelează UI_FILE_DIALOG în spate)
+
+    # Dacă folosești direct funcția din plugin:
+    # Parametri: 1 (pentru SAVE), Titlu, Calea curentă
+	if @file == "" then @file = "untitled.oli" endif
+    $path = UI_FILE_DIALOG(1, "Salvează fișierul...", @file) 
+    
+    if $path != "" then
+        @file = $path  
+        $activeCodeView.set_prop("file_path", $path)
+        execute_save_to_disk(@file)
+    endif
+endfunc
+
+
+func save_click()
+    menu_save_click()
+endfunc
+
+func menu_new_click()
+    echo "=== CREARE FIȘIER NOU ==="
+    set $dlg = new("FileDialog")
+    $dlg.title = "Creează un fișier nou Oli..."
+    $dlg.type = 1  
+    
+    $path = $dlg.show()
+    if $path != "" then
+        @file = $path
+        WRITEFILE(@file, "")
+        
+        # Deschidem fișierul nou direct într-un tab nou ca să poată fi editat separat!
+        $newTabId = "tab_page_" .. FS_GET_FILENAME(@file)
+        set $newView = new("WinCodeView")
+        $newView.init($newTabId, "main_tabs", 0, 0, 0, 0)
+		
+		$newView.bind("modified", "on_file_modified")
+		
+        $newView.set_width_mode("FILL")
+        $newView.set_height_mode("FILL")
+        $newView.set_prop("file_path", @file) # 🔥 Reținem calea în C++
+		$newView.set_font_size(14)
+        
+        $tabs.add_tab(FS_GET_FILENAME(@file), $newTabId)
+        $newView.set_syntax_path("./olide/syntaxes/oli.xml")
+        $newView.set_text("")
+        $tabCount = $tabs.get_prop("tab_count")
+        $tabs.switch_page($tabCount - 1)
+        UPDATE_ACTIVE_CONTEXT()
+        SHOW_MESSAGE("Fișier Nou", "Fișierul a fost creat și deschis în tab nou!")
+    endif
+endfunc
+
+# 🔥 INTERCEPTĂM EVENIMENTUL DE CLOSE TAB
+func menu_close_click()
+    $active_id = $tabs.get_prop("active_tab_id")
+    if $active_id != "" then
+        echo "[IDE] Închid tab-ul curent: " .. $active_id
+        
+        # Apelăm metoda nativă din C++ pe care am adăugat-o în Pasul 1
+        UI_CALL_METHOD($tabs.id, "remove_tab")
+        
+        # Actualizăm imediat contextul pentru a vedea ce fișier a rămas în focus
+        UPDATE_ACTIVE_CONTEXT()
+    endif
+endfunc
+
+
+func menu_exit_click()
+	exit()
+endfunc
+
+func menu_about_click()
+	set $about_text = "Oli Engine v0.1"
+	SHOW_MESSAGE("About oli:",$about_text)
+endfunc
+
+
+func menu_interpreter_click()
+	START_PROCESS(@oli_path)
+endfunc
+
+func menu_command_click()
+	OPEN_TERMINAL()
+endfunc
+
+func menu_compile_click()
+    UPDATE_ACTIVE_CONTEXT()
+    if @file == "" then return endif
+
+    # 1. Curățăm consola grafică înainte de a începe
+    $consoleOutput.set_text("")
+    
+    # 2. Apelăm direct funcția nativă din plugin!
+    # Aceasta va rula instant și va trimite LOG-urile direct în vRichConsole
+    $res = COMPILE(@file)
+    
+    # 3. Opțional, poți verifica valoarea returnată pentru o logică suplimentară
+    if $res != "SUCCESS" then
+        # Acest mesaj va apărea doar dacă vrei o notificare extra în UI
+        echo "A apărut o eroare la compilarea fișierului."
+    endif
+endfunc
+
+func menu_build_click()
+    UPDATE_ACTIVE_CONTEXT()
+    if @file == "" then return endif
+
+    # 1. Curățăm consola grafică înainte de a începe
+    $consoleOutput.set_text("")
+    
+    # 2. Apelăm direct funcția nativă trimitând doar un SINGUR argument (@file).
+    # Lăsăm plugin-ul în C++ să extragă automat numele curat și să-l creeze în CWD!
+    $res = BUILD(@file)
+    
+    # 3. Verificăm rezultatul
+    if $res != "SUCCESS" then
+        echo "A apărut o eroare în timpul procesului de Build standalone."
+    else
+        # Mesajul de succes din C++ va afișa deja calea corectă curată (ex: Build complet: aa.exe)
+        echo "Procesul de generare a fost finalizat."
+    endif
+endfunc
+
+func on_tab_close_requested($tab_id)
+    echo "[IDE] Se închide tab-ul: " .. $tab_id
+    
+    # 1. Apelăm metoda nativă din C++ care face distrugerea reală
+    UI_CALL_METHOD("main_tabs", "remove_tab_page_by_id", $tab_id)
+    
+    # 2. Re-sincronizăm IDE-ul pentru a curăța variabila @file 
+    # și a actualiza interfața după ce tab-ul a dispărut
+    UPDATE_ACTIVE_CONTEXT()
+    
+    echo "[IDE] Tab-ul " .. $tab_id .. " a fost șters din UI."
+endfunc
+# Legătura (binding-ul)
+
+
+
+# =================================================================
+# EVENIMENT AUTOMAT: PROPAGARE CORECTĂ ASTERISC LA MODIFICARE (0 ARGUMENTE)
+# =================================================================
+func on_file_modified()
+    # Întrebăm direct tab-ul activ în momentul tastării (pentru că acolo scrie userul)
+    $active_id = $tabs.get_prop("active_tab_id")
+    
+    if $active_id != "" then
+        # Extragem numele curat al fișierului pentru a-i aplica asteriscul
+        $clean_name = REPLACE($active_id, "tab_page_", "")
+        
+        # Trimitem comanda de setare titlu direct pe id-ul detectat
+        $tabs.set_title_by_id($active_id, $clean_name .. " *")
+    endif
+endfunc
+
+
+echo "CREEZ APP"
+set $app = new("WinApp")
+$app.init() 
+
+echo "CREEZ WIN"
+set $win = new("WinWindow")
+$win.init("fereastra_principala", "Oli WINUI")
+$win.set_icon("./olide/assets/Oli_Icon.ico")
+$win.set_layout("GRID")
+
+
+# =================================================================
+# CREARE MENIU NATIV
+# =================================================================
+echo "CREEZ STRUCTURA DE MENIURI"
+
+set $mainMenu = new("WinMenu")
+$mainMenu.init("menu_principal", "fereastra_principala")
+
+set $fileMenu = new("WinMenu")
+$fileMenu.init("menu_file", "menu_principal")
+
+# Adaugam elemente in meniul File
+$fileMenu.add_item("menu_new", "New")
+$fileMenu.add_item("menu_open", "Open...")
+$fileMenu.add_item("menu_save", "Save")
+$fileMenu.add_item("menu_save_as", "Save As...")
+$fileMenu.add_item("menu_close", "Close File") # 🔥 Opțiunea Close adăugată în meniu!
+$fileMenu.add_separator("sep_1")
+$fileMenu.add_item("menu_exit", "Exit Application")
+
+set $helpMenu = new("WinMenu")
+$helpMenu.init("menu_help", "menu_principal")
+$helpMenu.add_item("menu_about", "About Oli IDE")
+
+
+set $toolsMenu = new("WinMenu")
+$toolsMenu.init("menu_tools", "menu_principal")
+$toolsMenu.add_item("menu_interpreter", "Interpreter")
+$toolsMenu.add_item("menu_command", "Command prompt")
+
+set $buildMenu = new("WinMenu")
+$buildMenu.init("menu_build", "menu_principal")
+$buildMenu.add_item("menu_build", "Build")
+$buildMenu.add_item("menu_compile", "Compile")
+
+$mainMenu.add_submenu("File", $fileMenu)
+$mainMenu.add_submenu("Build", $buildMenu)
+$mainMenu.add_submenu("Tools", $toolsMenu)
+$mainMenu.add_submenu("Help", $helpMenu)
+
+$win.set_prop("menu", "menu_principal")
+
+
+# =================================================================
+# BINDING CALL-BACKS
+# =================================================================
+$win.bind("menu_new", "menu_new_click")
+$win.bind("menu_open", "menu_open_click")
+$win.bind("menu_save", "menu_save_click")
+$win.bind("menu_save_as", "menu_save_as_click") 
+$win.bind("menu_close", "menu_close_click") # 🔥 Legăm funcția de butonul din meniu
+$win.bind("menu_exit", "menu_exit_click")
+$win.bind("menu_about", "menu_about_click")
+$win.bind("menu_interpreter", "menu_interpreter_click")
+$win.bind("menu_command", "menu_command_click")
+$win.bind("menu_compile", "menu_compile_click")
+$win.bind("menu_build", "menu_build_click")
+
+# =================================================================
+# INTERFAȚA GRAFICĂ (PANELS & CONTROLS)
+# =================================================================
+echo "CREEZ Main panel"
+set $mainPanel = new("WinPanel")
+$mainPanel.init("main_panel", "fereastra_principala",0,0,40,40)
+$mainPanel.set_layout("VSTACK")
+$mainPanel.set_width_mode("FILL")
+$mainPanel.set_height_mode("FILL")
+$mainPanel.set_margin(10)
+
+echo "CREEZ act panel"
+set $actPanel = new("WinPanel")
+$actPanel.init("act_panel", "main_panel", 0,0,40,40)
+$actPanel.set_layout("HSTACK")
+$actPanel.set_width_mode("FILL")
+$actPanel.set_height_mode("FIXED")
+$actPanel.set_margin(10)
+
+set $tabs = new("WinTabControl")
+$tabs.init("main_tabs", "main_panel", 0, 0, 600, 400)
+$tabs.set_width_mode("FILL")
+$tabs.set_height_mode("FILL")
+
+echo "CREEZ run button"
+set $runButton = new("WinButton")
+
+$runButton.init("btn_run", "act_panel", 10, 4, 30, 30, "▶")
+$runButton.set_prop("font_name","Segoe UI Symbol")
+$runButton.set_anchor("RIGHT|BOTTOM")
+$runButton.set_width_mode("FIXED")
+$runButton.set_margin(1)
+
+set $newButton = new("WinButton")
+$newButton.init("btn_new", "act_panel", 60, 4, 30, 30, "🆕")
+$newButton.set_anchor("RIGHT|BOTTOM")
+$newButton.set_width_mode("FIXED")
+$newButton.set_margin(1)
+
+set $saveButton = new("WinButton")
+$saveButton.init("btn_save", "act_panel", 95, 4, 30, 30, "💾")
+$saveButton.set_anchor("RIGHT|BOTTOM")
+$saveButton.set_width_mode("FIXED")
+$saveButton.set_margin(1)
+
+set $openButton = new("WinButton")
+$openButton.init("btn_open", "act_panel", 95, 4, 30, 30, "📂")
+$openButton.set_anchor("RIGHT|BOTTOM")
+$openButton.set_width_mode("FIXED")
+$openButton.set_margin(1)
+
+set $closeButton = new("WinButton")
+$closeButton.init("btn_close", "act_panel", 130, 4, 30, 30, "❌")
+$closeButton.set_anchor("RIGHT|BOTTOM")
+$closeButton.set_width_mode("FIXED")
+$closeButton.set_margin(1)
+
+
+
+$runButton.bind("click", "run_click")
+$saveButton.bind("click", "save_click")
+$saveButton.bind("click", "save_click")
+$newButton.bind("click", "menu_new_click")
+$openButton.bind("click", "menu_open_click")
+$closeButton.bind("click", "menu_close_click")
+$tabs.bind_arg("close_tab", "on_tab_close_requested")
+
+# =================================================================
+# CONSOLĂ COMPILARE (JOS)
+# =================================================================
+# În winui.oli, adaugi o funcție care știe ce panouri să ajusteze
+func on_console_resize($id, $delta)
+    # 1. Obținem înălțimea curentă a consolei
+    $h = $consoleOutput.get_prop("height")
+    
+    # 2. Calculăm și setăm noua înălțime (reține: delta e mișcarea mouse-ului)
+    # Tragem în sus -> delta negativ -> înălțime mai mare
+    $newH = $h - $delta
+    $consoleOutput.set_height($newH)
+    
+    # 3. Aplicăm Layout-ul (AICI SE ÎNTÂMPLĂ MAGIA)
+    # Spunem panoului părinte să își rearanjeze copiii
+    UI_CALL_METHOD("main_panel", "refresh") 
+endfunc
+
+
+echo "CREEZ Consolă..."
+set $consolePanel = new("WinPanel")
+$consolePanel.init("console_panel", "main_panel", 0, 0, 0, 150) # Înălțime fixă 150px
+#$consolePanel.set_layout("FILL") 
+$consolePanel.set_layout("GRID")
+$consolePanel.set_width_mode("FILL")
+$consolePanel.set_height_mode("FIXED") # Fixăm înălțimea ca să nu ocupe tot
+
+set $consoleOutput = new("WinRichConsole")
+$consoleOutput.init("console_output", "console_panel", 0, 0, 100, 150)
+$consoleOutput.set_width_mode("FILL")
+$consolePanel.set_height_mode("FIXED")
+$consoleOutput.set_read_only(true) # Utilizatorul nu poate scrie în ea
+$consoleOutput.set_font_size(12)
+$consoleOutput.set_resizable(true)
+$consoleOutput.set_text("Oli ready...")
+
+$consoleOutput.bind("RESIZE_VERTICAL", "on_console_resize")
+
+# =================================================================
+# LOGICA DE DESCHIDERE DINAMICĂ ACTUALIZATĂ
+# =================================================================
+#set $counter = 0
+
+
+func menu_open_click()
+    set $dlg = new("FileDialog")
+    $dlg.title = "Deschide fișierul Oli"
+    $dlg.type = 0
+    
+    $path = $dlg.show()
+    if $path != "" then
+        $newTabId = "tab_page_" .. FS_GET_FILENAME($path)
+        
+        # 🔥 VERIFICARE DE SIGURANȚĂ: Încercăm să activăm tab-ul dacă este deja deschis!
+        $alreadyOpen = $tabs.select_tab_by_id($newTabId)
+        if $alreadyOpen == true then
+            echo "[IDE] Fișierul '" .. FS_GET_FILENAME($path) .. "' este deja deschis. Mut focusul pe el!"
+            UPDATE_ACTIVE_CONTEXT()
+            return # Oprim execuția funcției aici, nu mai creăm nimic!
+        endif
+        
+        # -----------------------------------------------------------------
+        # Dacă codul trece de 'if', înseamnă că fișierul NU este deschis.
+        # Continuăm cu logica ta normală de creare:
+        # -----------------------------------------------------------------
+        set $newView = new("WinCodeView")
+        $newView.init($newTabId, "main_tabs", 0, 0, 0, 0)
+		$newView.bind("modified", "on_file_modified")
+        
+        $newView.set_width_mode("FILL")
+        $newView.set_height_mode("FILL")
+        $newView.set_prop("file_path", $path)
+        
+        $tabs.add_tab(FS_GET_FILENAME($path) .. " ", $newTabId)
+        
+        $newView.set_syntax_path("./olide/syntaxes/oli.xml")
+        $newView.set_text(READFILE($path))
+        $newView.set_font_size(12)
+        
+        $tabCount = $tabs.get_prop("tab_count")
+        $tabs.switch_page($tabCount - 1)
+        
+        UPDATE_ACTIVE_CONTEXT()
+        #@counter++
+    endif
+endfunc
+
+func init_first_tab()
+	$newTabId = "tab_page_" .. "untitled.oli"
+	set $newView = new("WinCodeView")
+    $newView.init($newTabId, "main_tabs", 0, 0, 0, 0)
+	
+	$newView.bind("modified", "on_file_modified")
+	
+    $newView.set_width_mode("FILL")
+    $newView.set_height_mode("FILL")
+	$newView.set_syntax_path("./olide/syntaxes/oli.xml")
+	$tabs.add_tab("untitled.oli", $newTabId)
+	$newView.set_font_size(12)
+	UPDATE_ACTIVE_CONTEXT()
+	$tabs.refresh()
+	#@counter++
+endfunc
+
+# =================================================================
+# 🔥 EVENIMENT AUTOMAT: SCHIMBARE TAB PRIN CLICK SAU TASTE
+# =================================================================
+
+func on_tab_changed()
+    echo "[IDE] Tab-ul a fost schimbat de utilizator! Actualizez contextul..."
+    
+    # Apelăm funcția ta magică de sincronizare
+    UPDATE_ACTIVE_CONTEXT()
+    
+    # Log de verificare în consolă pentru a vedea dacă s-a mutat corect calea fișierului
+    if @file != "" then
+        echo "[IDE] Context nou activat: " .. @file
+    else
+        echo "[IDE] Ecran gol, nu există fișier activ."
+    endif
+endfunc
+$tabs.bind("tab_changed", "on_tab_changed")
+
+init_first_tab()
+$win.show()  
+$app.run()
+
+
+echo "=== Aplicație închisă cu succes ==="
+#input()

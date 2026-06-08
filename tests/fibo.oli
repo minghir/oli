@@ -39,14 +39,14 @@ echo "Valoare globala dupa apel: " + $test_global
 echo ""
 echo "--- Test 2: Fibonacci cu Memoization ---"
 set $start = TICKS()
-set $r = FIBO_MEMO(100)
+set $r = FIBO_MEMO(92)
 set $end = TICKS()
 
 set $durata = $end - $start
-echo "F(100) = " + $r
+echo "F(9) = " + $r
 echo "Timp: " + $durata + " ms"
 
 echo ""
 echo "--- Test 3: Starea Cache-ului ---"
-dm 
+dm
 input()

@@ -22,6 +22,42 @@
 #define OLI_EXPORT extern "C"
 #endif
 
+
+// Variabile temporare pentru controlul poziționării ferestrei de dialog
+static HHOOK g_hCbtHook = nullptr;
+static HWND g_hTargetParent = nullptr;
+
+// Funcția callback apelată de Windows chiar înainte ca MessageBox-ul să devină vizibil
+static LRESULT CALLBACK MessageBoxCbtProc(int nCode, WPARAM wParam, LPARAM lParam) {
+    if (nCode == HCBT_ACTIVATE) {
+        HWND hwndMsgBox = reinterpret_cast<HWND>(wParam);
+
+        if (g_hTargetParent && IsWindow(g_hTargetParent)) {
+            RECT rcOwner, rcMsg;
+            GetWindowRect(g_hTargetParent, &rcOwner); // Coordonatele IDE-ului
+            GetWindowRect(hwndMsgBox, &rcMsg);       // Coordonatele Message Box-ului
+
+            int ownerWidth = rcOwner.right - rcOwner.left;
+            int ownerHeight = rcOwner.bottom - rcOwner.top;
+            int msgWidth = rcMsg.right - rcMsg.left;
+            int msgHeight = rcMsg.bottom - rcMsg.top;
+
+            // Calculăm centrul perfect raportat la fereastra principală
+            int x = rcOwner.left + (ownerWidth - msgWidth) / 2;
+            int y = rcOwner.top + (ownerHeight - msgHeight) / 2;
+
+            // Mutăm dialogul pe noile coordonate centrate
+            SetWindowPos(hwndMsgBox, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+        }
+
+        // Dezactivăm hook-ul imediat ce ne-am terminat treaba
+        UnhookWindowsHookEx(g_hCbtHook);
+        g_hCbtHook = nullptr;
+    }
+    return CallNextHookEx(nullptr, nCode, wParam, lParam);
+}
+
+
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
 
 struct GuiState {
@@ -116,19 +152,15 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             std::wstring wTitle = args[1].toWString();
             std::string id(wId.begin(), wId.end());
 
-			LOG_DEBUG(L"[DLL_DEBUG] Titlu primit: " + wTitle + L" | Lungime: " + std::to_wstring(wTitle.length()));
+            LOG_DEBUG(L"[DLL_DEBUG] Titlu primit: " + wTitle + L" | Lungime: " + std::to_wstring(wTitle.length()));
 
             auto objMap = std::make_shared<std::unordered_map<std::wstring, vData>>();
             (*objMap)[L"__type__"] = vData(L"WinWindow");
             (*objMap)[L"id"] = vData(wId);
             (*objMap)[L"title"] = vData(wTitle);
 
-            // Obținem HINSTANCE direct din procesul curent, garantat valid 100% în orice mod
             HINSTANCE hInst = GetModuleHandle(nullptr);
 
-            // Obținem un pointer către dispatcherul global legitim din aplicație (dacă s_instance din vApp returnează o adresă validă în EXE)
-            // Pentru a fi 100% siguri că ocolim orice referință de dispatcher coruptă din DLL:
-            // Creăm o instanță statică locală dummy de dispatcher sau o folosim pe cea din vApp dacă e validă.
             vApp* actualApp = vApp::getAppInstance();
             if (!actualApp) {
                 LOG_ERROR(L"❌ [CREATE_WINWINDOW] appInstance este NULL în contextul curent!");
@@ -136,17 +168,13 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             }
 
             LOG_DEBUG(L"[DLL_DEBUG] Instantiem vWindow folosind contextul verificat al executabilului...");
-            
-            // 🔥 SOLUȚIA ANTI-CRASH RADICALĂ:
-            // Alocăm fereastra direct prin API-ul Win32, complet ocolind constructorul cu referințe instabile de dispatcher dacă acestea dau fail.
-            // Dacă constructorul de vWindow cere obligatoriu referința la dispatcher, o transmitem prin pointerul validat:
+
             auto newWindow = std::make_unique<vWindow>(
                 hInst, id, WindowType::StandardWindow, false,
                 actualApp->getEventDispatcher()
             );
             newWindow->setIsMainWindow(true);
 
-            // Apelăm crearea nativă transmițând explicit HINSTANCE-ul procesului gazdă
             bool created = newWindow->create(L"VOliWindowClass", wTitle,
                 WS_OVERLAPPEDWINDOW, 200, 200, 800, 900, nullptr, nullptr);
 
@@ -155,7 +183,8 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
                 actualApp->addWindow(id, std::move(newWindow));
                 g_Gui.controlsMap[id] = winPtr;
                 LOG_DEBUG(L"[DLL_DEBUG] Fereastra a fost creata si inregistrata in siguranta.");
-            } else {
+            }
+            else {
                 LOG_ERROR(L"❌ [CREATE_WINWINDOW] CreateWindowExW a returnat NULL!");
             }
 
@@ -165,8 +194,8 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             LOG_ERROR(L"❌ [CREATE_WINWINDOW] Crash hardware / acces ilegal interceptat definitiv!");
             return vData{ std::monostate{} };
         }
-    };
-	
+        };
+
     registry[L"WINWINDOW::SHOW"] = [](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData{ 0LL };
         vData self = args[0];
@@ -190,8 +219,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
     // 3. CONSTRUCTORUL GENERIC DE CONTROALE
     // =================================================================
 
-   registry[L"UI_CREATE_CONTROL"] = [](const std::vector<vData>& args) -> vData {
-        // Log inițial pentru a vedea ce argumente ajung din mașina virtuală
+    registry[L"UI_CREATE_CONTROL"] = [](const std::vector<vData>& args) -> vData {
         LOG_DEBUG(L"[DLL_DEBUG] Intrare UI_CREATE_CONTROL. Numar argumente primite: " + std::to_wstring(args.size()));
 
         if (args.size() < 3) {
@@ -213,17 +241,18 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             return vData{ 0LL };
         }
 
-        // 1. Verificare stare parinte în controlsMap sau vApp
         vControl* parentCtrl = LocateAnyControl(parentId);
         if (parentCtrl) {
             LOG_DEBUG(L"[DLL_DEBUG] Parintele '" + wParentId + L"' gasit cu succes in controlsMap. Adresa: " + std::to_wstring(reinterpret_cast<uintptr_t>(parentCtrl)));
-        } else {
+        }
+        else {
             LOG_DEBUG(L"[DLL_DEBUG] Parintele '" + wParentId + L"' NU e in controlsMap. Incercam prin getWindow...");
             parentCtrl = g_Gui.appInstance->getWindow(parentId);
-            
+
             if (parentCtrl) {
                 LOG_DEBUG(L"[DLL_DEBUG] Parintele '" + wParentId + L"' a fost gasit ca Window legitim. Adresa: " + std::to_wstring(reinterpret_cast<uintptr_t>(parentCtrl)));
-            } else {
+            }
+            else {
                 LOG_ERROR(L"[DLL_DEBUG] CRITIC: Parintele '" + wParentId + L"' nu a putut fi localizat nicaieri!");
                 return vData{ 0LL };
             }
@@ -231,35 +260,21 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 
         HINSTANCE hInst = g_Gui.appInstance->getInstance();
 
-        // =================================================================
-        // 2. LOGICA MODIFICATĂ ȘI SECURIZATĂ PENTRU COMPONENTA MENU
-        // =================================================================
-        // =================================================================
-        // 2. LOGICA REPARATĂ PENTRU COMPONENTA MENU
-        // =================================================================
         if (wType == L"MENU") {
             try {
                 LOG_DEBUG(L"[DLL_DEBUG] Initializare vMenu: " + wId);
-                
+
                 auto menuCtrl = std::make_shared<vMenu>(id, g_Gui.appInstance->getEventDispatcher());
-                
-                // Creăm meniul (indiferent dacă e bară sau popup)
-                menuCtrl->create(nullptr); 
-                
+                menuCtrl->create(nullptr);
+
                 vControl* rawPtr = menuCtrl.get();
                 LOG_DEBUG(L"[DLL_DEBUG] vMenu creat. Adresa pointer: " + std::to_wstring(reinterpret_cast<uintptr_t>(rawPtr)));
 
-                // 1. Mapăm pointerul în controlsMap ca să îl poți apela prin UI_CALL_METHOD
                 g_Gui.controlsMap[id] = rawPtr;
-                
-                // 2. Păstrăm instanța vie (evităm distrugerea la ieșirea din funcție)
+
                 static std::vector<std::shared_ptr<vControl>> m_persistentMenus;
                 m_persistentMenus.push_back(menuCtrl);
 
-                // 🔥 ELIMINAT: parentCtrl->addChild(id, std::move(menuCtrl)); 
-                // NU mai adăugăm meniul în ierarhia de copii a ferestrei! 
-                // Asta este cauza erorilor de HWND.
-//AppendMenuW(menuCtrl->getHandle(), MF_STRING, 1001, L"ELEMENT_TEST_FORTAT");
                 LOG_DEBUG(L"[DLL_DEBUG] vMenu '" + wId + L"' inregistrat cu succes (fără addChild).");
                 return vData{ 1LL };
             }
@@ -269,10 +284,9 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             }
         }
 
-        // 3. Parsarea coordonatelor și instanțierea controalelor standard
         try {
             LOG_DEBUG(L"[DLL_DEBUG] Incepe parsarea coordonatelor optionale pentru control standard...");
-            
+
             int x = (args.size() > 3) ? static_cast<int>(args[3].toInt()) : 0;
             int y = (args.size() > 4) ? static_cast<int>(args[4].toInt()) : 0;
             int w = (args.size() > 5) ? static_cast<int>(args[5].toInt()) : 0;
@@ -293,39 +307,39 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
                     hInst, id, x, y, w, h, g_Gui.appInstance->getEventDispatcher()
                 );
             }
-			else if (wType == L"TABCONTROL") {
-				newCtrl = std::make_unique<vTabControl>(
-					hInst, id, x, y, w, h, g_Gui.appInstance->getEventDispatcher()
-				);
-			}
+            else if (wType == L"TABCONTROL") {
+                newCtrl = std::make_unique<vTabControl>(
+                    hInst, id, x, y, w, h, g_Gui.appInstance->getEventDispatcher()
+                );
+            }
             else if (wType == L"CODEVIEW") {
                 newCtrl = std::make_unique<vCodeView>(
                     hInst, id, x, y, w, h, g_Gui.appInstance->getEventDispatcher()
                 );
-			}
-			else if (wType == L"RICHEDIT") {
+            }
+            else if (wType == L"RICHEDIT") {
                 newCtrl = std::make_unique<vRichEdit>(
                     hInst, id, x, y, w, h, g_Gui.appInstance->getEventDispatcher()
                 );
             }
-			else if (wType == L"RICHCONSOLE") {
-				newCtrl = std::make_unique<vRichConsole>(
-					hInst, id, x, y, w, h, g_Gui.appInstance->getEventDispatcher()
-				);
-			}
-			else {
+            else if (wType == L"RICHCONSOLE") {
+                newCtrl = std::make_unique<vRichConsole>(
+                    hInst, id, x, y, w, h, g_Gui.appInstance->getEventDispatcher()
+                );
+            }
+            else {
                 LOG_ERROR(L"[DLL_DEBUG] Tip de control necunoscut/nesuportat: '" + wType + L"'");
             }
 
             if (newCtrl) {
                 vControl* rawControlPtr = newCtrl.get();
-                
+
                 LOG_DEBUG(L"[DLL_DEBUG] Adaugam controlul in ierarhia parintelui...");
                 parentCtrl->addChild(id, std::move(newCtrl));
-                
+
                 LOG_DEBUG(L"[DLL_DEBUG] Mapam controlul in controlsMap...");
                 g_Gui.controlsMap[id] = rawControlPtr;
-                
+
                 LOG_DEBUG(L"[DLL_DEBUG] Control '" + wId + L"' creat cu succes.");
                 return vData{ 1LL };
             }
@@ -342,43 +356,41 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 
         LOG_ERROR(L"[DLL_DEBUG] Iesire din functie cu fail (newCtrl a ramas null).");
         return vData{ 0LL };
-    };
+        };
 
 
-	registry[L"UI_SET_PROPERTY"] = [](const std::vector<vData>& args) -> vData {
-		if (args.size() < 3) return vData{ 0LL };
+    registry[L"UI_SET_PROPERTY"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 3) return vData{ 0LL };
 
-		vData self = args[0];
-		std::wstring propName = args[1].toWString();
-		vData value = args[2];
+        vData self = args[0];
+        std::wstring propName = args[1].toWString();
+        vData value = args[2];
 
-		if (!self.isMap()) return vData{ 0LL };
-		std::wstring wId = (*self.rawMap())[L"id"].toWString();
-		std::string id(wId.begin(), wId.end());
+        if (!self.isMap()) return vData{ 0LL };
+        std::wstring wId = (*self.rawMap())[L"id"].toWString();
+        std::string id(wId.begin(), wId.end());
 
-		vControl* ctrl = LocateAnyControl(id);
-		if (!ctrl) return vData{ 0LL };
+        vControl* ctrl = LocateAnyControl(id);
+        if (!ctrl) return vData{ 0LL };
 
-		// 🔥 FIX: Tratare specială pentru "menu" aici în DLL, 
-		// ca să nu ne bazăm pe ierarhia vWindow::getChildRecursive
-		if (propName == L"menu") {
-			std::wstring wMenuId = value.toWString();
-			std::string menuId(wMenuId.begin(), wMenuId.end());
-			
-			vControl* menuCtrl = LocateAnyControl(menuId);
-			vMenu* pMenu = dynamic_cast<vMenu*>(menuCtrl);
-			vWindow* pWin = dynamic_cast<vWindow*>(ctrl);
+        if (propName == L"menu") {
+            std::wstring wMenuId = value.toWString();
+            std::string menuId(wMenuId.begin(), wMenuId.end());
 
-			if (pWin && pMenu) {
-				pWin->setMenu(pMenu); // Aceasta apelează DrawMenuBar din WinAPI
-				return vData{ 1LL };
-			}
-			return vData{ 0LL };
-		}
+            vControl* menuCtrl = LocateAnyControl(menuId);
+            vMenu* pMenu = dynamic_cast<vMenu*>(menuCtrl);
+            vWindow* pWin = dynamic_cast<vWindow*>(ctrl);
 
-		bool success = ctrl->setProperty(propName, value);
-		return vData{ success ? 1LL : 0LL };
-	};
+            if (pWin && pMenu) {
+                pWin->setMenu(pMenu);
+                return vData{ 1LL };
+            }
+            return vData{ 0LL };
+        }
+
+        bool success = ctrl->setProperty(propName, value);
+        return vData{ success ? 1LL : 0LL };
+        };
 
     registry[L"UI_GET_PROPERTY"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 2) return vData{ std::monostate{} };
@@ -393,12 +405,11 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         vControl* ctrl = LocateAnyControl(id);
         if (!ctrl) return vData{ std::monostate{} };
 
-        // Preluare polimorfică nativă
         return ctrl->getProperty(propName);
-    };
+        };
 
     // =================================================================
-    // 6. LEGAREA EVENIMENTELOR: UI_BIND_EVENT (Fără verificarea g_Gui.oliEngine)
+    // 6. LEGAREA EVENIMENTELOR: UI_BIND_EVENT
     // =================================================================
 
     registry[L"UI_BIND_EVENT"] = [](const std::vector<vData>& args) -> vData {
@@ -411,7 +422,6 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         std::string id(wId.begin(), wId.end());
         std::string eventName(wEventName.begin(), wEventName.end());
 
-        // Eliminat g_Gui.oliEngine fugar! Ne bazăm exclusiv pe g_Gui.appInstance
         if (!g_Gui.appInstance) return vData{ 0LL };
 
         std::string key = id + "_" + eventName;
@@ -421,7 +431,6 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             if (g_PersistentScriptCallbacks.count(key)) {
                 std::wstring funcName = g_PersistentScriptCallbacks[key];
 
-                // Invocăm prin intermediul pointerului preluat de la intrare
                 if (g_LinkedOliEngine) {
                     std::vector<vData> emptyArgs;
                     g_LinkedOliEngine->callUserByteCodeFunction(
@@ -440,99 +449,123 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         g_Gui.appInstance->getEventDispatcher().registerHandler(eventName, id, olicallback);
         return vData{ 1LL };
         };
-		
-		
-		registry[L"UI_BIND_ARG_EVENT"] = [](const std::vector<vData>& args) -> vData {
-			if (args.size() < 3) return vData{ 0LL };
 
-			std::wstring wId = args[0].toWString();
-			std::wstring wEventName = args[1].toWString();
-			std::wstring wScriptFunc = args[2].toWString();
 
-			std::string id(wId.begin(), wId.end());
-			std::string eventName(wEventName.begin(), wEventName.end());
+    registry[L"UI_BIND_ARG_EVENT"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 3) return vData{ 0LL };
 
-			if (!g_Gui.appInstance) return vData{ 0LL };
+        std::wstring wId = args[0].toWString();
+        std::wstring wEventName = args[1].toWString();
+        std::wstring wScriptFunc = args[2].toWString();
 
-			// Înregistrăm un callback care știe să primească un string (argumentul)
-			auto olicallback = [wScriptFunc](const std::string& arg) {
-				if (g_LinkedOliEngine) {
-					std::vector<vData> callArgs;
-					// Convertim argumentul C++ în vData pentru Oli
-					callArgs.push_back(vData(std::wstring(arg.begin(), arg.end())));
-					
-					g_LinkedOliEngine->callUserByteCodeFunction(
-						wScriptFunc.c_str(),
-						callArgs.data(),
-						(int)callArgs.size(),
-						vData(0LL)
-					);
-				}
-			};
+        std::string id(wId.begin(), wId.end());
+        std::string eventName(wEventName.begin(), wEventName.end());
 
-			// Folosim dispatcher-ul pentru handlere cu argumente
-			g_Gui.appInstance->getEventDispatcher().registerHandler(eventName, id, olicallback);
-			return vData{ 1LL };
-		};
-		
-		registry[L"UI_CALL_METHOD"] = [](const std::vector<vData>& args) -> vData {
-			if (args.size() < 2) return vData{ 0LL };
+        if (!g_Gui.appInstance) return vData{ 0LL };
 
-			std::wstring wId = args[0].toWString();
-			std::string id(wId.begin(), wId.end());
-			std::wstring methodName = args[1].toWString(); // <--- Aici verificăm dacă asta e gol!
+        auto olicallback = [wScriptFunc](const std::string& arg) {
+            if (g_LinkedOliEngine) {
+                std::vector<vData> callArgs;
+                callArgs.push_back(vData(std::wstring(arg.begin(), arg.end())));
 
-			// LOG DE SIGURANȚĂ
-			LOG_DEBUG(L"[DLL_DEBUG] DEBUG: methodName primit este: '" + methodName + L"'");
-
-			vControl* ctrl = LocateAnyControl(id);
-			if (!ctrl) return vData{ 0LL };
-
-			// Construim vectorul de argumente DOAR din ce rămâne după ID și Method
-			std::vector<vData> methodArgs;
-			for (size_t i = 2; i < args.size(); ++i) {
-				methodArgs.push_back(args[i]);
-			}
-
-			// Apel polimorfic
-			bool success = ctrl->callMethod(methodName, methodArgs);
-			return vData{ success ? 1LL : 0LL };
-		};
-		
-		registry[L"SHOW_MESSAGE"] = [](const std::vector<vData>& args) -> vData {
-			if (args.size() < 2) return vData{ std::monostate{} };
-			
-			std::wstring title = args[0].toWString();
-			std::wstring message = args[1].toWString();
-			
-			// Poți adăuga logica pentru butoane dacă vrei (opțional, aici forțăm OK pentru simplitate)
-			std::string result = vMessageDialog::show(title, message, MessageButtons::Ok);
-			
-			return vData(std::wstring(result.begin(), result.end()));
-		};
-
-        registry[L"UI_FILE_DIALOG"] = [](const std::vector<vData>& args) -> vData {
-            // Arg 0: tip (0 = OPEN, 1 = SAVE)
-            // Arg 1: Titlu
-			// Arg 2 (Opțional): Calea inițială
-            int type = (int)args[0].toDouble();
-            std::wstring title = args[1].toWString();
-
-            WinFileDialog dlg(title);
-			
-			if (args.size() > 2) {
-				dlg.setInitialPath(args[2].toWString());
-			}
-			
-            if (type == 0) { // OPEN
-                if (dlg.showOpen(nullptr)) return vData(dlg.getFilePath());
+                g_LinkedOliEngine->callUserByteCodeFunction(
+                    wScriptFunc.c_str(),
+                    callArgs.data(),
+                    (int)callArgs.size(),
+                    vData(0LL)
+                );
             }
-            else { // SAVE
-                if (dlg.showSave(nullptr)) return vData(dlg.getFilePath());
-            }
-
-            return vData(L""); // Returnează string gol la Cancel
             };
+
+        g_Gui.appInstance->getEventDispatcher().registerHandler(eventName, id, olicallback);
+        return vData{ 1LL };
+        };
+
+    registry[L"UI_CALL_METHOD"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 2) return vData{ 0LL };
+
+        std::wstring wId = args[0].toWString();
+        std::string id(wId.begin(), wId.end());
+        std::wstring methodName = args[1].toWString();
+
+        LOG_DEBUG(L"[DLL_DEBUG] DEBUG: methodName primit este: '" + methodName + L"'");
+
+        vControl* ctrl = LocateAnyControl(id);
+        if (!ctrl) return vData{ 0LL };
+
+        std::vector<vData> methodArgs;
+        for (size_t i = 2; i < args.size(); ++i) {
+            methodArgs.push_back(args[i]);
+        }
+
+        bool success = ctrl->callMethod(methodName, methodArgs);
+        return vData{ success ? 1LL : 0LL };
+        };
+
+    registry[L"SHOW_MESSAGE"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 2) return vData{ std::monostate{} };
+
+        std::wstring title = args[0].toWString();
+        std::wstring message = args[1].toWString();
+
+        std::string result = vMessageDialog::show(title, message, MessageButtons::Ok);
+
+        return vData(std::wstring(result.begin(), result.end()));
+        };
+
+    // =================================================================
+    // 🔥 NOU: CONEXIUNE DIALOG CONFIRMARE (YES / NO / CANCEL) PENTRU SCRIPT
+    // =================================================================
+    registry[L"UI_SHOW_QUESTION"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 2) return vData(L"CANCEL");
+
+        std::wstring title = args[0].toWString();
+        std::wstring message = args[1].toWString();
+
+        // 1. Încercăm să extragem handle-ul nativ (HWND) al ferestrei tale principale
+        HWND hParent = GetActiveWindow();
+        vControl* mainWin = LocateAnyControl("fereastra_principala");
+        if (mainWin && mainWin->getHandle()) {
+            hParent = mainWin->getHandle();
+        }
+
+        // 2. Configurăm variabilele globale pentru hook și injectăm Hook-ul pe firul UI curent
+        g_hTargetParent = hParent;
+        g_hCbtHook = SetWindowsHookEx(WH_CBT, MessageBoxCbtProc, nullptr, GetCurrentThreadId());
+
+        // 3. Lansăm caseta nativă modală (se va centra perfect peste IDE)
+        int result = MessageBoxW(hParent, message.c_str(), title.c_str(), MB_YESNOCANCEL | MB_ICONQUESTION);
+
+        // Plasă de siguranță: dacă din orice motiv ciudat hook-ul a rămas activ, îl distrugem
+        if (g_hCbtHook) {
+            UnhookWindowsHookEx(g_hCbtHook);
+            g_hCbtHook = nullptr;
+        }
+
+        if (result == IDYES) return vData(L"YES");
+        if (result == IDNO)  return vData(L"NO");
+        return vData(L"CANCEL");
+        };
+
+    registry[L"UI_FILE_DIALOG"] = [](const std::vector<vData>& args) -> vData {
+        int type = (int)args[0].toDouble();
+        std::wstring title = args[1].toWString();
+
+        WinFileDialog dlg(title);
+
+        if (args.size() > 2) {
+            dlg.setInitialPath(args[2].toWString());
+        }
+
+        if (type == 0) { // OPEN
+            if (dlg.showOpen(nullptr)) return vData(dlg.getFilePath());
+        }
+        else { // SAVE
+            if (dlg.showSave(nullptr)) return vData(dlg.getFilePath());
+        }
+
+        return vData(L"");
+        };
 }
 
 OLI_EXPORT void SetPluginConsoleManager(ConsoleManager* hostCm) {

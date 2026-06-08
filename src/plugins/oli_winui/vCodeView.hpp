@@ -22,7 +22,9 @@ private:
 	std::unique_ptr<vPopupMenu> m_contextMenu; // Obiectul de meniu
     void initContextMenu(); // Metoda pentru setup
 	
-	
+    bool m_isDirty = false;       // 🔥 Flag care ne spune dacă fișierul a fost modificat
+    bool m_ignoreChange = false;  // 🔥 Protecție pentru a nu declanșa flag-ul la încărcarea fișierului
+
 public:
     vCodeView(HINSTANCE hInstance, const std::string& id, int x, int y, int width, int height, EventDispatcher& dispatcher)
         : vPanel(hInstance, id, x, y, width, height, dispatcher)
@@ -74,4 +76,7 @@ public:
 	 
 	  void showContextMenu(int x, int y);
 	  void commentLines(bool comment);
+
+      bool isModified() const { return m_isDirty; }
+      void setModified(bool modified) { m_isDirty = modified; }
 };

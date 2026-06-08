@@ -10,7 +10,7 @@
 
 struct vTabPage {
     std::wstring title;
-    vPanel* panel;
+    vControl* panel;
 };
 
 class vTabControl : public vContainer {
@@ -31,7 +31,8 @@ public:
     LRESULT handleMessage(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) override;
 
     // Metode specifice pentru managementul tab-urilor
-    void addTabPage(const std::wstring& title, std::unique_ptr<vPanel> page);
+    void addTabPage(const std::wstring& title, std::unique_ptr<vControl> page);
+    vControl* getCurrentPage() const;
     void switchPage(int index);
 
     void scale(int newDpi) override {
@@ -53,7 +54,7 @@ public:
     }
 
     int getSelectedIndex() const;
-    vPanel* getCurrentPage() const;
+    
     void moveAndResize(int x, int y, int width, int height);
 	
 	bool setProperty(const std::wstring& name, const vData& value) override;

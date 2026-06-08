@@ -5,7 +5,11 @@
 #include <unordered_map>
 #include <functional>
 
+#if defined(_WIN32) || defined(_WIN64)
 #define OLI_EXPORT extern "C" __declspec(dllexport)
+#else
+#define OLI_EXPORT extern "C" __attribute__((visibility("default")))
+#endif
 
 // Satisfacem verificarea de consolă a motorului pentru ambele moduri
 OLI_EXPORT void SetPluginConsoleManager(void* dummy) {}

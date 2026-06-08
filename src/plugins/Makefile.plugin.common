@@ -6,6 +6,7 @@ ifeq ($(OS),Windows_NT)
 LDFLAGS += -shared -static-libgcc -static-libstdc++
 TARGET = ../../../$(PLUGIN_NAME).dll
 else
+LDFLAGS += -shared
 TARGET = ../../../$(PLUGIN_NAME).so
 endif
 

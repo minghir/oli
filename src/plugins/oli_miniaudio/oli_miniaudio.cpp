@@ -3,6 +3,8 @@
 #include <string>
 #include <unordered_map>
 #include <fstream>
+#include <locale>
+#include <codecvt>
 
 // --- INTEGRARE MINIAUDIO ---
 #define MINIAUDIO_IMPLEMENTATION
@@ -34,10 +36,15 @@ inline double toDouble(const vData& v) {
 // Helper pentru conversia wstring -> string (necesar pentru miniaudio/căi de fișiere)
 std::string toUtf8(const std::wstring& wstr) {
     if (wstr.empty()) return std::string();
+#ifdef _WIN32
     int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
     std::string strTo(size_needed, 0);
     WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
     return strTo;
+#else
+    std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> conv;
+    return conv.to_bytes(wstr);
+#endif
 }
 
 OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {

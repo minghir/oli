@@ -5,6 +5,7 @@
 #include "vDataSerialize.hpp"
 #include "OliCompiler.hpp"
 #include "StringUtils.hpp" 
+#include "PortTools.hpp"
 #include <iostream>
 #include <sstream>
 #include <fstream>
@@ -149,7 +150,8 @@ int main(int argc, char* argv[]) {
 
                 // B. Salvare Assembly Listing (.olia)
                 std::wstring assemblyPath = str_to_wstr(outputPath) + L".olia";
-                std::ofstream asmf(assemblyPath.c_str());
+                std::string assemblyPathNarrow = PortTools::wstring_to_utf8(assemblyPath);
+                std::ofstream asmf(assemblyPathNarrow, std::ios::binary);
 
                 try { asmf.imbue(std::locale("")); }
                 catch (...) { asmf.imbue(std::locale::classic()); }

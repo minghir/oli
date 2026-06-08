@@ -6,6 +6,10 @@
 
 #include <filesystem>
 #include <cmath>
+#ifndef _WIN32
+#include <unistd.h>
+#include <limits.h>
+#endif
 
 
 void vOliEngine::executeBytecode(const OliChunk& chunk,size_t framePtr) {
@@ -1947,14 +1951,30 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
         LOG_INFO(L"Ghilimele curatate: " + pluginName);
     }
 
-    // 2. Determinăm folderul executabilului principal
+    // 2. Determinăm folderul executabilului principal (cross-platform)
+    std::filesystem::path exeFullPath;
+#ifdef _WIN32
     wchar_t exePathBuffer[MAX_PATH];
     GetModuleFileNameW(NULL, exePathBuffer, MAX_PATH);
-    
-    std::filesystem::path exeFullPath(exePathBuffer);
+    exeFullPath = std::filesystem::path(exePathBuffer);
+#else
+    char exePathBuffer[PATH_MAX];
+    ssize_t len = readlink("/proc/self/exe", exePathBuffer, sizeof(exePathBuffer) - 1);
+    if (len != -1) {
+        exePathBuffer[len] = '\0';
+        exeFullPath = std::filesystem::path(std::string(exePathBuffer));
+    } else {
+        exeFullPath = std::filesystem::current_path();
+    }
+#endif
+
     std::filesystem::path exeDir = exeFullPath.parent_path();
 
+#ifdef _WIN32
     LOG_INFO(L"Rezolutie cale: Exe=" + std::wstring(exePathBuffer) + L" | Dir=" + exeDir.wstring());
+#else
+    LOG_INFO(L"Rezolutie cale: Dir=" + exeDir.wstring());
+#endif
 
     // 3. Extragem numele curat
     std::filesystem::path rawPath(pluginName);

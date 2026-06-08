@@ -42,6 +42,12 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 # Regula care compilează toate pluginurile gasite
 plugins:
 	@for dir in $(PLUGINS); do \
+		name=$$(basename $$(dirname $$dir)); \
+		case "$$name" in \
+			oli_opengl|oli_winui) \
+				echo "Skipping plugin $$name on this OS"; \
+				continue;; \
+		esac; \
 		echo "Building plugin in $$dir..."; \
 		$(MAKE) -C $$dir; \
 	done

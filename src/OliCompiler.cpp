@@ -7,6 +7,11 @@
 #include <iostream>
 #include <filesystem>
 
+#ifndef _WIN32
+#include <unistd.h>
+#include <limits.h>
+#endif
+
 #undef min
 // Helper pentru tokenizare rapidă (adaugă-l deasupra metodei compile)
 static std::vector<std::wstring> splitW(const std::wstring& s, const std::wstring& delimiters) {
@@ -2332,10 +2337,22 @@ void OliCompiler::loadPluginMetadata(std::wstring pluginName) {
     if (pluginName.empty()) return;
 
     // 2. 🔥 FIX CRITIC: Determinăm folderul executabilului principal (Exact ca în VM!)
+    std::filesystem::path exeFullPath;
+#ifdef _WIN32
     wchar_t exePathBuffer[MAX_PATH];
     GetModuleFileNameW(NULL, exePathBuffer, MAX_PATH);
+    exeFullPath = std::filesystem::path(exePathBuffer);
+#else
+    char exePathBuffer[PATH_MAX];
+    ssize_t len = readlink("/proc/self/exe", exePathBuffer, sizeof(exePathBuffer) - 1);
+    if (len != -1) {
+        exePathBuffer[len] = '\0';
+        exeFullPath = std::filesystem::path(std::string(exePathBuffer));
+    } else {
+        exeFullPath = std::filesystem::current_path();
+    }
+#endif
 
-    std::filesystem::path exeFullPath(exePathBuffer);
     std::filesystem::path exeDir = exeFullPath.parent_path();
 
     // 3. Extragem numele curat al DLL-ului

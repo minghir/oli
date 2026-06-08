@@ -5,6 +5,10 @@
 #include <fstream>
 #include <filesystem>
 #include <string>
+#ifndef _WIN32
+#include <unistd.h>
+#include <limits.h>
+#endif
 
 // --- 1. DEFINIȚIE EXPORT ---
 #if defined(_WIN32) || defined(_WIN64)
@@ -99,12 +103,24 @@ void RegisterCompilerFunctions(PluginRegistry& registry) {
             outputPath = p.stem().wstring() + L".exe"; 
         }
 
-        // 🔥 FIX ARHITECTURAL: Aflăm calea IDE-ului curent (olide.exe)
+        // 🔥 FIX ARHITECTURAL: Aflăm calea IDE-ului curent (olide.exe) - cross-platform
+        std::filesystem::path ideFullPath;
+    #ifdef _WIN32
         wchar_t currentIdePath[MAX_PATH];
-        GetModuleFileNameW(NULL, currentIdePath, MAX_PATH); 
+        GetModuleFileNameW(NULL, currentIdePath, MAX_PATH);
+        ideFullPath = std::filesystem::path(currentIdePath);
+    #else
+        char currentIdePath[PATH_MAX];
+        ssize_t len = readlink("/proc/self/exe", currentIdePath, sizeof(currentIdePath) - 1);
+        if (len != -1) {
+            currentIdePath[len] = '\0';
+            ideFullPath = std::filesystem::path(std::string(currentIdePath));
+        } else {
+            ideFullPath = std::filesystem::current_path();
+        }
+    #endif
 
         // Extragem directorul bazei și forțăm țintirea către motorul curat 'oli.exe'
-        std::filesystem::path ideFullPath(currentIdePath);
         std::filesystem::path baseDir = ideFullPath.parent_path();
         std::filesystem::path cleanEnginePath = baseDir / "oli.exe";
 

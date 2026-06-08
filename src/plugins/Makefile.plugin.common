@@ -6,7 +6,7 @@ ifeq ($(OS),Windows_NT)
 LDFLAGS += -shared -static-libgcc -static-libstdc++
 TARGET = ../../../$(PLUGIN_NAME).dll
 else
-LDFLAGS += -shared
+LDFLAGS += -shared -lX11
 TARGET = ../../../$(PLUGIN_NAME).so
 endif
 
@@ -21,7 +21,7 @@ OBJS = $(SRCS:.cpp=.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(CXX) -o $@ $(OBJS) $(LDFLAGS) $(LIBS)
 	cp $(TARGET) ../../../plugins
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@

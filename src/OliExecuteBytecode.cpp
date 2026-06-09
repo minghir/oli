@@ -655,7 +655,9 @@ case OpCode::OP_SET_INDIRECT: {
             }
             else if (rA.isInt() && rB.isInt()) {
                 stack.push_back(vData(rA.toInt() + rB.toInt()));
-            }
+            }else if (rA.isNumber() && rB.isNumber()) {
+				stack.push_back(vData(rA.toInt() + rB.toInt()));
+			}
             else {
                 stack.push_back(vData(vDataToDouble(rA) + vDataToDouble(rB)));
             }

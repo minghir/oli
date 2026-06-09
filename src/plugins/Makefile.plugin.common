@@ -2,14 +2,29 @@
 CXX = g++
 CXXFLAGS += -std=c++20 -DUNICODE -D_UNICODE -Wall -Wextra -O3 -fPIC -I../../../include -I../../../include
 
-ifeq ($(OS),Windows_NT)
-LDFLAGS += -shared -static-libgcc -static-libstdc++
-TARGET = ../../../$(PLUGIN_NAME).dll
-else
-LDFLAGS += -shared -lX11
-TARGET = ../../../$(PLUGIN_NAME).so
+# Detectare robustă a platformei
+PLATFORM := $(shell uname -s)
+
+# Dacă platforma conține "MINGW" sau "MSYS" sau este "Windows_NT", suntem pe Windows
+ifneq (,$(findstring MINGW,$(PLATFORM)))
+    IS_WINDOWS := 1
+else ifneq (,$(findstring MSYS,$(PLATFORM)))
+    IS_WINDOWS := 1
+else ifeq ($(OS),Windows_NT)
+    IS_WINDOWS := 1
 endif
 
+export IS_WINDOWS
+
+ifdef IS_WINDOWS
+    # Configurație pentru Windows
+    LDFLAGS += -shared -static-libgcc -static-libstdc++ -lgdi32 -lcomctl32 -luser32
+    TARGET = ../../../$(PLUGIN_NAME).dll
+else
+    # Configurație pentru Linux
+    LDFLAGS += -shared -lX11
+    TARGET = ../../../$(PLUGIN_NAME).so
+endif
 
 # Numele pluginului este determinat de numele directorului curent
 PLUGIN_NAME = $(notdir $(CURDIR))

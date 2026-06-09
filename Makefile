@@ -39,15 +39,19 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 -include $(DEPS)
 
 
+# Detectăm sistemul de operare
+OS := $(shell uname -s)
+
 # Regula care compilează toate pluginurile gasite
 plugins:
 	@for dir in $(PLUGINS); do \
 		name=$$(basename $$(dirname $$dir)); \
-		case "$$name" in \
-			oli_opengl|oli_winui) \
-				echo "Skipping plugin $$name on this OS"; \
-				continue;; \
-		esac; \
+		if [ "$$name" = "oli_opengl" -o "$$name" = "oli_winui" ]; then \
+			if [ "$(OS)" = "Linux" ]; then \
+				echo "Skipping plugin $$name on Linux"; \
+				continue; \
+			fi; \
+		fi; \
 		echo "Building plugin in $$dir..."; \
 		$(MAKE) -C $$dir; \
 	done

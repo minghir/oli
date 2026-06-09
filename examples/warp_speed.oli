@@ -37,7 +37,7 @@ while true do
     if $warp > 5.0 then
         # Aceasta va crea un amestec interesant de culori
         # Poti comenta linia de mai jos daca vrei doar stelele curate
-        # set $v = FRACT_PLASMA($ptr, $w, $h, $t)
+        #set $v = FRACT_PLASMA($ptr, $w, $h, $t)
     endif
     
     set $v = CAN_PRESENT()

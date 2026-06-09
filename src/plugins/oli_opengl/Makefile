@@ -1,8 +1,8 @@
 # src/plugins/oli_canvas/Makefile
-ifeq ($(OS),Windows_NT)
-LIBS = -lopengl32 -lgdi32 -lglu32 -luser32
-else
-LIBS = -lX11
-endif
-# src/plugins/oli_sprites/Makefile
 include ../Makefile.plugin.common
+
+ifdef IS_WINDOWS
+    LIBS = -lopengl32 -lgdi32 -lglu32 -luser32
+else
+    LIBS = -lX11
+endif

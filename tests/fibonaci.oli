@@ -102,4 +102,5 @@ echo "Timp: " + $durata + " ms"
 
 echo ""
 echo "--- Test 3: Starea Cache-ului ---"
+dm
 input()

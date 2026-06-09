@@ -514,7 +514,9 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
         }
     }
     
-    
+    else if (cmdName == L"CONFIG") {
+        return;
+    }
 
     else if (cmdName == L"DEF") {
         if (sc.args.size() < 3) return;

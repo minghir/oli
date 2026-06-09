@@ -700,16 +700,36 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         };
 
     // GL_CIRCLE(x, y, radius, color)
+    // =================================================================
+    // 🔥 GL_CIRCLE (Corectat cu Izolator Screen-Space 2D)
+    // =================================================================
     registry[L"GL_CIRCLE"] = [](const std::vector<vData>& args) -> vData {
-        if (args.size() < 4) return vData{0LL};
+        if (args.size() < 4) return vData{ 0LL };
 
-        float cx  = (float)toDouble(args[0]);
-        float cy  = (float)toDouble(args[1]);
-        float r   = (float)toDouble(args[2]);
+        float cx = (float)toDouble(args[0]);
+        float cy = (float)toDouble(args[1]);
+        float r = (float)toDouble(args[2]);
         GLColor c((unsigned int)toDouble(args[3]));
 
-        glColor3f(c.r, c.g, c.b);
+        // 1. Salvăm starea 3D curentă și dezactivăm lumina/programele
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glDisable(GL_TEXTURE_2D);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_DEPTH_TEST);
+        glUseProgram(0);
 
+        // 2. Comutăm pe mod Pixel-Perfect Ortho (0,0 sus-stânga)
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0, g_GL.width, g_GL.height, 0, -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        // 3. Desenăm cercul liniar în spațiul ecranului
+        glColor3f(c.r, c.g, c.b);
         glBegin(GL_LINE_LOOP);
         for (int i = 0; i < 64; ++i) {
             float a = i * 0.09817477f; // 2π / 64
@@ -717,30 +737,63 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         }
         glEnd();
 
-        return vData{1LL};
-    };
+        // 4. Restaurăm complet starea anterioară pentru pipeline-ul 3D
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopAttrib();
 
-    // GL_FILL_CIRCLE(x, y, radius, color)
+        return vData{ 1LL };
+        };
+
+    // =================================================================
+    // 🔥 GL_FILL_CIRCLE (Corectat cu Izolator Screen-Space 2D)
+    // =================================================================
     registry[L"GL_FILL_CIRCLE"] = [](const std::vector<vData>& args) -> vData {
-        if (args.size() < 4) return vData{0LL};
+        if (args.size() < 4) return vData{ 0LL };
 
-        float cx  = (float)toDouble(args[0]);
-        float cy  = (float)toDouble(args[1]);
-        float r   = (float)toDouble(args[2]);
+        float cx = (float)toDouble(args[0]);
+        float cy = (float)toDouble(args[1]);
+        float r = (float)toDouble(args[2]);
         GLColor c((unsigned int)toDouble(args[3]));
 
-        glColor3f(c.r, c.g, c.b);
+        // 1. Salvăm starea 3D curentă
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glDisable(GL_TEXTURE_2D);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_DEPTH_TEST);
+        glUseProgram(0);
 
+        // 2. Comutăm pe mod Pixel-Perfect Ortho (0,0 sus-stânga)
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0, g_GL.width, g_GL.height, 0, -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        // 3. Desenăm discul plin (Triangle Fan)
+        glColor3f(c.r, c.g, c.b);
         glBegin(GL_TRIANGLE_FAN);
-            glVertex2f(cx, cy);
-            for (int i = 0; i <= 64; ++i) {
-                float a = i * 0.09817477f;
-                glVertex2f(cx + r * std::cos(a), cy + r * std::sin(a));
-            }
+        glVertex2f(cx, cy);
+        for (int i = 0; i <= 64; ++i) {
+            float a = i * 0.09817477f;
+            glVertex2f(cx + r * std::cos(a), cy + r * std::sin(a));
+        }
         glEnd();
 
-        return vData{1LL};
-    };
+        // 4. Restaurăm complet starea anterioară pentru pipeline-ul 3D
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopAttrib();
+
+        return vData{ 1LL };
+        };
 
     // GL_CLOSE()
     registry[L"GL_CLOSE"] = [](const std::vector<vData>&) -> vData {

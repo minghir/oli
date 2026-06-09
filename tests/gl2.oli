@@ -45,7 +45,10 @@ while $running == 1 do
 
     set $v = GL_PRESENT()
 
-    if KEY_STATE(27) == 1 then set $running = 0 endif
+    # 🔥 FORMAT CORECT MULTI-LINE PENTRU COMPILATOR
+    if KEY_STATE(27) == 1 then
+        set $running = 0
+    endif
 endwhile
 
 set $v = GL_CLOSE()

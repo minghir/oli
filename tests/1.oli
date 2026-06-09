@@ -1,0 +1,11 @@
+func calculeazaSuma($a, $b)
+    if $a > 0 then
+        return $a + $b
+	endif 
+endfunc
+
+set $a=1
+set $b = $a
+echo $b
+$b = "mimi"
+input()

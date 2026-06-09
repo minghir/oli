@@ -105,6 +105,15 @@
     <ClInclude Include="src\OliCompiler.hpp">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\OliSyntaxChecker.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OliSyntaxRules.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\OliSyntaxValidator.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="tests\factorial.oli">

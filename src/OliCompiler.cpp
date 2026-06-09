@@ -1,6 +1,7 @@
-#include "vDataSerialize.hpp"
+﻿#include "vDataSerialize.hpp"
 #include "OliCompiler.hpp"
 #include "OliCommandParser.hpp"
+#include "OliSyntaxValidator.hpp"
 #include "IOliEngine.hpp"
 #include "StringUtils.hpp"
 #include "PortTools.hpp"
@@ -143,16 +144,71 @@ OliChunk OliCompiler::compile(const std::wstring& source,
     const std::unordered_map<std::wstring, ByteCodeProcedure>& parentProcs,
     bool isSubBlock)
 {
-
+/*
     vOliKeyWords::populateNativeFunctions();
-
     if (!isSubBlock) {
         breakStack.clear();
         continueStack.clear();
-		this->locals.clear();
-		this->isInFunction = false;
+        this->locals.clear();
+        this->isInFunction = false;
     }
+*/
+    
+    if (!isSubBlock) {
+        // =================================================================
+        // 🔥 PIPELINE DE VALIDARE SINTACTICĂ CU ALERTE DINAMICE
+        // =================================================================
+        std::vector<SyntaxError> syntaxErrors;
+        OliSyntaxValidator validator;
 
+        if (!validator.validate(source, syntaxErrors)) {
+            bool hasCriticalErrors = false;
+
+                // Afișăm organizat mesajele direct prin metodele dedicate ale ConsoleManager
+                for (const auto& err : syntaxErrors) {
+
+                        // Asamblăm corpul mesajului (comun pentru toate nivelurile)
+                        std::wstring errMsg = L"Linia " + std::to_wstring(err.lineNumber) +
+                            L": " + err.message +
+                            L" -> Cod afectat: '" + trim(err.rawLine) + L"'";
+
+                        // Rutăm mesajul către macro-ul corect în funcție de severitate
+                        switch (err.level) {
+                        case DiagnosticLevel::OLI_ERROR:
+                            hasCriticalErrors = true; // S-a găsit o eroare blocantă!
+                            LOG_ERROR(L"❌ " + errMsg);
+                            break;
+
+                        case DiagnosticLevel::OLI_WARNING:
+                            LOG_WARNING(L"⚠️ " + errMsg);
+                            break;
+
+                        case DiagnosticLevel::OLI_NOTICE:
+                            LOG_INFO(L"ℹ️ " + errMsg); // Observațiile de stil le rutăm ca INFO
+                            break;
+                        }
+                    }
+
+                    // Dacă am avut cel puțin o eroare critică, abandonăm compilarea
+                    if (hasCriticalErrors) {
+                        LOG_FATAL(L"⛔ Compilarea a fost abandonată din cauza erorilor structurale.");
+                        OliChunk brokenChunk;
+                        brokenChunk.code.clear(); // Returnăm un chunk gol configurat corect pentru barieră
+                        return brokenChunk;
+                    }
+            }
+            
+
+            
+
+        // =================================================================
+        // RESETARE STIVE GLOBALE (Dacă am trecut de validare sau avem doar Warning-uri)
+        // =================================================================
+        breakStack.clear();
+        continueStack.clear();
+        this->locals.clear();
+        this->isInFunction = false;
+    }
     
     OliChunk chunk;
 

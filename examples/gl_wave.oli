@@ -5,7 +5,7 @@ plugin oli_opengl
 plugin oli_keyboard
 
 set $v = GL_INIT(1024, 768, "Oli 3D - Mouse Rotate")
-set $mesh = GL_LOAD_MODEL("examples/wavefront/cube.obj")
+set $mesh = GL_LOAD_MODEL("examples/wavefront/teddy.obj")
 
 # Variabile de rotație
 set $rotX = 0.0

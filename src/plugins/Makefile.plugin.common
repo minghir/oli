@@ -31,7 +31,8 @@ PLUGIN_NAME = $(notdir $(CURDIR))
 
 
 SRCS += $(wildcard *.cpp)
-OBJS = $(SRCS:.cpp=.o)
+OBJS ?= $(SRCS:.cpp=.o)
+#OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)
 

@@ -64,10 +64,24 @@ plugins:
 
 clean:
 	@echo "Cleaning up..."
+	# Șterge build-ul și executabilul principal
 	rm -rf $(BUILD_DIR) $(TARGET)
+	
+	# Șterge plugin-urile compilate
+	rm -rf plugins/*
+	
+	# Șterge fișierele reziduale din rădăcină
+	rm -f *.dll *.so *.exe *.json *.ppm
+	
+	# --- ADAUGĂ ASTA PENTRU ȘTERGERE RECURSIVĂ ---
+	# Caută și șterge toate fișierele .o și .d din orice subdirector
+	find . -type f \( -name "*.o" -o -name "*.d" \) -delete
+	
+	# Execută clean și în plugin-uri
 	@for dir in $(PLUGINS); do \
 		$(MAKE) -C $$dir clean; \
 	done
+	@echo "Cleanup complete."
 	
 	
 .PHONY: all clean plugins $(TARGET) 

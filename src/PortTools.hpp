@@ -9,7 +9,9 @@ namespace PortTools {
     // Definim un tip generic pentru handle-ul librăriei
 #ifdef _WIN32
     using LibHandle = void*; // HMODULE este în esență void*
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif
 #else
     using LibHandle = void*;
 #endif

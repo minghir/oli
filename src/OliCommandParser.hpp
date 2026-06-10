@@ -53,7 +53,7 @@ public:
             // --- 0. SCUTUL ANTI-ESCAPE (Rezolvă problema cu string-urile complexe) ---
             // =================================================================
             // Dacă întâlnim un backslash, îl adăugăm în token împreună cu următorul 
-            // caracter și incrementăm contorul 'i'. Asta consumă corect perechile \\ 
+            // caracter și incrementăm contorul 'i'. Asta consumă corect perechile  
             // sau \" și le împiedică să desincronizeze starea ghilimelelor de mai jos.
             if (c == L'\\') {
                 tok += c;

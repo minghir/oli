@@ -10,7 +10,7 @@ private:
 public:
     OliSyntaxValidator() {
         // Înregistrăm regulile în pipeline
-        /*
+        
         m_rules.push_back(std::make_unique<SetCommandRule>());
         m_rules.push_back(std::make_unique<StructureValidatorRule>());
         m_rules.push_back(std::make_unique<StrictVariableSyntaxRule>());
@@ -18,7 +18,7 @@ public:
         m_rules.push_back(std::make_unique<NestingBalanceRule>());
 		m_rules.push_back(std::make_unique<InvalidLHSRule>());
         m_rules.push_back(std::make_unique<StringQuotesRule>());
-        */
+        
 
     }
 

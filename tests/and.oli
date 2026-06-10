@@ -9,11 +9,11 @@ func tb_split($line)
     set $in_quotes = false
     set $len = LEN($line)
    
-    for $i = 0 to $len - 1 do
+for    $i = 0 to $len - 1 do
         set $char = SUBSTR($line, $i, 1)
         # Folosim codul ASCII 34 pentru ghilimele
         if ASC($char) == 34 then
-
+a = 10
             if $in_quotes == true then 
                 set $in_quotes = false 
             else 

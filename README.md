@@ -29,7 +29,7 @@ oli (Oli Engine & Scripting Language) 🚀
 ### Building the Project
 Clone the repository and compile using your preferred compiler suite or the provided Makefile:
 
-```bash
+
 git clone [https://github.com/minghir/oli.git](https://github.com/minghir/oli.git)
 cd oli
 make all
@@ -41,7 +41,7 @@ make all
 - `readline` library (for the CLI interface on Linux).
 
 ### Building on Linux
-```bash
+
 git clone https://github.com/minghir/oli.git
 cd oli
 make all
@@ -56,30 +56,19 @@ Note: For deep recursion on Windows x64, it is recommended to increase the Stack
 📖 Language Example: Fibonacci with Memoization
 
 
-# Initialize global cache
-set $memo = []
+Code snippet
+set @memo = {}
 
 func FIBO_MEMO($n)
-    # Base cases
-    if $n <= 1 then 
-        return $n 
-    endif
+    if $n <= 1 then return $n endif
+    if @memo[$n] != NULL then return @memo[$n] endif
 
-    # Check cache
-    if @memo[$n] != NULL then 
-        return @memo[$n] 
-    endif
-
-    # Recursive step
     set $res = FIBO_MEMO($n - 1) + FIBO_MEMO($n - 2)
-    
-    # Store in global cache
     set @memo[$n] = $res
-    
     return $res
 endfunc
 
-echo "Fibonacci(50) Result: " + FIBO_MEMO(50)
+echo "Fibonacci(50): " .. FIBO_MEMO(50)
 
 🏗️ Project Structure
 src/ - Core engine logic (vOliEngine, Parser, AST).
@@ -88,8 +77,6 @@ oli_plugin/ - External plugin examples for command extensions.
 
 🚀 Roadmap
 [ ] BigInt Support: Prevent integer overflow for numbers exceeding 64-bit limits.
-
-[ ] Object Oriented Programming: Implementation of "Blueprints" (Classes and Objects).
 
 [ ] Integrated Debugger: Detailed traceback and step-by-step execution.
 

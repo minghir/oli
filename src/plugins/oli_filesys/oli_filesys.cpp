@@ -165,18 +165,23 @@ void RegisterFileSystemFunctions(std::unordered_map<std::wstring, std::function<
         return result;
         };
     // =================================================================
-        // 🔥 NOU: ȘTERGERE FIZICĂ FIȘIER (ANTI-RUN VECHI)
+        // 🔥 NOU: ȘTERGERE FIZICĂ FIȘIER (PORTABIL: Windows + Linux)
         // =================================================================
     registry[L"FS_DELETE_FILE"] = [](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData(0LL);
 
         std::wstring filePath = args[0].toWString();
 
-        // DeleteFileW este o funcție nativă Win32 care șterge un fișier de pe disc
-        // Returnează true dacă fișierul a fost șters cu succes (sau false dacă nu exista/era blocat)
+#if defined(_WIN32) || defined(_WIN64)
+        // Windows: DeleteFileW
         BOOL success = DeleteFileW(filePath.c_str());
-
         return vData(success ? 1LL : 0LL);
+#else
+        // Linux/Unix: unlink
+        std::string narrowPath(filePath.begin(), filePath.end());
+        int result = unlink(narrowPath.c_str());
+        return vData(result == 0 ? 1LL : 0LL);
+#endif
         };
 }
 

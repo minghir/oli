@@ -46,29 +46,41 @@ git clone https://github.com/minghir/oli.git
 cd oli
 make all
 ./oli
+```
 
-
-Building on Windows
-You can use MinGW-w64 with make or include the source files in a Visual Studio project.
+### Building on Windows
+You can use MinGW-w64 with `make` or include the source files in a Visual Studio project.
 
 Note: For deep recursion on Windows x64, it is recommended to increase the Stack Reserve Size to 8MB in the Linker settings to prevent Stack Overflow.
 
 📖 Language Example: Fibonacci with Memoization
 
-
-Code snippet
-set @memo = {}
+```text
+# Initialize global cache
+set $memo = []
 
 func FIBO_MEMO($n)
-    if $n <= 1 then return $n endif
-    if @memo[$n] != NULL then return @memo[$n] endif
+    # Base cases
+    if $n <= 1 then 
+        return $n 
+    endif
 
+    # Check cache
+    if @memo[$n] != NULL then 
+        return @memo[$n] 
+    endif
+
+    # Recursive step
     set $res = FIBO_MEMO($n - 1) + FIBO_MEMO($n - 2)
+    
+    # Store in global cache
     set @memo[$n] = $res
+    
     return $res
 endfunc
 
-echo "Fibonacci(50): " .. FIBO_MEMO(50)
+echo "Fibonacci(50) Result: " + FIBO_MEMO(50)
+```
 
 🏗️ Project Structure
 src/ - Core engine logic (vOliEngine, Parser, AST).

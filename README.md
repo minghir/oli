@@ -57,29 +57,18 @@ Note: For deep recursion on Windows x64, it is recommended to increase the Stack
 
 ```text
 # Initialize global cache
-set $memo = []
+set @memo = {}
 
 func FIBO_MEMO($n)
-    # Base cases
-    if $n <= 1 then 
-        return $n 
-    endif
+    if $n <= 1 then return $n endif
+    if @memo[$n] != NULL then return @memo[$n] endif
 
-    # Check cache
-    if @memo[$n] != NULL then 
-        return @memo[$n] 
-    endif
-
-    # Recursive step
     set $res = FIBO_MEMO($n - 1) + FIBO_MEMO($n - 2)
-    
-    # Store in global cache
     set @memo[$n] = $res
-    
     return $res
 endfunc
 
-echo "Fibonacci(50) Result: " + FIBO_MEMO(50)
+echo "Fibonacci(50): " .. FIBO_MEMO(50)
 ```
 
 🏗️ Project Structure

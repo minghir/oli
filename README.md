@@ -3,16 +3,36 @@
 
 
 # oli (One Line Interpreter) 🚀
+oli (Oli Engine & Scripting Language) 🚀
 
-**oli** is a lightweight, modular, and extensible scripting engine written in C++20. Originally conceived as a "One Line Interpreter," it has evolved into a robust language capable of handling complex data structures, deep recursion with memoization, and external extensibility via plugins.
+**oli** is a fast, lightweight, and extensible bytecode-compiled scripting language and engine written in C++20. Originally conceived as a minimalist interpreter, it has evolved into a robust ecosystem featuring an efficient Virtual Machine (VM), object-oriented programming (OOP) structures, dynamic native plugin architectures, and its own standalone development environment (**Oli IDE**).
+
+---
 
 ## ✨ Features
-- **vData System**: Flexible type handling (INT, FLOAT, STRING, BOOL, ARRAY, MAP) powered by `std::variant`.
-- **Native Memoization**: Built-in support for optimizing recursive algorithms (e.g., calculating Fibonacci(100) in milliseconds).
-- **Advanced Scoping**: Local and global variable management via a structured Call Stack.
-- **AST-Driven**: Robust expression and logic evaluation using an Abstract Syntax Tree.
-- **Plugin System**: Extend core functionality through dynamic libraries (`.dll` on Windows / `.so` on Linux).
-- **Cross-Platform**: Fully functional on both Windows (x86/x64) and Linux.
+
+- **Bytecode Virtual Machine**: High-performance execution engine utilizing optimized bytecode instructions instead of direct AST evaluation, rendering heavy execution loops in milliseconds.
+- **Dynamic Type System (`vData`)**: Flexible data handling (INT, FLOAT, STRING, BOOL, ARRAY, MAP) wrapped seamlessly using `std::variant` with smart pointer resolution (`getTrueData()`).
+- **Object-Oriented Programming**: First-class support for blueprint declarations (`def class`), single inheritance (`extends`), and dynamic instance context execution (`$this`).
+- **Auto-Balancing Stack**: Advanced VM compiler fallback mechanisms that automatically balance the expression stack on passive native identifiers—enabling clean JavaScript/Python-like side-effect function calls without forcing dummy assignments.
+- **Dynamic Plugin Architecture**: Highly extensible via external native modules (`oli_system`, `oli_filesys`, `oli_compiler`, `oli_winui`) loaded dynamically (`.dll` on Windows / `.so` on Linux).
+- **Oli IDE**: A tailored, multi-tab integrated development environment built entirely on top of the `oli_winui` native Win32 framework, featuring safe execution isolation, intelligent multi-tab tracking, line numbering (Gutter), native context menus (smart line commenting), and robust cross-cutting shortcut binds (`Ctrl+G`, `Ctrl+S`, `Ctrl+W`).
+
+---
+
+## 🛠️ Installation & Building
+
+### Prerequisites
+- A C++20 compliant compiler (MSVC 2019+, GCC 10+, or Clang 10+).
+- Windows SDK / Common Controls library (for GUI and components).
+
+### Building the Project
+Clone the repository and compile using your preferred compiler suite or the provided Makefile:
+
+```bash
+git clone [https://github.com/minghir/oli.git](https://github.com/minghir/oli.git)
+cd oli
+make all
 
 ## 🛠️ Installation
 

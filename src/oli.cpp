@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
 
         // 1. VERSION
         if (cmd == "--version" || cmd == "-v") {
-            std::wcout << L"Oli Engine v0.1\nBuild Date: " << __DATE__ << std::endl;
+            std::wcout << L"Oli Engine v0.2\nBuild Date: " << __DATE__ << std::endl;
             return 0;
         }
 

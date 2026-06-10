@@ -1,4 +1,4 @@
-config win_app 0
+config win_app 1
 plugin oli_system
 plugin oli_filesys
 plugin oli_compiler
@@ -180,7 +180,7 @@ func menu_exit_click()
 endfunc
 
 func menu_about_click()
-	set $about_text = "Oli Engine v0.1"
+	set $about_text = "Oli Engine v0.2"
 	SHOW_MESSAGE("About oli:",$about_text)
 endfunc
 

@@ -12,6 +12,7 @@ include ("include\winui.oli")
 $file = "" 
 $oli_path = "oli.exe"
 set $activeCodeView = null
+set @open_files = {} # 🔥 Harta care reține evidența: [Cale_Fișier : ID_Tab]
 
 # Funcție de sincronizare: Află ce tab e pe ecran și actualizează contextul IDE-ului
 func UPDATE_ACTIVE_CONTEXT()
@@ -153,6 +154,8 @@ func menu_new_click()
 		$newView.set_font_size(14)
         
         $tabs.add_tab(FS_GET_FILENAME(@file), $newTabId)
+		set @open_files[@file] = $newTabId
+		
         $newView.set_syntax_path("./olide/syntaxes/oli.xml")
         $newView.set_text("")
         $tabCount = $tabs.get_prop("tab_count")
@@ -278,6 +281,12 @@ func on_tab_close_requested($tab_id)
     # Dacă fișierul nu e modificat, sau userul a ales "NO", sau a ales "YES" și s-a salvat cu succes:
     UI_CALL_METHOD("main_tabs", "remove_tab_page_by_id", $tab_id)
     
+	if $cale_originala != "" then
+        unset(@open_files[$cale_originala])
+    else
+        unset(@open_files["untitled.oli"])
+    endif
+	
     # Re-sincronizăm imediat contextul IDE-ului pentru a vedea ce fișier a rămas activ pe ecran
     UPDATE_ACTIVE_CONTEXT()
     echo "[IDE] Tab-ul " .. $tab_id .. " a fost șters."
@@ -486,22 +495,56 @@ func menu_open_click()
     if $path != "" then
         $newTabId = "tab_page_" .. FS_GET_FILENAME($path)
         
-        $alreadyOpen = $tabs.select_tab_by_id($newTabId)
-        if $alreadyOpen == true then
-            echo "[IDE] Fișierul '" .. FS_GET_FILENAME($path) .. "' este deja deschis. Mut focusul pe el!"
+        # --- LOGICĂ CORECTATĂ: Fișierul este deja deschis ---
+        if @open_files[$path] != NULL then
+            $existingTabId = @open_files[$path]
+            $nume_curat = FS_GET_FILENAME($path)
+            
+            # 1. Ancorăm un control temporar pe ID-ul tab-ului existent pentru a-i verifica starea
+            set $checkExistingView = new("WinCodeView")
+            $checkExistingView.id = $existingTabId
+            $is_modified = $checkExistingView.get_prop("modified")
+            
+            # 2. Dacă a fost modificat, întrebăm utilizatorul ce dorește să facă
+            if $is_modified == true then
+                $raspuns = UI_SHOW_QUESTION("Fișier deja deschis", "Fișierul '" .. $nume_curat .. "' are modificări nesalvate.\nDorești să îl redeschizi pierzând toate modificările curente?")
+                
+                if $raspuns == "YES" then
+                    # Utilizatorul a acceptat: Citim fișierul curat de pe disc și resetăm starea
+                    $checkExistingView.set_text(READFILE($path))
+                    $checkExistingView.set_prop("modified", false)
+                    
+                    # Curățăm asteriscul (*) din titlul tab-ului
+                    $tabs.set_title_by_id($existingTabId, $nume_curat)
+                    echo "[IDE] Fișierul '" .. $nume_curat .. "' a fost reîncărcat de pe disc. Modificările nesalvate au fost pierdute."
+                else
+                    # Utilizatorul a ales NO / CANCEL: Nu reîncărcăm nimic, doar mutăm focusul pe el
+                    echo "[IDE] Redeschidere anulată. Mut doar focusul pe tab-ul existent."
+                endif
+            else
+                # Fișierul e deja deschis, dar NU este modificat -> Doar anunțăm în consolă
+                echo "[IDE] Fișierul '" .. $nume_curat .. "' este deja deschis și este identic cu cel de pe disc."
+            endif
+            
+            # Indiferent dacă a reîncărcat sau nu, aducem tab-ul în prim-plan
+            $tabs.select_tab_by_id($existingTabId)
             UPDATE_ACTIVE_CONTEXT()
             return 
         endif
-        
+
+        # --- LOGICĂ DESCHIDERE FIȘIER NOU (Dacă nu era deja deschis) ---
         set $newView = new("WinCodeView")
         $newView.init($newTabId, "main_tabs", 0, 0, 0, 0)
-		$newView.bind("modified", "on_file_modified")
+        $newView.bind("modified", "on_file_modified")
         
         $newView.set_width_mode("FILL")
         $newView.set_height_mode("FILL")
         $newView.set_prop("file_path", $path)
         
         $tabs.add_tab(FS_GET_FILENAME($path) .. " ", $newTabId)
+        
+        # Înregistrăm tab-ul în evidența fișierelor active
+        set @open_files[$path] = $newTabId
         
         $newView.set_syntax_path("./olide/syntaxes/oli.xml")
         $newView.set_text(READFILE($path))
@@ -515,19 +558,23 @@ func menu_open_click()
 endfunc
 
 func init_first_tab()
-	$newTabId = "tab_page_" .. "untitled.oli"
-	set $newView = new("WinCodeView")
+    $newTabId = "tab_page_" .. "untitled.oli"
+    set $newView = new("WinCodeView")
     $newView.init($newTabId, "main_tabs", 0, 0, 0, 0)
-	
-	$newView.bind("modified", "on_file_modified")
-	
+    
+    $newView.bind("modified", "on_file_modified")
+    
     $newView.set_width_mode("FILL")
     $newView.set_height_mode("FILL")
-	$newView.set_syntax_path("./olide/syntaxes/oli.xml")
-	$tabs.add_tab("untitled.oli", $newTabId)
-	$newView.set_font_size(12)
-	UPDATE_ACTIVE_CONTEXT()
-	$tabs.refresh()
+    $newView.set_syntax_path("./olide/syntaxes/oli.xml")
+    $tabs.add_tab("untitled.oli", $newTabId)
+    
+    # 🔥 Înregistrăm tab-ul de pornire în hartă
+    set @open_files["untitled.oli"] = $newTabId
+    
+    $newView.set_font_size(12)
+    UPDATE_ACTIVE_CONTEXT()
+    $tabs.refresh()
 endfunc
 
 # =================================================================
@@ -545,6 +592,17 @@ func on_tab_changed()
     endif
 endfunc
 $tabs.bind("tab_changed", "on_tab_changed")
+
+
+
+func menu_goto_click()
+    UPDATE_ACTIVE_CONTEXT()
+    if @activeCodeView != null then
+        # Setăm proprietatea specială pe care C++ o va intercepta
+        @activeCodeView.set_prop("trigger_goto_dialog", true)
+    endif
+endfunc
+$win.bind("menu_goto", "menu_goto_click")
 
 init_first_tab()
 $win.show()  

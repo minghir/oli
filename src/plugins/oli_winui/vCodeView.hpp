@@ -79,4 +79,9 @@ public:
 
       bool isModified() const { return m_isDirty; }
       void setModified(bool modified) { m_isDirty = modified; }
+
+      void gotoLine(int lineNum);
+      void showGoToLineDialog();
+      int promptLineWindow(HWND hParent);
+     // void showGoToLineDialog();
 };

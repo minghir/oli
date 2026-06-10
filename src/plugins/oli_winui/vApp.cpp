@@ -91,6 +91,12 @@ int vApp::run(int nCmdShow) {
                         this->getEventDispatcher().dispatch("menu_compile", "fereastra_principala");
                         continue;
                     }
+                    // 🔍 CTRL + G -> Go to Line (Nou adăugat!) 🔥
+                    else if (msg.wParam == 'G' || msg.wParam == 'g') {
+                        ConsoleManager::getInstance().log(L"[vApp::run] Scurtătură: CTRL + G (Go to Line)");
+                        this->getEventDispatcher().dispatch("menu_goto", "fereastra_principala");
+                        continue;
+                    }
                 }
                 // 2. 🎹 SCURTĂTURI CARE CONȚIN DOAR TASTA ALT (FĂRĂ CTRL)
                 else if (altPressed) {

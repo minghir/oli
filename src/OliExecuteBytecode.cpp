@@ -655,15 +655,16 @@ case OpCode::OP_SET_INDIRECT: {
             }
             else if (rA.isInt() && rB.isInt()) {
                 stack.push_back(vData(rA.toInt() + rB.toInt()));
-            }else if (rA.isNumber() && rB.isNumber()) {
-				stack.push_back(vData(rA.toInt() + rB.toInt()));
-			}
+            }
+            //else if (rA.isNumber() && rB.isNumber()) { //poate trebuie un flag pentru precize mai mare la intregi
+			//	stack.push_back(vData(rA.toInt() + rB.toInt()));
+			//}
             else {
                 stack.push_back(vData(vDataToDouble(rA) + vDataToDouble(rB)));
             }
             break;
         }
-
+        /*
         case OpCode::OP_SUB: {
             vData b = stack.back(); stack.pop_back();
             vData a = stack.back(); stack.pop_back();
@@ -687,17 +688,94 @@ case OpCode::OP_SET_INDIRECT: {
             stack.push_back(vData(vDataToDouble(a) / valB));
             break;
         }
+        */
+        case OpCode::OP_SUB: {
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
 
-                           // --- 3. BITWISE & LOGICĂ ---
+            // 🔥 FIX CRITIC: Rezolvăm pointerii/referințele înainte de orice verificare!
+            vData rA = a.getTrueData();
+            vData rB = b.getTrueData();
+
+            if (rA.isInt() && rB.isInt()) {
+                stack.push_back(vData(rA.toInt() - rB.toInt())); // Folosește .toInt() safe
+            }
+            else {
+                stack.push_back(vData(vDataToDouble(rA) - vDataToDouble(rB)));
+            }
+            break;
+        }
+
+        case OpCode::OP_MUL: {
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
+
+            // 🔥 FIX CRITIC: Rezolvăm pointerii/referințele
+            vData rA = a.getTrueData();
+            vData rB = b.getTrueData();
+
+            // Păstrăm înmulțirea între întregi ca INT (important pentru indici și culori hex)
+            if (rA.isInt() && rB.isInt()) {
+                stack.push_back(vData(rA.toInt() * rB.toInt()));
+            }
+            else {
+                stack.push_back(vData(vDataToDouble(rA) * vDataToDouble(rB)));
+            }
+            break;
+        }
+
+        case OpCode::OP_DIV: {
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
+
+            // 🔥 FIX CRITIC: Rezolvăm pointerii/referințele
+            vData rA = a.getTrueData();
+            vData rB = b.getTrueData();
+
+            double valB = vDataToDouble(rB);
+            if (valB == 0) {
+                LOG_ERROR(L"Runtime Error: Div by zero!");
+                this->m_executionStatus = OliStatus::ERR;
+                return;
+            }
+
+            if (rA.isInt() && rB.isInt()) {
+                stack.push_back(vData(rA.toInt() / rB.toInt())); // Împărțire între întregi
+            }
+            else {
+                stack.push_back(vData(vDataToDouble(rA) / valB));
+            }
+            break;
+        }                   // --- 3. BITWISE & LOGICĂ ---
         case OpCode::OP_BAND: { vData b = stack.back(); stack.pop_back(); vData a = stack.back(); stack.pop_back(); stack.push_back(vData(a.getTrueData().toInt() & b.getTrueData().toInt())); break; }
         case OpCode::OP_BOR: { vData b = stack.back(); stack.pop_back(); vData a = stack.back(); stack.pop_back(); stack.push_back(vData(a.getTrueData().toInt() | b.getTrueData().toInt())); break; }
         case OpCode::OP_LOGICAL_NOT: { vData a = stack.back(); stack.pop_back(); stack.push_back(vData(!vDataToBool(a))); break; }
 
-                                   // --- 4. COMPARAȚIE ---
+        /*                           // --- 4. COMPARAȚIE ---
         case OpCode::OP_EQUAL: {
             vData b = stack.back(); stack.pop_back();
             vData a = stack.back(); stack.pop_back();
             stack.push_back(vData(a == b));
+            break;
+        }
+        */
+        case OpCode::OP_EQUAL: {
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
+
+            // 🔥 FIX: Extragem valorile reale din spatele pointerilor/variabilelor
+            vData rA = a.getTrueData();
+            vData rB = b.getTrueData();
+
+            if (rA.isInt() && rB.isInt()) {
+                stack.push_back(vData(rA.toInt() == rB.toInt()));
+            }
+            else if (rA.isString() && rB.isString()) {
+                stack.push_back(vData(rA.toWString() == rB.toWString()));
+            }
+            else {
+                stack.push_back(vData(vDataToDouble(rA) == vDataToDouble(rB)));
+            }
             break;
         }
         case OpCode::OP_GREATER: {
@@ -706,12 +784,31 @@ case OpCode::OP_SET_INDIRECT: {
             stack.push_back(vData(vDataToDouble(a) > vDataToDouble(b)));
             break;
         }
+         /*
         case OpCode::OP_LESS: {
             vData b = stack.back(); stack.pop_back();
             vData a = stack.back(); stack.pop_back();
             stack.push_back(vData(vDataToDouble(a) < vDataToDouble(b)));
             break;
         }
+        */
+        case OpCode::OP_LESS: {
+            vData b = stack.back(); stack.pop_back();
+            vData a = stack.back(); stack.pop_back();
+
+            // 🔥 FIX: Extragem valorile reale
+            vData rA = a.getTrueData();
+            vData rB = b.getTrueData();
+
+            if (rA.isInt() && rB.isInt()) {
+                stack.push_back(vData(rA.toInt() < rB.toInt()));
+            }
+            else {
+                stack.push_back(vData(vDataToDouble(rA) < vDataToDouble(rB)));
+            }
+            break;
+        }
+        
 
                             // --- 5. CONTROL FLOW ---
         case OpCode::OP_JUMP: {

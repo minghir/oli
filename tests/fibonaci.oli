@@ -66,10 +66,10 @@ func FIBO_MEMO($n)
     endif
 
     if @memo[$n] != NULL then 
-        return @memo[$n] 
+        return @memo[$n]
     endif
 
-    set $res = FIBO_MEMO($n - 1) + FIBO_MEMO($n - 2)
+    set $res = int(FIBO_MEMO($n - 1)) + int(FIBO_MEMO($n - 2))
     set @memo[$n] = $res
     
     return $res
@@ -93,11 +93,11 @@ echo "Valoare globala dupa apel: " + $test_global
 echo ""
 echo "--- Test 2: Fibonacci cu Memoization ---"
 set $start = TICKS()
-set $r = FIBO_MEMO(100)
+set $r = FIBO_MEMO(92)
 set $end = TICKS()
 
 set $durata = $end - $start
-echo "F(100) = " + $r
+echo "F(92) = " + $r
 echo "Timp: " + $durata + " ms"
 
 echo ""

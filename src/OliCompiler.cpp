@@ -500,6 +500,11 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
     // Exemplu: SET x = 10
     std::wstring cmdName = to_upper(sc.name);
     LOG_DEBUG(L"[DEBUG] compileStatement primeste: " + cmdName + L" | Valid: " + (sc.isValid ? L"DA" : L"NU"));
+
+    if (cmdName == L"CONFIG") {
+        return;
+    }
+
     if (cmdName == L"SET") {
         if (sc.args.empty()) return;
 
@@ -514,9 +519,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
         }
     }
     
-    else if (cmdName == L"CONFIG") {
-        return;
-    }
+    
 
     else if (cmdName == L"DEF") {
         if (sc.args.size() < 3) return;
@@ -1654,6 +1657,7 @@ void OliCompiler::emitLoadOrConstant(const std::wstring& arg, OliChunk& chunk) {
     }
 
     // --- 3. LITERAL NUMĂR ---
+    /*
     if (std::iswdigit(normalizedArg[0]) || (normalizedArg.size() > 1 && normalizedArg[0] == L'-' && std::iswdigit(normalizedArg[1]))) {
         try {
             double val = std::stod(normalizedArg);
@@ -1664,7 +1668,29 @@ void OliCompiler::emitLoadOrConstant(const std::wstring& arg, OliChunk& chunk) {
         }
         return;
     }
-
+    */
+    // --- 3. LITERAL NUMĂR ---
+    if (std::iswdigit(normalizedArg[0]) || (normalizedArg.size() > 1 && normalizedArg[0] == L'-' && std::iswdigit(normalizedArg[1]))) {
+        try {
+            // Verificăm dacă string-ul conține un punct zecimal
+            if (normalizedArg.find(L'.') != std::wstring::npos) {
+                // Are punct -> Este un număr cu virgulă (FLOAT / DOUBLE)
+                double val = std::stod(normalizedArg);
+                LOG_DEBUG(L"[EMIT_LOAD] Constantă numerică (FLOAT): " + std::to_wstring(val));
+                emitConstant(vData(val), chunk, 0);
+            }
+            else {
+                // NU are punct -> Este un număr întreg pur (INT / int64_t)
+                long long val = std::stoll(normalizedArg, nullptr, 0);
+                LOG_DEBUG(L"[EMIT_LOAD] Constantă numerică (INT): " + std::to_wstring(val));
+                emitConstant(vData(val), chunk, 0);
+            }
+        }
+        catch (...) {
+            LOG_ERROR(L"[EMIT_LOAD] Eroare critică la conversia numărului: " + normalizedArg);
+        }
+        return;
+    }
     // --- 4. DEREFERENȚIERE POINTER (*$ptr) ---
     if (normalizedArg[0] == L'*') {
         LOG_DEBUG(L"[EMIT_LOAD] Dereferențiere detectată (*).");
@@ -2080,7 +2106,7 @@ void OliCompiler::generateFromAST(ASTPtr node, OliChunk& chunk, const std::unord
             chunk.addByte((uint8_t)realArgs.size(), 0);
             return;
         }
-
+        
         // =========================================================================
         // 🔥 RAMURĂ APEL DINAMIC PUR (ex: $var()("MERGE") sau $f($val))
         // =========================================================================

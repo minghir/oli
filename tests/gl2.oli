@@ -7,14 +7,14 @@ plugin oli_math
 
 set $v = GL_INIT(900, 700, "Oli Engine - Quantum Pulse Rings")
 
-set $t = 0.0
+set $t = 0.01
 set $running = 1
 
 while $running == 1 do
     set $v = GL_CLEAR(0xFF0000)
 
     set $t = $t + 0.04
-
+echo $t
     # --- CERCURI PULSANTE ---
     set $i = 0
     while $i < 6 do
@@ -27,7 +27,7 @@ while $running == 1 do
 
     # --- CERC CENTRAL PLIN ---
     set $pulse = 30 + 10 * SIN($t * 5)
-    set $v = GL_FILL_CIRCLE(450, 350, $pulse, 0xFF5500)
+     GL_FILL_CIRCLE(450, 350, $pulse, 0xFF5500)
 
     # --- PARTICULE ORBITALE ---
     set $k = 0

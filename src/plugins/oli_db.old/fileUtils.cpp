@@ -226,86 +226,17 @@
 #include <locale>
 #include <codecvt>
 
-    std::wstring utf8ToWstring(const std::string& s)
-    {
-#ifdef _WIN32
-        int size_needed = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), NULL, 0);
-        std::wstring result(size_needed, 0);
-        MultiByteToWideChar(CP_UTF8, 0, s.c_str(), (int)s.size(), &result[0], size_needed);
-        return result;
-#else
-        std::wstring out;
-        out.reserve(s.size());
+std::wstring utf8ToWstring(const std::string& utf8)
+{
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
+    return conv.from_bytes(utf8);
+}
 
-        uint32_t codepoint = 0;
-        int bytes = 0;
-
-        for (unsigned char c : s) {
-            if (c <= 0x7F) {
-                out.push_back((wchar_t)c);
-            }
-            else if ((c >> 5) == 0x6) {
-                codepoint = c & 0x1F;
-                bytes = 1;
-            }
-            else if ((c >> 4) == 0xE) {
-                codepoint = c & 0x0F;
-                bytes = 2;
-            }
-            else if ((c >> 3) == 0x1E) {
-                codepoint = c & 0x07;
-                bytes = 3;
-            }
-            else if ((c >> 6) == 0x2) {
-                codepoint = (codepoint << 6) | (c & 0x3F);
-                if (--bytes == 0)
-                    out.push_back((wchar_t)codepoint);
-            }
-        }
-
-        return out;
-#endif
-    }
-
-
-    std::string wstringToUtf8(const std::wstring& w)
-    {
-#ifdef _WIN32
-        int size_needed = WideCharToMultiByte(CP_UTF8, 0, w.c_str(), (int)w.size(), NULL, 0, NULL, NULL);
-        std::string result(size_needed, 0);
-        WideCharToMultiByte(CP_UTF8, 0, w.c_str(), (int)w.size(), &result[0], size_needed, NULL, NULL);
-        return result;
-#else
-        std::string out;
-        out.reserve(w.size() * 4);
-
-        for (wchar_t wc : w) {
-            uint32_t c = (uint32_t)wc;
-
-            if (c <= 0x7F) {
-                out.push_back((char)c);
-            }
-            else if (c <= 0x7FF) {
-                out.push_back((char)(0xC0 | (c >> 6)));
-                out.push_back((char)(0x80 | (c & 0x3F)));
-            }
-            else if (c <= 0xFFFF) {
-                out.push_back((char)(0xE0 | (c >> 12)));
-                out.push_back((char)(0x80 | ((c >> 6) & 0x3F)));
-                out.push_back((char)(0x80 | (c & 0x3F)));
-            }
-            else {
-                out.push_back((char)(0xF0 | (c >> 18)));
-                out.push_back((char)(0x80 | ((c >> 12) & 0x3F)));
-                out.push_back((char)(0x80 | ((c >> 6) & 0x3F)));
-                out.push_back((char)(0x80 | (c & 0x3F)));
-            }
-        }
-
-        return out;
-#endif
-    }
-
+std::string wstringToUtf8(const std::wstring& wstr)
+{
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
+    return conv.to_bytes(wstr);
+}
 
 
     // Funcție pentru citirea unui fișier CSV în std::vector<std::wstring>

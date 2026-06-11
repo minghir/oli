@@ -8,4 +8,4 @@ set $a=1
 set $b = $a
 echo $b
 $b = "mimi"
-input()
+input("Press enter to continue")

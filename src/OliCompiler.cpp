@@ -1459,14 +1459,6 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
                 return;
             }
 
-                // Debug: afișăm argumentele FOR și indici pentru diagnostic
-                std::wstring dbgArgs;
-                for (size_t ai = 0; ai < sc.args.size(); ++ai) dbgArgs += L"[" + sc.args[ai] + L"]";
-                LOG_DEBUG(L"[FOR DEBUG] sc.args: " + dbgArgs + L" toIdx=" + std::to_wstring(toIdx) + L" byIdx=" + std::to_wstring(byIdx) + L" doIdx=" + std::to_wstring(doIdx));
-
-            // --- SETUP STIVE ---
-            breakStack.push_back({});
-            continueStack.push_back({});
             size_t currentStackLevel = continueStack.size();
 
             std::wstring varName = sc.args[0];
@@ -1493,6 +1485,18 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
             // push step (dacă există) sau 1
             if (byIdx != -1) {
                 std::vector<std::wstring> stepTokens(sc.args.begin() + byIdx + 1, sc.args.begin() + doIdx);
+                
+                // Avertisment dacă step e literal 0
+                std::wstring stepExpr;
+                for (const auto& t : stepTokens) stepExpr += trim(t);
+                stepExpr = trim(stepExpr);
+                try {
+                    double v = std::stod(stepExpr);
+                    if (v == 0.0) {
+                        LOG_WARNING(L"FOR loop cu `by 0` va crea o buclă infinită.");
+                    }
+                } catch (...) { /* nu putem evalua literal la compilare */ }
+                
                 ASTPtr stepAST = OliExpressionParser(stepTokens).parse();
                 if (stepAST) generateFromAST(stepAST, chunk, externalProcs);
                 else emitConstant(vData(1.0), chunk, 0);

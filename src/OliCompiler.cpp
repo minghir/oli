@@ -1459,6 +1459,9 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
                 return;
             }
 
+            // --- SETUP STIVE ---
+            breakStack.push_back({});
+            continueStack.push_back({});
             size_t currentStackLevel = continueStack.size();
 
             std::wstring varName = sc.args[0];

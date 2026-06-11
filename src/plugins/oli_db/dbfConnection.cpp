@@ -897,7 +897,8 @@ vConTable dbfConnection::loadTable(const QueryTable& tableInfo) {
 
     // 1. Pregătim numele și calea
     std::wstring fileName = ensureExtension(tableInfo.name, L".dbf");
-    std::wstring fullPath = m_filePath + (m_filePath.back() == L'\\' ? L"" : L"\\") + fileName;
+    //std::wstring fullPath = m_filePath + (m_filePath.back() == L'\\' ? L"" : L"\\") + fileName;
+    std::wstring fullPath = m_filePath + (m_filePath.back() == L'/' ? L"" : L"/") + fileName;
 
     std::ifstream file{ std::filesystem::path(fullPath), std::ios::binary };
     //std::fstream file(std::filesystem::path(fullPath), std::ios::binary );

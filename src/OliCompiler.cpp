@@ -1459,6 +1459,11 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
                 return;
             }
 
+                // Debug: afișăm argumentele FOR și indici pentru diagnostic
+                std::wstring dbgArgs;
+                for (size_t ai = 0; ai < sc.args.size(); ++ai) dbgArgs += L"[" + sc.args[ai] + L"]";
+                LOG_DEBUG(L"[FOR DEBUG] sc.args: " + dbgArgs + L" toIdx=" + std::to_wstring(toIdx) + L" byIdx=" + std::to_wstring(byIdx) + L" doIdx=" + std::to_wstring(doIdx));
+
             // --- SETUP STIVE ---
             breakStack.push_back({});
             continueStack.push_back({});
@@ -1473,13 +1478,34 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
 
             size_t loopStart = chunk.code.size();
 
-            // 3. Condiție de ieșire ($i > limitVal)
+            // 3. Condiție de ieșire (evaluată la runtime):
+            //    dacă ((i - limit) * step) > 0 -> ieșim.
+            // Emităm: load i, load limit, OP_SUB, load step (sau 1), OP_MUL, OP_CONSTANT 0, OP_GREATER, OP_JUMP_IF_TRUE
             emitLoadOrConstant(varName, chunk);
             int limitEnd = (byIdx != -1) ? byIdx : doIdx;
             std::vector<std::wstring> limTokens(sc.args.begin() + toIdx + 1, sc.args.begin() + limitEnd);
             ASTPtr limAST = OliExpressionParser(limTokens).parse();
             if (limAST) generateFromAST(limAST, chunk, externalProcs);
 
+            // a = i - limit
+            chunk.addByte((uint8_t)OpCode::OP_SUB, 0);
+
+            // push step (dacă există) sau 1
+            if (byIdx != -1) {
+                std::vector<std::wstring> stepTokens(sc.args.begin() + byIdx + 1, sc.args.begin() + doIdx);
+                ASTPtr stepAST = OliExpressionParser(stepTokens).parse();
+                if (stepAST) generateFromAST(stepAST, chunk, externalProcs);
+                else emitConstant(vData(1.0), chunk, 0);
+            }
+            else {
+                emitConstant(vData(1.0), chunk, 0);
+            }
+
+            // (i - limit) * step
+            chunk.addByte((uint8_t)OpCode::OP_MUL, 0);
+
+            // compare with 0: if > 0 then exit
+            emitConstant(vData(0.0), chunk, 0);
             chunk.addByte((uint8_t)OpCode::OP_GREATER, 0);
             chunk.addByte((uint8_t)OpCode::OP_JUMP_IF_TRUE, 0);
             size_t exitJumpAddr = chunk.code.size();

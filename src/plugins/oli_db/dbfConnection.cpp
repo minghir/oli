@@ -1,6 +1,6 @@
 ﻿#include "dbfConnection.hpp"
-#include "stringUtils.hpp"
-//#include "fileUtils.hpp"
+#include "../../StringUtils.hpp"
+#include "fileUtils.hpp"
 
 #include "../../ConsoleManager.hpp" // Asigură-te că incluzi header-ul pentru logare
 #include "SqlQueryEngine.hpp"
@@ -9,6 +9,9 @@
 #include <iostream>
 #include <filesystem>
 
+#ifndef _WIN32
+#include <cstring> // Pentru strncpy pe Linux   
+#endif
 
 dbfConnection::dbfConnection(const std::string& type, const std::wstring& dsn)
     : m_filePath(dsn) // dsn-ul este calea către fișier în cazul tău
@@ -436,7 +439,11 @@ bool dbfConnection::saveFile(const std::wstring& filename, const vConTable& tabl
     std::time_t t = std::time(nullptr);
     std::tm now;
     // Folosim varianta safe pentru Visual Studio (localtime_s)
+#ifdef _WIN32
     localtime_s(&now, &t);
+#else
+    localtime_r(&t, &now);
+#endif
 
     // 2. Mapăm pe header-ul DBF
     // DBF stochează anul ca diferență față de 1900 (YY)
@@ -464,8 +471,11 @@ bool dbfConnection::saveFile(const std::wstring& filename, const vConTable& tabl
 
         // Numele coloanei (max 11 chars)
         std::string colName = wstr_to_str(table.columns[i]);
-        strncpy_s(fd.fieldName, 11, colName.c_str(), _TRUNCATE);
-
+#ifdef _WIN32
+    strncpy_s(fd.fieldName, 11, colName.c_str(), _TRUNCATE);
+#else
+    strncpy(fd.fieldName, colName.c_str(), 11);
+#endif
         // Tipul ('C', 'N', etc.)
         fd.fieldType = (char)table.columnTypes[i][0];
         fd.fieldLength = (uint8_t)table.columnWidths[i];
@@ -627,7 +637,11 @@ bool dbfConnection::appendRecords(const std::wstring& tableName, const vConTable
 
     std::time_t t = std::time(nullptr);
     std::tm now;
+#ifdef _WIN32
     localtime_s(&now, &t);
+#else
+    localtime_r(&t, &now);
+#endif
     header.lastUpdate[0] = (uint8_t)(now.tm_year % 100);
     header.lastUpdate[1] = (uint8_t)(now.tm_mon + 1);
     header.lastUpdate[2] = (uint8_t)now.tm_mday;
@@ -779,7 +793,12 @@ bool dbfConnection::updateRecords(const std::wstring& tableName, const std::map<
     // 6. Actualizăm data ultimei modificări în header
     std::time_t t = std::time(nullptr);
     std::tm now;
+#ifdef _WIN32
     localtime_s(&now, &t);
+#else
+    localtime_r(&t, &now);
+#endif
+    
     header.lastUpdate[0] = (uint8_t)(now.tm_year % 100);
     header.lastUpdate[1] = (uint8_t)(now.tm_mon + 1);
     header.lastUpdate[2] = (uint8_t)now.tm_mday;
@@ -971,7 +990,12 @@ void dbfConnection::createBackup(const std::wstring& fullPath) {
         auto in_time_t = std::chrono::system_clock::to_time_t(acum);
 
         std::tm bt{};
-        localtime_s(&bt, &in_time_t); // Varianta safe pentru Windows/VS
+#ifdef _WIN32
+    localtime_s(&bt, &in_time_t);
+#else
+    localtime_r(&in_time_t, &bt);
+#endif
+
 
         // 2. Formatăm timestamp-ul: YYYYMMDD_HHMMSS
         std::wstringstream ss;

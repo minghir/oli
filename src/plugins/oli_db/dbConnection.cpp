@@ -1,6 +1,6 @@
 ﻿#define _CRT_SECURE_NO_WARNINGS
 #include "dbConnection.hpp"
-#include "stringUtils.hpp"
+#include "../../StringUtils.hpp"
 #include <iostream>
 
 /*

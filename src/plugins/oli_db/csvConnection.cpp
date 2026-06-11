@@ -1,9 +1,9 @@
 #include "csvConnection.hpp"
-#include "../../stringUtils.hpp"
-//#include "fileUtils.hpp"
+#include "../../StringUtils.hpp"
+#include "fileUtils.hpp"
 //#include "globals.hpp"
 
-//#include "ui/ConsoleManager.hpp"
+#include "../../ConsoleManager.hpp"
 #include "SqlQueryEngine.hpp"
 
 #include <iostream>

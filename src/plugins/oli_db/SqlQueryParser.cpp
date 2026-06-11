@@ -1,7 +1,7 @@
-﻿#include "../ui/ConsoleManager.hpp"
+﻿#include "../../ConsoleManager.hpp"
 #include "SqlQueryParser.hpp"
-#include "../vdb_engine/SqlKeyWords.hpp"
-#include "../stringUtils.hpp"
+//#include "../vdb_engine/SqlKeyWords.hpp"
+#include "../../StringUtils.hpp"
 
 #include <sstream>
 #include <algorithm>

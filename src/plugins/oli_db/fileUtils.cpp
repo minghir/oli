@@ -7,12 +7,17 @@
 #include <codecvt>
 #include <fstream>
 #include <iostream>
-#include <windows.h>
+#include <random>
 
-#include "globals.hpp"
+
+#if defined(_WIN32) || defined(_WIN64)  
+#include <windows.h>
+#endif
+
+//#include "globals.hpp"
 #include "fileUtils.hpp"
-#include "stringUtils.hpp"
-#include "ui\ConsoleManager.hpp" // Adjust the path
+#include "../../StringUtils.hpp"
+#include "../../ConsoleManager.hpp" // Adjust the path
 
 //#include <sys/types.h>
 //#include <sched.h>
@@ -61,7 +66,7 @@
 
 
 
-
+/*
     std::wstring wstr_read_RTF_file(const std::string& filePath) {
         std::string path = getGlobalReportPath() + filePath;
         //std::string path =  filePath;
@@ -83,7 +88,7 @@
         file.close();
         return content;
     }
-
+*/
     /*
     void convertRTFtoPDF(const std::string& rtfFile, const std::string& pdfDir) {
         std::string command = "LibreOfficePortable\\App\\libreoffice\\program\\soffice.exe --headless --convert-to pdf \""
@@ -99,7 +104,7 @@
         return path;
     }
 
-
+/*
     void convertRTFtoPDF(const std::string& rtfFile, std::string& pdfDir) {
 
         pdfDir = sanitizePath(pdfDir);
@@ -193,7 +198,7 @@
             MessageBoxW(nullptr, L"Eroare la rularea LibreOffice!", L"Eroare", MB_OK | MB_ICONERROR);
         }
     }
-
+*/
 
 
     bool copyFile(const std::string& source, const std::string& destination) {
@@ -217,12 +222,22 @@
     }
 
 
-    std::wstring utf8ToWstring(const std::string& utf8Str) {
-        int size_needed = MultiByteToWideChar(CP_UTF8, 0, utf8Str.c_str(), -1, NULL, 0);
-        std::wstring wstr(size_needed, 0);
-        MultiByteToWideChar(CP_UTF8, 0, utf8Str.c_str(), -1, &wstr[0], size_needed);
-        return wstr;
-    }
+    #include <string>
+#include <locale>
+#include <codecvt>
+
+std::wstring utf8ToWstring(const std::string& utf8)
+{
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
+    return conv.from_bytes(utf8);
+}
+
+std::string wstringToUtf8(const std::wstring& wstr)
+{
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> conv;
+    return conv.to_bytes(wstr);
+}
+
 
     // Funcție pentru citirea unui fișier CSV în std::vector<std::wstring>
     std::vector<std::wstring> readCSVFile(const std::string& filename) {
@@ -436,13 +451,22 @@
         return true;
     }
 
-    bool wrenameFile(const std::wstring& oldName, const std::wstring& newName) {
-        if (_wrename(oldName.c_str(), newName.c_str()) != 0) {
-            std::wcerr << L"Eroare la redenumirea fișierului: " << oldName << L" → " << newName << std::endl;
-            return false;
-        }
+#include <filesystem>
+#include <iostream>
+
+bool wrenameFile(const std::wstring& oldName, const std::wstring& newName) {
+    try {
+        std::filesystem::rename(oldName, newName);
         return true;
     }
+    catch (const std::exception& e) {
+        std::wcerr << L"Eroare la redenumirea fișierului: "
+                   << oldName << L" → " << newName
+                   << L" | Detalii: " << str_to_wstr(e.what()) << std::endl;
+        return false;
+    }
+}
+
 
 
     bool wcopyFile(const std::wstring& source, const std::wstring& destination) {
@@ -477,28 +501,38 @@
     }
 
     std::wstring getTempPath() {
-        std::vector<wchar_t> tempPath(MAX_PATH);
-        DWORD length = GetTempPathW(MAX_PATH, tempPath.data());
-        if (length > 0 && length < MAX_PATH) {
-            return std::wstring(tempPath.data(), length);
+        try {
+            std::filesystem::path temp = std::filesystem::temp_directory_path();
+            return temp.wstring();
         }
-        return L""; // Returnează un șir gol în caz de eroare
+        catch (...) {
+            return L"";
+        }
     }
 
-    std::wstring getUniqueTempFilePath(const std::wstring& tempDir, const std::wstring& prefix) {
-        std::vector<wchar_t> tempFilePath(MAX_PATH);
-        UINT result = GetTempFileNameW(
-            tempDir.c_str(), // Directorul temporar
-            prefix.c_str(),  // Prefixul fișierului
-            0,               // Număr unic (0 pentru a lăsa sistemul să-l genereze)
-            tempFilePath.data()
-        );
 
-        if (result != 0) {
-            return std::wstring(tempFilePath.data());
-        }
-        return L""; // Returnează un șir gol în caz de eroare
-    }
+
+std::wstring getUniqueTempFilePath(const std::wstring& tempDir, const std::wstring& prefix)
+{
+    // 1. Directorul temporar (dacă e gol, folosim temp_directory_path)
+    std::filesystem::path dir = tempDir.empty()
+        ? std::filesystem::temp_directory_path()
+        : std::filesystem::path(tempDir);
+
+    // 2. Generator random pentru nume unic
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+    std::uniform_int_distribution<uint64_t> dist;
+
+    uint64_t unique = dist(gen);
+
+    // 3. Construim numele fișierului
+    std::wstring filename = prefix + std::to_wstring(unique) + L".tmp";
+
+    std::filesystem::path fullPath = dir / filename;
+
+    return fullPath.wstring();
+}
 
 
     std::wstring ensureExtension(const std::wstring& name, const std::wstring& extension) {

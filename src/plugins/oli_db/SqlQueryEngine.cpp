@@ -1,7 +1,7 @@
 ﻿#include "SqlQueryEngine.hpp"
 #include "../../StringUtils.hpp"
 #include "../../ConsoleManager.hpp"
-#include "..\math\vmath.hpp"
+#include "vmath.hpp"
 
 #include <iostream>
 #include <iomanip>

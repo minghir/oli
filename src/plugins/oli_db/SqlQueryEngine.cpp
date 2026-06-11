@@ -1,6 +1,6 @@
 ﻿#include "SqlQueryEngine.hpp"
-#include "..\stringUtils.hpp"
-#include "..\ui\ConsoleManager.hpp"
+#include "../../StringUtils.hpp"
+#include "../../ConsoleManager.hpp"
 #include "..\math\vmath.hpp"
 
 #include <iostream>

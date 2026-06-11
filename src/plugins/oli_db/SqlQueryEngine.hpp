@@ -2,7 +2,7 @@
 #define SQLQUERYENGINE_HPP
 
 #include "SqlQueryParser.hpp"
-#include"../dbConnection.hpp"
+#include "dbConnection.hpp"
 
 #include <functional>
 #include <vector>

@@ -1,9 +1,9 @@
 ﻿#include "dbfConnection.hpp"
 #include "stringUtils.hpp"
-#include "fileUtils.hpp"
+//#include "fileUtils.hpp"
 
-#include "ui\ConsoleManager.hpp" // Asigură-te că incluzi header-ul pentru logare
-#include "sql\SqlQueryEngine.hpp"
+#include "../../ConsoleManager.hpp" // Asigură-te că incluzi header-ul pentru logare
+#include "SqlQueryEngine.hpp"
 
 #include <ctime>
 #include <iostream>

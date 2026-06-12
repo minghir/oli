@@ -246,6 +246,8 @@ void LoadShaderFunctions() {
     GET_GL_PROC(glGetShaderInfoLog, PFNGLGETSHADERINFOLOGPROC);
     GET_GL_PROC(glGetProgramiv, PFNGLGETPROGRAMIVPROC);
     GET_GL_PROC(glGetProgramInfoLog, PFNGLGETPROGRAMINFOLOGPROC);
+    
+    // 🔥 ASIGURĂ-TE CĂ ACESTEA SUNT ÎNCĂRCATE PENTRU VEC2 ȘI VEC4:
     GET_GL_PROC(glUniform2f, PFNGLUNIFORM2FPROC);
     GET_GL_PROC(glUniform4f, PFNGLUNIFORM4FPROC);
     GET_GL_PROC(glDeleteShader, PFNGLDELETESHADERPROC);
@@ -254,8 +256,8 @@ void LoadShaderFunctions() {
     glUniform1f = (PFNGLUNIFORM1FPROC)wglGetProcAddress("glUniform1f");
     wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
 #else
+    // 🔥 CRITIC PENTRU LINUX: Încărcăm glUniform1f (folosit de iTime!)
     GET_GL_PROC(glUniform1f, PFNGLUNIFORM1FPROC);
-    //glXSwapIntervalEXT = (PFNGLXSWAPINTERVALEXTPROC)glXGetProcAddress((const GLubyte*)"glXSwapIntervalEXT");
     glXSwapIntervalEXT = (void (*)(Display*, GLXDrawable, int))glXGetProcAddress((const GLubyte*)"glXSwapIntervalEXT");
 #endif
 }

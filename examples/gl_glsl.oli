@@ -9,7 +9,7 @@ plugin oli_time
 # 1. Inițializare Fereastră
 set $v = GL_INIT(900, 700, "OLI Shader Demo")
 
-set $res = GL_SET_VSYNC(1)
+#set $res = GL_SET_VSYNC(1)
 
 if $res == 1 then
     echo "VSync activat cu succes!"

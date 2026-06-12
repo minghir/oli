@@ -145,9 +145,27 @@ void BuildFont() {
     SelectObject(g_GL.hdc, font);
     wglUseFontBitmapsA(g_GL.hdc, 32, 96, g_GL.fontBase);
 #else
-    Font id = XLoadFont(g_GL.display, "-fixed-bold-r-normal--18-*-*-*-*-*-iso8859-1");
-    if (!id) id = XLoadFont(g_GL.display, "fixed");
-    glXUseXFont(id, 32, 96, g_GL.fontBase);
+    // Forțăm o deschidere safe. Nu folosim direct XLoadFont, care crapă la BadName,
+    // ci încercăm să stângem informații despre structura fontului în mod securizat.
+    XFontStruct* fontInfo = XLoadQueryFont(g_GL.display, "-*-fixed-bold-r-normal--18-*-*-*-*-*-iso8859-1");
+    
+    if (!fontInfo) {
+        // Fallback 1: Încercăm o dimensiune mai comună de fixed bold
+        fontInfo = XLoadQueryFont(g_GL.display, "-*-fixed-medium-r-normal--16-*-*-*-*-*-iso8859-1");
+    }
+    
+    if (!fontInfo) {
+        // Fallback 2: Încercăm fontul universal prezent în absolut orice distribuție Linux existentă
+        fontInfo = XLoadQueryFont(g_GL.display, "fixed");
+    }
+
+    if (fontInfo) {
+        // Generăm bitmap-urile OpenGL pe baza structurii de font încărcate cu succes
+        glXUseXFont(fontInfo->fid, 32, 96, g_GL.fontBase);
+        XFreeFont(g_GL.display, fontInfo); // Eliberăm structura din memoria X11, acum e în GPU
+    } else {
+        std::cerr << "[OpenGL Plugin] AVERTISMENT CRITIC: Nu s-a putut încărca niciun font bitmap X11!" << std::endl;
+    }
 #endif
 }
 

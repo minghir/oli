@@ -129,7 +129,7 @@ public:
     virtual void setFontName(const std::wstring& fontName);
     virtual void setFontSize(int baseFontSize);
     const std::wstring getFontName() const { return m_fontName; }
-    const int getFontSize() const { return m_baseFontSize; }
+    int getFontSize() const { return m_baseFontSize; }
 
     // Layout configuration
     void setAnchor(Anchor a) { anchor = a; }
@@ -194,7 +194,7 @@ public:
     // Extensibilitatea către Mașina Virtuală Oli
     virtual bool setProperty(const std::wstring& name, const vData& value);
     virtual vData getProperty(const std::wstring& name) const;
-    virtual bool callMethod(const std::wstring& methodName, const std::vector<vData>& args) { return false; }
+    virtual bool callMethod(const std::wstring& /*methodName*/, const std::vector<vData>& /*args*/) { return false; }
 	
     void updateSize(int newWidth, int newHeight) {
         m_width = newWidth; m_height = newHeight;

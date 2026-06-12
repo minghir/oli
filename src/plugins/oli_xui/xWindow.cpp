@@ -23,7 +23,7 @@ xWindow::~xWindow() {
 // =================================================================
 
 bool xWindow::create(const std::wstring& /*className*/, const std::wstring& title, unsigned int /*style*/, int x, int y, int w, int h, GtkWidget* parent) {
-    std::string utf8Title = wstr_to_utf8(title); // Folosim noul convertor stabil
+    std::string utf8Title = wstring_to_utf8(title);
 
     m_widget = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     

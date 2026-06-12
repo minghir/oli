@@ -1,3 +1,4 @@
+#include "../../StringUtils.hpp"
 #include "xButton.hpp"
 #include <algorithm>
 

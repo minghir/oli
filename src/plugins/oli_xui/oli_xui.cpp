@@ -12,7 +12,6 @@
 #include <map>
 #include <algorithm>
 #include <gtk/gtk.h>
-
 #include <locale>
 #include <codecvt>
 
@@ -22,18 +21,8 @@
 #define OLI_EXPORT extern "C" __attribute__((visibility("default")))
 #endif
 
-// 🔥 FORȚĂM EXPORTUL GLOBAL PENTRU CORECTAREA LOOKUP ERROR
-extern "C" __attribute__((visibility("default"))) std::wstring str_to_wstr(const std::string& str) {
-    if (str.empty()) return L"";
-    try {
-        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-        return converter.from_bytes(str);
-    } catch (...) {
-        return std::wstring(str.begin(), str.end());
-    }
-}
 
-// Utilitare interne folosite în registrele plugin-ului
+
 static std::string wstr_to_utf8(const std::wstring& wstr) {
     if (wstr.empty()) return "";
     try {
@@ -45,7 +34,7 @@ static std::string wstr_to_utf8(const std::wstring& wstr) {
 }
 
 static std::wstring utf8_to_wstr(const std::string& str) {
-    return str_to_wstr(str);
+    return ::str_to_wstr(str); // Va apela variabila din StringUtils.o
 }
 
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
@@ -57,10 +46,7 @@ struct GuiState {
     std::unordered_map<std::string, xControl*> controlsMap;
 } g_XuiGui;
 
-// Pointerul global către mașina virtuală din EXE
 inline vOliEngine* g_LinkedOliEngine = nullptr;
-
-// Memoria persistentă a callback-urilor din script
 static std::map<std::string, std::wstring> g_PersistentScriptCallbacks;
 
 xControl* LocateAnyControl(const std::string& id) {
@@ -87,7 +73,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
     }
 
     // ==========================================
-    // 1. COMPONENTA: XAPP / WINAPP (Compatibilitate script)
+    // 1. COMPONENTA: XAPP / WINAPP
     // ==========================================
 
     registry[L"CREATE_WINAPP"] = [](const std::vector<vData>&) -> vData {
@@ -106,6 +92,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             g_XuiGui.ownedAppInstance = std::make_unique<xApp>(RunMode::GUI);
             g_XuiGui.appInstance = g_XuiGui.ownedAppInstance.get();
 
+            // 🔥 CRITIC: Apelăm init() pentru a porni gtk_init_check dedesubt!
             if (!g_XuiGui.appInstance->init()) {
                 g_XuiGui.ownedAppInstance.reset();
                 g_XuiGui.appInstance = nullptr;
@@ -124,7 +111,6 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         int exitCode = g_XuiGui.appInstance->run();
         return vData{ static_cast<long long>(exitCode) };
     };
-
 
     // ==========================================
     // 2. COMPONENTA: XWINDOW / WINWINDOW
@@ -147,7 +133,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 
             xApp* actualApp = xApp::getAppInstance();
             if (!actualApp) {
-                LOG_ERROR(L"❌ [CREATE_WINWINDOW] appInstance este NULL în contextul curent!");
+                LOG_ERROR(L"❌ [CREATE_WINWINDOW] appInstance este NULL!");
                 return vData{ std::monostate{} };
             }
 
@@ -156,8 +142,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             );
             newWindow->setIsMainWindow(true);
 
-            // În GTK, stilul (style) numeric de Win32 este ignorat
-            bool created = newWindow->create(L"XOliWindowClass", wTitle, 0, 200, 200, 800, 900, nullptr);
+            bool created = newWindow->create(L"XOliWindowClass", wTitle, 0, 200, 200, 800, 600, nullptr);
 
             if (created) {
                 xWindow* winPtr = newWindow.get();
@@ -171,7 +156,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             return vData(objMap);
         }
         catch (...) {
-            LOG_ERROR(L"❌ [CREATE_WINWINDOW] Excepție interceptată la crearea ferestrei GTK!");
+            LOG_ERROR(L"❌ [CREATE_WINWINDOW] Excepție la crearea ferestrei GTK!");
             return vData{ std::monostate{} };
         }
     };
@@ -193,7 +178,6 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         }
         return vData{ 0LL };
     };
-
 
     // =================================================================
     // 3. CONSTRUCTORUL GENERIC DE CONTROALE VIZUALE
@@ -223,7 +207,6 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             }
         }
 
-        // Extragere coordonate opționale
         int x = (args.size() > 3) ? static_cast<int>(args[3].toInt()) : 0;
         int y = (args.size() > 4) ? static_cast<int>(args[4].toInt()) : 0;
         int w = (args.size() > 5) ? static_cast<int>(args[5].toInt()) : 0;
@@ -232,7 +215,6 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 
         std::unique_ptr<xControl> newCtrl = nullptr;
 
-        // Rutarea creării în funcție de widget-urile mapate
         if (wType == L"BUTTON") {
             newCtrl = std::make_unique<xButton>(
                 id, wText, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher()
@@ -243,9 +225,8 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
                 id, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher()
             );
         }
-        // [Notă: Adaugă aici ramurile viitoare pentru XCodeView, XTabControl când sunt gata]
         else {
-            LOG_WARNING(L"[oli_xui] Tip de control nesuportat momentan în GTK: " + wType + L". Facem fallback pe xContainer.");
+            LOG_WARNING(L"[oli_xui] Tip de control nesuportat. Fallback pe xContainer.");
             newCtrl = std::make_unique<xContainer>(
                 id, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher()
             );
@@ -253,15 +234,12 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 
         if (newCtrl) {
             xControl* rawControlPtr = newCtrl.get();
-            
-            // Verificăm dacă părintele are un layout widget dedicat (valabil acum și pentru ferestre!)
             GtkWidget* targetGtkParent = nullptr;
             
             xWindow* parentAsWindow = dynamic_cast<xWindow*>(parentCtrl);
             xContainer* parentAsContainer = dynamic_cast<xContainer*>(parentCtrl);
             
             if (parentAsWindow) {
-                // Dacă părintele este o fereastră, extragem GtkFixed-ul din ea
                 targetGtkParent = parentAsWindow->getLayoutWidget();
             } else if (parentAsContainer) {
                 targetGtkParent = parentAsContainer->getLayoutWidget();
@@ -279,9 +257,8 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         return vData{ 0LL };
     };
 
-
     // =================================================================
-    // 4. MANAGEMENTUL PROPRIETĂȚILOR ȘI AL METODELOR VIA VM OLI
+    // 4. MANAGEMENTUL PROPRIETĂȚILOR
     // =================================================================
 
     registry[L"UI_SET_PROPERTY"] = [](const std::vector<vData>& args) -> vData {
@@ -337,9 +314,8 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         return vData{ success ? 1LL : 0LL };
     };
 
-
     // =================================================================
-    // 5. EVENT BINDING MECHANISMS
+    // 5. EVENT BINDING
     // =================================================================
 
     registry[L"UI_BIND_EVENT"] = [](const std::vector<vData>& args) -> vData {
@@ -393,9 +369,8 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         return vData{ 1LL };
     };
 
-
     // =================================================================
-    // 6. DIALOGURI MODALE NATIVE GTK (Complet asincrone/thread-safe)
+    // 6. DIALOGURI MODALE NATIVE GTK
     // =================================================================
 
     registry[L"SHOW_MESSAGE"] = [](const std::vector<vData>& args) -> vData {
@@ -449,7 +424,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
     registry[L"UI_FILE_DIALOG"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 2) return vData(L"");
         
-        int type = (int)args[0].toDouble(); // 0 = OPEN, 1 = SAVE
+        int type = (int)args[0].toDouble(); 
         std::string title = wstr_to_utf8(args[1].toWString());
 
         GtkWindow* parentWin = nullptr;

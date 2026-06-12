@@ -1,0 +1,75 @@
+﻿--- OLI ASSEMBLY LISTING ---
+Source: tests/test_xui.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_PLUGIN       0000 (Path: oli_system)
+0003: OP_PLUGIN       0001 (Path: "oli_xui")
+0006: OP_CONSTANT     0002 (Value: xui.oli)
+0009: OP_CONSTANT     0003 (Value: include)
+0012: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0014: OP_POP
+0015: OP_CONSTANT     0004 (Value: --- Pornire Test Direct ---)
+0018: OP_ECHO
+0019: OP_CONSTANT     0005 (Value: WinApp)
+0022: OP_CONSTANT     0006 (Value: new)
+0025: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0027: OP_SET_GLOBAL   0007 (Name: app)
+0030: OP_GET_GLOBAL   0007 (Name: app)
+0033: OP_CONSTANT     0008 (Value: init)
+0036: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0038: OP_POP
+0039: OP_CONSTANT     0009 (Value: WinWindow)
+0042: OP_CONSTANT     0006 (Value: new)
+0045: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0047: OP_SET_GLOBAL   0010 (Name: win)
+0050: OP_CONSTANT     0011 (Value: fereastra_principala)
+0053: OP_CONSTANT     0012 (Value: Test Direct GTK (Fără Panel))
+0056: OP_GET_GLOBAL   0010 (Name: win)
+0059: OP_CONSTANT     0008 (Value: init)
+0062: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0064: OP_POP
+0065: OP_CONSTANT     0013 (Value: WinButton)
+0068: OP_CONSTANT     0006 (Value: new)
+0071: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0073: OP_SET_GLOBAL   0014 (Name: buton)
+0076: OP_CONSTANT     0015 (Value: btn_salut)
+0079: OP_CONSTANT     0011 (Value: fereastra_principala)
+0082: OP_CONSTANT     0016 (Value: 50)
+0085: OP_CONSTANT     0016 (Value: 50)
+0088: OP_CONSTANT     0017 (Value: 200)
+0091: OP_CONSTANT     0016 (Value: 50)
+0094: OP_CONSTANT     0018 (Value: Apasă-mă! 🚀)
+0097: OP_GET_GLOBAL   0014 (Name: buton)
+0100: OP_CONSTANT     0008 (Value: init)
+0103: OP_CALL_METHOD     (Args: 7, Context & Name on Stack)
+0105: OP_POP
+0106: OP_CONSTANT     0019 (Value: click)
+0109: OP_CONSTANT     0020 (Value: pe_apasare_buton)
+0112: OP_GET_GLOBAL   0014 (Name: buton)
+0115: OP_CONSTANT     0021 (Value: bind)
+0118: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0120: OP_POP
+0121: OP_GET_GLOBAL   0010 (Name: win)
+0124: OP_CONSTANT     0022 (Value: show)
+0127: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0129: OP_POP
+0130: OP_GET_GLOBAL   0007 (Name: app)
+0133: OP_CONSTANT     0023 (Value: run)
+0136: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0138: OP_POP
+0139: OP_CONSTANT     0024 (Value: --- Aplicație Oprită ---)
+0142: OP_ECHO
+0143: OP_RETURN
+
+--- FUNCTION: PE_APASARE_BUTON (Params: ) ---
+=== DISASSEMBLY: PE_APASARE_BUTON ===
+0000: OP_CONSTANT     0000 (Value: [VM OLI] Semnal primit cu succes din GTK!)
+0003: OP_ECHO
+0004: OP_CONSTANT     0001 (Value: XUI Test)
+0007: OP_CONSTANT     0002 (Value: Conexiunea C++ <-> Script Oli funcționează perfect în GTK!)
+0010: OP_CONSTANT     0003 (Value: SHOW_MESSAGE)
+0013: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
+0015: OP_POP
+0016: OP_RETURN

@@ -11,6 +11,9 @@
 #include <chrono>
 #include <string_view>
 #include <algorithm> // Nec
+#include <locale>
+#include <codecvt>
+
 
 void vOliEngine::initializeFunctionsHandlers() {
 
@@ -1147,6 +1150,7 @@ vData vOliEngine::handleTrimFunc(const std::vector<vData>& args) {
 
 
 vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
+    LOG_ERROR(L"[readfile] Funcția readfile() a fost apelată cu " + std::to_wstring(args.size()) + L" argumente.");
     if (args.empty() || !args[0].isString()) {
         LOG_ERROR(L"[RUNTIME ERROR] readfile() requires a path string.");
         return vData(std::monostate{});
@@ -1154,28 +1158,39 @@ vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
 
     std::wstring pathW = std::get<std::wstring>(args[0].value);
     try {
-        std::string utf8_path = PortTools::wstring_to_utf8(pathW);
+        // 1. Convertim calea wide în string standard C++
+        std::string utf8_path;
+        try {
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> path_conv;
+            utf8_path = path_conv.to_bytes(pathW);
+        } catch (...) {
+            utf8_path = std::string(pathW.begin(), pathW.end());
+        }
 
-        // 🔥 FIX 1: Curățăm eventualele caractere '\r' (carriage return) aduse din scripturi formatate pe Windows
+        // Curățăm resturile de formatare Windows din cale
         utf8_path.erase(std::remove(utf8_path.begin(), utf8_path.end(), '\r'), utf8_path.end());
-
-        // 🔥 FIX 2: Normalizăm separatoarele (înlocuim backslash cu slash normal pentru Linux)
         std::replace(utf8_path.begin(), utf8_path.end(), '\\', '/');
 
-        // 🔥 LOG DE DIAGNOSTIC: Vedem exact ce încearcă Linux-ul să deschidă în terminal
-        std::cout << "[DEBUG readfile] Încerc să deschid calea brută curățată: [" << utf8_path << "]" << std::endl;
-
+        // 2. Deschidem fișierul
         std::ifstream file(utf8_path, std::ios::binary);
-
         if (!file.is_open()) {
-            // 🔥 LOG DE EȘEC: Ne va spune exact dacă fișierul a lipsit din cauza căii distorsionate
-            std::cerr << "[DEBUG readfile] EȘEC! Nu s-a putut deschide: [" << utf8_path << "]" << std::endl;
+            LOG_ERROR(L"[readfile] Nu s-a putut deschide fișierul: " + std::wstring(utf8_path.begin(), utf8_path.end()));
             return vData(std::monostate{});
         }
 
-        // Citire eficientă
+        // 3. Citire brută în buffer
         std::string buffer((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-        std::wstring wcontent = PortTools::utf8_to_wstring(buffer);
+        file.close();
+
+        // 4. 🔥 CONVERSIE ANTIGLONȚ: Protejăm memoria împotriva dimensiunii wchar_t de Linux
+        std::wstring wcontent;
+        try {
+            std::wstring_convert<std::codecvt_utf8<wchar_t>> content_conv;
+            wcontent = content_conv.from_bytes(buffer);
+        } catch (...) {
+            // Fallback în caz de caractere invalide: copiem brut octet cu octet
+            wcontent = std::wstring(buffer.begin(), buffer.end());
+        }
 
         // Eliminare BOM (Byte Order Mark)
         if (!wcontent.empty() && (unsigned short)wcontent[0] == 0xFEFF) {
@@ -1185,7 +1200,7 @@ vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
         return vData(wcontent);
     }
     catch (...) {
-        LOG_ERROR(L"[RUNTIME ERROR] Exception reading file: " + pathW);
+        LOG_ERROR(L"[readfile] Excepție critică interceptată la citirea fișierului!");
         return vData(std::monostate{});
     }
 }

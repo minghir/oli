@@ -25,24 +25,20 @@ set $startTime = TIME()
 echo "[OLI] Citește fișierele shader din disc..."
 set $vs_source = readfile("examples/shaders/vertex.glsl")
 set $fs_source = readfile("examples/shaders/fragment.glsl")
+echo $fs_source
+echo "MIMI"
 
-if $vs_source == null || $fs_source == null then
-    GL_CLOSE()
-    exit("Eroare: Nu am putut incarca fisierele shader!")
-endif
 
+echo "Aici 1"
 if $vs_source == null then
     echo "[OLI ERROR] vertex.glsl a returnat NULL!"
 endif
+echo "Aici 2"
 if $fs_source == null then
     echo "[OLI ERROR] fragment.glsl a returnat NULL!"
 endif
 
-if $vs_source == null || $fs_source == null then
-    GL_CLOSE()
-    exit("Eroare: Nu am putut incarca fisierele shader!")
-endif
-
+echo "Aici 3"
 echo "[OLI] Încarcă și compilează Vertex Shader..."
 set $vshader = GL_LOAD_SHADER(0, $vs_source)
 echo "[OLI] Vertex Shader înGPU ID: " + STR($vshader)

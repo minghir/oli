@@ -23,7 +23,7 @@ Generated: 2026-05-11
 0037: OP_ECHO
 0038: OP_CONSTANT     0009 (Value: db_next)
 0041: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
-0043: OP_JUMP_IF_FALSE 0043 (Sari la: 89)
+0043: OP_JUMP_IF_FALSE 0056 (Sari la: 102)
 0046: OP_CONSTANT     0010 (Value: db_fetch)
 0049: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
 0051: OP_SET_GLOBAL   0011 (Name: row)
@@ -31,49 +31,55 @@ Generated: 2026-05-11
 0057: OP_CONSTANT     0012 (Value: NUME)
 0060: OP_GET_INDIRECT
 0061: OP_ECHO
-0062: OP_CONSTANT     0013 (Value: 0)
-0065: OP_CONSTANT     0014 (Value: db_fetch_field)
-0068: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0070: OP_ECHO
-0071: OP_CONSTANT     0015 (Value: ORAS)
-0074: OP_CONSTANT     0014 (Value: db_fetch_field)
-0077: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0079: OP_ECHO
-0080: OP_CONSTANT     0016 (Value: db_fetch_row)
-0083: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
-0085: OP_ECHO
-0086: OP_LOOP          0051 (Sari inapoi la: 38)
-0089: OP_CONSTANT     0017 (Value: ---------------------------------)
+0062: OP_CONSTANT     0013 (Value: 100)
+0065: OP_CONSTANT     0014 (Value: VARSTA)
+0068: OP_CONSTANT     0015 (Value: db_fetch_field)
+0071: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0073: OP_MUL
+0074: OP_ECHO
+0075: OP_CONSTANT     0016 (Value: 0)
+0078: OP_CONSTANT     0015 (Value: db_fetch_field)
+0081: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0083: OP_ECHO
+0084: OP_CONSTANT     0017 (Value: ORAS)
+0087: OP_CONSTANT     0015 (Value: db_fetch_field)
+0090: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
 0092: OP_ECHO
-0093: OP_CONSTANT     0018 (Value: db_columns)
+0093: OP_CONSTANT     0018 (Value: db_fetch_row)
 0096: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
 0098: OP_ECHO
-0099: OP_CONSTANT     0019 (Value: db_types)
-0102: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
-0104: OP_ECHO
-0105: OP_CONSTANT     0020 (Value: DB_COLUMNS_INFO)
-0108: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
-0110: OP_ECHO
-0111: OP_CONSTANT     0017 (Value: ---------------------------------)
-0114: OP_ECHO
-0115: OP_CONSTANT     0021 (Value: DB_FETCH_ALL)
-0118: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
-0120: OP_ECHO
-0121: OP_CONSTANT     0017 (Value: ---------------------------------)
-0124: OP_ECHO
-0125: OP_CONSTANT     0022 (Value: select * from rude)
-0128: OP_CONSTANT     0005 (Value: db_exec)
-0131: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0133: OP_LOGICAL_NOT
-0134: OP_JUMP_IF_FALSE 0009 (Sari la: 146)
-0137: OP_CONSTANT     0023 (Value: DB_GET_ERROR)
-0140: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
-0142: OP_ECHO
-0143: OP_JUMP          0006 (Sari la: 152)
-0146: OP_CONSTANT     0021 (Value: DB_FETCH_ALL)
-0149: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
-0151: OP_ECHO
-0152: OP_CONSTANT     0024 (Value: input)
-0155: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
-0157: OP_POP
-0158: OP_RETURN
+0099: OP_LOOP          0064 (Sari inapoi la: 38)
+0102: OP_CONSTANT     0019 (Value: ---------------------------------)
+0105: OP_ECHO
+0106: OP_CONSTANT     0020 (Value: db_columns)
+0109: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0111: OP_ECHO
+0112: OP_CONSTANT     0021 (Value: db_types)
+0115: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0117: OP_ECHO
+0118: OP_CONSTANT     0022 (Value: DB_COLUMNS_INFO)
+0121: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0123: OP_ECHO
+0124: OP_CONSTANT     0019 (Value: ---------------------------------)
+0127: OP_ECHO
+0128: OP_CONSTANT     0023 (Value: DB_FETCH_ALL)
+0131: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0133: OP_ECHO
+0134: OP_CONSTANT     0019 (Value: ---------------------------------)
+0137: OP_ECHO
+0138: OP_CONSTANT     0024 (Value: select * from rude)
+0141: OP_CONSTANT     0005 (Value: db_exec)
+0144: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0146: OP_LOGICAL_NOT
+0147: OP_JUMP_IF_FALSE 0009 (Sari la: 159)
+0150: OP_CONSTANT     0025 (Value: DB_GET_ERROR)
+0153: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0155: OP_ECHO
+0156: OP_JUMP          0006 (Sari la: 165)
+0159: OP_CONSTANT     0023 (Value: DB_FETCH_ALL)
+0162: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0164: OP_ECHO
+0165: OP_CONSTANT     0026 (Value: input)
+0168: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0170: OP_POP
+0171: OP_RETURN

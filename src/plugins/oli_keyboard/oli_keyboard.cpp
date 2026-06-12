@@ -8,11 +8,12 @@
 #include <unistd.h>
 #endif
 
-
 #include <unordered_map>
 #include <functional>
 #include <vector>
 #include <chrono>
+#include <algorithm>
+#include <iostream>
 
 #ifdef _WIN32
 #include <conio.h>
@@ -23,25 +24,25 @@
 #include <map>
 #endif
 
+// Structura globală OpenGL partajată (dacă este accesibilă) sau fallback intern
 #ifndef _WIN32
-// 1. DECLARAȚIILE GLOBALE (Trebuie să fie primele)
 static std::map<int, std::chrono::steady_clock::time_point> g_linuxKeyMap;
+static Display* g_KbdDisplay = nullptr; // Conexiune persistentă pentru a evita lag-ul
 
-// 2. FUNCȚIA DE SYNC (Folosește g_linuxKeyMap declarat mai sus)
 void sync_linux_keys_x11() {
-    Display* d = XOpenDisplay(NULL);
-    if (!d) return;
+    if (!g_KbdDisplay) g_KbdDisplay = XOpenDisplay(NULL);
+    if (!g_KbdDisplay) return;
 
     char keys_return[32];
-    XQueryKeymap(d, keys_return);
+    XQueryKeymap(g_KbdDisplay, keys_return);
 
     auto check_key = [&](int x11_keysym, int win_vk) {
-        KeyCode kc = XKeysymToKeycode(d, x11_keysym);
+        KeyCode kc = XKeysymToKeycode(g_KbdDisplay, x11_keysym);
         bool pressed = keys_return[kc >> 3] & (1 << (kc & 7));
         if (pressed) {
             g_linuxKeyMap[win_vk] = std::chrono::steady_clock::now();
         }
-        };
+    };
 
     check_key(XK_Left, 37);
     check_key(XK_Right, 39);
@@ -49,11 +50,9 @@ void sync_linux_keys_x11() {
     check_key(XK_Down, 40);
     check_key(XK_space, 32);
     check_key(XK_q, 81);
-
-    XCloseDisplay(d);
+    check_key(XK_Escape, 27); // 🔥 Adăugat ESC în sync global
 }
 #endif
-
 
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
 
@@ -74,7 +73,7 @@ void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vD
         if (g_linuxKeyMap.empty()) return vData{ 0LL };
         return vData{ (long long)g_linuxKeyMap.rbegin()->first };
 #endif
-        };
+    };
 
     registry[L"KEY_STATE"] = [=](const std::vector<vData>& a) -> vData {
         if (a.empty()) return vData{ 0LL };
@@ -83,49 +82,55 @@ void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vD
 #ifdef _WIN32
         return vData{ (GetAsyncKeyState(vk) & 0x8000) ? 1LL : 0LL };
 #else
-        Display* d = XOpenDisplay(NULL);
-        if (!d) return vData{ 0LL };
+        // Optimizare: Deschidem conexiunea o singură dată, nu la fiecare cadru!
+        if (!g_KbdDisplay) g_KbdDisplay = XOpenDisplay(NULL);
+        if (!g_KbdDisplay) return vData{ 0LL };
 
         char keys[32];
-        XQueryKeymap(d, keys);
+        XQueryKeymap(g_KbdDisplay, keys);
 
-        // KeyCodes fixe pentru Linux (evităm overhead-ul XKeysymToKeycode în buclă)
         int kc = 0;
         switch (vk) {
-        case 37: kc = 113; break; // Left
-        case 39: kc = 114; break; // Right
-        case 38: kc = 111; break; // Up
-        case 40: kc = 116; break; // Down
-        case 32: kc = 65;  break; // Space
-        case 81: kc = 24;  break; // Q
+            case 27: kc = 9;   break; // 🔥 FIX: Adăugat ESC (Keycode standard Linux = 9)
+            case 37: kc = 113; break; // Left
+            case 39: kc = 114; break; // Right
+            case 38: kc = 111; break; // Up
+            case 40: kc = 116; break; // Down
+            case 32: kc = 65;  break; // Space
+            case 81: kc = 24;  break; // Q
+            default: {
+                // Fallback dinamic pentru alte coduri nementionate
+                KeyCode dynamic_kc = XKeysymToKeycode(g_KbdDisplay, vk == 27 ? XK_Escape : vk);
+                kc = (int)dynamic_kc;
+                break;
+            }
         }
 
         bool isPressed = false;
-        if (kc > 0) {
-            isPressed = keys[kc >> 3] & (1 << (kc & 7));
+        if (kc > 0 && kc < 256) {
+            isPressed = (keys[kc >> 3] & (1 << (kc & 7))) != 0;
         }
 
-        XCloseDisplay(d);
         return vData{ isPressed ? 1LL : 0LL };
 #endif
-        };
+    };
 
     registry[L"KBD_RESTORE"] = [=](const std::vector<vData>&) -> vData {
 #ifdef _WIN32
-        // Luăm handle-ul pentru buffer-ul de intrare al consolei
         HANDLE hStdIn = GetStdHandle(STD_INPUT_HANDLE);
         if (hStdIn != INVALID_HANDLE_VALUE) {
-            // Golim toate evenimentele de tastatură/mouse rămase în buffer
             FlushConsoleInputBuffer(hStdIn);
         }
 #else
-        // Pe Linux, putem pur și simplu să golim map-ul nostru
         g_linuxKeyMap.clear();
+        if (g_KbdDisplay) {
+            XCloseDisplay(g_KbdDisplay);
+            g_KbdDisplay = nullptr;
+        }
 #endif
         return vData{ 1LL };
-        };
+    };
 }
-
 
 OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
     RegisterKeyboardFunctions(registry);

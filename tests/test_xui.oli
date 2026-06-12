@@ -3,7 +3,7 @@ plugin oli_system
 plugin "oli_xui"
 
 # Includem harta noastră minimală
-include ("include\xui.oli")
+include ("include/xui.oli")
 
 # Callback-ul care se va executa în mașina virtuală Oli la click
 func pe_apasare_buton()

@@ -46,7 +46,7 @@ OS := $(shell uname -s)
 plugins:
 	@for dir in $(PLUGINS); do \
 		name=$$(basename $$(dirname $$dir)); \
-		if [ "$$name" = "oli_opengl" -o "$$name" = "oli_winui" ]; then \
+		if [ "$$name" = "oli_winui" ]; then \
 			if [ "$(OS)" = "Linux" ]; then \
 				echo "Skipping plugin $$name on Linux"; \
 				continue; \

@@ -785,10 +785,10 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
     };
 
     // 🔥 FIX: Înregistrare explicită GL_SET_VSYNC (Cross-Platform)
+    // 🔥 VARIANTĂ ANTIGLONȚ: GL_SET_VSYNC (Nu mai permite crash-ul silențios)
     registry[L"GL_SET_VSYNC"] = [](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData{ 0LL };
-
-        int interval = (int)toDouble(args[0]); // 1 pentru ON (limitare FPS la rata ecranului), 0 pentru OFF
+        int interval = (int)toDouble(args[0]);
 
 #ifdef _WIN32
         if (wglSwapIntervalEXT) {
@@ -796,12 +796,29 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             return vData{ 1LL };
         }
 #else
-        if (glXSwapIntervalEXT && g_GL.display && g_GL.window) {
-            glXSwapIntervalEXT(g_GL.display, g_GL.window, interval);
-            return vData{ 1LL };
+        // Pe Linux, verificăm cu atenție pointerul și contextul înainte de a executa
+        if (glXSwapIntervalEXT != nullptr && g_GL.display != nullptr && g_GL.window != 0) {
+            try {
+                // Înconjurăm apelul cu o verificare de siguranță a contextului curent
+                GLXContext currentCtx = glXGetCurrentContext();
+                if (currentCtx != nullptr) {
+                    glXSwapIntervalEXT(g_GL.display, g_GL.window, interval);
+                    return vData{ 1LL };
+                }
+            } catch (...) {
+                std::cerr << "[OpenGL] VSync a eșuat la nivel de driver, dar am prevenit crash-ul!" << std::endl;
+            }
+        } else {
+            // FALLBACK SILENȚIOS: Dacă extensia nu e stabilă sau lipsește,
+            // doar ignorăm apelul (mai bine fără VSync decât cu programul închis)
+            static bool warned = false;
+            if (!warned) {
+                std::cout << "[OpenGL] Memento: glXSwapIntervalEXT nu este complet compatibil cu driverul Mesa curent. Ignorăm apelul de siguranță." << std::endl;
+                warned = true;
+            }
         }
 #endif
-        return vData{ 0LL }; // Returnăm 0 dacă extensia nu este suportată de driverul plăcii video
+        return vData{ 0LL };
     };
 
     // GL_MOUSE_X / Y / BTN

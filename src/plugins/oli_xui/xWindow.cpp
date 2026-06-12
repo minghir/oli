@@ -23,32 +23,33 @@ xWindow::~xWindow() {
 // =================================================================
 
 bool xWindow::create(const std::wstring& /*className*/, const std::wstring& title, unsigned int /*style*/, int x, int y, int w, int h, GtkWidget* parent) {
-    // Transformăm titlul din wstring în UTF-8 string pentru GTK
-    std::string utf8Title(title.begin(), title.end()); 
+    std::string utf8Title = wstr_to_utf8(title); // Folosim noul convertor stabil
 
-    // Creăm fereastra top-level nativă
     m_widget = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    m_layoutWidget = m_widget; // În testul nostru direct, fereastra acționează ca layout root
     
     gtk_window_set_title(GTK_WINDOW(m_widget), utf8Title.c_str());
     gtk_window_set_default_size(GTK_WINDOW(m_widget), w, h);
+
+    // 🔥 SOLUȚIA PENTRU COORDONATE FIXE:
+    // Creăm un container fix și îl adăugăm direct în fereastră ca Layout Root
+    m_layoutWidget = gtk_fixed_new();
+    gtk_container_add(GTK_CONTAINER(m_widget), m_layoutWidget);
+    gtk_widget_show(m_layoutWidget);
 
     if (parent) {
         gtk_window_set_transient_for(GTK_WINDOW(m_widget), GTK_WINDOW(parent));
     }
 
-    // Centrarea inițială dacă nu se specifică coordonate fixe
     if (x == -1 || y == -1) {
         gtk_window_set_position(GTK_WINDOW(m_widget), GTK_WIN_POS_CENTER);
     }
 
-    // Legăm semnalul de închidere (bătrânul WM_CLOSE devine semnalul "delete-event")
     g_signal_connect(m_widget, "delete-event", G_CALLBACK(+[](GtkWidget* /*w*/, GdkEvent* /*e*/, gpointer data) -> gboolean {
         xWindow* self = static_cast<xWindow*>(data);
         if (self->isMainWindow()) {
             gtk_main_quit();
         }
-        return FALSE; // Permite distrugerea widget-ului
+        return FALSE;
     }), this);
 
     return true;

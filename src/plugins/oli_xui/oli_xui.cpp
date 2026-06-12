@@ -13,23 +13,39 @@
 #include <algorithm>
 #include <gtk/gtk.h>
 
+#include <locale>
+#include <codecvt>
+
 #ifdef _WIN32
 #define OLI_EXPORT extern "C" __declspec(dllexport)
 #else
 #define OLI_EXPORT extern "C" __attribute__((visibility("default")))
 #endif
 
-// Helper pentru conversia rapidă din wstring (Oli Engine) în UTF-8 string (GTK)
-static std::string wstr_to_utf8(const std::wstring& wstr) {
-    if (wstr.empty()) return "";
-    // Conversie simplă cross-platform compatibilă cu setul tău de caractere
-    return std::string(wstr.begin(), wstr.end());
+// 🔥 FORȚĂM EXPORTUL GLOBAL PENTRU CORECTAREA LOOKUP ERROR
+extern "C" __attribute__((visibility("default"))) std::wstring str_to_wstr(const std::string& str) {
+    if (str.empty()) return L"";
+    try {
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        return converter.from_bytes(str);
+    } catch (...) {
+        return std::wstring(str.begin(), str.end());
+    }
 }
 
-// Helper pentru conversia din UTF-8 string (GTK) în wstring (Oli Engine)
+// Utilitare interne folosite în registrele plugin-ului
+static std::string wstr_to_utf8(const std::wstring& wstr) {
+    if (wstr.empty()) return "";
+    try {
+        std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+        return converter.to_bytes(wstr);
+    } catch (...) {
+        return std::string(wstr.begin(), wstr.end());
+    }
+}
+
 static std::wstring utf8_to_wstr(const std::string& str) {
-    if (str.empty()) return L"";
-    return std::wstring(str.begin(), str.end());
+    return str_to_wstr(str);
 }
 
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
@@ -238,9 +254,20 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         if (newCtrl) {
             xControl* rawControlPtr = newCtrl.get();
             
-            // În GTK adăugăm copilul în widget-ul structural de layout (VBox/HBox/Fixed) al părintelui
+            // Verificăm dacă părintele are un layout widget dedicat (valabil acum și pentru ferestre!)
+            GtkWidget* targetGtkParent = nullptr;
+            
+            xWindow* parentAsWindow = dynamic_cast<xWindow*>(parentCtrl);
             xContainer* parentAsContainer = dynamic_cast<xContainer*>(parentCtrl);
-            GtkWidget* targetGtkParent = parentAsContainer ? parentAsContainer->getLayoutWidget() : parentCtrl->getHandle();
+            
+            if (parentAsWindow) {
+                // Dacă părintele este o fereastră, extragem GtkFixed-ul din ea
+                targetGtkParent = parentAsWindow->getLayoutWidget();
+            } else if (parentAsContainer) {
+                targetGtkParent = parentAsContainer->getLayoutWidget();
+            } else {
+                targetGtkParent = parentCtrl->getHandle();
+            }
 
             rawControlPtr->create(targetGtkParent);
             parentCtrl->addChild(id, std::move(newCtrl));

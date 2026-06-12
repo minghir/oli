@@ -1,66 +1,71 @@
 #config echo off
 #config max_iterations 0
 
+echo "[OLI] Încarcă plugin-uri..."
 plugin oli_opengl
 plugin oli_keyboard
 plugin oli_math
 plugin oli_time
 
 # 1. Inițializare Fereastră
+echo "[OLI] Apelează GL_INIT..."
 set $v = GL_INIT(900, 700, "OLI Shader Demo")
+echo "[OLI] Fereastră inițializată. Cod: " + STR($v)
 
-#set $res = GL_SET_VSYNC(1)
-
-if $res == 1 then
-    echo "VSync activat cu succes!"
-else
-    echo "Placa video nu suporta controlul VSync."
-endif
-
+# set $res = GL_SET_VSYNC(1)
 
 set $currW = GL_WIDTH()
 set $currH = GL_HEIGHT()
+echo "[OLI] Dimensiune inițială detectată: " + STR($currW) + "x" + STR($currH)
 
-
-# 2. DEFINIRE TIMP START (FOARTE IMPORTANT!)
+# 2. DEFINIRE TIMP START
 set $startTime = TIME()
 
-# 3. Shadere (Scrise compact pentru a evita problemele de concatenare ale parserului)
-
-# Citim conținutul fișierelor
+# 3. Shadere
+echo "[OLI] Citește fișierele shader din disc..."
 set $vs_source = readfile("examples/shaders/vertex.glsl")
 set $fs_source = readfile("examples/shaders/fragment.glsl")
 
-# Verificăm dacă fișierele au fost găsite
+if $vs_source == null then
+    echo "[OLI ERROR] vertex.glsl a returnat NULL!"
+endif
+if $fs_source == null then
+    echo "[OLI ERROR] fragment.glsl a returnat NULL!"
+endif
+
 if $vs_source == null || $fs_source == null then
     GL_CLOSE()
     exit("Eroare: Nu am putut incarca fisierele shader!")
 endif
 
-# Încărcăm shaderele în OpenGL
+echo "[OLI] Încarcă și compilează Vertex Shader..."
 set $vshader = GL_LOAD_SHADER(0, $vs_source)
-set $fshader = GL_LOAD_SHADER(1, $fs_source)
+echo "[OLI] Vertex Shader înGPU ID: " + STR($vshader)
 
-if $fshader == 0 then
-	
-	GL_CLOSE()
-    exit( "EROARE COMPILARE: " + GL_GET_ERROR() )
-    # Putem chiar să afișăm eroarea pe ecranul OpenGL dacă vrem
+echo "[OLI] Încarcă și compilează Fragment Shader..."
+set $fshader = GL_LOAD_SHADER(1, $fs_source)
+echo "[OLI] Fragment Shader înGPU ID: " + STR($fshader)
+
+if $fshader == 0 || $vshader == 0 then
+    GL_CLOSE()
+    exit("EROARE COMPILARE GENERATĂ DE DRIVER: " + GL_GET_ERROR())
 endif
 
-
 # 4. Compilare și Linkare
+echo "[OLI] Lansează GL_LINK_PROGRAM..."
 set $prog = GL_LINK_PROGRAM($vshader, $fshader)
-
 echo "Shadere incarcate. Program ID: " + STR($prog)
 
+# Inițializare obligatorie pentru a preveni trimiterea de NULL către Uniforms
+set $clickX = 0
+set $clickY = 0
+set $statText = "Așteptare date..."
 
 set $startTime = TIME()
 set $lastTime = TIME()
 set $fpsUpdateTimer = 0
 set $fpsText = "Calculare..."
 
-# Variabile pentru statistici
 set $minFps = 99999.0
 set $maxFps = 0.0
 set $avgFps = 0.0
@@ -68,74 +73,88 @@ set $frameCounter = 0
 set $totalFpsSum = 0.0
 
 # 5. Loop principal
-set $c = 1
+echo "[OLI] Intrare în loop-ul principal (while true)..."
+set $iterIdx = 0
+
 while true do
-	
-	set $currX = GL_MOUSE_X()
+    set $iterIdx = $iterIdx + 1
+    # Dezactivează logul de iterație după primele cadre ca să nu satureze consola
+    if $iterIdx < 5 then
+        echo "[OLI LOOP] Început iterație cadru #" + STR($iterIdx)
+    endif
+    
+    set $currX = GL_MOUSE_X()
     set $currY = GL_MOUSE_Y()
     set $isDown = GL_MOUSE_BTN(0)
 
-    # Dacă butonul e apăsat, actualizăm și punctul de click (zw)
     if $isDown == 1 then
         set $clickX = $currX
         set $clickY = $currY
     endif
 
-
-	# 1. Calculăm DeltaTime
     set $currentTime = TIME()
     set $dt = $currentTime - $lastTime
     set $lastTime = $currentTime
     
     if $dt > 0 then
         set $currentFps = 1.0 / $dt
-        
-        # 2. Actualizăm Min și Max (după ce s-a stabilizat motorul, ex: după 1 secunda)
         if $currentTime - $startTime > 1.0 then
             if $currentFps < $minFps then set $minFps = $currentFps endif
             if $currentFps > $maxFps then set $maxFps = $currentFps endif
-            
-            # Pentru medie
             set $frameCounter = $frameCounter + 1
             set $totalFpsSum = $totalFpsSum + $currentFps
-            #set $avgFps = $totalFpsSum / $frameCounter
-			set $avgFps = ($avgFps * 0.9) + ($currentFps * 0.1)
+            set $avgFps = ($avgFps * 0.9) + ($currentFps * 0.1)
         endif
     endif
-	# 3. Update Text la fiecare 0.5 secunde
+
     set $fpsUpdateTimer = $fpsUpdateTimer + $dt
     if $fpsUpdateTimer > 0.5 then
         set $fpsText = "FPS: " + STR(ROUND($currentFps))
         set $statText = "MIN: " + STR(ROUND($minFps)) + " | MAX: " + STR(ROUND($maxFps)) + " | AVG: " + STR(ROUND($avgFps))
-        set $fpsUpdateTimer = 0
+        if $iterIdx < 20 then
+            echo "[OLI LOOP] Statistici calculate - " + $statText
+        endif
+         Ried $fpsUpdateTimer = 0
     endif
 
-    # Nu e nevoie de GL_CLEAR la fullscreen, dar e bine pentru test
+    if $iterIdx < 5 then echo "[OLI LOOP] Execut GL_CLEAR..." endif
     GL_CLEAR(0x000000)
     
+    if $iterIdx < 5 then echo "[OLI LOOP] Execut GL_USE_PROGRAM..." endif
     GL_USE_PROGRAM($prog)
-	
+    
     set $currW = GL_WIDTH()
-	set $currH = GL_HEIGHT()
-	
-	
-    # Calculăm timpul de la pornirea scriptului (valori mici: 0.1, 0.2...)
+    set $currH = GL_HEIGHT()
+    
     set $localTime = TIME() - $startTime
+    
+    if $iterIdx < 5 then echo "[OLI LOOP] Trimit iTime uniform..." endif
     GL_SET_UNIFORM($prog, "iTime", $localTime)
-	GL_SET_UNIFORM($prog, "iResolution", $currW , $currH)
-	GL_SET_UNIFORM($prog, "iMouse", $currX, $currY, $clickX, $clickY)
+    
+    if $iterIdx < 5 then echo "[OLI LOOP] Trimit iResolution uniform..." endif
+    GL_SET_UNIFORM($prog, "iResolution", $currW , $currH)
+    
+    if $iterIdx < 5 then echo "[OLI LOOP] Trimit iMouse uniform..." endif
+    GL_SET_UNIFORM($prog, "iMouse", $currX, $currY, $clickX, $clickY)
 
+    if $iterIdx < 5 then echo "[OLI LOOP] Lomez GL_DRAW_FULLSCREEN..." endif
     GL_DRAW_FULLSCREEN()
-	GL_USE_PROGRAM(0)
-	GL_TEXT(10, 25, $fpsText)
-	GL_TEXT(10, 45, $statText)
-	
+    
+    GL_USE_PROGRAM(0)
+    
+    if $iterIdx < 5 then echo "[OLI LOOP] Randez textele 2D..." endif
+    GL_TEXT(10, 25, $fpsText)
+    GL_TEXT(10, 45, $statText)
+    
+    if $iterIdx < 5 then echo "[OLI LOOP] Execut GL_PRESENT..." endif
     GL_PRESENT()
 
     if KEY_STATE(27) == 1 then 
-		#set $c = 0
-		break
-	endif
+        echo "[OLI] Tasta ESC detectată. Ieșire din loop."
+        break
+    endif
 endwhile
 
+echo "[OLI] Închid contextul grafic..."
 GL_CLOSE()
+echo "[OLI] Aplicație terminată complet cu succes."

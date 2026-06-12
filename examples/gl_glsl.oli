@@ -27,7 +27,13 @@ set $vs_source = readfile("examples/shaders/vertex.glsl")
 set $fs_source = readfile("examples/shaders/fragment.glsl")
 echo $fs_source
 echo "MIMI"
-
+if  $vs_source == null  ||  $fs_source == null  then
+    echo "FIFI"
+    GL_CLOSE()
+    exit("Eroare: Nu am putut incarca fisierele shader!")
+else
+    echo "GIGI"
+endif
 
 echo "Aici 1"
 if $vs_source == null then

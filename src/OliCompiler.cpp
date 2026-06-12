@@ -2383,6 +2383,7 @@ void OliCompiler::emitStore(const std::wstring& varName, OliChunk& chunk) {
     chunk.addByte((uint8_t)(nameIdx & 0xFF), 0);
 }
 
+/*
 void OliCompiler::generateShortCircuit(ASTPtr node, OliChunk& chunk, const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs) {
     bool isAnd = (node->value == L"&&");
 
@@ -2424,6 +2425,44 @@ void OliCompiler::generateShortCircuit(ASTPtr node, OliChunk& chunk, const std::
     // Dacă nu s-a sărit, pe stivă este RHS_Result.
     // În ambele cazuri, avem EXACT o valoare pe stivă la final.
 }
+*/
+
+void OliCompiler::generateShortCircuit(ASTPtr node, OliChunk& chunk, const std::unordered_map<std::wstring, ByteCodeProcedure>& externalProcs) {
+    bool isAnd = (node->value == L"&&");
+
+    // 1. Evaluăm partea stângă (LHS) -> Stivă: [LHS_Result]
+    generateFromAST(node->children[0], chunk, externalProcs);
+
+    // 2. Duplicăm pentru că operatorul consumă o valoare la verificare
+    chunk.addByte((uint8_t)OpCode::OP_DUP, 0);
+
+    // 3. Jump-ul de short-circuit
+    // Pentru &&: dacă e false, sărim (rezultatul final e clar false)
+    // Pentru ||: dacă e true, sărim (rezultatul final e clar true)
+    uint8_t jumpOp = isAnd ? (uint8_t)OpCode::OP_JUMP_IF_FALSE : (uint8_t)OpCode::OP_JUMP_IF_TRUE;
+    chunk.addByte(jumpOp, 0);
+
+    size_t jumpAddr = chunk.code.size();
+    chunk.addByte(0, 0); // Placeholder
+    chunk.addByte(0, 0);
+
+    // --- CALEA FĂRĂ SCURTCIRCUIT (Trebuie evaluat RHS) ---
+    // Dacă am ajuns aici, copia LHS a fost consumată sau nu ne mai interesează.
+    // Facem POP la valoarea rămasă de la LHS pentru a lăsa loc exclusiv lui RHS.
+    chunk.addByte((uint8_t)OpCode::OP_POP, 0);
+
+    // 4. Evaluăm partea dreaptă (RHS) -> Stivă: [RHS_Result]
+    generateFromAST(node->children[1], chunk, externalProcs);
+
+    // 5. Locul de aterizare pentru Short-Circuit (Backpatching)
+    uint16_t offset = (uint16_t)(chunk.code.size() - (jumpAddr + 2));
+    chunk.code[jumpAddr] = (uint8_t)(offset >> 8);
+    chunk.code[jumpAddr + 1] = (uint8_t)(offset & 0xFF);
+    
+    // De acum, indiferent pe ce cale s-a mers, pe stivă avem EXACT o valoare booleană (0 sau 1)
+    // pe care instrucțiunea următoare (cum ar bi OP_JUMP_IF_FALSE din IF) o poate citi curat!
+}
+
 std::wstring OliCompiler::reconstructRawName(ASTPtr node) {
     if (!node) return L"";
 

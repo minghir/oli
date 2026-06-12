@@ -760,20 +760,26 @@ case OpCode::OP_SET_INDIRECT: {
         }
         */
         case OpCode::OP_EQUAL: {
+            if (stack.size() < 2) throw std::runtime_error("Stack underflow at OP_EQUAL");
             vData b = stack.back(); stack.pop_back();
             vData a = stack.back(); stack.pop_back();
 
-            // 🔥 FIX: Extragem valorile reale din spatele pointerilor/variabilelor
             vData rA = a.getTrueData();
             vData rB = b.getTrueData();
 
-            if (rA.isInt() && rB.isInt()) {
-                stack.push_back(vData(rA.toInt() == rB.toInt()));
+            // 🔥 FIX CRITIC: Tratarea corectă a tipului NULL (Monostate)
+            if (rA.isNull() || rB.isNull()) {
+                // Sunt egale doar dacă AMBELE sunt null
+                stack.push_back(vData(rA.isNull() && rB.isNull()));
             }
             else if (rA.isString() && rB.isString()) {
                 stack.push_back(vData(rA.toWString() == rB.toWString()));
             }
+            else if (rA.isInt() && rB.isInt()) {
+                stack.push_back(vData(rA.toInt() == rB.toInt()));
+            }
             else {
+                // Fallback pentru numere combinate (Int cu Float, sau Float cu Float)
                 stack.push_back(vData(vDataToDouble(rA) == vDataToDouble(rB)));
             }
             break;

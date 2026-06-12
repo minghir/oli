@@ -6,6 +6,7 @@
 #include <fstream>
 
 #include "dbConnection.hpp"
+#include "DataMapper.hpp"
 
 #include <memory>
 
@@ -46,11 +47,13 @@ public:
     // DBF-ul nativ nu are SQL, deci execQuery va "selecta" tabelul
     bool execQuery(const std::wstring& query, std::string stm_name = "default") override;
 
-    long long execCountQuery(const std::wstring& countQuery) override { return m_header.numRecords; }
-    int getRowCount(std::string stm_name = "default") override { return m_header.numRecords; }
+    //long long execCountQuery(const std::wstring& countQuery) override { return m_header.numRecords; }
+    int getRowCount(std::string stm_name = "default") override { 
+        return (m_statements.find(stm_name) != m_statements.end()) ? (int)m_statements[stm_name]->dbfResult.size() : 0;
+    }
 
     const std::vector<std::wstring>& getColumnNames(std::string stm_name = "default") override;
-    const std::vector<vNativeDataType> getColumnTypes(std::string stm_name = "default") override;
+    std::vector<vNativeDataType> getColumnTypes(std::string stm_name = "default") override;
     const std::vector<vExternalColumnInfo> getColumnsInfo(std::string stm_name = "default") override;
 
     //bool setColNames(std::string stm_name = "default") override;

@@ -1,0 +1,44 @@
+﻿--- OLI ASSEMBLY LISTING ---
+Source: ./tests/test_db.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_PLUGIN       0000 (Path: oli_db)
+0003: OP_CONSTANT     0001 (Value: dbf)
+0006: OP_CONSTANT     0002 (Value: tmp/dbfs)
+0009: OP_CONSTANT     0003 (Value: db_con)
+0012: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
+0014: OP_POP
+0015: OP_CONSTANT     0004 (Value: select * from persoane)
+0018: OP_CONSTANT     0005 (Value: db_exec)
+0021: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0023: OP_POP
+0024: OP_CONSTANT     0006 (Value: Afisez: )
+0027: OP_CONSTANT     0007 (Value: db_count)
+0030: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0032: OP_CONCAT
+0033: OP_CONSTANT     0008 (Value:  inregistrari)
+0036: OP_CONCAT
+0037: OP_ECHO
+0038: OP_CONSTANT     0009 (Value: db_next)
+0041: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0043: OP_JUMP_IF_FALSE 0019 (Sari la: 65)
+0046: OP_CONSTANT     0010 (Value: db_fetch)
+0049: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0051: OP_SET_GLOBAL   0011 (Name: row)
+0054: OP_GET_GLOBAL   0011 (Name: row)
+0057: OP_CONSTANT     0012 (Value: NUME)
+0060: OP_GET_INDIRECT
+0061: OP_ECHO
+0062: OP_LOOP          0027 (Sari inapoi la: 38)
+0065: OP_CONSTANT     0013 (Value: db_columns)
+0068: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0070: OP_ECHO
+0071: OP_CONSTANT     0014 (Value: db_types)
+0074: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0076: OP_ECHO
+0077: OP_CONSTANT     0015 (Value: input)
+0080: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0082: OP_POP
+0083: OP_RETURN

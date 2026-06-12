@@ -19,6 +19,18 @@ enum class vTableTypes {
     Boolean
 };
 
+enum class vNativeDataType {
+    V_NULL,
+    V_INTEGER,
+    V_BIGINT,
+    V_DOUBLE,
+    V_TEXT,
+    V_DATE,
+    V_BOOLEAN,
+    V_BLOB
+};
+
+
 
 struct vConTable {
     std::wstring tableName;
@@ -31,7 +43,7 @@ struct vConTable {
 
     // Opțional: metadata pentru TYPE() - ex: "C", "N", "D"
     std::vector<std::wstring> columnTypes;
-
+    std::vector<vNativeDataType> nativeTypes;
     int getColumnIndex(const std::wstring& name) const;
     
     
@@ -79,7 +91,7 @@ struct TableContext {
     DBF_Header header;
     std::vector<DBF_FieldDescriptor> fields;
     std::vector<std::wstring> colNames;
-    std::vector<std::wstring> columnTypes;
+    std::vector<vNativeDataType> columnTypes;
     int currentRowIndex = -1;
     std::vector<char> rowBuffer;
 
@@ -87,16 +99,6 @@ struct TableContext {
     std::vector<std::map<std::wstring, std::wstring>> dbfResult;
 };
 
-enum class vNativeDataType {
-    V_NULL,
-    V_INTEGER,
-    V_BIGINT,
-    V_DOUBLE,
-    V_TEXT,
-    V_DATE,
-    V_BOOLEAN,
-    V_BLOB
-};
 
 
 struct vExternalColumnInfo {
@@ -116,7 +118,11 @@ public:
 
     dbConnection() = default;
 
-    dbConnection(const std::string& type, const std::wstring& dsn) {};
+    dbConnection(const std::string& type, const std::wstring& dsn)      
+    {
+        (void)type;
+        (void)dsn;
+    }   
 
     // Destructor
     virtual ~dbConnection() {};
@@ -134,11 +140,11 @@ public:
     virtual bool testConnection() = 0;
     //virtual const std::string& getType() const = 0;
     virtual bool execQuery(const std::wstring& query, std::string stm_name = "default" ) = 0;
-    virtual long long execCountQuery(const std::wstring& countQuery) = 0;
+    //virtual long long execCountQuery(const std::wstring& countQuery) = 0;
 
     virtual int getRowCount(std::string stm_name = "default") = 0;
     virtual const std::vector<std::wstring>& getColumnNames(std::string stm_name="default") = 0;
-    virtual const std::vector<vNativeDataType> getColumnTypes(std::string stm_name = "default") = 0;
+    virtual std::vector<vNativeDataType> getColumnTypes(std::string stm_name = "default") = 0;
     virtual const std::vector<vExternalColumnInfo> getColumnsInfo(std::string stm_name = "default") = 0;
 
     //virtual bool setColNames(std::string stm_name = "default") = 0;

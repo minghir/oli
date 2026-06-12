@@ -177,7 +177,17 @@ bool csvConnection::execQuery(const std::wstring& query, std::string stm_name) {
     // 5. Salvare în TableContext (pentru fetchMap/fetchNextRow)
     auto ctx = std::make_shared<TableContext>();
     ctx->colNames = result.table.columns;
-    ctx->columnTypes = result.table.columnTypes;
+    ctx->columnTypes.clear();
+    for (const auto& strType : result.table.columnTypes) {
+        if (strType == L"N" || strType == L"I") {
+            ctx->columnTypes.push_back(vNativeDataType::V_INTEGER);
+        } else if (strType == L"F") {
+            ctx->columnTypes.push_back(vNativeDataType::V_DOUBLE);
+        } else {
+            // Default pentru CSV sau tipul "C"
+            ctx->columnTypes.push_back(vNativeDataType::V_TEXT);
+        }
+    }
     ctx->currentRowIndex = -1;
 
     for (const auto& record : result.table.records) {
@@ -394,34 +404,24 @@ bool csvConnection::reconnect() {
 bool csvConnection::testConnection() {
     return true;
 }
-
+/*
 // odbcConnection.cpp (Implementare)
 long long csvConnection::execCountQuery(const std::wstring& countQuery) {
     // Folosește un statement dedicat pentru COUNT, dacă nu ai deja unul
     std::string stm_name = "count_stmt";
     return -1;
 }
+*/
 
-const std::vector<vNativeDataType> csvConnection::getColumnTypes(std::string stm_name) {
+std::vector<vNativeDataType> csvConnection::getColumnTypes(std::string stm_name) {
     std::vector<vNativeDataType> universalTypes;
     auto it = m_statements.find(stm_name);
 
     if (it != m_statements.end()) {
         auto ctx = it->second;
-        for (const auto& typeStr : ctx->columnTypes) {
-            if (typeStr == L"N") {
-                // Mapăm tipul numeric la DOUBLE pentru a acoperi și întregi și zecimale
-                universalTypes.push_back(vNativeDataType::V_DOUBLE);
-            }
-            else if (typeStr == L"D") {
-                universalTypes.push_back(vNativeDataType::V_DATE);
-            }
-            else if (typeStr == L"L") {
-                universalTypes.push_back(vNativeDataType::V_BOOLEAN);
-            }
-            else {
-                universalTypes.push_back(vNativeDataType::V_TEXT);
-            }
+        // Acum iterăm direct prin enum-urile stocate în TableContext
+        for (const auto& nativeType : ctx->columnTypes) {
+            universalTypes.push_back(nativeType);
         }
     }
     return universalTypes;
@@ -437,13 +437,13 @@ const std::vector<vExternalColumnInfo> csvConnection::getColumnsInfo(std::string
             vExternalColumnInfo info;
             info.name = ctx->colNames[i];
 
-            std::wstring t = (i < ctx->columnTypes.size()) ? ctx->columnTypes[i] : L"C";
-
-            // Mapare conform enum-ului tău real
-            if (t == L"N") info.type = vNativeDataType::V_DOUBLE;
-            else if (t == L"D") info.type = vNativeDataType::V_DATE;
-            else if (t == L"L") info.type = vNativeDataType::V_BOOLEAN;
-            else info.type = vNativeDataType::V_TEXT;
+            // Acum ctx->columnTypes conține direct vNativeDataType
+            // Nu mai este nevoie de comparații cu L"N", L"D", etc.
+            if (i < ctx->columnTypes.size()) {
+                info.type = ctx->columnTypes[i];
+            } else {
+                info.type = vNativeDataType::V_TEXT; // Default
+            }
 
             info.length = 255;
             info.isNullable = true;

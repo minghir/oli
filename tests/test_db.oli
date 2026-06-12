@@ -1,9 +1,11 @@
 plugin oli_db
 db_con("dbf","tmp/dbfs")
-db_exec("select NUME from persoane")
+db_exec("select * from persoane")
+echo "Afisez: " .. db_count() .. " inregistrari"
 while db_next() do
 $row = db_fetch()
 echo $row.NUME
 endwhile
-
+echo db_columns()
+echo  db_types()
 input()

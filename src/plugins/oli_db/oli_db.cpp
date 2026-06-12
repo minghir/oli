@@ -25,6 +25,7 @@ void RegisterSystemFunctions(PluginRegistry &registry)
 
     registry[L"DB_CON"] = [](const std::vector<vData> &args) -> vData
     {
+        //ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
         if (args.size() < 2)
         {
             return vData(L"ERR_INVALID_ARGS: Necesită [tip, dsn] sau [nume, tip, dsn]");
@@ -232,6 +233,72 @@ void RegisterSystemFunctions(PluginRegistry &registry)
         }
 
         return mapData;
+    };
+
+    registry[L"DB_COUNT"] = [](const std::vector<vData>& args) -> vData {
+        // Sintaxă: db_count([stm_name], [alias])
+        std::string stm_name = (args.size() >= 1) ? std::string(args[0].toWString().begin(), args[0].toWString().end()) : "default";
+        std::wstring alias = (args.size() >= 2) ? args[1].toWString() : L"default";
+
+        dbConnection* conn = DbManager::instance().getConnection(alias);
+        if (!conn) return vData(L"ERR_CONN_NOT_FOUND");
+
+        return vData((long long)conn->getRowCount(stm_name));
+    };
+
+    registry[L"DB_COLUMNS"] = [](const std::vector<vData>& args) -> vData {
+        // Sintaxă: db_columns([stm_name], [alias])
+        std::string stm_name = (args.size() >= 1) ? std::string(args[0].toWString().begin(), args[0].toWString().end()) : "default";
+        std::wstring alias = (args.size() >= 2) ? args[1].toWString() : L"default";
+
+        dbConnection* conn = DbManager::instance().getConnection(alias);
+        if (!conn) return vData(L"ERR_CONN_NOT_FOUND");
+
+        const std::vector<std::wstring>& names = conn->getColumnNames(stm_name);
+        
+        // Creăm un vDataArray pentru a stoca rezultatul
+        auto result = vData::CreateArray();
+        auto* arr = result.rawArray();
+        
+        for (const auto& name : names) {
+            arr->push_back(vData(name));
+        }
+        
+        return result;
+    };
+
+    registry[L"DB_TYPES"] = [](const std::vector<vData>& args) -> vData {
+        //ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
+        LOG_DEBUG(L"DB_TYPES called with " );
+        std::string stm_name = (args.size() >= 1) ? std::string(args[0].toWString().begin(), args[0].toWString().end()) : "default";
+        std::wstring alias = (args.size() >= 2) ? args[1].toWString() : L"default";
+
+        dbConnection* conn = DbManager::instance().getConnection(alias);
+        if (!conn) return vData(L"ERR_CONN_NOT_FOUND");
+
+        // 1. Obținem vectorul de tipuri native prin interfața conexiunii
+        const auto& types = conn->getColumnTypes(stm_name);
+        
+        // Debug util: vezi dacă engine-ul a trimis tipuri către statement-ul curent
+        LOG_DEBUG( L"Debug: S-au găsit " + std::to_wstring(types.size()) + L" tipuri.");
+
+        auto result = vData::CreateArray();
+        auto* arr = result.rawArray();
+
+        // 2. Mapăm enum-ul la string-uri lizibile pentru scriptul oli
+        for (const auto& type : types) {
+            switch (type) {
+                case vNativeDataType::V_INTEGER: arr->push_back(vData(L"INTEGER")); break;
+                case vNativeDataType::V_BIGINT:  arr->push_back(vData(L"BIGINT")); break;
+                case vNativeDataType::V_DOUBLE:  arr->push_back(vData(L"DOUBLE")); break;
+                case vNativeDataType::V_TEXT:    arr->push_back(vData(L"TEXT")); break;
+                case vNativeDataType::V_DATE:    arr->push_back(vData(L"DATE")); break;
+                case vNativeDataType::V_BOOLEAN: arr->push_back(vData(L"BOOLEAN")); break;
+                case vNativeDataType::V_BLOB:    arr->push_back(vData(L"BLOB")); break;
+                default:                         arr->push_back(vData(L"UNKNOWN")); break;
+            }
+        }
+        return result;
     };
 }
 

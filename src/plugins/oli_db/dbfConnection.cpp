@@ -261,8 +261,12 @@ bool dbfConnection::execQuery(const std::wstring& query, std::string stm_name) {
         if (universe.empty()) return false;
 
         // --- 2. Execuție Engine ---
+        for (const auto& tab : universe) {
+           LOG_INFO(L"DEBUG: Tabelul sursă " + tab.tableAlias + L" are " + std::to_wstring(tab.nativeTypes.size()) + L" tipuri.");
+        }
         vSqlEngine engine(universe, parser);
         vConResult result = engine.execute(parser);
+        LOG_INFO(L"DEBUG: result.table are " + std::to_wstring(result.table.nativeTypes.size()) + L" tipuri.");
         m_lastResult = result;
 
         if (!result.success) return false;
@@ -294,6 +298,7 @@ bool dbfConnection::execQuery(const std::wstring& query, std::string stm_name) {
         // --- 3. Mapare Rezultat (la fel ca înainte) ---
         auto ctx = std::make_shared<TableContext>();
         ctx->colNames = result.table.columns;
+        ctx->columnTypes = result.table.nativeTypes;
         for (const auto& record : result.table.records) {
             std::map<std::wstring, std::wstring> rowMap;
             for (size_t i = 0; i < result.table.columns.size(); ++i) {
@@ -301,6 +306,10 @@ bool dbfConnection::execQuery(const std::wstring& query, std::string stm_name) {
             }
             ctx->dbfResult.push_back(rowMap);
         }
+        LOG_INFO(L"DEBUG: Am salvat contextul cu cheia '" + str_to_wstr(stm_name) + L"'");
+        LOG_INFO(L"DEBUG: Inainte de salvare, result.table are " + std::to_wstring(result.table.nativeTypes.size()) + L" tipuri.");
+        LOG_INFO(L"DEBUG: Inainte de salvare, ctx are " + std::to_wstring(ctx->columnTypes.size()) + L" tipuri.");
+        LOG_INFO(L"DEBUG: [EXEC] Salvez in conexiunea la adresa: " + std::to_wstring((uintptr_t)this));
 
         m_statements[stm_name] = ctx;
         return true;
@@ -326,52 +335,19 @@ void dbfConnection::closeDatabase() {
     }
 }
 
-const std::vector<vNativeDataType> dbfConnection::getColumnTypes(std::string stm_name) {
-    std::vector<vNativeDataType> universalTypes;
-
-    // Luăm contextul pentru statement-ul cerut
+std::vector<vNativeDataType> dbfConnection::getColumnTypes(std::string stm_name) {
+    LOG_INFO(L"DEBUG: [TYPES] Dimensiunea map-ului m_statements este: " + std::to_wstring(m_statements.size()));
+    
     auto it = m_statements.find(stm_name);
-    if (it == m_statements.end()) return universalTypes;
-    auto ctx = it->second;
-
-    for (const auto& field : ctx->fields) { // Folosim ctx->fields, nu m_fields!
-        // field.fieldType este char (C, N, D, L, etc.)
-        switch (field.fieldType) {
-        case 'N': // Numeric
-        case 'F': // Float
-            if (field.decimalCount > 0) {
-                universalTypes.push_back(vNativeDataType::V_DOUBLE);
-            }
-            else {
-                // Dacă nu are zecimale, dBase îl folosește de obicei pentru Integer
-                universalTypes.push_back(vNativeDataType::V_INTEGER);
-            }
-            break;
-
-        case 'C': // Character
-        case 'M': // Memo (Text lung)
-            universalTypes.push_back(vNativeDataType::V_TEXT);
-            break;
-
-        case 'D': // Date (YYYYMMDD)
-            universalTypes.push_back(vNativeDataType::V_DATE);
-            break;
-
-        case 'L': // Logical (T/F, Y/N)
-            universalTypes.push_back(vNativeDataType::V_BOOLEAN);
-            break;
-
-        case 'I': // Integer (în versiuni mai noi de DBF)
-            universalTypes.push_back(vNativeDataType::V_INTEGER);
-            break;
-
-        default:
-            universalTypes.push_back(vNativeDataType::V_TEXT);
-            break;
-        }
+    if (it == m_statements.end()) {
+        LOG_INFO(L"DEBUG: [TYPES] Statement-ul nu a fost găsit în map!");
+        return {};
     }
 
-    return universalTypes;
+    auto ctx = it->second;
+    LOG_INFO(L"DEBUG: [TYPES] Structura contextului are " + std::to_wstring(ctx->columnTypes.size()) + L" tipuri.");
+    
+    return ctx->columnTypes;
 }
 
 
@@ -514,31 +490,7 @@ bool dbfConnection::saveFile(const std::wstring& filename, const vConTable& tabl
     fs.close();
     return true;
 }
-/*
-std::string dbfConnection::formatFieldForDbf(const std::wstring& val, int width, const std::wstring& type) {
-    std::string s = wstr_to_str(val);
 
-    // Constrângere strictă la lățimea coloanei
-    if (s.length() > (size_t)width) {
-        return s.substr(0, width);
-    }
-
-    if (type == L"D") {
-        // Dacă e dată, tăiem sau completăm la 8 caractere fără spații (standard DBF)
-        if (s.length() > 8) return s.substr(0, 8);
-        return s + std::string(8 - s.length(), '0');
-    }
-
-    if (type == L"N") {
-        // Numerele: aliniate la dreapta, restul spații în stânga
-        return std::string(width - s.length(), ' ') + s;
-    }
-    else {
-        // Text: aliniat la stânga, restul spații în dreapta
-        return s + std::string(width - s.length(), ' ');
-    }
-}
-*/
 
 std::string dbfConnection::formatFieldForDbf(const std::wstring& val, int width, const std::wstring& type) {
     std::string s = wstr_to_str(val);
@@ -813,85 +765,8 @@ bool dbfConnection::updateRecords(const std::wstring& tableName, const std::map<
     return true;
 }
 
+
 /*
-vConTable dbfConnection::loadTable(const QueryTable& tableInfo) {
-    vConTable table;
-
-    // 1. Pregătim numele și calea
-    std::wstring fileName = ensureExtension(tableInfo.name, L".dbf");
-    std::wstring fullPath = m_filePath + (m_filePath.back() == L'\\' ? L"" : L"\\") + fileName;
-
-    std::ifstream file(fullPath, std::ios::binary);
-    if (!file.is_open()) {
-        throw std::runtime_error("Nu s-a putut deschide tabela: " + wstr_to_str(fullPath));
-    }
-
-    // --- Citire Header ---
-    DBF_Header header;
-    file.read(reinterpret_cast<char*>(&header), sizeof(DBF_Header));
-
-    // --- Citire Descriptori coloane ---
-    std::vector<DBF_FieldDescriptor> fields;
-    while (file.good()) {
-        char nextByte = file.peek();
-        if (nextByte == 0x0D) break; // Finalul listei de descriptori
-        DBF_FieldDescriptor fd;
-        file.read(reinterpret_cast<char*>(&fd), sizeof(DBF_FieldDescriptor));
-        fields.push_back(fd);
-    }
-    file.seekg(header.headerLength, std::ios::beg);
-
-    // --- Configurare vConTable ---
-    table.tableName = fileName;
-    table.tableAlias = tableInfo.alias;
-
-    for (const auto& field : fields) {
-        // Numele coloanei
-        std::string rawName(field.fieldName, 11);
-        std::wstring cleanName = to_upper(wstr_trim(str_to_wstr(rawName.c_str())));
-        table.columns.push_back(cleanName);
-
-        // Tipul coloanei (C, N, D, etc.)
-        table.columnTypes.push_back(std::wstring(1, (wchar_t)field.fieldType));
-
-        // AICI POPULĂM columnWidths - lungimea fizică în bytes
-        table.columnWidths.push_back((int)field.fieldLength);
-    }
-    
-    // --- Citire Date ---
-    std::vector<char> rowBuffer(header.recordLength);
-    for (int i = 0; i < (int)header.numRecords; ++i) {
-        if (!file.read(rowBuffer.data(), header.recordLength)) break;
-
-        // VALIDARE STRICTĂ: Un rând DBF valid începe DOAR cu ' ' (activ) sau '*' (șters)
-        // Dacă rândul începe cu orice altceva (ca la 6ION Marian), înseamnă că datele sunt decalate.
-        if (rowBuffer[0] != ' ' && rowBuffer[0] != '*') {
-            LOG_DEBUG(L"Aliniere gresita detectata la randul " + std::to_wstring(i));
-            // Aici poti decide daca sari peste el sau incerci sa te realiniezi
-            continue;
-        }
-        
-        if (rowBuffer[0] == '*') {
-            continue; // Ignorăm înregistrările șterse
-        }
-        
-        // Dacă vrei să fii extra-safe, poți verifica dacă rowBuffer[0] != ' ' 
-        // dar deocamdată e suficient să filtrăm '*'
-
-        std::vector<std::wstring> rowRecord;
-        size_t offset = 1;
-        for (const auto& field : fields) {
-            std::string val(rowBuffer.data() + offset, field.fieldLength);
-            rowRecord.push_back(wstr_trim(str_to_wstr(val)));
-            offset += field.fieldLength;
-        }
-        table.records.push_back(std::move(rowRecord));
-    }
-    file.close();
-    return table;
-}
-*/
-
 vConTable dbfConnection::loadTable(const QueryTable& tableInfo) {
     vConTable table;
 
@@ -972,6 +847,79 @@ vConTable dbfConnection::loadTable(const QueryTable& tableInfo) {
             // Conversie în wstring și curățare spații
             rowRecord.push_back(wstr_trim(str_to_wstr(val)));
 
+            offset += field.fieldLength;
+        }
+        table.records.push_back(std::move(rowRecord));
+    }
+
+    file.close();
+    return table;
+}
+    */
+
+    vConTable dbfConnection::loadTable(const QueryTable& tableInfo) {
+    vConTable table;
+
+    // 1. Pregătim numele și calea
+    std::wstring fileName = ensureExtension(tableInfo.name, L".dbf");
+    std::wstring fullPath = m_filePath + (m_filePath.back() == L'/' ? L"" : L"/") + fileName;
+
+    std::ifstream file{ std::filesystem::path(fullPath), std::ios::binary };
+    if (!file.is_open()) {
+        throw std::runtime_error("Nu s-a putut deschide tabela: " + wstr_to_str(fullPath));
+    }
+
+    // --- Citire Header ---
+    DBF_Header header;
+    file.read(reinterpret_cast<char*>(&header), sizeof(DBF_Header));
+
+    // --- Citire Descriptori coloane ---
+    std::vector<DBF_FieldDescriptor> fields;
+    while (file.good()) {
+        char nextByte = file.peek();
+        if (nextByte == 0x0D) break;
+
+        DBF_FieldDescriptor fd;
+        file.read(reinterpret_cast<char*>(&fd), sizeof(DBF_FieldDescriptor));
+        fields.push_back(fd);
+    }
+
+    file.seekg(header.headerLength, std::ios::beg);
+
+    // --- Configurare vConTable ---
+    table.tableName = fileName;
+    table.tableAlias = tableInfo.alias;
+
+    for (const auto& field : fields) {
+        // Numele coloanei
+        std::string rawName(field.fieldName, 11);
+        table.columns.push_back(to_upper(wstr_trim(str_to_wstr(rawName.c_str()))));
+
+        // Folosim DataMapper pentru maparea tipului universal
+        vNativeDataType mappedType = DataMapper::FromDBF(field.fieldType, field.decimalCount);
+        table.nativeTypes.push_back(mappedType);
+
+        // Păstrăm restul metadatelor
+        table.columnWidths.push_back((int)field.fieldLength);
+        table.columnDecimals.push_back((int)field.decimalCount);
+        
+        // Păstrăm și reprezentarea text pentru compatibilitate (opțional)
+        table.columnTypes.push_back(std::wstring(1, (wchar_t)field.fieldType));
+    }
+
+    // --- Citire Date ---
+    std::vector<char> rowBuffer(header.recordLength);
+    for (int i = 0; i < (int)header.numRecords; ++i) {
+        if (!file.read(rowBuffer.data(), header.recordLength)) break;
+
+        if (rowBuffer[0] == '*') continue; // Ignorăm rândurile șterse
+
+        std::vector<std::wstring> rowRecord;
+        size_t offset = 1; 
+
+        for (const auto& field : fields) {
+            std::string val(rowBuffer.data() + offset, field.fieldLength);
+            rowRecord.push_back(wstr_trim(str_to_wstr(val)));
             offset += field.fieldLength;
         }
         table.records.push_back(std::move(rowRecord));

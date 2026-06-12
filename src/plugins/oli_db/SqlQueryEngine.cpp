@@ -413,9 +413,11 @@ vConResult vSqlEngine::executeSelect(const SqlQueryParser& parser) {
             int srcIdx = workTable.getColumnIndex(to_upper(col.rawExpression));
             if (srcIdx != -1) {
                 finalTable.columnTypes.push_back(workTable.columnTypes[srcIdx]);
+                finalTable.nativeTypes.push_back(workTable.nativeTypes[srcIdx]);
             }
             else {
                 finalTable.columnTypes.push_back(L"C"); // Default Character
+                finalTable.nativeTypes.push_back(vNativeDataType::V_TEXT);
             }
         }
 

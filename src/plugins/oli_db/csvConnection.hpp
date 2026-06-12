@@ -61,12 +61,12 @@ public:
 
     // execut query
     bool execQuery(const std::wstring& query, std::string stm_name = "default" ) override;
-    long long execCountQuery(const std::wstring& countQuery) override;
+    //long long execCountQuery(const std::wstring& countQuery) override;
 
     int getRowCount(std::string stm_name = "default") override;
 
     const std::vector<std::wstring>& getColumnNames(std::string stm_name="default") override;
-    const std::vector<vNativeDataType> getColumnTypes(std::string stm_name = "default") override;
+    std::vector<vNativeDataType> getColumnTypes(std::string stm_name = "default") override;
     const std::vector<vExternalColumnInfo> getColumnsInfo(std::string stm_name = "default") override;
 
     //bool setColNames(std::string stm_name = "default") override;

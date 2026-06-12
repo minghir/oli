@@ -1,0 +1,39 @@
+# =================================================================
+# MAPARE MINIMALĂ PENTRU TEST STRUCTURAL (DOAR FEREASTRĂ + BUTON)
+# =================================================================
+
+def class WinApp {
+    init(),
+    run()
+}
+func WinApp::init() return WINAPP::INIT(1) endfunc
+func WinApp::run()  return WINAPP::RUN()   endfunc
+
+
+def class WinWindow {
+    id,
+    init($id, $title),
+    show(),
+    bind($event, $func)
+}
+func WinWindow::init($id, $title)
+    $this.id = $id
+    return CREATE_WINWINDOW($id, $title)
+endfunc
+func WinWindow::show()         return WINWINDOW::SHOW($this) endfunc
+func WinWindow::bind($ev, $fn) return UI_BIND_EVENT($this.id, $ev, $fn) endfunc
+
+
+def class WinButton {
+    id,
+    init($id, $parentId, $x, $y, $w, $h, $text),
+    bind($ev, $fn),
+    set_prop($key, $val)
+}
+func WinButton::init($id, $parentId, $x, $y, $w, $h, $text)
+    $this.id = $id
+    # Injectăm direct BUTTON în id-ul ferestrei părinte!
+    return UI_CREATE_CONTROL("BUTTON", $id, $parentId, $x, $y, $w, $h, $text)
+endfunc
+func WinButton::bind($ev, $fn)   return UI_BIND_EVENT($this.id, $ev, $fn) endfunc
+func WinButton::set_prop($k, $v) return UI_SET_PROPERTY($this, $k, $v) endfunc

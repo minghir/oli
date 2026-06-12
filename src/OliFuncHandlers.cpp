@@ -1149,16 +1149,27 @@ vData vOliEngine::handleTrimFunc(const std::vector<vData>& args) {
 vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
     if (args.empty() || !args[0].isString()) {
         LOG_ERROR(L"[RUNTIME ERROR] readfile() requires a path string.");
-        return vData(std::monostate{}); // Returnăm NULL, nu string gol
+        return vData(std::monostate{});
     }
 
     std::wstring pathW = std::get<std::wstring>(args[0].value);
     try {
         std::string utf8_path = PortTools::wstring_to_utf8(pathW);
+
+        // 🔥 FIX 1: Curățăm eventualele caractere '\r' (carriage return) aduse din scripturi formatate pe Windows
+        utf8_path.erase(std::remove(utf8_path.begin(), utf8_path.end(), '\r'), utf8_path.end());
+
+        // 🔥 FIX 2: Normalizăm separatoarele (înlocuim backslash cu slash normal pentru Linux)
+        std::replace(utf8_path.begin(), utf8_path.end(), '\\', '/');
+
+        // 🔥 LOG DE DIAGNOSTIC: Vedem exact ce încearcă Linux-ul să deschidă în terminal
+        std::cout << "[DEBUG readfile] Încerc să deschid calea brută curățată: [" << utf8_path << "]" << std::endl;
+
         std::ifstream file(utf8_path, std::ios::binary);
 
         if (!file.is_open()) {
-            // Nu logăm eroare neapărat, lăsăm scriptul să decidă ce face cu NULL-ul
+            // 🔥 LOG DE EȘEC: Ne va spune exact dacă fișierul a lipsit din cauza căii distorsionate
+            std::cerr << "[DEBUG readfile] EȘEC! Nu s-a putut deschide: [" << utf8_path << "]" << std::endl;
             return vData(std::monostate{});
         }
 
@@ -1178,58 +1189,32 @@ vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
         return vData(std::monostate{});
     }
 }
-/*
+
+
 vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
-    // Validare: avem nevoie de cel puțin path (string) și ceva de scris (orice)
     if (args.size() < 2 || !args[0].isString()) {
         LOG_ERROR(L"[RUNTIME ERROR] writefile() requires (path, content).");
         return vData(0LL);
     }
 
-    std::wstring pathW = std::get<std::wstring>(args[0].value);
-
-    // REPARAT: Convertim ORICE tip de dată în string (Map, Array, Number)
-    // Folosim helper-ul tău vDataToWString sau o conversie similară
-    std::wstring contentW = vDataToWString(args[1]);
-
-    contentW = PortTools::normalize_newlines_for_write(contentW);
-
+    std::wstring pathW = args[0].toWString();
     try {
         std::string path = PortTools::wstring_to_utf8(pathW);
-        std::string content = PortTools::wstring_to_utf8(contentW);
 
+        // 🔥 FIX 1: Curățăm eventualele caractere '\r' prinse în calea fișierului
+        path.erase(std::remove(path.begin(), path.end(), '\r'), path.end());
+
+        // 🔥 FIX 2: Normalizăm separatoarele pentru Linux (backslash -> forward-slash)
+        std::replace(path.begin(), path.end(), '\\', '/');
+
+        // ios::binary este crucial aici
         std::ofstream file(path, std::ios::binary | std::ios::trunc);
+
         if (!file.is_open()) {
-            LOG_ERROR(L"[RUNTIME ERROR] Cannot open for writing: " + pathW);
+            std::cerr << "[DEBUG writefile] EȘEC! Nu s-a putut deschide pentru scriere: [" << path << "]" << std::endl;
             return vData(0LL);
         }
 
-        file.write(content.data(), content.size());
-        file.close();
-
-        return vData(1LL); // Succes (long long)
-    }
-    catch (...) {
-        LOG_ERROR(L"[RUNTIME ERROR] Exception writing file: " + pathW);
-        return vData(0LL);
-    }
-}
-*/
-
-//Cea mai bună metodă este să modificăm funcția C++ astfel încât, atunci când primește un Array, să verifice tipul fiecărui element din interior. Dacă elementul este un String, îl scrie ca text; dacă este un Număr, îl scrie ca un singur byte.
-vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
-    if (args.size() < 2 || !args[0].isString()) {
-        LOG_ERROR(L"[RUNTIME ERROR] writefile() requires (path, content).");
-        return vData(0LL);
-    }
-
-    std::string path = PortTools::wstring_to_utf8(args[0].toWString());
-    // ios::binary este crucial aici
-    std::ofstream file(path, std::ios::binary | std::ios::trunc);
-
-    if (!file.is_open()) return vData(0LL);
-
-    try {
         if (args[1].isArray()) {
             auto* arr = args[1].rawArray();
             if (arr) {
@@ -1237,20 +1222,16 @@ vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
                     if (item.isString()) {
                         std::string s = PortTools::wstring_to_utf8(item.toWString());
 
-                        // REPARAȚIE: Eliminăm manual orice \r care s-ar fi putut strecura
-                        // pentru a păstra header-ul PPM curat (doar \n)
-                        std::string cleanHeader;
-                        for (char c : s) {
-                            if (c != '\r') cleanHeader += c;
-                        }
+                        // Optimizare: Curățare rapidă direct în string-ul convertit
+                        s.erase(std::remove(s.begin(), s.end(), '\r'), s.end());
 
-                        file.write(cleanHeader.data(), cleanHeader.size());
+                        file.write(s.data(), s.size());
                     }
                     else {
                         // REPARAȚIE: Ne asigurăm că toInt() funcționează și dacă 
                         // numărul este stocat ca Double în vData
                         unsigned char b = static_cast<unsigned char>((int)item.toDouble() & 0xFF);
-                        file.write(reinterpret_cast<char*>(&b), 1);
+                        file.write(reinterpret_cast<const char*>(&b), 1);
                     }
                 }
             }
@@ -1264,42 +1245,45 @@ vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
         return vData(1LL);
     }
     catch (...) {
-        if (file.is_open()) file.close();
+        // Notă: Dacă excepția a apărut înainte ca fișierul să încerce deschiderea, 
+        // nu are rost să verificăm sau să închidem handle-ul local.
         return vData(0LL);
     }
 }
 
 
-
 vData vOliEngine::handleAppendFileFunc(const std::vector<vData>& args) {
     vData result;
 
-    // 1. Validare argumente
-    if (args.size() != 2 ||
-        !std::holds_alternative<std::wstring>(args[0].value) ||
-        !std::holds_alternative<std::wstring>(args[1].value))
-    {
+    // 1. Validare flexibilă (la fel ca la writefile, folosim isString sau toWString)
+    if (args.size() < 2 || !args[0].isString()) {
         LOG_ERROR(L"[RUNTIME ERROR] appendfile() requires (path, content).");
-        result.value = 0;
+        result.value = 0LL;
         return result;
     }
 
-    std::wstring pathW = std::get<std::wstring>(args[0].value);
-    std::wstring contentW = std::get<std::wstring>(args[1].value);
+    std::wstring pathW = args[0].toWString();
+    std::wstring contentW = args[1].toWString(); // Permite conversia automată dacă content-ul e număr
 
     // Normalizează newline-urile în funcție de OS
     contentW = PortTools::normalize_newlines_for_write(contentW);
 
     try {
-        // 2. Convertim wide → UTF-8 pentru Linux
+        // 2. Convertim wide → UTF-8 pentru filesystem
         std::string path = PortTools::wstring_to_utf8(pathW);
         std::string content = PortTools::wstring_to_utf8(contentW);
+
+        // 🔥 FIX 1: Curățăm caracterele '\r' rătăcite din calea fișierului
+        path.erase(std::remove(path.begin(), path.end(), '\r'), path.end());
+
+        // 🔥 FIX 2: Normalizăm separatoarele de directoare pentru Linux
+        std::replace(path.begin(), path.end(), '\\', '/');
 
         // 3. Deschidem fișierul în modul append
         std::ofstream file(path, std::ios::binary | std::ios::app);
         if (!file.is_open()) {
             LOG_ERROR(L"[RUNTIME ERROR] Cannot append to file: " + pathW);
-            result.value = 0;
+            result.value = 0LL;
             return result;
         }
 
@@ -1307,14 +1291,14 @@ vData vOliEngine::handleAppendFileFunc(const std::vector<vData>& args) {
         file.write(content.data(), content.size());
         file.close();
 
-        result.value = 1; // succes
+        result.value = 1LL; // succes (folosim LL pentru consistență cu tipul Long al engine-ului)
         return result;
     }
     catch (...) {
         LOG_ERROR(L"[RUNTIME ERROR] Unknown error in appendfile().");
     }
 
-    result.value = 0;
+    result.value = 0LL;
     return result;
 }
 

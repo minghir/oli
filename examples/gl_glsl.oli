@@ -26,6 +26,11 @@ echo "[OLI] Citește fișierele shader din disc..."
 set $vs_source = readfile("examples/shaders/vertex.glsl")
 set $fs_source = readfile("examples/shaders/fragment.glsl")
 
+if $vs_source == null || $fs_source == null then
+    GL_CLOSE()
+    exit("Eroare: Nu am putut incarca fisierele shader!")
+endif
+
 if $vs_source == null then
     echo "[OLI ERROR] vertex.glsl a returnat NULL!"
 endif

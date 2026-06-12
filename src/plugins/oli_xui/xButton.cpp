@@ -1,6 +1,8 @@
 #include "../../StringUtils.hpp"
 #include "xButton.hpp"
 #include <algorithm>
+#include <locale>
+#include <codecvt>
 
 xButton::xButton(const std::string& id, const std::wstring& text, int x, int y, int w, int h, EventDispatcher& dispatcher)
     : xControl(id, x, y, w, h, dispatcher), m_text(text) {
@@ -16,21 +18,21 @@ static void GtkButtonCallbackAdapter(GtkWidget* /*widget*/, gpointer data) {
     }
 }
 
+
+
 void xButton::create(GtkWidget* parent) {
-    std::string utf8Text(m_text.begin(), m_text.end());
-    
-    // Instanțiere widget nativ GTK
+    // Conversie locală ultra-sigură pentru Linux
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+    std::string utf8Text = converter.to_bytes(m_text);
+
     m_widget = gtk_button_new_with_label(utf8Text.c_str());
     
-    // Setăm dimensiunea explicită dacă layout-ul o cere
     if (m_width > 0 && m_height > 0) {
         gtk_widget_set_size_request(m_widget, m_width, m_height);
     }
 
-    // 🔥 LEGAREA SEMNALULUI: Înlocuitorul pentru WM_COMMAND / BN_CLICKED
     g_signal_connect(m_widget, "clicked", G_CALLBACK(GtkButtonCallbackAdapter), this);
 
-    // Îl injectăm în părinte (dacă părintele e un GtkFixed sau un GtkBox)
     if (parent) {
         if (GTK_IS_FIXED(parent)) {
             gtk_fixed_put(GTK_FIXED(parent), m_widget, m_x, m_y);

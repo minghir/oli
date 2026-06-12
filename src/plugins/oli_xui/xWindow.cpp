@@ -13,7 +13,7 @@ xWindow::xWindow(const std::string& id, WindowType type, bool isMainWindow, Even
 
 xWindow::~xWindow() {
     if (m_widget) {
-        gtk_widget_destroy(m_widget);
+        //gtk_widget_destroy(m_widget);
         m_widget = nullptr;
     }
 }

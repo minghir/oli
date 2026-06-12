@@ -752,6 +752,58 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         return vData{ 1LL };
     };
 
+    // 🔥 FIX: Înregistrare explicită GL_FILL_CIRCLE
+    registry[L"GL_FILL_CIRCLE"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 4) return vData{ 0LL };
+
+        float cx = (float)toDouble(args[0]);
+        float cy = (float)toDouble(args[1]);
+        float r = (float)toDouble(args[2]);
+        GLColor c((unsigned int)toDouble(args[3]));
+
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glDisable(GL_TEXTURE_2D); glDisable(GL_LIGHTING); glDisable(GL_DEPTH_TEST);
+        if (glUseProgram) glUseProgram(0);
+
+        glMatrixMode(GL_PROJECTION); glPushMatrix(); glLoadIdentity();
+        glOrtho(0, g_GL.width, g_GL.height, 0, -1, 1);
+        glMatrixMode(GL_MODELVIEW); glPushMatrix(); glLoadIdentity();
+
+        glColor3f(c.r, c.g, c.b);
+        glBegin(GL_TRIANGLE_FAN);
+        glVertex2f(cx, cy); // Centrul cercului
+        for (int i = 0; i <= 64; ++i) {
+            float a = i * 0.09817477f; // 2π / 64
+            glVertex2f(cx + r * std::cos(a), cy + r * std::sin(a));
+        }
+        glEnd();
+
+        glPopMatrix(); glMatrixMode(GL_PROJECTION); glPopMatrix();
+        glMatrixMode(GL_MODELVIEW); glPopAttrib();
+
+        return vData{ 1LL };
+    };
+
+    // 🔥 FIX: Înregistrare explicită GL_SET_VSYNC (Cross-Platform)
+    registry[L"GL_SET_VSYNC"] = [](const std::vector<vData>& args) -> vData {
+        if (args.empty()) return vData{ 0LL };
+
+        int interval = (int)toDouble(args[0]); // 1 pentru ON (limitare FPS la rata ecranului), 0 pentru OFF
+
+#ifdef _WIN32
+        if (wglSwapIntervalEXT) {
+            wglSwapIntervalEXT(interval);
+            return vData{ 1LL };
+        }
+#else
+        if (glXSwapIntervalEXT && g_GL.display && g_GL.window) {
+            glXSwapIntervalEXT(g_GL.display, g_GL.window, interval);
+            return vData{ 1LL };
+        }
+#endif
+        return vData{ 0LL }; // Returnăm 0 dacă extensia nu este suportată de driverul plăcii video
+    };
+
     // GL_MOUSE_X / Y / BTN
     registry[L"GL_MOUSE_X"]   = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.mouseX }; };
     registry[L"GL_MOUSE_Y"]   = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.mouseY }; };

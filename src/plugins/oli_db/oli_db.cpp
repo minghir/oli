@@ -12,6 +12,21 @@
 #define OLI_EXPORT extern "C" __attribute__((visibility("default")))
 #endif
 
+
+std::wstring TypeToWString(vNativeDataType type) {
+    switch (type) {
+        case vNativeDataType::V_INTEGER: return L"INTEGER";
+        case vNativeDataType::V_BIGINT:  return L"BIGINT";
+        case vNativeDataType::V_DOUBLE:  return L"DOUBLE";
+        case vNativeDataType::V_TEXT:    return L"TEXT";
+        case vNativeDataType::V_DATE:    return L"DATE";
+        case vNativeDataType::V_BOOLEAN: return L"BOOLEAN";
+        case vNativeDataType::V_BLOB:    return L"BLOB";
+        default:                         return L"UNKNOWN";
+    }
+}
+
+
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
 
 // --- Helper pentru conversii ---
@@ -82,27 +97,6 @@ void RegisterSystemFunctions(PluginRegistry &registry)
         }
 
         return vData(L"OK: Conectat ca '" + alias + L"'");
-    };
-
-    registry[L"DB_CLOSE"] = [](const std::vector<vData> &args) -> vData
-    {
-        // Dacă nu avem argumente, alias-ul este implicit "default"
-        std::wstring alias = (args.size() == 0) ? L"default" : args[0].toWString();
-
-        // Verificăm dacă există
-        if (!DbManager::instance().hasConnection(alias))
-        {
-            return vData(L"ERR_NOT_FOUND: Conexiunea '" + alias + L"' nu există.");
-        }
-
-        // Eliminăm conexiunea (unique_ptr-ul din map va fi distrus automat,
-        // deci destructorul dbConnection va fi apelat corect)
-        if (DbManager::instance().removeConnection(alias))
-        {
-            return vData(L"OK: Conexiunea '" + alias + L"' a fost închisă.");
-        }
-
-        return vData(L"ERR_INTERNAL: Eroare la închiderea conexiunii.");
     };
 
     registry[L"DB_CLOSE"] = [](const std::vector<vData> &args) -> vData
@@ -299,6 +293,115 @@ void RegisterSystemFunctions(PluginRegistry &registry)
             }
         }
         return result;
+    };
+    registry[L"DB_COLUMNS_INFO"] = [](const std::vector<vData>& args) -> vData {
+        std::string stm_name = (args.size() >= 1) ? std::string(args[0].toWString().begin(), args[0].toWString().end()) : "default";
+        std::wstring alias = (args.size() >= 2) ? args[1].toWString() : L"default";
+
+        dbConnection* conn = DbManager::instance().getConnection(alias);
+        if (!conn) return vData(L"ERR_CONN_NOT_FOUND");
+
+        // Obținem informațiile de la conexiune
+        const auto& infoList = conn->getColumnsInfo(stm_name);
+        
+        auto resultArray = vData::CreateArray();
+        auto* arr = resultArray.rawArray();
+
+        for (const auto& info : infoList) {
+            auto colMap = vData::CreateMap();
+            auto* rawMap = colMap.rawMap();
+
+            (*rawMap)[L"NAME"] = vData(info.name);
+            // Convertim enum-ul înapoi în string pentru script
+            (*rawMap)[L"TYPE"] = vData(TypeToWString(info.type)); 
+            (*rawMap)[L"LENGTH"] = vData((long long)info.length);
+            (*rawMap)[L"NULLABLE"] = vData(info.isNullable);
+
+            arr->push_back(colMap);
+        }
+
+        return resultArray;
+    };
+
+    registry[L"DB_FETCH_FIELD"] = [](const std::vector<vData>& args) -> vData {
+        if (args.empty()) return vData(L"");
+
+        std::string stm_name = (args.size() >= 2) ? std::string(args[1].toWString().begin(), args[1].toWString().end()) : "default";
+        std::wstring alias = (args.size() >= 3) ? args[2].toWString() : L"default";
+
+        dbConnection* conn = DbManager::instance().getConnection(alias);
+        if (!conn) return vData(L"");
+
+        // Verificăm dacă este număr (indiferent dacă e int sau double în VM)
+        //LOG_ERROR(L"DEBUG: Tip argument primit: " + std::to_wstring(args[0].type()));
+        //if (args[0].isNumber()) {
+        if (args[0].isInt() || args[0].isFloat()) {
+            // Folosim toInt() pentru că ai implementat-o în vData.hpp
+            int fieldNo = (int)args[0].toInt();
+            return vData(conn->fetchFieldByNumber(fieldNo, stm_name));
+        } 
+        else {
+            std::wstring fieldName = args[0].toWString();
+            return vData(conn->fetchFieldByName(fieldName, stm_name));
+        }
+    };
+
+    registry[L"DB_FETCH_ROW"] = [](const std::vector<vData>& args) -> vData {
+        std::string stm_name = (args.size() >= 1) ? std::string(args[0].toWString().begin(), args[0].toWString().end()) : "default";
+        std::wstring alias = (args.size() >= 2) ? args[1].toWString() : L"default";
+
+        dbConnection* conn = DbManager::instance().getConnection(alias);
+        if (!conn) return vData::CreateArray();
+
+        std::vector<std::wstring> row = conn->fetchRow(stm_name);
+        
+        // Transformăm vectorul de wstring în vData Array
+        auto resultArray = vData::CreateArray();
+        auto* arr = resultArray.rawArray();
+        
+        for (const auto& val : row) {
+            arr->push_back(vData(val));
+        }
+        
+        return resultArray;
+    };
+
+    registry[L"DB_GET_ERROR"] = [](const std::vector<vData>& args) -> vData {
+        std::wstring alias = (args.size() >= 1) ? args[0].toWString() : L"default";
+        
+        dbConnection* conn = DbManager::instance().getConnection(alias);
+        if (!conn) return vData(L"Conexiune inexistentă");
+
+        return vData(conn->getError());
+    };
+
+    registry[L"DB_FETCH_ALL"] = [](const std::vector<vData>& args) -> vData {
+        std::string stm_name = (args.size() >= 1) ? std::string(args[0].toWString().begin(), args[0].toWString().end()) : "default";
+        std::wstring alias = (args.size() >= 2) ? args[1].toWString() : L"default";
+
+        dbConnection* conn = DbManager::instance().getConnection(alias);
+        if (!conn) return vData::CreateArray();
+
+        // 1. Preluăm rezultatul complet
+        vConResult res = conn->getLastQueryResult();
+        
+        auto resultArray = vData::CreateArray();
+        auto* arr = resultArray.rawArray();
+
+        // 2. Iterăm prin records și construim Map-urile
+        for (const auto& record : res.table.records) {
+            auto rowMap = vData::CreateMap();
+            auto* rawMap = rowMap.rawMap();
+
+            for (size_t i = 0; i < res.table.columns.size(); ++i) {
+                std::wstring colName = res.table.columns[i];
+                std::wstring val = (i < record.size()) ? record[i] : L"";
+                (*rawMap)[colName] = vData(val);
+            }
+            arr->push_back(rowMap);
+        }
+
+        return resultArray;
     };
 }
 

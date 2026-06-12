@@ -5,7 +5,20 @@ echo "Afisez: " .. db_count() .. " inregistrari"
 while db_next() do
 $row = db_fetch()
 echo $row.NUME
+echo  db_fetch_field(0)
+echo  db_fetch_field("ORAS")
+echo db_fetch_row()
 endwhile
+echo "---------------------------------"
 echo db_columns()
 echo  db_types()
+echo DB_COLUMNS_INFO()
+
+echo "---------------------------------"
+echo DB_FETCH_ALL();
+echo "---------------------------------"
+
+if !db_exec("select * from rude")  then echo DB_GET_ERROR(); 
+else echo DB_FETCH_ALL();
+endif
 input()

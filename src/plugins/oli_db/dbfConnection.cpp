@@ -94,25 +94,29 @@ bool dbfConnection::fetchNextRow(std::string stm_name) {
     }
     return false;
 }
-
 std::wstring dbfConnection::fetchFieldByNumber(int fieldNo, std::string stm_name) {
     auto it = m_statements.find(stm_name);
     if (it == m_statements.end()) return L"";
 
     auto ctx = it->second;
-    if (fieldNo < 0 || fieldNo >= ctx->fields.size()) return L"";
 
-    int offset = 1; // skip delete flag
-    for (int i = 0; i < fieldNo; ++i) offset += ctx->fields[i].fieldLength;
+    // 1. Validare rând
+    if (ctx->currentRowIndex < 0 || ctx->currentRowIndex >= (int)ctx->dbfResult.size()) {
+        return L"";
+    }
 
-    std::string rawVal(ctx->rowBuffer.data() + offset, ctx->fields[fieldNo].fieldLength);
+    // 2. Validare coloană (folosind colNames ca sursă de adevăr)
+    if (fieldNo < 0 || fieldNo >= (int)ctx->colNames.size()) {
+        return L"";
+    }
 
-    // Curățăm spațiile de la final (DBF pad-uiește cu spații)
-    rawVal.erase(rawVal.find_last_not_of(" ") + 1);
-
-    return str_to_wstr(rawVal);
+    // 3. Extragere directă din map-ul deja populat
+    const auto& rowMap = ctx->dbfResult[ctx->currentRowIndex];
+    const std::wstring& colName = ctx->colNames[fieldNo];
+    
+    auto itCol = rowMap.find(colName);
+    return (itCol != rowMap.end()) ? itCol->second : L"";
 }
-
 std::map<std::wstring, std::wstring> dbfConnection::fetchMap(std::string stm_name) {
     if (m_statements.find(stm_name) == m_statements.end()) return {};
 
@@ -350,11 +354,9 @@ std::vector<vNativeDataType> dbfConnection::getColumnTypes(std::string stm_name)
     return ctx->columnTypes;
 }
 
-
 const std::vector<vExternalColumnInfo> dbfConnection::getColumnsInfo(std::string stm_name) {
     std::vector<vExternalColumnInfo> infoList;
 
-    // 1. Căutăm contextul statement-ului
     auto it = m_statements.find(stm_name);
     if (it == m_statements.end()) {
         LOG_ERROR(L"getColumnsInfo: Statement-ul '" + str_to_wstr(stm_name) + L"' nu a fost găsit.");
@@ -362,21 +364,27 @@ const std::vector<vExternalColumnInfo> dbfConnection::getColumnsInfo(std::string
     }
 
     auto ctx = it->second;
-
-    // 2. Obținem tipurile (getColumnTypes este deja actualizat să folosească stm_name)
     const auto& types = getColumnTypes(stm_name);
 
-    // 3. Iterăm prin descriptorii din contextul specific (ctx->fields)
-    for (size_t i = 0; i < ctx->fields.size(); ++i) {
+    // Iterăm bazat pe colNames, care reprezintă coloanele din rezultatul final (SELECT)
+    for (size_t i = 0; i < ctx->colNames.size(); ++i) {
         vExternalColumnInfo info;
-
-        // Folosim datele din ctx, nu din membrii clasei
+        
         info.name = ctx->colNames[i];
-        info.type = types[i];
-        info.length = (int)ctx->fields[i].fieldLength;
-        info.precision = (int)ctx->fields[i].decimalCount;
-        info.isNullable = false; // DBF-ul clasic nu suportă nativ NULL în acest format
+        
+        // Asigură-te că nu ieșim din limitele vectorului de tipuri
+        info.type = (i < types.size()) ? types[i] : vNativeDataType::V_TEXT;
 
+        // Dacă avem descriptorii originali (ctx->fields), îi folosim
+        if (i < ctx->fields.size()) {
+            info.length = (int)ctx->fields[i].fieldLength;
+            info.precision = (int)ctx->fields[i].decimalCount;
+        } else {
+            info.length = 255;
+            info.precision = 0;
+        }
+        
+        info.isNullable = false;
         infoList.push_back(info);
     }
 

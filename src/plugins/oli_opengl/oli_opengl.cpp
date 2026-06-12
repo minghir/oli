@@ -727,6 +727,31 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         return vData{ 1LL };
     };
 
+    registry[L"GL_NODE"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 4) return vData{ 0LL };
+
+        float x = (float)toDouble(args[0]);
+        float y = (float)toDouble(args[1]);
+        float sz = (float)toDouble(args[2]);
+        GLColor c((unsigned int)toDouble(args[3]));
+
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glDisable(GL_TEXTURE_2D); glDisable(GL_LIGHTING); glDisable(GL_DEPTH_TEST);
+        if (glUseProgram) glUseProgram(0);
+
+        glMatrixMode(GL_PROJECTION); glPushMatrix(); glLoadIdentity();
+        glOrtho(0, g_GL.width, g_GL.height, 0, -1, 1);
+        glMatrixMode(GL_MODELVIEW); glPushMatrix(); glLoadIdentity();
+
+        glColor3f(c.r, c.g, c.b); glPointSize(sz);
+        glBegin(GL_POINTS); glVertex2f(x, y); glEnd();
+
+        glPopMatrix(); glMatrixMode(GL_PROJECTION); glPopMatrix();
+        glMatrixMode(GL_MODELVIEW); glPopAttrib();
+
+        return vData{ 1LL };
+    };
+
     // GL_MOUSE_X / Y / BTN
     registry[L"GL_MOUSE_X"]   = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.mouseX }; };
     registry[L"GL_MOUSE_Y"]   = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.mouseY }; };

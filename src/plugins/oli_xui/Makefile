@@ -28,13 +28,16 @@ endif
 ConsoleManager.o: ../../ConsoleManager.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+StringUtils.o: ../../StringUtils.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
 # =================================================================
 # RECOLOAREA ȘI LINK-AREA FINALĂ A PLUGINULUI (oli_xui.so / oli_xui.dll)
 # =================================================================
 
 # $(OBJS) va conține automat xApp.o, xWindow.o, xContainer.o, xControl.o, EventDispatcher.o etc.
-$(TARGET): $(OBJS) ConsoleManager.o
-	$(CXX) -o $@ $(OBJS) ConsoleManager.o $(LDFLAGS) $(LIBS)
+$(TARGET): $(OBJS) ConsoleManager.o StringUtils.o
+	$(CXX) -o $@ $(OBJS) ConsoleManager.o StringUtils.o $(LDFLAGS) $(LIBS)
 	@mkdir -p ../../../plugins
 	cp $(TARGET) ../../../plugins
 

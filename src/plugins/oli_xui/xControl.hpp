@@ -200,6 +200,8 @@ public:
         m_width = newWidth; m_height = newHeight;
         if (m_widget) gtk_widget_set_size_request(m_widget, m_width, m_height);
     }
+
+    
 	
 protected:
     std::function<void()> m_onClickCallback = nullptr;

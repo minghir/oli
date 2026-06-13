@@ -8,7 +8,7 @@
 #include <string>
 #include <memory>
 
-class IXLayoutStrategy; 
+#include "IXLayoutStrategy.hpp" 
 
 class xContainer : public xControl {
 protected:

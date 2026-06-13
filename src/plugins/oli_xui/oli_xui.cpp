@@ -4,6 +4,9 @@
 #include "xWindow.hpp"
 #include "xContainer.hpp"
 #include "xButton.hpp"
+#include "xMenu.hpp"
+#include "xPanel.hpp"
+#include "xTabControl.hpp"
 #include "IXLayoutStrategy.hpp"
 #include <unordered_map>
 #include <memory>
@@ -76,13 +79,13 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
     // 1. COMPONENTA: XAPP / WINAPP
     // ==========================================
 
-    registry[L"CREATE_WINAPP"] = [](const std::vector<vData>&) -> vData {
+    registry[L"CREATE_XAPP"] = [](const std::vector<vData>&) -> vData {
         auto objMap = std::make_shared<std::unordered_map<std::wstring, vData>>();
         (*objMap)[L"__type__"] = vData(L"WinApp");
         return vData(objMap);
     };
 
-    registry[L"WINAPP::INIT"] = [](const std::vector<vData>& args) -> vData {
+    registry[L"XAPP::INIT"] = [](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData{ 0LL };
         if (g_XuiGui.isInitialized) return vData{ 1LL };
 
@@ -92,8 +95,9 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             g_XuiGui.ownedAppInstance = std::make_unique<xApp>(RunMode::GUI);
             g_XuiGui.appInstance = g_XuiGui.ownedAppInstance.get();
 
-            // 🔥 CRITIC: Apelăm init() pentru a porni gtk_init_check dedesubt!
             if (!g_XuiGui.appInstance->init()) {
+                // 🔥 ADAGĂ ACEST LOG PENTRU CORECTITUDINE:
+                LOG_ERROR(L"❌ [XAPP::INIT] gtk_init_check a esuat! Lipseste variabila DISPLAY sau serverul X11.");
                 g_XuiGui.ownedAppInstance.reset();
                 g_XuiGui.appInstance = nullptr;
                 return vData{ 0LL };
@@ -104,7 +108,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         return vData{ 1LL };
     };
 
-    registry[L"WINAPP::RUN"] = [](const std::vector<vData>&) -> vData {
+    registry[L"XAPP::RUN"] = [](const std::vector<vData>&) -> vData {
         if (!g_XuiGui.isInitialized || !g_XuiGui.appInstance) {
             return vData{ 0LL };
         }
@@ -116,7 +120,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
     // 2. COMPONENTA: XWINDOW / WINWINDOW
     // ==========================================
 
-    registry[L"CREATE_WINWINDOW"] = [](const std::vector<vData>& args) -> vData {
+    registry[L"CREATE_XWINDOW"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 2) return vData{ std::monostate{} };
 
         try {
@@ -161,7 +165,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         }
     };
 
-    registry[L"WINWINDOW::SHOW"] = [](const std::vector<vData>& args) -> vData {
+    registry[L"XWINDOW::SHOW"] = [](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData{ 0LL };
         vData self = args[0];
 
@@ -184,6 +188,8 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
     // =================================================================
 
     registry[L"UI_CREATE_CONTROL"] = [](const std::vector<vData>& args) -> vData {
+        LOG_DEBUG(L"[XUI_DEBUG] Intrare UI_CREATE_CONTROL. Tip: " + (args.size() > 0 ? args[0].toWString() : L"N/A"));
+
         if (args.size() < 3) return vData{ 0LL };
 
         std::wstring wType = args[0].toWString();
@@ -193,20 +199,62 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         std::string id(wId.begin(), wId.end());
         std::string parentId(wParentId.begin(), wParentId.end());
 
-        if (!g_XuiGui.isInitialized || !g_XuiGui.appInstance) {
-            LOG_ERROR(L"[oli_xui] GUI-ul GTK nu este inițializat!");
-            return vData{ 0LL };
-        }
-
+        // 1. LOCALIZARE PĂRINTE (O singură dată, la început)
         xControl* parentCtrl = LocateAnyControl(parentId);
         if (!parentCtrl) {
             parentCtrl = g_XuiGui.appInstance->getWindow(parentId);
-            if (!parentCtrl) {
-                LOG_ERROR(L"[oli_xui] Părintele '" + wParentId + L"' nu a fost găsit!");
-                return vData{ 0LL };
-            }
+        }
+        
+        // Validare părinte
+        if (!parentCtrl) {
+            LOG_ERROR(L"[XUI_DEBUG] Parintele '" + wParentId + L"' nu a fost gasit!");
+            return vData{ 0LL };
         }
 
+        // 2. MANAGEMENTUL MENIULUI
+        // 1. Managementul Meniului (E special, nu are coordonate)
+        if (wType == L"MENU") {
+            LOG_DEBUG(L"[XUI_DEBUG] Initializare inteligenta xMenu: " + wId);
+            auto menuCtrl = std::make_unique<xMenu>(id, g_XuiGui.appInstance->getEventDispatcher());
+            
+            xWindow* win = dynamic_cast<xWindow*>(parentCtrl);
+            if (win) {
+                GtkWidget* winBox = win->getLayoutWidget(); 
+                GtkWidget* menuBar = gtk_menu_bar_new();
+                
+                if (GTK_IS_BOX(winBox)) {
+                    // Caz A: Fereastra folosește un aliniament de tip Box
+                    gtk_box_pack_start(GTK_BOX(winBox), menuBar, FALSE, FALSE, 0);
+                    gtk_box_reorder_child(GTK_BOX(winBox), menuBar, 0); // Îl forțăm să fie primul sus
+                    menuCtrl->create(menuBar);
+                    gtk_widget_show_all(menuBar); // 🔥 CRITIC: Forțează desenarea elementelor interne
+                } 
+                else if (GTK_IS_FIXED(winBox)) {
+                    // Caz B: Fereastra folosește aliniament absolut (GtkFixed)
+                    // Îl punem la coordonatele absolute (0,0) și îi dăm o dimensiune standard de bară
+                    gtk_fixed_put(GTK_FIXED(winBox), menuBar, 0, 0);
+                    gtk_widget_set_size_request(menuBar, 1200, 25); // Lățime mare implicită, înălțime de 25px
+                    menuCtrl->create(menuBar);
+                    gtk_widget_show_all(menuBar); // 🔥 CRITIC: Face vizibile textele în interiorul GtkFixed
+                }
+                else {
+                    LOG_WARNING(L"[XUI_DEBUG] Layout-ul ferestrei este de tip necunoscut. Incercam atașare simplă.");
+                    menuCtrl->create(nullptr);
+                }
+            } else {
+                menuCtrl->create(nullptr); 
+            }
+            
+            xControl* rawPtr = menuCtrl.get();
+            g_XuiGui.controlsMap[id] = rawPtr;
+            
+            static std::vector<std::unique_ptr<xControl>> m_persistentMenus;
+            m_persistentMenus.push_back(std::move(menuCtrl));
+            
+            return vData{ 1LL };
+        }
+
+        // 3. CONTROL STANDARD (Button, Panel, etc.)
         int x = (args.size() > 3) ? static_cast<int>(args[3].toInt()) : 0;
         int y = (args.size() > 4) ? static_cast<int>(args[4].toInt()) : 0;
         int w = (args.size() > 5) ? static_cast<int>(args[5].toInt()) : 0;
@@ -216,20 +264,13 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         std::unique_ptr<xControl> newCtrl = nullptr;
 
         if (wType == L"BUTTON") {
-            newCtrl = std::make_unique<xButton>(
-                id, wText, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher()
-            );
+            newCtrl = std::make_unique<xButton>(id, wText, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher());
         }
         else if (wType == L"PANEL") {
-            newCtrl = std::make_unique<xContainer>(
-                id, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher()
-            );
+            newCtrl = std::make_unique<xPanel>(id, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher());
         }
-        else {
-            LOG_WARNING(L"[oli_xui] Tip de control nesuportat. Fallback pe xContainer.");
-            newCtrl = std::make_unique<xContainer>(
-                id, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher()
-            );
+        else if (wType == L"TABCONTROL") {
+            newCtrl = std::make_unique<xTabControl>(id, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher());
         }
 
         if (newCtrl) {
@@ -237,26 +278,25 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             GtkWidget* targetGtkParent = nullptr;
             
             xWindow* parentAsWindow = dynamic_cast<xWindow*>(parentCtrl);
-            xContainer* parentAsContainer = dynamic_cast<xContainer*>(parentCtrl);
-            
             if (parentAsWindow) {
                 targetGtkParent = parentAsWindow->getLayoutWidget();
-            } else if (parentAsContainer) {
-                targetGtkParent = parentAsContainer->getLayoutWidget();
             } else {
                 targetGtkParent = parentCtrl->getHandle();
+            }
+
+            if (!targetGtkParent) {
+                LOG_ERROR(L"[XUI_DEBUG] Nu am găsit un widget părinte valid pentru adăugare!");
+                return vData{ 0LL };
             }
 
             rawControlPtr->create(targetGtkParent);
             parentCtrl->addChild(id, std::move(newCtrl));
             g_XuiGui.controlsMap[id] = rawControlPtr;
-
             return vData{ 1LL };
         }
 
         return vData{ 0LL };
     };
-
     // =================================================================
     // 4. MANAGEMENTUL PROPRIETĂȚILOR
     // =================================================================

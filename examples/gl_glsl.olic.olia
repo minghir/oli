@@ -1,0 +1,431 @@
+﻿--- OLI ASSEMBLY LISTING ---
+Source: ./examples/gl_glsl.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_CONSTANT     0000 (Value: [OLI] Încarcă plugin-uri...)
+0003: OP_ECHO
+0004: OP_PLUGIN       0001 (Path: oli_opengl)
+0007: OP_PLUGIN       0002 (Path: oli_keyboard)
+0010: OP_PLUGIN       0003 (Path: oli_math)
+0013: OP_PLUGIN       0004 (Path: oli_time)
+0016: OP_CONSTANT     0005 (Value: [OLI] Apelează GL_INIT...)
+0019: OP_ECHO
+0020: OP_CONSTANT     0006 (Value: 900)
+0023: OP_CONSTANT     0007 (Value: 700)
+0026: OP_CONSTANT     0008 (Value: OLI Shader Demo)
+0029: OP_CONSTANT     0009 (Value: GL_INIT)
+0032: OP_CALL_DYNAMIC    (Args: 3, Context & Name on Stack)
+0034: OP_SET_GLOBAL   0010 (Name: v)
+0037: OP_CONSTANT     0011 (Value: [OLI] Fereastră inițializată. Cod: )
+0040: OP_GET_GLOBAL   0010 (Name: v)
+0043: OP_CONSTANT     0012 (Value: STR)
+0046: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0048: OP_ADD
+0049: OP_ECHO
+0050: OP_CONSTANT     0013 (Value: GL_WIDTH)
+0053: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0055: OP_SET_GLOBAL   0014 (Name: currW)
+0058: OP_CONSTANT     0015 (Value: GL_HEIGHT)
+0061: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0063: OP_SET_GLOBAL   0016 (Name: currH)
+0066: OP_CONSTANT     0017 (Value: [OLI] Dimensiune inițială detectată: )
+0069: OP_GET_GLOBAL   0014 (Name: currW)
+0072: OP_CONSTANT     0012 (Value: STR)
+0075: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0077: OP_ADD
+0078: OP_CONSTANT     0018 (Value: x)
+0081: OP_ADD
+0082: OP_GET_GLOBAL   0016 (Name: currH)
+0085: OP_CONSTANT     0012 (Value: STR)
+0088: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0090: OP_ADD
+0091: OP_ECHO
+0092: OP_CONSTANT     0019 (Value: TIME)
+0095: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0097: OP_SET_GLOBAL   0020 (Name: startTime)
+0100: OP_CONSTANT     0021 (Value: [OLI] Citește fișierele shader din disc...)
+0103: OP_ECHO
+0104: OP_CONSTANT     0022 (Value: examples/shaders/vertex.glsl)
+0107: OP_CONSTANT     0023 (Value: readfile)
+0110: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0112: OP_SET_GLOBAL   0024 (Name: vs_source)
+0115: OP_CONSTANT     0025 (Value: examples/shaders/fragment.glsl)
+0118: OP_CONSTANT     0023 (Value: readfile)
+0121: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0123: OP_SET_GLOBAL   0026 (Name: fs_source)
+0126: OP_GET_GLOBAL   0026 (Name: fs_source)
+0129: OP_ECHO
+0130: OP_CONSTANT     0027 (Value: MIMI)
+0133: OP_ECHO
+0134: OP_CONSTANT     0028 (Value: Aici 1)
+0137: OP_ECHO
+0138: OP_GET_GLOBAL   0024 (Name: vs_source)
+0141: OP_CONSTANT     0029 (Value: null)
+0144: OP_EQUAL
+0145: OP_JUMP_IF_FALSE 0004 (Sari la: 152)
+0148: OP_CONSTANT     0030 (Value: [OLI ERROR] vertex.glsl a returnat NULL!)
+0151: OP_ECHO
+0152: OP_CONSTANT     0031 (Value: Aici 2)
+0155: OP_ECHO
+0156: OP_GET_GLOBAL   0026 (Name: fs_source)
+0159: OP_CONSTANT     0029 (Value: null)
+0162: OP_EQUAL
+0163: OP_JUMP_IF_FALSE 0004 (Sari la: 170)
+0166: OP_CONSTANT     0032 (Value: [OLI ERROR] fragment.glsl a returnat NULL!)
+0169: OP_ECHO
+0170: OP_CONSTANT     0033 (Value: Aici 3)
+0173: OP_ECHO
+0174: OP_CONSTANT     0034 (Value: [OLI] Încarcă și compilează Vertex Shader...)
+0177: OP_ECHO
+0178: OP_CONSTANT     0035 (Value: 0)
+0181: OP_GET_GLOBAL   0024 (Name: vs_source)
+0184: OP_CONSTANT     0036 (Value: GL_LOAD_SHADER)
+0187: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
+0189: OP_SET_GLOBAL   0037 (Name: vshader)
+0192: OP_CONSTANT     0038 (Value: [OLI] Vertex Shader înGPU ID: )
+0195: OP_GET_GLOBAL   0037 (Name: vshader)
+0198: OP_CONSTANT     0012 (Value: STR)
+0201: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0203: OP_ADD
+0204: OP_ECHO
+0205: OP_CONSTANT     0039 (Value: [OLI] Încarcă și compilează Fragment Shader...)
+0208: OP_ECHO
+0209: OP_CONSTANT     0040 (Value: 1)
+0212: OP_GET_GLOBAL   0026 (Name: fs_source)
+0215: OP_CONSTANT     0036 (Value: GL_LOAD_SHADER)
+0218: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
+0220: OP_SET_GLOBAL   0041 (Name: fshader)
+0223: OP_CONSTANT     0042 (Value: [OLI] Fragment Shader înGPU ID: )
+0226: OP_GET_GLOBAL   0041 (Name: fshader)
+0229: OP_CONSTANT     0012 (Value: STR)
+0232: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0234: OP_ADD
+0235: OP_ECHO
+0236: OP_GET_GLOBAL   0041 (Name: fshader)
+0239: OP_CONSTANT     0035 (Value: 0)
+0242: OP_EQUAL
+0243: OP_DUP
+0244: OP_JUMP_IF_TRUE  0008 (Sari la: 255)
+0247: OP_POP
+0248: OP_GET_GLOBAL   0037 (Name: vshader)
+0251: OP_CONSTANT     0035 (Value: 0)
+0254: OP_EQUAL
+0255: OP_JUMP_IF_FALSE 0021 (Sari la: 279)
+0258: OP_CONSTANT     0043 (Value: GL_CLOSE)
+0261: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0263: OP_POP
+0264: OP_CONSTANT     0044 (Value: EROARE COMPILARE GENERATĂ DE DRIVER: )
+0267: OP_CONSTANT     0045 (Value: GL_GET_ERROR)
+0270: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0272: OP_ADD
+0273: OP_CONSTANT     0046 (Value: exit)
+0276: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0278: OP_POP
+0279: OP_CONSTANT     0047 (Value: [OLI] Lansează GL_LINK_PROGRAM...)
+0282: OP_ECHO
+0283: OP_GET_GLOBAL   0037 (Name: vshader)
+0286: OP_GET_GLOBAL   0041 (Name: fshader)
+0289: OP_CONSTANT     0048 (Value: GL_LINK_PROGRAM)
+0292: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
+0294: OP_SET_GLOBAL   0049 (Name: prog)
+0297: OP_CONSTANT     0050 (Value: Shadere incarcate. Program ID: )
+0300: OP_GET_GLOBAL   0049 (Name: prog)
+0303: OP_CONSTANT     0012 (Value: STR)
+0306: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0308: OP_ADD
+0309: OP_ECHO
+0310: OP_CONSTANT     0035 (Value: 0)
+0313: OP_SET_GLOBAL   0051 (Name: clickX)
+0316: OP_CONSTANT     0035 (Value: 0)
+0319: OP_SET_GLOBAL   0052 (Name: clickY)
+0322: OP_CONSTANT     0053 (Value: Așteptare date...)
+0325: OP_SET_GLOBAL   0054 (Name: statText)
+0328: OP_CONSTANT     0019 (Value: TIME)
+0331: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0333: OP_SET_GLOBAL   0020 (Name: startTime)
+0336: OP_CONSTANT     0019 (Value: TIME)
+0339: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0341: OP_SET_GLOBAL   0055 (Name: lastTime)
+0344: OP_CONSTANT     0035 (Value: 0)
+0347: OP_SET_GLOBAL   0056 (Name: fpsUpdateTimer)
+0350: OP_CONSTANT     0057 (Value: Calculare...)
+0353: OP_SET_GLOBAL   0058 (Name: fpsText)
+0356: OP_CONSTANT     0059 (Value: 99999)
+0359: OP_SET_GLOBAL   0060 (Name: minFps)
+0362: OP_CONSTANT     0035 (Value: 0)
+0365: OP_SET_GLOBAL   0061 (Name: maxFps)
+0368: OP_CONSTANT     0035 (Value: 0)
+0371: OP_SET_GLOBAL   0062 (Name: avgFps)
+0374: OP_CONSTANT     0035 (Value: 0)
+0377: OP_SET_GLOBAL   0063 (Name: frameCounter)
+0380: OP_CONSTANT     0035 (Value: 0)
+0383: OP_SET_GLOBAL   0064 (Name: totalFpsSum)
+0386: OP_CONSTANT     0065 (Value: [OLI] Intrare în loop-ul principal (while true)...)
+0389: OP_ECHO
+0390: OP_CONSTANT     0035 (Value: 0)
+0393: OP_SET_GLOBAL   0066 (Name: iterIdx)
+0396: OP_CONSTANT     0067 (Value: true)
+0399: OP_JUMP_IF_FALSE 0618 (Sari la: 1020)
+0402: OP_GET_GLOBAL   0066 (Name: iterIdx)
+0405: OP_CONSTANT     0040 (Value: 1)
+0408: OP_ADD
+0409: OP_SET_GLOBAL   0066 (Name: iterIdx)
+0412: OP_GET_GLOBAL   0066 (Name: iterIdx)
+0415: OP_CONSTANT     0068 (Value: 5)
+0418: OP_LESS
+0419: OP_JUMP_IF_FALSE 0013 (Sari la: 435)
+0422: OP_CONSTANT     0069 (Value: [OLI LOOP] Început iterație cadru #)
+0425: OP_GET_GLOBAL   0066 (Name: iterIdx)
+0428: OP_CONSTANT     0012 (Value: STR)
+0431: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0433: OP_ADD
+0434: OP_ECHO
+0435: OP_CONSTANT     0070 (Value: GL_MOUSE_X)
+0438: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0440: OP_SET_GLOBAL   0071 (Name: currX)
+0443: OP_CONSTANT     0072 (Value: GL_MOUSE_Y)
+0446: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0448: OP_SET_GLOBAL   0073 (Name: currY)
+0451: OP_CONSTANT     0035 (Value: 0)
+0454: OP_CONSTANT     0074 (Value: GL_MOUSE_BTN)
+0457: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0459: OP_SET_GLOBAL   0075 (Name: isDown)
+0462: OP_GET_GLOBAL   0075 (Name: isDown)
+0465: OP_CONSTANT     0040 (Value: 1)
+0468: OP_EQUAL
+0469: OP_JUMP_IF_FALSE 0012 (Sari la: 484)
+0472: OP_GET_GLOBAL   0071 (Name: currX)
+0475: OP_SET_GLOBAL   0051 (Name: clickX)
+0478: OP_GET_GLOBAL   0073 (Name: currY)
+0481: OP_SET_GLOBAL   0052 (Name: clickY)
+0484: OP_CONSTANT     0019 (Value: TIME)
+0487: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0489: OP_SET_GLOBAL   0076 (Name: currentTime)
+0492: OP_GET_GLOBAL   0076 (Name: currentTime)
+0495: OP_GET_GLOBAL   0055 (Name: lastTime)
+0498: OP_SUB
+0499: OP_SET_GLOBAL   0077 (Name: dt)
+0502: OP_GET_GLOBAL   0076 (Name: currentTime)
+0505: OP_SET_GLOBAL   0055 (Name: lastTime)
+0508: OP_GET_GLOBAL   0077 (Name: dt)
+0511: OP_CONSTANT     0035 (Value: 0)
+0514: OP_GREATER
+0515: OP_JUMP_IF_FALSE 0094 (Sari la: 612)
+0518: OP_CONSTANT     0040 (Value: 1)
+0521: OP_GET_GLOBAL   0077 (Name: dt)
+0524: OP_DIV
+0525: OP_SET_GLOBAL   0078 (Name: currentFps)
+0528: OP_GET_GLOBAL   0076 (Name: currentTime)
+0531: OP_GET_GLOBAL   0020 (Name: startTime)
+0534: OP_SUB
+0535: OP_CONSTANT     0040 (Value: 1)
+0538: OP_GREATER
+0539: OP_JUMP_IF_FALSE 0070 (Sari la: 612)
+0542: OP_GET_GLOBAL   0078 (Name: currentFps)
+0545: OP_GET_GLOBAL   0060 (Name: minFps)
+0548: OP_LESS
+0549: OP_JUMP_IF_FALSE 0006 (Sari la: 558)
+0552: OP_GET_GLOBAL   0078 (Name: currentFps)
+0555: OP_SET_GLOBAL   0060 (Name: minFps)
+0558: OP_GET_GLOBAL   0078 (Name: currentFps)
+0561: OP_GET_GLOBAL   0061 (Name: maxFps)
+0564: OP_GREATER
+0565: OP_JUMP_IF_FALSE 0006 (Sari la: 574)
+0568: OP_GET_GLOBAL   0078 (Name: currentFps)
+0571: OP_SET_GLOBAL   0061 (Name: maxFps)
+0574: OP_GET_GLOBAL   0063 (Name: frameCounter)
+0577: OP_CONSTANT     0040 (Value: 1)
+0580: OP_ADD
+0581: OP_SET_GLOBAL   0063 (Name: frameCounter)
+0584: OP_GET_GLOBAL   0064 (Name: totalFpsSum)
+0587: OP_GET_GLOBAL   0078 (Name: currentFps)
+0590: OP_ADD
+0591: OP_SET_GLOBAL   0064 (Name: totalFpsSum)
+0594: OP_GET_GLOBAL   0062 (Name: avgFps)
+0597: OP_CONSTANT     0079 (Value: 0.9)
+0600: OP_MUL
+0601: OP_GET_GLOBAL   0078 (Name: currentFps)
+0604: OP_CONSTANT     0080 (Value: 0.1)
+0607: OP_MUL
+0608: OP_ADD
+0609: OP_SET_GLOBAL   0062 (Name: avgFps)
+0612: OP_GET_GLOBAL   0056 (Name: fpsUpdateTimer)
+0615: OP_GET_GLOBAL   0077 (Name: dt)
+0618: OP_ADD
+0619: OP_SET_GLOBAL   0056 (Name: fpsUpdateTimer)
+0622: OP_GET_GLOBAL   0056 (Name: fpsUpdateTimer)
+0625: OP_CONSTANT     0081 (Value: 0.5)
+0628: OP_GREATER
+0629: OP_JUMP_IF_FALSE 0097 (Sari la: 729)
+0632: OP_CONSTANT     0082 (Value: FPS: )
+0635: OP_GET_GLOBAL   0078 (Name: currentFps)
+0638: OP_CONSTANT     0083 (Value: ROUND)
+0641: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0643: OP_CONSTANT     0012 (Value: STR)
+0646: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0648: OP_ADD
+0649: OP_SET_GLOBAL   0058 (Name: fpsText)
+0652: OP_CONSTANT     0084 (Value: MIN: )
+0655: OP_GET_GLOBAL   0060 (Name: minFps)
+0658: OP_CONSTANT     0083 (Value: ROUND)
+0661: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0663: OP_CONSTANT     0012 (Value: STR)
+0666: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0668: OP_ADD
+0669: OP_CONSTANT     0085 (Value:  | MAX: )
+0672: OP_ADD
+0673: OP_GET_GLOBAL   0061 (Name: maxFps)
+0676: OP_CONSTANT     0083 (Value: ROUND)
+0679: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0681: OP_CONSTANT     0012 (Value: STR)
+0684: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0686: OP_ADD
+0687: OP_CONSTANT     0086 (Value:  | AVG: )
+0690: OP_ADD
+0691: OP_GET_GLOBAL   0062 (Name: avgFps)
+0694: OP_CONSTANT     0083 (Value: ROUND)
+0697: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0699: OP_CONSTANT     0012 (Value: STR)
+0702: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0704: OP_ADD
+0705: OP_SET_GLOBAL   0054 (Name: statText)
+0708: OP_GET_GLOBAL   0066 (Name: iterIdx)
+0711: OP_CONSTANT     0087 (Value: 20)
+0714: OP_LESS
+0715: OP_JUMP_IF_FALSE 0008 (Sari la: 726)
+0718: OP_CONSTANT     0088 (Value: [OLI LOOP] Statistici calculate - )
+0721: OP_GET_GLOBAL   0054 (Name: statText)
+0724: OP_ADD
+0725: OP_ECHO
+0726: OP_GET_GLOBAL   0089 (Name: Ried)
+0729: OP_GET_GLOBAL   0066 (Name: iterIdx)
+0732: OP_CONSTANT     0068 (Value: 5)
+0735: OP_LESS
+0736: OP_JUMP_IF_FALSE 0004 (Sari la: 743)
+0739: OP_CONSTANT     0090 (Value: [OLI LOOP] Execut GL_CLEAR...)
+0742: OP_ECHO
+0743: OP_CONSTANT     0035 (Value: 0)
+0746: OP_CONSTANT     0091 (Value: GL_CLEAR)
+0749: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0751: OP_POP
+0752: OP_GET_GLOBAL   0066 (Name: iterIdx)
+0755: OP_CONSTANT     0068 (Value: 5)
+0758: OP_LESS
+0759: OP_JUMP_IF_FALSE 0004 (Sari la: 766)
+0762: OP_CONSTANT     0092 (Value: [OLI LOOP] Execut GL_USE_PROGRAM...)
+0765: OP_ECHO
+0766: OP_GET_GLOBAL   0049 (Name: prog)
+0769: OP_CONSTANT     0093 (Value: GL_USE_PROGRAM)
+0772: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0774: OP_POP
+0775: OP_CONSTANT     0013 (Value: GL_WIDTH)
+0778: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0780: OP_SET_GLOBAL   0014 (Name: currW)
+0783: OP_CONSTANT     0015 (Value: GL_HEIGHT)
+0786: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0788: OP_SET_GLOBAL   0016 (Name: currH)
+0791: OP_CONSTANT     0019 (Value: TIME)
+0794: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0796: OP_GET_GLOBAL   0020 (Name: startTime)
+0799: OP_SUB
+0800: OP_SET_GLOBAL   0094 (Name: localTime)
+0803: OP_GET_GLOBAL   0066 (Name: iterIdx)
+0806: OP_CONSTANT     0068 (Value: 5)
+0809: OP_LESS
+0810: OP_JUMP_IF_FALSE 0004 (Sari la: 817)
+0813: OP_CONSTANT     0095 (Value: [OLI LOOP] Trimit iTime uniform...)
+0816: OP_ECHO
+0817: OP_GET_GLOBAL   0049 (Name: prog)
+0820: OP_CONSTANT     0096 (Value: iTime)
+0823: OP_GET_GLOBAL   0094 (Name: localTime)
+0826: OP_CONSTANT     0097 (Value: GL_SET_UNIFORM)
+0829: OP_CALL_DYNAMIC    (Args: 3, Context & Name on Stack)
+0831: OP_POP
+0832: OP_GET_GLOBAL   0066 (Name: iterIdx)
+0835: OP_CONSTANT     0068 (Value: 5)
+0838: OP_LESS
+0839: OP_JUMP_IF_FALSE 0004 (Sari la: 846)
+0842: OP_CONSTANT     0098 (Value: [OLI LOOP] Trimit iResolution uniform...)
+0845: OP_ECHO
+0846: OP_GET_GLOBAL   0049 (Name: prog)
+0849: OP_CONSTANT     0099 (Value: iResolution)
+0852: OP_GET_GLOBAL   0014 (Name: currW)
+0855: OP_GET_GLOBAL   0016 (Name: currH)
+0858: OP_CONSTANT     0097 (Value: GL_SET_UNIFORM)
+0861: OP_CALL_DYNAMIC    (Args: 4, Context & Name on Stack)
+0863: OP_POP
+0864: OP_GET_GLOBAL   0066 (Name: iterIdx)
+0867: OP_CONSTANT     0068 (Value: 5)
+0870: OP_LESS
+0871: OP_JUMP_IF_FALSE 0004 (Sari la: 878)
+0874: OP_CONSTANT     0100 (Value: [OLI LOOP] Trimit iMouse uniform...)
+0877: OP_ECHO
+0878: OP_GET_GLOBAL   0049 (Name: prog)
+0881: OP_CONSTANT     0101 (Value: iMouse)
+0884: OP_GET_GLOBAL   0071 (Name: currX)
+0887: OP_GET_GLOBAL   0073 (Name: currY)
+0890: OP_GET_GLOBAL   0051 (Name: clickX)
+0893: OP_GET_GLOBAL   0052 (Name: clickY)
+0896: OP_CONSTANT     0097 (Value: GL_SET_UNIFORM)
+0899: OP_CALL_DYNAMIC    (Args: 6, Context & Name on Stack)
+0901: OP_POP
+0902: OP_GET_GLOBAL   0066 (Name: iterIdx)
+0905: OP_CONSTANT     0068 (Value: 5)
+0908: OP_LESS
+0909: OP_JUMP_IF_FALSE 0004 (Sari la: 916)
+0912: OP_CONSTANT     0102 (Value: [OLI LOOP] Lomez GL_DRAW_FULLSCREEN...)
+0915: OP_ECHO
+0916: OP_CONSTANT     0103 (Value: GL_DRAW_FULLSCREEN)
+0919: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0921: OP_POP
+0922: OP_CONSTANT     0035 (Value: 0)
+0925: OP_CONSTANT     0093 (Value: GL_USE_PROGRAM)
+0928: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0930: OP_POP
+0931: OP_GET_GLOBAL   0066 (Name: iterIdx)
+0934: OP_CONSTANT     0068 (Value: 5)
+0937: OP_LESS
+0938: OP_JUMP_IF_FALSE 0004 (Sari la: 945)
+0941: OP_CONSTANT     0104 (Value: [OLI LOOP] Randez textele 2D...)
+0944: OP_ECHO
+0945: OP_CONSTANT     0105 (Value: 10)
+0948: OP_CONSTANT     0106 (Value: 25)
+0951: OP_GET_GLOBAL   0058 (Name: fpsText)
+0954: OP_CONSTANT     0107 (Value: GL_TEXT)
+0957: OP_CALL_DYNAMIC    (Args: 3, Context & Name on Stack)
+0959: OP_POP
+0960: OP_CONSTANT     0105 (Value: 10)
+0963: OP_CONSTANT     0108 (Value: 45)
+0966: OP_GET_GLOBAL   0054 (Name: statText)
+0969: OP_CONSTANT     0107 (Value: GL_TEXT)
+0972: OP_CALL_DYNAMIC    (Args: 3, Context & Name on Stack)
+0974: OP_POP
+0975: OP_GET_GLOBAL   0066 (Name: iterIdx)
+0978: OP_CONSTANT     0068 (Value: 5)
+0981: OP_LESS
+0982: OP_JUMP_IF_FALSE 0004 (Sari la: 989)
+0985: OP_CONSTANT     0109 (Value: [OLI LOOP] Execut GL_PRESENT...)
+0988: OP_ECHO
+0989: OP_CONSTANT     0110 (Value: GL_PRESENT)
+0992: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0994: OP_POP
+0995: OP_CONSTANT     0111 (Value: 27)
+0998: OP_CONSTANT     0112 (Value: KEY_STATE)
+1001: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+1003: OP_CONSTANT     0040 (Value: 1)
+1006: OP_EQUAL
+1007: OP_JUMP_IF_FALSE 0007 (Sari la: 1017)
+1010: OP_CONSTANT     0113 (Value: [OLI] Tasta ESC detectată. Ieșire din loop.)
+1013: OP_ECHO
+1014: OP_JUMP          0003 (Sari la: 1020)
+1017: OP_LOOP          0624 (Sari inapoi la: 396)
+1020: OP_CONSTANT     0114 (Value: [OLI] Închid contextul grafic...)
+1023: OP_ECHO
+1024: OP_CONSTANT     0043 (Value: GL_CLOSE)
+1027: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+1029: OP_POP
+1030: OP_CONSTANT     0115 (Value: [OLI] Aplicație terminată complet cu succes.)
+1033: OP_ECHO
+1034: OP_RETURN

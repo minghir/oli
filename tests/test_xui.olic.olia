@@ -6,100 +6,250 @@ Generated: 2026-05-11
 === DISASSEMBLY: Main ===
 0000: OP_PLUGIN       0000 (Path: oli_system)
 0003: OP_PLUGIN       0001 (Path: "oli_xui")
-0006: OP_DEF_TYPE      0002 (Type: WINAPP, CLASS, Fields: 0, Methods: 2)
-    Method [0]: 0004 (Name: INIT)
-    Method [1]: 0005 (Name: RUN)
-0018: OP_DEF_TYPE      0006 (Type: WINWINDOW, CLASS, Fields: 1, Methods: 3)
-    Field [0]: 0007 (Name: id)
-    Method [0]: 0004 (Name: INIT)
-    Method [1]: 0008 (Name: SHOW)
-    Method [2]: 0009 (Name: BIND)
-0034: OP_DEF_TYPE      0010 (Type: WINBUTTON, CLASS, Fields: 1, Methods: 3)
-    Field [0]: 0007 (Name: id)
-    Method [0]: 0004 (Name: INIT)
-    Method [1]: 0009 (Name: BIND)
-    Method [2]: 0011 (Name: SET_PROP)
-0050: OP_CONSTANT     0012 (Value: --- Pornire Test Direct ---)
-0053: OP_ECHO
-0054: OP_CONSTANT     0013 (Value: WinApp)
-0057: OP_CONSTANT     0014 (Value: new)
-0060: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0062: OP_SET_GLOBAL   0015 (Name: app)
-0065: OP_GET_GLOBAL   0015 (Name: app)
-0068: OP_CONSTANT     0016 (Value: init)
-0071: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
-0073: OP_POP
-0074: OP_CONSTANT     0017 (Value: WinWindow)
-0077: OP_CONSTANT     0014 (Value: new)
-0080: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0082: OP_SET_GLOBAL   0018 (Name: win)
-0085: OP_CONSTANT     0019 (Value: fereastra_principala)
-0088: OP_CONSTANT     0020 (Value: Test Direct GTK (Fără Panel))
-0091: OP_GET_GLOBAL   0018 (Name: win)
-0094: OP_CONSTANT     0016 (Value: init)
-0097: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0099: OP_POP
-0100: OP_CONSTANT     0021 (Value: WinButton)
-0103: OP_CONSTANT     0014 (Value: new)
-0106: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0108: OP_SET_GLOBAL   0022 (Name: buton)
-0111: OP_CONSTANT     0023 (Value: btn_salut)
-0114: OP_CONSTANT     0019 (Value: fereastra_principala)
-0117: OP_CONSTANT     0024 (Value: 50)
-0120: OP_CONSTANT     0024 (Value: 50)
-0123: OP_CONSTANT     0025 (Value: 200)
-0126: OP_CONSTANT     0024 (Value: 50)
-0129: OP_CONSTANT     0026 (Value: Apasă-mă! 🚀)
-0132: OP_GET_GLOBAL   0022 (Name: buton)
-0135: OP_CONSTANT     0016 (Value: init)
-0138: OP_CALL_METHOD     (Args: 7, Context & Name on Stack)
-0140: OP_POP
-0141: OP_CONSTANT     0027 (Value: click)
-0144: OP_CONSTANT     0028 (Value: pe_apasare_buton)
-0147: OP_GET_GLOBAL   0022 (Name: buton)
-0150: OP_CONSTANT     0029 (Value: bind)
-0153: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
-0155: OP_POP
-0156: OP_GET_GLOBAL   0018 (Name: win)
-0159: OP_CONSTANT     0030 (Value: show)
+0006: OP_PLUGIN       0001 (Path: "oli_xui")
+0009: OP_CONSTANT     0002 (Value: === Lansare Interfata Grafica GTK (XUI) ===)
+0012: OP_ECHO
+0013: OP_DEF_TYPE      0003 (Type: UICONTROL, CLASS, Fields: 1, Methods: 13)
+    Field [0]: 0005 (Name: id)
+    Method [0]: 0006 (Name: SET_PROP)
+    Method [1]: 0007 (Name: GET_PROP)
+    Method [2]: 0008 (Name: BIND)
+    Method [3]: 0009 (Name: BIND_ARG)
+    Method [4]: 0010 (Name: SET_TEXT)
+    Method [5]: 0011 (Name: GET_TEXT)
+    Method [6]: 0012 (Name: SET_ANCHOR)
+    Method [7]: 0013 (Name: SET_WIDTH_MODE)
+    Method [8]: 0014 (Name: SET_HEIGHT_MODE)
+    Method [9]: 0015 (Name: SET_MARGIN)
+    Method [10]: 0016 (Name: SET_VISIBLE)
+    Method [11]: 0017 (Name: SET_FONT_SIZE)
+    Method [12]: 0018 (Name: SET_HEIGHT)
+0049: OP_DEF_TYPE      0019 (Type: XAPP, CLASS, Fields: 0, Methods: 3)
+    Method [0]: 0020 (Name: CREATE)
+    Method [1]: 0021 (Name: INIT)
+    Method [2]: 0022 (Name: RUN)
+0063: OP_DEF_TYPE      0023 (Type: XWINDOW EXTENDS UICONTROL, CLASS, Fields: 2, Methods: 3)
+    Field [0]: 0005 (Name: id)
+    Field [1]: 0024 (Name: title)
+    Method [0]: 0021 (Name: INIT)
+    Method [1]: 0025 (Name: SHOW)
+    Method [2]: 0026 (Name: SET_LAYOUT)
+0081: OP_DEF_TYPE      0027 (Type: XPANEL EXTENDS UICONTROL, CLASS, Fields: 0, Methods: 1)
+    Method [0]: 0021 (Name: INIT)
+0091: OP_DEF_TYPE      0028 (Type: XBUTTON EXTENDS UICONTROL, CLASS, Fields: 0, Methods: 1)
+    Method [0]: 0021 (Name: INIT)
+0101: OP_DEF_TYPE      0029 (Type: XCODEVIEW EXTENDS UICONTROL, CLASS, Fields: 0, Methods: 2)
+    Method [0]: 0021 (Name: INIT)
+    Method [1]: 0030 (Name: SET_SYNTAX_PATH)
+0113: OP_DEF_TYPE      0031 (Type: XMENU EXTENDS UICONTROL, CLASS, Fields: 0, Methods: 2)
+    Method [0]: 0021 (Name: INIT)
+    Method [1]: 0032 (Name: ADD_ITEM)
+0125: OP_DEF_TYPE      0033 (Type: XRICHEDIT EXTENDS UICONTROL, CLASS, Fields: 0, Methods: 2)
+    Method [0]: 0021 (Name: INIT)
+    Method [1]: 0034 (Name: APPEND_TEXT)
+0137: OP_CONSTANT     0035 (Value: AM DEFINIT CLASELE XUI)
+0140: OP_ECHO
+0141: OP_CONSTANT     0036 (Value: --- Pornire Test Direct (GTK + Meniu) ---)
+0144: OP_ECHO
+0145: OP_CONSTANT     0037 (Value: XApp)
+0148: OP_CONSTANT     0038 (Value: new)
+0151: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0153: OP_SET_GLOBAL   0039 (Name: app)
+0156: OP_GET_GLOBAL   0039 (Name: app)
+0159: OP_CONSTANT     0040 (Value: init)
 0162: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
 0164: OP_POP
-0165: OP_GET_GLOBAL   0015 (Name: app)
-0168: OP_CONSTANT     0031 (Value: run)
-0171: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
-0173: OP_POP
-0174: OP_CONSTANT     0032 (Value: --- Aplicație Oprită ---)
-0177: OP_ECHO
-0178: OP_RETURN
+0165: OP_CONSTANT     0041 (Value: XWindow)
+0168: OP_CONSTANT     0038 (Value: new)
+0171: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0173: OP_SET_GLOBAL   0042 (Name: win)
+0176: OP_CONSTANT     0043 (Value: fereastra_principala)
+0179: OP_CONSTANT     0044 (Value: Test Direct GTK cu Meniu)
+0182: OP_GET_GLOBAL   0042 (Name: win)
+0185: OP_CONSTANT     0040 (Value: init)
+0188: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0190: OP_POP
+0191: OP_CONSTANT     0045 (Value: XMenu)
+0194: OP_CONSTANT     0038 (Value: new)
+0197: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0199: OP_SET_GLOBAL   0046 (Name: meniu)
+0202: OP_CONSTANT     0047 (Value: main_menu)
+0205: OP_CONSTANT     0043 (Value: fereastra_principala)
+0208: OP_GET_GLOBAL   0046 (Name: meniu)
+0211: OP_CONSTANT     0040 (Value: init)
+0214: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0216: OP_POP
+0217: OP_CONSTANT     0048 (Value: item_exit)
+0220: OP_CONSTANT     0049 (Value: Exit)
+0223: OP_GET_GLOBAL   0046 (Name: meniu)
+0226: OP_CONSTANT     0050 (Value: add_item)
+0229: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0231: OP_POP
+0232: OP_CONSTANT     0051 (Value: click)
+0235: OP_CONSTANT     0052 (Value: meniu_exit)
+0238: OP_GET_GLOBAL   0046 (Name: meniu)
+0241: OP_CONSTANT     0053 (Value: bind)
+0244: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0246: OP_POP
+0247: OP_CONSTANT     0054 (Value: XButton)
+0250: OP_CONSTANT     0038 (Value: new)
+0253: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0255: OP_SET_GLOBAL   0055 (Name: buton)
+0258: OP_CONSTANT     0056 (Value: btn_salut)
+0261: OP_CONSTANT     0043 (Value: fereastra_principala)
+0264: OP_CONSTANT     0057 (Value: 50)
+0267: OP_CONSTANT     0057 (Value: 50)
+0270: OP_CONSTANT     0058 (Value: 200)
+0273: OP_CONSTANT     0057 (Value: 50)
+0276: OP_CONSTANT     0059 (Value: Apasă-mă! 🚀)
+0279: OP_GET_GLOBAL   0055 (Name: buton)
+0282: OP_CONSTANT     0040 (Value: init)
+0285: OP_CALL_METHOD     (Args: 7, Context & Name on Stack)
+0287: OP_POP
+0288: OP_CONSTANT     0051 (Value: click)
+0291: OP_CONSTANT     0060 (Value: pe_apasare_buton)
+0294: OP_GET_GLOBAL   0055 (Name: buton)
+0297: OP_CONSTANT     0053 (Value: bind)
+0300: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0302: OP_POP
+0303: OP_GET_GLOBAL   0042 (Name: win)
+0306: OP_CONSTANT     0061 (Value: show)
+0309: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0311: OP_POP
+0312: OP_GET_GLOBAL   0039 (Name: app)
+0315: OP_CONSTANT     0062 (Value: run)
+0318: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0320: OP_POP
+0321: OP_CONSTANT     0063 (Value: --- Aplicație Oprită ---)
+0324: OP_ECHO
+0325: OP_RETURN
 
---- FUNCTION: PE_APASARE_BUTON (Params: ) ---
-=== DISASSEMBLY: PE_APASARE_BUTON ===
-0000: OP_CONSTANT     0000 (Value: [VM OLI] Semnal primit cu succes din GTK!)
+--- FUNCTION: MENIU_EXIT (Params: ) ---
+=== DISASSEMBLY: MENIU_EXIT ===
+0000: OP_CONSTANT     0000 (Value: Ieșire din aplicație...)
 0003: OP_ECHO
-0004: OP_CONSTANT     0001 (Value: XUI Test)
-0007: OP_CONSTANT     0002 (Value: Conexiunea C++ <-> Script Oli funcționează perfect în GTK!)
-0010: OP_CONSTANT     0003 (Value: SHOW_MESSAGE)
-0013: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
-0015: OP_POP
-0016: OP_RETURN
+0004: OP_CONSTANT     0001 (Value: exit)
+0007: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0009: OP_POP
+0010: OP_RETURN
 
---- FUNCTION: WINAPP::INIT (Params: ) ---
-=== DISASSEMBLY: WINAPP::INIT ===
-0000: OP_GET_GLOBAL   0000 (Name: WINAPP)
+--- FUNCTION: UICONTROL::SET_FONT_SIZE (Params: $size) ---
+=== DISASSEMBLY: UICONTROL::SET_FONT_SIZE ===
+0000: OP_CONSTANT     0000 (Value: font_size)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_VISIBLE (Params: $bool) ---
+=== DISASSEMBLY: UICONTROL::SET_VISIBLE ===
+0000: OP_CONSTANT     0000 (Value: visible)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: XWINDOW::SHOW (Params: ) ---
+=== DISASSEMBLY: XWINDOW::SHOW ===
+0000: OP_GET_GLOBAL   0000 (Name: XWINDOW)
 0003: OP_RETURN
 
---- FUNCTION: WINAPP::RUN (Params: ) ---
-=== DISASSEMBLY: WINAPP::RUN ===
-0000: OP_GET_GLOBAL   0000 (Name: WINAPP)
+--- FUNCTION: XMENU::INIT (Params: $id, $parentId) ---
+=== DISASSEMBLY: XMENU::INIT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_LOCAL     0001
+0007: OP_SET_INDIRECT
+0008: OP_CONSTANT     0001 (Value: MENU)
+0011: OP_GET_LOCAL     0001
+0013: OP_GET_LOCAL     0002
+0015: OP_CONSTANT     0002 (Value: UI_CREATE_CONTROL)
+0018: OP_CALL_DYNAMIC    (Args: 3, Context & Name on Stack)
+0020: OP_POP
+0021: OP_GET_LOCAL     0000
+0023: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_MARGIN (Params: $val) ---
+=== DISASSEMBLY: UICONTROL::SET_MARGIN ===
+0000: OP_CONSTANT     0000 (Value: margin)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_HEIGHT (Params: $val) ---
+=== DISASSEMBLY: UICONTROL::SET_HEIGHT ===
+0000: OP_CONSTANT     0000 (Value: height)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_HEIGHT_MODE (Params: $mode) ---
+=== DISASSEMBLY: UICONTROL::SET_HEIGHT_MODE ===
+0000: OP_CONSTANT     0000 (Value: height_mode)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: XAPP::RUN (Params: ) ---
+=== DISASSEMBLY: XAPP::RUN ===
+0000: OP_GET_GLOBAL   0000 (Name: XAPP)
 0003: OP_RETURN
 
---- FUNCTION: WINWINDOW::SHOW (Params: ) ---
-=== DISASSEMBLY: WINWINDOW::SHOW ===
-0000: OP_GET_GLOBAL   0000 (Name: WINWINDOW)
-0003: OP_RETURN
+--- FUNCTION: UICONTROL::SET_ANCHOR (Params: $type) ---
+=== DISASSEMBLY: UICONTROL::SET_ANCHOR ===
+0000: OP_CONSTANT     0000 (Value: anchor)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
 
---- FUNCTION: WINWINDOW::BIND (Params: $ev, $fn) ---
-=== DISASSEMBLY: WINWINDOW::BIND ===
+--- FUNCTION: UICONTROL::GET_TEXT (Params: ) ---
+=== DISASSEMBLY: UICONTROL::GET_TEXT ===
+0000: OP_CONSTANT     0000 (Value: text)
+0003: OP_GET_LOCAL     0000
+0005: OP_CONSTANT     0001 (Value: get_prop)
+0008: OP_CALL_METHOD     (Args: 1, Context & Name on Stack)
+0010: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_TEXT (Params: $text) ---
+=== DISASSEMBLY: UICONTROL::SET_TEXT ===
+0000: OP_CONSTANT     0000 (Value: text)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: XAPP::CREATE (Params: ) ---
+=== DISASSEMBLY: XAPP::CREATE ===
+0000: OP_CONSTANT     0000 (Value: CREATE_XAPP)
+0003: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0005: OP_SET_LOCAL     0000
+0007: OP_GET_LOCAL     0000
+0009: OP_RETURN
+
+--- FUNCTION: UICONTROL::BIND_ARG (Params: $event, $func) ---
+=== DISASSEMBLY: UICONTROL::BIND_ARG ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_INDIRECT
+0006: OP_GET_LOCAL     0001
+0008: OP_GET_LOCAL     0002
+0010: OP_CONSTANT     0001 (Value: UI_BIND_ARG_EVENT)
+0013: OP_CALL_DYNAMIC    (Args: 3, Context & Name on Stack)
+0015: OP_RETURN
+
+--- FUNCTION: UICONTROL::BIND (Params: $event, $func) ---
+=== DISASSEMBLY: UICONTROL::BIND ===
 0000: OP_GET_LOCAL     0000
 0002: OP_CONSTANT     0000 (Value: id)
 0005: OP_GET_INDIRECT
@@ -109,20 +259,76 @@ Generated: 2026-05-11
 0013: OP_CALL_DYNAMIC    (Args: 3, Context & Name on Stack)
 0015: OP_RETURN
 
---- FUNCTION: WINWINDOW::INIT (Params: $id, $title) ---
-=== DISASSEMBLY: WINWINDOW::INIT ===
+--- FUNCTION: XRICHEDIT::APPEND_TEXT (Params: $text) ---
+=== DISASSEMBLY: XRICHEDIT::APPEND_TEXT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_INDIRECT
+0006: OP_CONSTANT     0001 (Value: append_text)
+0009: OP_GET_LOCAL     0001
+0011: OP_CONSTANT     0002 (Value: UI_CALL_METHOD)
+0014: OP_CALL_DYNAMIC    (Args: 3, Context & Name on Stack)
+0016: OP_RETURN
+
+--- FUNCTION: XRICHEDIT::INIT (Params: $id, $parentId, $x, $y, $w, $h) ---
+=== DISASSEMBLY: XRICHEDIT::INIT ===
 0000: OP_GET_LOCAL     0000
 0002: OP_CONSTANT     0000 (Value: id)
 0005: OP_GET_LOCAL     0001
 0007: OP_SET_INDIRECT
-0008: OP_GET_LOCAL     0001
-0010: OP_GET_LOCAL     0002
-0012: OP_CONSTANT     0001 (Value: CREATE_WINWINDOW)
-0015: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
-0017: OP_RETURN
+0008: OP_CONSTANT     0001 (Value: RICHEDIT)
+0011: OP_GET_LOCAL     0001
+0013: OP_GET_LOCAL     0002
+0015: OP_GET_LOCAL     0003
+0017: OP_GET_LOCAL     0004
+0019: OP_GET_LOCAL     0005
+0021: OP_GET_LOCAL     0006
+0023: OP_CONSTANT     0002 (Value: UI_CREATE_CONTROL)
+0026: OP_CALL_DYNAMIC    (Args: 7, Context & Name on Stack)
+0028: OP_POP
+0029: OP_RETURN
 
---- FUNCTION: WINBUTTON::INIT (Params: $id, $parentId, $x, $y, $w, $h, $text) ---
-=== DISASSEMBLY: WINBUTTON::INIT ===
+--- FUNCTION: XMENU::ADD_ITEM (Params: $itemId, $text) ---
+=== DISASSEMBLY: XMENU::ADD_ITEM ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_INDIRECT
+0006: OP_CONSTANT     0001 (Value: add_item)
+0009: OP_GET_LOCAL     0001
+0011: OP_GET_LOCAL     0002
+0013: OP_CONSTANT     0002 (Value: UI_CALL_METHOD)
+0016: OP_CALL_DYNAMIC    (Args: 4, Context & Name on Stack)
+0018: OP_RETURN
+
+--- FUNCTION: XCODEVIEW::INIT (Params: $id, $parentId, $x, $y, $w, $h) ---
+=== DISASSEMBLY: XCODEVIEW::INIT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_LOCAL     0001
+0007: OP_SET_INDIRECT
+0008: OP_CONSTANT     0001 (Value: CODEVIEW)
+0011: OP_GET_LOCAL     0001
+0013: OP_GET_LOCAL     0002
+0015: OP_GET_LOCAL     0003
+0017: OP_GET_LOCAL     0004
+0019: OP_GET_LOCAL     0005
+0021: OP_GET_LOCAL     0006
+0023: OP_CONSTANT     0002 (Value: UI_CREATE_CONTROL)
+0026: OP_CALL_DYNAMIC    (Args: 7, Context & Name on Stack)
+0028: OP_POP
+0029: OP_RETURN
+
+--- FUNCTION: XCODEVIEW::SET_SYNTAX_PATH (Params: $path) ---
+=== DISASSEMBLY: XCODEVIEW::SET_SYNTAX_PATH ===
+0000: OP_CONSTANT     0000 (Value: syntax_path)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: XBUTTON::INIT (Params: $id, $parentId, $x, $y, $w, $h, $text) ---
+=== DISASSEMBLY: XBUTTON::INIT ===
 0000: OP_GET_LOCAL     0000
 0002: OP_CONSTANT     0000 (Value: id)
 0005: OP_GET_LOCAL     0001
@@ -137,24 +343,92 @@ Generated: 2026-05-11
 0023: OP_GET_LOCAL     0007
 0025: OP_CONSTANT     0002 (Value: UI_CREATE_CONTROL)
 0028: OP_CALL_DYNAMIC    (Args: 8, Context & Name on Stack)
-0030: OP_RETURN
+0030: OP_POP
+0031: OP_RETURN
 
---- FUNCTION: WINBUTTON::BIND (Params: $ev, $fn) ---
-=== DISASSEMBLY: WINBUTTON::BIND ===
+--- FUNCTION: XPANEL::INIT (Params: $id, $parentId, $x, $y, $w, $h) ---
+=== DISASSEMBLY: XPANEL::INIT ===
 0000: OP_GET_LOCAL     0000
 0002: OP_CONSTANT     0000 (Value: id)
-0005: OP_GET_INDIRECT
-0006: OP_GET_LOCAL     0001
-0008: OP_GET_LOCAL     0002
-0010: OP_CONSTANT     0001 (Value: UI_BIND_EVENT)
-0013: OP_CALL_DYNAMIC    (Args: 3, Context & Name on Stack)
-0015: OP_RETURN
+0005: OP_GET_LOCAL     0001
+0007: OP_SET_INDIRECT
+0008: OP_CONSTANT     0001 (Value: PANEL)
+0011: OP_GET_LOCAL     0001
+0013: OP_GET_LOCAL     0002
+0015: OP_GET_LOCAL     0003
+0017: OP_GET_LOCAL     0004
+0019: OP_GET_LOCAL     0005
+0021: OP_GET_LOCAL     0006
+0023: OP_CONSTANT     0002 (Value: UI_CREATE_CONTROL)
+0026: OP_CALL_DYNAMIC    (Args: 7, Context & Name on Stack)
+0028: OP_POP
+0029: OP_RETURN
 
---- FUNCTION: WINBUTTON::SET_PROP (Params: $k, $v) ---
-=== DISASSEMBLY: WINBUTTON::SET_PROP ===
+--- FUNCTION: XWINDOW::INIT (Params: $id, $title) ---
+=== DISASSEMBLY: XWINDOW::INIT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: id)
+0005: OP_GET_LOCAL     0001
+0007: OP_SET_INDIRECT
+0008: OP_GET_LOCAL     0001
+0010: OP_GET_LOCAL     0002
+0012: OP_CONSTANT     0001 (Value: CREATE_XWINDOW)
+0015: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
+0017: OP_SET_LOCAL     0000
+0019: OP_GET_LOCAL     0000
+0021: OP_RETURN
+
+--- FUNCTION: PE_APASARE_BUTON (Params: ) ---
+=== DISASSEMBLY: PE_APASARE_BUTON ===
+0000: OP_CONSTANT     0000 (Value: [VM OLI] Semnal primit cu succes din GTK!)
+0003: OP_ECHO
+0004: OP_CONSTANT     0001 (Value: XUI Test)
+0007: OP_CONSTANT     0002 (Value: Conexiunea C++ <-> Script Oli funcționează perfect în GTK!)
+0010: OP_CONSTANT     0003 (Value: SHOW_MESSAGE)
+0013: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
+0015: OP_POP
+0016: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_PROP (Params: $name, $val) ---
+=== DISASSEMBLY: UICONTROL::SET_PROP ===
 0000: OP_GET_LOCAL     0000
 0002: OP_GET_LOCAL     0001
 0004: OP_GET_LOCAL     0002
 0006: OP_CONSTANT     0000 (Value: UI_SET_PROPERTY)
 0009: OP_CALL_DYNAMIC    (Args: 3, Context & Name on Stack)
 0011: OP_RETURN
+
+--- FUNCTION: UICONTROL::GET_PROP (Params: $name) ---
+=== DISASSEMBLY: UICONTROL::GET_PROP ===
+0000: OP_GET_LOCAL     0000
+0002: OP_GET_LOCAL     0001
+0004: OP_CONSTANT     0000 (Value: UI_GET_PROPERTY)
+0007: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
+0009: OP_RETURN
+
+--- FUNCTION: XWINDOW::SET_LAYOUT (Params: $style) ---
+=== DISASSEMBLY: XWINDOW::SET_LAYOUT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: layout)
+0005: OP_GET_LOCAL     0001
+0007: OP_CONSTANT     0001 (Value: UI_SET_PROPERTY)
+0010: OP_CALL_DYNAMIC    (Args: 3, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: UICONTROL::SET_WIDTH_MODE (Params: $mode) ---
+=== DISASSEMBLY: UICONTROL::SET_WIDTH_MODE ===
+0000: OP_CONSTANT     0000 (Value: width_mode)
+0003: OP_GET_LOCAL     0001
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: set_prop)
+0010: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0012: OP_RETURN
+
+--- FUNCTION: XAPP::INIT (Params: ) ---
+=== DISASSEMBLY: XAPP::INIT ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: create)
+0005: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0007: OP_SET_LOCAL     0000
+0009: OP_GET_GLOBAL   0001 (Name: XAPP)
+0012: OP_RETURN

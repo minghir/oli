@@ -78,16 +78,10 @@ endfunc
 # =================================================================
 # CONTROALE GTK
 # =================================================================
-def class XPanel extends UiControl { init($id, $parentId, $x, $y, $w, $h), set_layout($style) }
-
+def class XPanel extends UiControl { init($id, $parentId, $x, $y, $w, $h) }
 func XPanel::init($id, $parentId, $x, $y, $w, $h)
     $this.id = $id
     UI_CREATE_CONTROL("PANEL", $id, $parentId, $x, $y, $w, $h)
-endfunc
-
-# 🔥 ACEASTA LIPSEA: Trimite apelul din script către UI_CALL_METHOD din C++
-func XPanel::set_layout($style)
-    return UI_CALL_METHOD($this.id, "set_layout", $style)
 endfunc
 
 def class XButton extends UiControl { init($id, $parentId, $x, $y, $w, $h, $text) }
@@ -107,20 +101,9 @@ func XCodeView::set_syntax_path($path)
 endfunc
 
 # =================================================================
-# CLASA XTABCONTROL (Adăugată pentru suportul Multi-Tab din IDE)
+# CLASA XMENU
 # =================================================================
-def class XTabControl extends UiControl { init($id, $parentId, $x, $y, $w, $h), add_tab($title, $pageId), switch_page($idx), select_tab_by_id($id), set_title_by_id($id, $title), refresh() }
-func XTabControl::init($id, $parentId, $x, $y, $w, $h) $this.id = $id UI_CREATE_CONTROL("TABCONTROL", $id, $parentId, $x, $y, $w, $h) endfunc
-func XTabControl::add_tab($title, $pageId) return UI_CALL_METHOD($this.id, "add_tab", $title, $pageId) endfunc
-func XTabControl::switch_page($idx) return UI_CALL_METHOD($this.id, "switch_page", $idx) endfunc
-func XTabControl::select_tab_by_id($id) return UI_CALL_METHOD($this.id, "select_tab_by_id", $id) endfunc
-func XTabControl::set_title_by_id($id, $title) return UI_CALL_METHOD($this.id, "set_title_by_id", $id, $title) endfunc
-func XTabControl::refresh() return UI_CALL_METHOD($this.id, "refresh") endfunc
-
-# =================================================================
-# CLASA XMENU (Extinsă cu metodele lipsă apelate în script)
-# =================================================================
-def class XMenu extends UiControl { init($id, $parentId), add_item($itemId, $text), add_separator($sepId), add_submenu($text, $subMenuObj) }
+def class XMenu extends UiControl { init($id, $parentId), add_item($itemId, $text) }
 
 func XMenu::init($id, $parentId)
     $this.id = $id
@@ -132,28 +115,17 @@ func XMenu::add_item($itemId, $text)
     return UI_CALL_METHOD($this.id, "add_item", $itemId, $text)
 endfunc
 
-func XMenu::add_separator($sepId)
-    return UI_CALL_METHOD($this.id, "add_separator", $sepId)
-endfunc
-
-func XMenu::add_submenu($text, $subMenuObj)
-    return UI_CALL_METHOD($this.id, "add_submenu", $text, $subMenuObj.id)
-endfunc
-
 # =================================================================
-# CLASELE RICHEDIT / XRICHCONSOLE
+# CLASA XRICHEDIT / XRICHCONSOLE
 # =================================================================
 def class XRichEdit extends UiControl { init($id, $parentId, $x, $y, $w, $h), append_text($text) }
 func XRichEdit::init($id, $parentId, $x, $y, $w, $h)
     $this.id = $id
     UI_CREATE_CONTROL("RICHEDIT", $id, $parentId, $x, $y, $w, $h)
 endfunc
-func XRichEdit::append_text($text) return UI_CALL_METHOD($this.id, "append_text", $text) endfunc
 
-def class XRichConsole extends UiControl { init($id, $parentId, $x, $y, $w, $h), set_read_only($bool), set_font_size($size), set_resizable($bool) }
-func XRichConsole::init($id, $parentId, $x, $y, $w, $h) $this.id = $id UI_CREATE_CONTROL("RICHCONSOLE", $id, $parentId, $x, $y, $w, $h) endfunc
-func XRichConsole::set_read_only($bool) return $this.set_prop("read_only", $bool) endfunc
-func XRichConsole::set_font_size($size) return $this.set_prop("font_size", $size) endfunc
-func XRichConsole::set_resizable($bool) return $this.set_prop("resizable", $bool) endfunc
+func XRichEdit::append_text($text)
+    return UI_CALL_METHOD($this.id, "append_text", $text)
+endfunc
 
 echo "AM DEFINIT CLASELE XUI"

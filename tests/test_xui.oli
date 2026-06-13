@@ -2,35 +2,39 @@ config win_app 1
 plugin oli_system
 plugin "oli_xui"
 
-# Includem harta noastră minimală
 include ("include/xui.oli")
 
-# Callback-ul care se va executa în mașina virtuală Oli la click
 func pe_apasare_buton()
     echo "[VM OLI] Semnal primit cu succes din GTK!"
     SHOW_MESSAGE("XUI Test", "Conexiunea C++ <-> Script Oli funcționează perfect în GTK!")
 endfunc
 
-echo "--- Pornire Test Direct ---"
+# Funcție pentru meniul exit
+func meniu_exit()
+    echo "Ieșire din aplicație..."
+    exit()
+endfunc
 
-set $app = new("WinApp")
+echo "--- Pornire Test Direct (GTK + Meniu) ---"
+
+set $app = new("XApp")
 $app.init()
 
-set $win = new("WinWindow")
-$win.init("fereastra_principala", "Test Direct GTK (Fără Panel)")
+set $win = new("XWindow")
+$win.init("fereastra_principala", "Test Direct GTK cu Meniu")
 
-set $buton = new("WinButton")
-# ⚡ TRUCUL: Transmitem "fereastra_principala" direct ca părinte!
-# Coordonatele 50, 50 și dimensiunea 200x50 vor fi puse pe GtkFixed-ul ferestrei
+# 1. CREARE MENIU
+set $meniu = new("XMenu")
+$meniu.init("main_menu", "fereastra_principala")
+$meniu.add_item("item_exit", "Exit")
+$meniu.bind("click", "meniu_exit") # Legăm acțiunea de click
+
+# 2. BUTON
+set $buton = new("XButton")
 $buton.init("btn_salut", "fereastra_principala", 50, 50, 200, 50, "Apasă-mă! 🚀")
-
-# Legăm evenimentul
 $buton.bind("click", "pe_apasare_buton")
 
-# Afișăm totul
 $win.show()
-
-# Pornim bucla GTK
 $app.run()
 
 echo "--- Aplicație Oprită ---"

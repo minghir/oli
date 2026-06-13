@@ -1159,13 +1159,17 @@ vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
     std::wstring pathW = std::get<std::wstring>(args[0].value);
     try {
         // 1. Convertim calea wide în string standard C++
+        /*
+
         std::string utf8_path;
-        try {
+                try {
             std::wstring_convert<std::codecvt_utf8<wchar_t>> path_conv;
             utf8_path = path_conv.to_bytes(pathW);
         } catch (...) {
             utf8_path = std::string(pathW.begin(), pathW.end());
         }
+        */
+        std::string utf8_path = PortTools::wstring_to_utf8(pathW);
 
         // Curățăm resturile de formatare Windows din cale
         utf8_path.erase(std::remove(utf8_path.begin(), utf8_path.end(), '\r'), utf8_path.end());
@@ -1183,6 +1187,7 @@ vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
         file.close();
 
         // 4. 🔥 CONVERSIE ANTIGLONȚ: Protejăm memoria împotriva dimensiunii wchar_t de Linux
+        /*
         std::wstring wcontent;
         try {
             std::wstring_convert<std::codecvt_utf8<wchar_t>> content_conv;
@@ -1191,6 +1196,8 @@ vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
             // Fallback în caz de caractere invalide: copiem brut octet cu octet
             wcontent = std::wstring(buffer.begin(), buffer.end());
         }
+        */
+        std::wstring wcontent = PortTools::utf8_to_wstring(buffer);
 
         // Eliminare BOM (Byte Order Mark)
         if (!wcontent.empty() && (unsigned short)wcontent[0] == 0xFEFF) {

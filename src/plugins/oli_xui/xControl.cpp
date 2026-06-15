@@ -61,11 +61,13 @@ void xControl::moveAndResize(int x, int y, int width, int height) {
     m_x = x; m_y = y; m_width = width; m_height = height;
     
     if (m_widget) {
-        gtk_widget_set_size_request(m_widget, m_width, m_height);
+        // 1. Setăm dimensiunea fizică solicitată
+        gtk_widget_set_size_request(m_widget, width, height);
         
-        // Dacă părintele folosește un layout de tip GtkFixed, îi actualizăm poziția absolută
-        if (m_parent && m_parent->getHandle() && GTK_IS_FIXED(m_parent->getHandle())) {
-            gtk_fixed_move(GTK_FIXED(m_parent->getHandle()), m_widget, m_x, m_y);
+        // 2. Dacă părintele este un GtkFixed, îl mutăm la coordonatele X, Y absolute
+        GtkWidget* parent = gtk_widget_get_parent(m_widget);
+        if (parent && GTK_IS_FIXED(parent)) {
+            gtk_fixed_move(GTK_FIXED(parent), m_widget, x, y);
         }
     }
 }
@@ -289,11 +291,44 @@ bool xControl::setProperty(const std::wstring& name, const vData& value) {
         setTextColor(sColor);
         return true;
     }
-    if (prop == L"margin") {
-        int m = static_cast<int>(value.toInt());
-        setMargins(m, m, m, m);
-        return true;
-    }
+    
+    
+    // 🔥 MAPARE LĂȚIME (width_mode)
+        if (name == L"width_mode") {
+            std::wstring mode = value.toWString();
+            if (mode == L"FILL") {
+                gtk_widget_set_hexpand(m_widget, TRUE);
+                gtk_widget_set_halign(m_widget, GTK_ALIGN_FILL);
+            } else {
+                gtk_widget_set_hexpand(m_widget, FALSE);
+            }
+            return true;
+        }
+
+        // 🔥 MAPARE ÎNĂLȚIME (height_mode)
+        if (name == L"height_mode") {
+            std::wstring mode = value.toWString();
+            if (mode == L"FILL") {
+                gtk_widget_set_vexpand(m_widget, TRUE);
+                gtk_widget_set_valign(m_widget, GTK_ALIGN_FILL);
+            } else {
+                gtk_widget_set_vexpand(m_widget, FALSE);
+            }
+            return true;
+        }
+
+        // 🔥 MAPARE MARGINI NATIVE (margin)
+        if (name == L"margin") {
+            int marginSize = static_cast<int>(value.toInt());
+            gtk_widget_set_margin_start(m_widget, marginSize);
+            gtk_widget_set_margin_end(m_widget, marginSize);
+            gtk_widget_set_margin_top(m_widget, marginSize);
+            gtk_widget_set_margin_bottom(m_widget, marginSize);
+            return true;
+        }
+
+        
+        
     return false;
 }
 

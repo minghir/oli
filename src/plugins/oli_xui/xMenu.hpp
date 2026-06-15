@@ -10,7 +10,7 @@
 struct MenuItem {
     std::string id;
     std::wstring text;
-    GtkWidget* widget; // În GTK, fiecare item e un widget
+    GtkWidget* widget; 
     bool isSeparator;
 };
 
@@ -19,7 +19,6 @@ public:
     explicit xMenu(const std::string& id, EventDispatcher& dispatcher);
     virtual ~xMenu() = default;
 
-    // În GTK, meniul trebuie atașat unei ferestre
     void create(GtkWidget* parent) override;
 
     void addItem(const std::string& id, const std::wstring& text);
@@ -33,7 +32,9 @@ public:
     bool callMethod(const std::wstring& methodName, const std::vector<vData>& args) override;
 
 protected:
-    GtkWidget* m_menuWidget; // GtkMenu propriu-zis
+    GtkWidget* m_menuWidget;      // Dropdown-ul vertical standard (GtkMenu)
+    GtkWidget* m_menuBarWidget;   // Bara orizontală de sus (GtkMenuBar)
+    bool m_isMenuBar;             // Flag de diferențiere
     std::vector<MenuItem> m_menuItems;
 };
 

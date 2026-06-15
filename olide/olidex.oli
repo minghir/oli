@@ -2,7 +2,7 @@ config win_app 1
 plugin oli_system
 plugin oli_filesys
 plugin oli_compiler
-plugin "oli_xui"
+
 
 # Includem shim-ul de compatibilitate grafică pentru Linux
 include ("include/xui.oli")
@@ -29,7 +29,7 @@ func UPDATE_ACTIVE_CONTEXT()
     else
         @file = ""
         @activeCodeView = null
-        init_first_tab()
+        # 🔥 FIX: Am eliminat init_first_tab() de aici pentru a opri bucla infinită!
     endif
 endfunc
 
@@ -57,7 +57,8 @@ func run_click()
 
     echo "[IDE] Auto-salvare în fundal pentru: " .. @file
     $cod_curent = $activeCodeView.get_text()
-    WRITEFILE(@file, $cod_curent)
+    #WRITEFILE(@file, $cod_curent)
+    FS_WRITE_FILE(@file, $cod_curent)
 
     $activeCodeView.set_prop("modified", false)
     $tabs.set_title_by_id(@activeCodeView.id, FS_GET_FILENAME(@file))
@@ -80,7 +81,8 @@ func execute_save_to_disk($calea_fisiere)
     if @activeCodeView == null then return endif
     
     $cod_curent = $activeCodeView.get_text()
-    WRITEFILE($calea_fisiere, $cod_curent)
+    #WRITEFILE($calea_fisiere, $cod_curent)
+    FS_WRITE_FILE($calea_fisiere, $cod_curent)
     
     $activeCodeView.set_prop("modified", false)
     
@@ -209,10 +211,12 @@ func on_tab_close_requested($tab_id)
     
     set $checkView = new("XCodeView")
     $checkView.id = $tab_id
+    
+    # 🔥 FIX CRITIC: Preluăm calea ACUM, ca să fie inițializată în slotul local din VM!
+    $cale_originala = $checkView.get_prop("file_path")
     $is_modified = $checkView.get_prop("modified")
     
     if $is_modified == true then
-        $cale_originala = $checkView.get_prop("file_path")
         $nume_curat = FS_GET_FILENAME($cale_originala)
         if $nume_curat == "" then $nume_curat = "untitled.oli" endif
         
@@ -231,8 +235,9 @@ func on_tab_close_requested($tab_id)
                 endif
             else
                 $cod_de_salvat = $checkView.get_text()
-                WRITEFILE($cale_originala, $cod_de_salvat)
-                echo "[IDE] Salvare automată reușitada pentru: " .. $cale_originala
+                # ✅ Folosim funcția nativă corectă
+                FS_WRITE_FILE($cale_originala, $cod_de_salvat)
+                echo "[IDE] Salvare automată reușită pentru: " .. $cale_originala
             endif
         endif
         
@@ -242,16 +247,18 @@ func on_tab_close_requested($tab_id)
         endif
     endif
 
+    # Eliminăm pagina din widget-ul GTK Notebook
     UI_CALL_METHOD("main_tabs", "remove_tab_page_by_id", $tab_id)
     
-    if $cale_originala != "" then
+    # ✅ Acum $cale_originala este validă și putem curăța harta în siguranță!
+    if $cale_originala != "" and $cale_originala != NULL then
         unset(@open_files[$cale_originala])
     else
         unset(@open_files["untitled.oli"])
     endif
     
     UPDATE_ACTIVE_CONTEXT()
-    echo "[IDE] Tab-ul " .. $tab_id .. " a fost șters."
+    echo "[IDE] Tab-ul " .. $tab_id .. " a fost șters cu succes."
 endfunc
 
 func on_file_modified()
@@ -274,7 +281,7 @@ $app.init()
 echo "CREEZ WIN"
 set $win = new("XWindow")
 $win.init("fereastra_principala", "Oli IDE (Linux GTK)")
-$win.set_layout("GRID")
+$win.set_layout("VSTACK")
 
 echo "CREEZ STRUCTURA DE MENIURI"
 
@@ -404,15 +411,18 @@ endfunc
 
 echo "CREEZ Consolă..."
 set $consolePanel = new("XPanel")
-$consolePanel.init("console_panel", "main_panel", 0, 0, 0, 150)
+# 1. Schimbat în z_console_panel pentru ordonare corectă în VSTACK
+$consolePanel.init("z_console_panel", "main_panel", 0, 0, 0, 150)
 $consolePanel.set_layout("GRID")
 $consolePanel.set_width_mode("FILL")
 $consolePanel.set_height_mode("FIXED")
 
 set $consoleOutput = new("XRichConsole")
-$consoleOutput.init("console_output", "console_panel", 0, 0, 100, 150)
+# 2. Mutat în interiorul noului z_console_panel
+$consoleOutput.init("console_output", "z_console_panel", 0, 0, 100, 150)
 $consoleOutput.set_width_mode("FILL")
-$consolePanel.set_height_mode("FIXED")
+# 3. 🔥 CORECTAT TYPO: Aici scria $consolePanel din greșeală!
+$consoleOutput.set_height_mode("FIXED")
 $consoleOutput.set_read_only(true) 
 $consoleOutput.set_font_size(12)
 $consoleOutput.set_resizable(true)
@@ -467,6 +477,7 @@ func menu_open_click()
         set @open_files[$path] = $newTabId
         
         $newView.set_syntax_path("./olide/syntaxes/oli.xml")
+        #$newView.set_text(READFILE($path))
         $newView.set_text(READFILE($path))
         $newView.set_font_size(12)
         
@@ -485,10 +496,15 @@ func init_first_tab()
     $newView.set_width_mode("FILL")
     $newView.set_height_mode("FILL")
     $newView.set_syntax_path("./olide/syntaxes/oli.xml")
-    $tabs.add_tab("untitled.oli", $newTabId)
     
+    $tabs.add_tab("untitled.oli", $newTabId)
     set @open_files["untitled.oli"] = $newTabId
     $newView.set_font_size(12)
+    
+    # 🔥 FIX: Forțăm GTK să activeze primul tab (index 0) 
+    # pentru ca active_tab_id să nu mai fie raportat gol!
+    $tabs.switch_page(0)
+    
     UPDATE_ACTIVE_CONTEXT()
     $tabs.refresh()
 endfunc

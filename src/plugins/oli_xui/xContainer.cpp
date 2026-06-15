@@ -16,50 +16,27 @@ void xContainer::create(GtkWidget* parent) {
     if (parent) {
         gtk_container_add(GTK_CONTAINER(parent), m_widget);
     }
+
+    g_signal_connect(m_widget, "size-allocate", G_CALLBACK(+[](GtkWidget*, GdkRectangle*, gpointer data) {
+    auto* self = static_cast<xContainer*>(data);
+    if (self) {
+        self->applyLayout(); // Se auto-apelează la orice resize de fereastră!
+    }
+}), this);
 }
 
 void xContainer::applyLayout() {
-    if (!m_widget) return;
-
-    for (auto& entry : m_children) {
-        xControl* child = entry.second.get();
-        if (!child || !child->getHandle()) continue;
-
-        GtkWidget* childWidget = child->getHandle();
-
-        // 1. Mapare MARGINS (Oli margin -> GTK margins)
-        int margin = (int)child->getProperty(L"margin").toInt();
-        if (margin > 0) {
-            gtk_widget_set_margin_start(childWidget, margin);
-            gtk_widget_set_margin_end(childWidget, margin);
-            gtk_widget_set_margin_top(childWidget, margin);
-            gtk_widget_set_margin_bottom(childWidget, margin);
+        if (m_layoutStrategy) {
+            m_layoutStrategy->applyLayout(*this);
         }
 
-        // 2. Mapare WIDTH_MODE ("FILL")
-        std::wstring widthMode = child->getProperty(L"width_mode").toWString();
-        if (widthMode == L"FILL") {
-            gtk_widget_set_hexpand(childWidget, TRUE);
-            gtk_widget_set_halign(childWidget, GTK_ALIGN_FILL);
-        } else {
-            gtk_widget_set_hexpand(childWidget, FALSE);
+        // Propagăm recursiv layout-ul către toți copiii care sunt la rândul lor containere
+        for (auto& entry : m_children) {
+            xContainer* childCont = dynamic_cast<xContainer*>(entry.second.get());
+            if (childCont && childCont->isVisible()) {
+                childCont->applyLayout();
+            }
         }
-
-        // 3. Mapare HEIGHT_MODE ("FILL")
-        std::wstring heightMode = child->getProperty(L"height_mode").toWString();
-        if (heightMode == L"FILL") {
-            gtk_widget_set_vexpand(childWidget, TRUE);
-            gtk_widget_set_valign(childWidget, GTK_ALIGN_FILL);
-        } else {
-            gtk_widget_set_vexpand(childWidget, FALSE);
-        }
-
-        // Propagare recursivă în sub-containere nativ
-        xContainer* childCont = dynamic_cast<xContainer*>(child);
-        if (childCont) {
-            childCont->applyLayout();
-        }
-    }
 }
 
 bool xContainer::setProperty(const std::wstring& name, const vData& value) {

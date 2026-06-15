@@ -12,7 +12,7 @@
 
 class xContainer : public xControl {
 protected:
-    std::unique_ptr<IXLayoutStrategy> m_layoutStrategy;
+    std::unique_ptr<IXLayoutStrategy> m_layoutStrategy = nullptr;
     GtkWidget* m_layoutWidget = nullptr; // Sub-containerul structural (VBox, HBox, Grid)
 
 public:

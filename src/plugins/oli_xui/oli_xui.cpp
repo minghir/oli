@@ -1,12 +1,17 @@
 #include "../../OliEngine.hpp"
 #include "../../IOliEngine.hpp"
+#include "XLayouts/Layouts.hpp"
 #include "xApp.hpp"
 #include "xWindow.hpp"
 #include "xContainer.hpp"
 #include "xButton.hpp"
 #include "xMenu.hpp"
 #include "xPanel.hpp"
+#include "xRichEdit.hpp"
 #include "xTabControl.hpp"
+#include "xCodeView.hpp"
+#include "xRichConsole.hpp"
+#include "xFileDialog.hpp"
 #include "IXLayoutStrategy.hpp"
 #include <unordered_map>
 #include <memory>
@@ -63,7 +68,9 @@ xControl* LocateAnyControl(const std::string& id) {
 
 // ✅ PUNCTUL UNIC DE INTRARE ÎN PLUGIN
 OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
-
+std::cout << "\n=======================================" << std::endl;
+    std::cout << "🚀 [DEBUG CRITIC] BINARUL NOU XUI A FOST ÎNCĂRCAT CORECT!" << std::endl;
+    std::cout << "=======================================\n" << std::endl;
     if (g_LinkedOliEngine == nullptr) {
         g_LinkedOliEngine = static_cast<vOliEngine*>(enginePtr);
         if (g_LinkedOliEngine) {
@@ -188,8 +195,6 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
     // =================================================================
 
     registry[L"UI_CREATE_CONTROL"] = [](const std::vector<vData>& args) -> vData {
-        LOG_DEBUG(L"[XUI_DEBUG] Intrare UI_CREATE_CONTROL. Tip: " + (args.size() > 0 ? args[0].toWString() : L"N/A"));
-
         if (args.size() < 3) return vData{ 0LL };
 
         std::wstring wType = args[0].toWString();
@@ -199,22 +204,22 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         std::string id(wId.begin(), wId.end());
         std::string parentId(wParentId.begin(), wParentId.end());
 
-        // 1. LOCALIZARE PĂRINTE (O singură dată, la început)
+        // Scanare flux
+        std::wcout << L"[XUI_FLOW] Solicitare creare: Tip=[" << wType << L"] ID=[" << wId << L"] Parinte=[" << wParentId << L"]" << std::endl;
+
+        // 1. LOCALIZARE PĂRINTE
         xControl* parentCtrl = LocateAnyControl(parentId);
         if (!parentCtrl) {
             parentCtrl = g_XuiGui.appInstance->getWindow(parentId);
         }
         
-        // Validare părinte
         if (!parentCtrl) {
-            LOG_ERROR(L"[XUI_DEBUG] Parintele '" + wParentId + L"' nu a fost gasit!");
+            std::wcout << L"❌ [XUI_ERROR] Parintele '" << wParentId << L"' nu a fost gasit in harta!" << std::endl;
             return vData{ 0LL };
         }
 
-        // 2. MANAGEMENTUL MENIULUI
-        // 1. Managementul Meniului (E special, nu are coordonate)
+        // 2. 🔥 MANAGEMENTUL MENIULUI (RESTAURAT COMPLET)
         if (wType == L"MENU") {
-            LOG_DEBUG(L"[XUI_DEBUG] Initializare inteligenta xMenu: " + wId);
             auto menuCtrl = std::make_unique<xMenu>(id, g_XuiGui.appInstance->getEventDispatcher());
             
             xWindow* win = dynamic_cast<xWindow*>(parentCtrl);
@@ -223,22 +228,23 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
                 GtkWidget* menuBar = gtk_menu_bar_new();
                 
                 if (GTK_IS_BOX(winBox)) {
-                    // Caz A: Fereastra folosește un aliniament de tip Box
                     gtk_box_pack_start(GTK_BOX(winBox), menuBar, FALSE, FALSE, 0);
-                    gtk_box_reorder_child(GTK_BOX(winBox), menuBar, 0); // Îl forțăm să fie primul sus
+                    gtk_box_reorder_child(GTK_BOX(winBox), menuBar, 0);
                     menuCtrl->create(menuBar);
-                    gtk_widget_show_all(menuBar); // 🔥 CRITIC: Forțează desenarea elementelor interne
+                    gtk_widget_show_all(menuBar);
                 } 
                 else if (GTK_IS_FIXED(winBox)) {
-                    // Caz B: Fereastra folosește aliniament absolut (GtkFixed)
-                    // Îl punem la coordonatele absolute (0,0) și îi dăm o dimensiune standard de bară
                     gtk_fixed_put(GTK_FIXED(winBox), menuBar, 0, 0);
-                    gtk_widget_set_size_request(menuBar, 1200, 25); // Lățime mare implicită, înălțime de 25px
+                    gtk_widget_set_size_request(menuBar, 1200, 25);
                     menuCtrl->create(menuBar);
-                    gtk_widget_show_all(menuBar); // 🔥 CRITIC: Face vizibile textele în interiorul GtkFixed
+                    gtk_widget_show_all(menuBar);
+                }
+                else if (GTK_IS_GRID(winBox)) {
+                    gtk_grid_attach(GTK_GRID(winBox), menuBar, 0, 0, 1, 1);
+                    menuCtrl->create(menuBar);
+                    gtk_widget_show_all(menuBar);
                 }
                 else {
-                    LOG_WARNING(L"[XUI_DEBUG] Layout-ul ferestrei este de tip necunoscut. Incercam atașare simplă.");
                     menuCtrl->create(nullptr);
                 }
             } else {
@@ -254,7 +260,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             return vData{ 1LL };
         }
 
-        // 3. CONTROL STANDARD (Button, Panel, etc.)
+        // 3. CONTROALE STANDARD
         int x = (args.size() > 3) ? static_cast<int>(args[3].toInt()) : 0;
         int y = (args.size() > 4) ? static_cast<int>(args[4].toInt()) : 0;
         int w = (args.size() > 5) ? static_cast<int>(args[5].toInt()) : 0;
@@ -263,16 +269,33 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 
         std::unique_ptr<xControl> newCtrl = nullptr;
 
-        if (wType == L"BUTTON") {
+        std::wstring wTypeUpper = wType;
+        std::transform(wTypeUpper.begin(), wTypeUpper.end(), wTypeUpper.begin(), ::towupper);
+
+        if (wTypeUpper == L"BUTTON") {
             newCtrl = std::make_unique<xButton>(id, wText, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher());
         }
-        else if (wType == L"PANEL") {
+        else if (wTypeUpper == L"PANEL") {
             newCtrl = std::make_unique<xPanel>(id, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher());
         }
-        else if (wType == L"TABCONTROL") {
+        else if (wTypeUpper == L"TABCONTROL" || wTypeUpper == L"TAB_CONTROL" || wTypeUpper == L"SYSTABCONTROL32") {
             newCtrl = std::make_unique<xTabControl>(id, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher());
         }
+        // ✅ S-a eliminat RICHCONSOLE de aici:
+        else if (wTypeUpper == L"RICHEDIT" || wTypeUpper == L"RICH_EDIT") {
+            newCtrl = std::make_unique<xRichEdit>(id, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher());
+        }
+        else if (wTypeUpper == L"CODEVIEW" || wTypeUpper == L"CODE_VIEW") {
+            newCtrl = std::make_unique<xCodeView>(id, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher());
+        }
+        // ✅ Acum această ramură se va executa corect!
+        else if (wTypeUpper == L"RICHCONSOLE" || wTypeUpper == L"RICH_CONSOLE") {
+            newCtrl = std::make_unique<xRichConsole>(id, x, y, w, h, g_XuiGui.appInstance->getEventDispatcher());
+        }
 
+        // =================================================================
+        // BLOCUL DE PLANIFICARE ȘI CREARE CONTROL (În interiorul UI_CREATE_CONTROL)
+        // =================================================================
         if (newCtrl) {
             xControl* rawControlPtr = newCtrl.get();
             GtkWidget* targetGtkParent = nullptr;
@@ -284,17 +307,28 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
                 targetGtkParent = parentCtrl->getHandle();
             }
 
-            if (!targetGtkParent) {
-                LOG_ERROR(L"[XUI_DEBUG] Nu am găsit un widget părinte valid pentru adăugare!");
-                return vData{ 0LL };
+            // 🔥 FIX SEGV: Deturnăm pachetarea dacă părintele este un GtkNotebook (TabControl)
+            if (targetGtkParent && GTK_IS_NOTEBOOK(targetGtkParent)) {
+                // Îi pasăm nullptr ca părinte temporar pentru a-i forța constructorul 
+                // să aloce widget-urile interne fără să apeleze GTK_BOX() sau GTK_FIXED() pe notebook!
+                rawControlPtr->create(nullptr);
+            } 
+            else {
+                if (!targetGtkParent) {
+                    std::wcout << L"❌ [XUI_ERROR] Widget-ul parinte GTK pentru '" << wId << L"' este NULL!" << std::endl;
+                    return vData{ 0LL };
+                }
+                rawControlPtr->create(targetGtkParent);
             }
 
-            rawControlPtr->create(targetGtkParent);
+            // Înregistrăm controlul în ierarhia de memorie
             parentCtrl->addChild(id, std::move(newCtrl));
             g_XuiGui.controlsMap[id] = rawControlPtr;
+            
             return vData{ 1LL };
         }
 
+        std::wcout << L"⚠️ [XUI_WARNING] Tip de control nesuportat în C++: " << wType << std::endl;
         return vData{ 0LL };
     };
     // =================================================================
@@ -350,7 +384,23 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             methodArgs.push_back(args[i]);
         }
 
+        // 🔥 FIX: Executăm ÎNTOTDEAUNA mai întâi metoda nativă a controlului 
+        // pentru a nu-i bloca inițializarea structurilor interne GTK!
         bool success = ctrl->callMethod(methodName, methodArgs);
+
+        // Dacă metoda a fost set_layout, adăugăm suplimentar și strategia de dimensionare
+        if (methodName == L"set_layout" && !methodArgs.empty()) {
+            std::wstring style = methodArgs[0].toWString();
+            
+            xContainer* container = dynamic_cast<xContainer*>(ctrl);
+            if (container) {
+                if (style == L"VSTACK") {
+                    container->setLayoutStrategy(std::make_unique<XVerticalPercentStackLayout>());
+                }
+                // Aici se pot adăuga strategii viitoare (ex: HSTACK)
+            }
+        }
+
         return vData{ success ? 1LL : 0LL };
     };
 
@@ -464,38 +514,34 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
     registry[L"UI_FILE_DIALOG"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 2) return vData(L"");
         
-        int type = (int)args[0].toDouble(); 
-        std::string title = wstr_to_utf8(args[1].toWString());
+        int type = static_cast<int>(args[0].toInt()); 
+        std::wstring wTitle = args[1].toWString();
+        std::wstring wInitPath = (args.size() > 2) ? args[2].toWString() : L"";
 
-        GtkWindow* parentWin = nullptr;
+        // Localizăm fereastra principală pentru a o seta ca părinte modal modal
+        GtkWidget* parentHandle = nullptr;
         xControl* mainWin = LocateAnyControl("fereastra_principala");
-        if (mainWin && mainWin->getHandle()) {
-            parentWin = GTK_WINDOW(mainWin->getHandle());
+        if (mainWin) {
+            parentHandle = mainWin->getHandle();
         }
 
-        GtkFileChooserAction action = (type == 0) ? GTK_FILE_CHOOSER_ACTION_OPEN : GTK_FILE_CHOOSER_ACTION_SAVE;
-        const char* acceptBtn = (type == 0) ? "_Open" : "_Save";
-
-        GtkWidget* dialog = gtk_file_chooser_dialog_new(
-            title.c_str(), parentWin, action,
-            "_Cancel", GTK_RESPONSE_CANCEL,
-            acceptBtn, GTK_RESPONSE_ACCEPT,
-            NULL
-        );
-
-        if (args.size() > 2) {
-            std::string initialPath = wstr_to_utf8(args[2].toWString());
-            gtk_file_chooser_set_current_folder(GTK_FILE_CHOOSER(dialog), initialPath.c_str());
+        // Utilizăm noua noastră clasă portată
+        xFileDialog dlg(wTitle);
+        if (!wInitPath.empty()) {
+            dlg.setInitialPath(wInitPath);
         }
 
         std::wstring selectedPath = L"";
-        if (gtk_dialog_run(GTK_DIALOG(dialog)) == GTK_RESPONSE_ACCEPT) {
-            char* filename = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dialog));
-            selectedPath = utf8_to_wstr(filename);
-            g_free(filename);
+        if (type == 0) { // OPEN MODE
+            if (dlg.showOpen(parentHandle)) {
+                selectedPath = dlg.getFilePath();
+            }
+        } else { // SAVE MODE
+            if (dlg.showSave(parentHandle)) {
+                selectedPath = dlg.getFilePath();
+            }
         }
 
-        gtk_widget_destroy(dialog);
         return vData(selectedPath);
     };
 }

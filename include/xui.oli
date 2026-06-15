@@ -110,12 +110,30 @@ endfunc
 # CLASA XTABCONTROL (Adăugată pentru suportul Multi-Tab din IDE)
 # =================================================================
 def class XTabControl extends UiControl { init($id, $parentId, $x, $y, $w, $h), add_tab($title, $pageId), switch_page($idx), select_tab_by_id($id), set_title_by_id($id, $title), refresh() }
-func XTabControl::init($id, $parentId, $x, $y, $w, $h) $this.id = $id UI_CREATE_CONTROL("TABCONTROL", $id, $parentId, $x, $y, $w, $h) endfunc
-func XTabControl::add_tab($title, $pageId) return UI_CALL_METHOD($this.id, "add_tab", $title, $pageId) endfunc
-func XTabControl::switch_page($idx) return UI_CALL_METHOD($this.id, "switch_page", $idx) endfunc
-func XTabControl::select_tab_by_id($id) return UI_CALL_METHOD($this.id, "select_tab_by_id", $id) endfunc
-func XTabControl::set_title_by_id($id, $title) return UI_CALL_METHOD($this.id, "set_title_by_id", $id, $title) endfunc
-func XTabControl::refresh() return UI_CALL_METHOD($this.id, "refresh") endfunc
+func XTabControl::init($id, $parentId, $x, $y, $w, $h) 
+    $this.id = $id 
+    UI_CREATE_CONTROL("TABCONTROL", $id, $parentId, $x, $y, $w, $h) 
+endfunc
+
+func XTabControl::add_tab($title, $pageId) 
+    return UI_CALL_METHOD($this.id, "add_tab", $title, $pageId) 
+endfunc
+
+func XTabControl::switch_page($idx)
+    return UI_CALL_METHOD($this.id, "switch_page", $idx) 
+endfunc
+
+func XTabControl::select_tab_by_id($id) 
+    return UI_CALL_METHOD($this.id, "select_tab_by_id", $id) 
+endfunc
+
+func XTabControl::set_title_by_id($id, $title)
+    return UI_CALL_METHOD($this.id, "set_title_by_id", $id, $title) 
+endfunc
+
+func XTabControl::refresh() 
+    return UI_CALL_METHOD($this.id, "refresh") 
+endfunc
 
 # =================================================================
 # CLASA XMENU (Extinsă cu metodele lipsă apelate în script)
@@ -151,9 +169,24 @@ endfunc
 func XRichEdit::append_text($text) return UI_CALL_METHOD($this.id, "append_text", $text) endfunc
 
 def class XRichConsole extends UiControl { init($id, $parentId, $x, $y, $w, $h), set_read_only($bool), set_font_size($size), set_resizable($bool) }
-func XRichConsole::init($id, $parentId, $x, $y, $w, $h) $this.id = $id UI_CREATE_CONTROL("RICHCONSOLE", $id, $parentId, $x, $y, $w, $h) endfunc
+func XRichConsole::init($id, $parentId, $x, $y, $w, $h) $this.id = $id; UI_CREATE_CONTROL("RICHCONSOLE", $id, $parentId, $x, $y, $w, $h); endfunc
 func XRichConsole::set_read_only($bool) return $this.set_prop("read_only", $bool) endfunc
 func XRichConsole::set_font_size($size) return $this.set_prop("font_size", $size) endfunc
 func XRichConsole::set_resizable($bool) return $this.set_prop("resizable", $bool) endfunc
+
+
+# =================================================================
+# CLASA FileDialog (Asigură maparea OOP pentru Dialogurile Native)
+# =================================================================
+def class FileDialog { title, type, show() } // ✅ FIX: show() a fost adăugat în blueprint!
+
+func FileDialog::show()
+    # Setăm valori implicite sigure în cazul în care scriptul nu le definește
+    if $this.type == NULL then $this.type = 0 endif
+    if $this.title == NULL then $this.title = "Selectează un fișier..." endif
+    
+    # Apelăm funcția nativă din plugin-ul C++ care deschide GtkFileChooserDialog
+    return UI_FILE_DIALOG($this.type, $this.title)
+endfunc
 
 echo "AM DEFINIT CLASELE XUI"

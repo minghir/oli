@@ -57,3 +57,10 @@ void RegisterTimeFunctions(std::unordered_map<std::wstring, std::function<vData(
 OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
     RegisterTimeFunctions(registry);
 }
+
+
+OLI_EXPORT void SetPluginConsoleManager(ConsoleManager* hostCm) {
+    if (hostCm != nullptr) {
+      
+    }
+}

@@ -463,7 +463,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         m_commandHandlers[L"TRACE"] = wrap([this](const auto& sc) { handleTraceCommand(sc); });
 
         // INFO și HELP (din OliKeyWords)
-        m_commandHandlers[L"INFO"] = wrap([this](const auto& sc) { /* handleInfoCommand(sc); */ });
+        m_commandHandlers[L"INFO"] = wrap([this]([[maybe_unused]] const auto& sc) { /* handleInfoCommand(sc); */ });
         m_commandHandlers[L"D"] = m_commandHandlers[L"INFO"];
         m_commandHandlers[L"HELP"] = wrap([this](const auto& sc) {  handleHelpCommand(sc);  });
         m_commandHandlers[L"H"] = m_commandHandlers[L"HELP"];
@@ -501,7 +501,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         
     }
 
-    void vOliEngine::handleQuitCommand(const ShellCommand& sc) {
+    void vOliEngine::handleQuitCommand([[maybe_unused]] const ShellCommand& sc) {
         LOG_INFO(L"Oli is shutting down...");
         stop();
     }
@@ -738,7 +738,7 @@ void vOliEngine::addToHistory(const std::wstring& command) {
     }
     
 
-    void vOliEngine::handleDumpMemCommand(const ShellCommand& sc) {
+    void vOliEngine::handleDumpMemCommand([[maybe_unused]] const ShellCommand& sc) {
         if (m_globalVariables.empty()) {
             LOG_INFO(L"Memory is empty. No variables set.");
             return;
@@ -3068,7 +3068,7 @@ void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
     if (regCmds) {
         // Păstrăm o listă cu ce era înainte în map pentru a vedea ce s-a adăugat
     // Sau, mai simplu, iterăm prin map-ul de handlere după înregistrare
-        size_t countBefore = this->m_commandHandlers.size();
+        [[maybe_unused]] size_t countBefore = this->m_commandHandlers.size();
 
         regCmds(this->m_commandHandlers, this);
 
@@ -3093,7 +3093,7 @@ void vOliEngine::handlePluginCommand(const ShellCommand& sc) {
 }
 
 
-void vOliEngine::handleListProcsCommand(const ShellCommand& sc) {
+void vOliEngine::handleListProcsCommand([[maybe_unused]] const ShellCommand& sc) {
     if (m_procedures.empty()) {
         ConsoleManager::getInstance().writeRaw(L"No user procedures defined.");
         return;
@@ -3128,7 +3128,7 @@ void vOliEngine::handleListProcsCommand(const ShellCommand& sc) {
 }
 
 
-void vOliEngine::handleListFuncsCommand(const ShellCommand& sc) {
+void vOliEngine::handleListFuncsCommand([[maybe_unused]]const ShellCommand& sc) {
     if (m_userFunctions.empty() && m_functionsHandlers.empty()) {
         ConsoleManager::getInstance().writeRaw(L"No functions defined.");
         return;
@@ -3291,11 +3291,11 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
   }
 
   
-  void vOliEngine::handleBreakCommand(const ShellCommand& sc) {
+  void vOliEngine::handleBreakCommand([[maybe_unused]] const ShellCommand& sc) {
       m_executionStatus = OliStatus::BREAK_REQUESTED;
   }
 
-  void vOliEngine::handleContinueCommand(const ShellCommand& sc) {
+  void vOliEngine::handleContinueCommand([[maybe_unused]] const ShellCommand& sc) {
       m_executionStatus = OliStatus::CONTINUE_REQUESTED;
   }
 
@@ -3833,7 +3833,7 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
       return vDataToWString(lhs) == vDataToWString(rhs);
   }
 
-  void vOliEngine::handleClearCommand(const ShellCommand& sc) {
+  void vOliEngine::handleClearCommand([[maybe_unused]] const ShellCommand& sc) {
       // Apelăm pur și simplu metoda din singleton-ul ConsoleManager
       ConsoleManager::getInstance().clear();
   }
@@ -3917,7 +3917,7 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       }
   }
 
-  void vOliEngine::handleTraceCommand(const ShellCommand& sc) {
+  void vOliEngine::handleTraceCommand([[maybe_unused]] const ShellCommand& sc) {
       LOG_INFO(L""); // Linie goală pentru lizibilitate
       LOG_INFO(L"--- [OLI CALL STACK TRACEBACK] ---");
 

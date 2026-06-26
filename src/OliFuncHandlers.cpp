@@ -654,29 +654,29 @@ void vOliEngine::initializeFunctionsHandlers() {
         };
     vOliKeyWords::registerNativeFunction(L"JSON_DECODE");
     // --- NOW() -> Returnează Unix Timestamp (secunde de la 1970) ---
-    m_functionsHandlers[L"NOW"] = [this](const std::vector<vData>& args) -> vData {
+    m_functionsHandlers[L"NOW"] = [this]([[maybe_unused]] const std::vector<vData>& args) -> vData {
         auto acum = std::chrono::system_clock::now();
         auto secunde = std::chrono::duration_cast<std::chrono::seconds>(acum.time_since_epoch()).count();
         return vData((long long)secunde);
         };
     vOliKeyWords::registerNativeFunction(L"NOW");
     // --- DATE() ---
-    m_functionsHandlers[L"DATE"] = [this](const std::vector<vData>& args) -> vData {
+    m_functionsHandlers[L"DATE"] = [this]([[maybe_unused]] const std::vector<vData>& args) -> vData {
         return vData(PortTools::getFormattedTime(L"%Y-%m-%d"));
         };
     vOliKeyWords::registerNativeFunction(L"DATE");
     // --- TIME() ---
-    m_functionsHandlers[L"TIME"] = [this](const std::vector<vData>& args) -> vData {
+    m_functionsHandlers[L"TIME"] = [this]([[maybe_unused]] const std::vector<vData>& args) -> vData {
         return vData(PortTools::getFormattedTime(L"%H:%M:%S"));
         };
     vOliKeyWords::registerNativeFunction(L"TIME");
-    m_functionsHandlers[L"MSTIME"] = [this](const std::vector<vData>& args) -> vData {
+    m_functionsHandlers[L"MSTIME"] = [this]([[maybe_unused]] const std::vector<vData>& args) -> vData {
         auto acum = std::chrono::high_resolution_clock::now();
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(acum.time_since_epoch()).count();
         return vData((long long)ms);
         };
     vOliKeyWords::registerNativeFunction(L"MSTIME");
-    m_functionsHandlers[L"CHR"] = [this](const std::vector<vData>& args) -> vData {
+    m_functionsHandlers[L"CHR"] = [this]([[maybe_unused]] const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData{ L"" };
 
         const vData& input = args[0];
@@ -749,7 +749,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         };
 
     vOliKeyWords::registerNativeFunction(L"WRITE_PLAIN");
-    m_functionsHandlers[L"CLS"] = [this](const std::vector<vData>& args) -> vData {
+    m_functionsHandlers[L"CLS"] = [this]([[maybe_unused]]const std::vector<vData>& args) -> vData {
         // Apelăm metoda de curățare a consolei pe care o ai deja în manager
         ConsoleManager::getInstance().clear();
 

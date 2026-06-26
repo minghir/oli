@@ -320,7 +320,7 @@ std::vector<std::wstring> vOliEngine::preParse(const std::wstring& input) {
                         // Verificare case-insensitive manuală pentru performanță
                         bool match = true;
                         for (size_t j = 0; j < k.size(); ++j) {
-                            if (std::towupper(remView[j]) != k[j]) { match = false; break; }
+                            if (static_cast<wchar_t>(std::towupper(remView[j])) != k[j]) { match = false; break; }
                         }
 
                         if (match) {
@@ -362,7 +362,7 @@ std::vector<std::wstring> vOliEngine::preParse(const std::wstring& input) {
 
                         bool match = true;
                         for (size_t j = 0; j < k.size(); ++j) {
-                            if (std::towupper(current[startPos + j]) != k[j]) { match = false; break; }
+                            if (static_cast<wchar_t>(std::towupper(current[startPos + j])) != k[j]) { match = false; break; }
                         }
 
                         if (match) {
@@ -398,13 +398,15 @@ void vOliEngine::addToHistory(const std::wstring& command) {
         // --- HELPER ADAPTOR ---
         // Această lambda mică ia string-ul brut, îl parsează și îl trimite la handler-ul tău vechi.
         // Ne scutește de rescrierea tuturor funcțiilor handleXCommand.
+        
         auto wrap = [this](auto handlerFunc) {
             return [this, handlerFunc](const std::wstring& rawLine) {
                 ShellCommand sc = vOliCommandParser::parse(rawLine);
                 handlerFunc(sc);
             };
         };
-
+        
+       
         // --- COMANDĂ COMPLEXĂ (/IF) ---
         // Presupunem că handleIfCommand(const std::wstring&) este gata.
         // Dacă încă primește ShellCommand, folosește wrap([this](const auto& sc) { handleIfCommand(sc); });

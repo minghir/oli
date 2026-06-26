@@ -698,7 +698,7 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
             chunk.addByte((uint8_t)OpCode::OP_DUP, 0);
 
             // Găsim sfârșitul expresiei CASE (până la următorul marker sau corp)
-            int caseExprEnd = caseIndices[i] + 2; // Presupunem CASE <val> <restul...>
+            //int caseExprEnd = caseIndices[i] + 2; // Presupunem CASE <val> <restul...>
             std::vector<std::wstring> valTokens = { sc.args[caseIndices[i] + 1] };
             ASTPtr valAST = OliExpressionParser(valTokens).parse();
             if (valAST) generateFromAST(valAST, chunk, externalProcs);
@@ -2306,7 +2306,7 @@ void OliCompiler::emitTargetAddress(const std::wstring& varName, OliChunk& chunk
     }
     else {
         // Pentru variabile simple, punem doar numele ca constantă
-        uint16_t nameIdx = chunk.addConstant(vData(varName));
+        //uint16_t nameIdx = chunk.addConstant(vData(varName));
         emitConstant(vData(varName), chunk, 0);
     }
 }

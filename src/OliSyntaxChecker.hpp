@@ -24,5 +24,5 @@ public:
 
     // Returnează false dacă regula a fost încălcată și adaugă eroarea în vector
     virtual bool check(const ShellCommand& sc, int lineNum, const std::wstring& rawLine, std::vector<SyntaxError>& errors) = 0;
-    virtual void finalize(std::vector<SyntaxError>& errors) {}
+    virtual void finalize(std::vector<SyntaxError>&) {}
 };

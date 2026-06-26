@@ -41,7 +41,7 @@ public:
 // ❌ Regula 2: Verifică comenzi necunoscute sau markeri orfani
 class StructureValidatorRule : public ISyntaxRule {
 public:
-    bool check(const ShellCommand& sc, int lineNum, const std::wstring& rawLine, std::vector<SyntaxError>& errors) override {
+    bool check(const ShellCommand& sc, [[maybe_unused]] int lineNum, [[maybe_unused]] const std::wstring& rawLine,[[maybe_unused]] std::vector<SyntaxError>& errors) override {
         std::wstring cmdUpper = sc.name;
         std::transform(cmdUpper.begin(), cmdUpper.end(), cmdUpper.begin(), ::toupper);
 
@@ -405,7 +405,7 @@ private:
     std::wstring m_openedRawLine;  // Reține codul original al liniei de deschidere
 
 public:
-    bool check(const ShellCommand& sc, int lineNum, const std::wstring& rawLine, std::vector<SyntaxError>& errors) override {
+    bool check([[maybe_unused]] const ShellCommand& sc,[[maybe_unused]] int lineNum,[[maybe_unused]] const std::wstring& rawLine, [[maybe_unused]]std::vector<SyntaxError>& errors) override {
 
         // Scanăm linia caracter cu caracter pentru a gestiona corect stările
         for (size_t i = 0; i < rawLine.length(); ++i) {

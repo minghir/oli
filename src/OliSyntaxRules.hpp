@@ -15,7 +15,7 @@ public:
         if (cmdUpper != L"SET") return true;
 
         if (sc.args.empty()) {
-            errors.push_back({ DiagnosticLevel::OLI_ERROR, L"Comanda 'SET' are nevoie de argumente.", lineNum, rawLine });
+            errors.push_back({ DiagnosticLevel::OLI_ERROR, L"'SET' command expects arguments.", lineNum, rawLine });
             return false;
         }
 
@@ -25,13 +25,13 @@ public:
             if (arg == L"=") equalCount++;
         }
         if (equalCount > 1) {
-            errors.push_back({ DiagnosticLevel::OLI_ERROR, L"Atribuirea multiplă în lanț (X = Y = Z) nu este suportată.", lineNum, rawLine });
+            errors.push_back({ DiagnosticLevel::OLI_ERROR, L"Multiple assignment in chain (X = Y = Z) is not supported.", lineNum, rawLine });
             return false;
         }
 
         // ℹ️ NOTICE: O simplă atenționare de stil, nu blochează rularea
         if (sc.args[0][0] == L'@') {
-            errors.push_back({ DiagnosticLevel::OLI_NOTICE, L"Folosești o variabilă globală explicită (@). Asigură-te că este definită global.", lineNum, rawLine });
+            errors.push_back({ DiagnosticLevel::OLI_NOTICE, L"Explicit global variable (@) used. Ensure it is defined in the global scope.", lineNum, rawLine });
         }
 
         return true;
@@ -96,7 +96,7 @@ private:
             if (token.find_first_of(L"+-*/%^=<>&|.") == std::wstring::npos) {
                 errors.push_back({
                     DiagnosticLevel::OLI_WARNING,
-                    L"Identificatorul '" + token + L"' nu are prefix ($ sau @). Va fi tratat ca variabilă globală implicită.",
+                    L"Identifier '" + token + L"' does not have a prefix ($ or @). It will be treated as an implicit global variable.",
                     lineNum,
                     rawLine
                     });
@@ -192,7 +192,7 @@ public:
             if (m_contextStack.empty()) {
                 errors.push_back({
                     DiagnosticLevel::OLI_ERROR,
-                    L"Instrucțiunea 'BREAK' nu poate fi folosită în afara unei bucle sau a unui bloc SWITCH.",
+                    L"Instruction 'BREAK' cannot be used outside a loop or a SWITCH block.",
                     lineNum,
                     rawLine
                     });
@@ -213,7 +213,7 @@ public:
             if (!hasLoopContext) {
                 errors.push_back({
                     DiagnosticLevel::OLI_ERROR,
-                    L"Instrucțiunea 'CONTINUE' poate fi folosită doar în interiorul unei bucle (WHILE, FOR, CYCLE, REPEAT).",
+                    L"Instruction 'CONTINUE' can only be used inside a loop (WHILE, FOR, CYCLE, REPEAT).",
                     lineNum,
                     rawLine
                     });
@@ -288,7 +288,7 @@ public:
             if (m_openedBlocks.empty()) {
                 errors.push_back({
                     DiagnosticLevel::OLI_ERROR,
-                    L"Instrucțiunea '" + cmdUpper + L"' nu are un corespondent de deschidere.",
+                    L"Instruction '" + cmdUpper + L"' does not have a corresponding opening.",
                     lineNum,
                     rawLine
                     });
@@ -298,8 +298,8 @@ public:
             if (m_openedBlocks.back().type != expectedStart) {
                 errors.push_back({
                     DiagnosticLevel::OLI_ERROR,
-                    L"Sintaxă încrucișată invalidă: '" + cmdUpper + L"' încearcă să închidă un bloc de tip '" +
-                    m_openedBlocks.back().type + L"' deschis la linia " + std::to_wstring(m_openedBlocks.back().lineNumber) + L".",
+                    L"Invalid crossed syntax: '" + cmdUpper + L"' tries to close a block of type '" +
+                    m_openedBlocks.back().type + L"' opened on line " + std::to_wstring(m_openedBlocks.back().lineNumber) + L".",
                     lineNum,
                     rawLine
                     });
@@ -319,8 +319,8 @@ public:
 
             errors.push_back({
                 DiagnosticLevel::OLI_ERROR,
-                L"Structura de control '" + unclosed.type + L"' deschisă la linia " +
-                std::to_wstring(unclosed.lineNumber) + L" nu a fost închisă (lipsește 'END" + unclosed.type + L"').",
+                L"Control structure '" + unclosed.type + L"' opened on line " +
+                std::to_wstring(unclosed.lineNumber) + L" was not closed (missing 'END" + unclosed.type + L"').",
                 unclosed.lineNumber,
                 unclosed.rawLine
                 });
@@ -366,7 +366,7 @@ public:
             if (cmdUpper == L"SET") {
                 errors.push_back({
                     DiagnosticLevel::OLI_ERROR,
-                    L"Lipsesc datele pentru destinația atribuirii (LHS lipsă înainte de '=').",
+                    L"Missing data for assignment destination (LHS missing before '=').",
                     lineNum,
                     rawLine
                     });
@@ -386,7 +386,7 @@ public:
         if (isNumber || isString || isBooleanOrNull) {
             errors.push_back({
                 DiagnosticLevel::OLI_ERROR, // ❌ Blocăm compilarea!
-                L"Destinație invalidă pentru atribuire (LHS invalid). Nu poți modifica valoarea unei constante sau a unui literal de tipul '" + lhsToken + L"'.",
+                L"Invalid destination for assignment (LHS invalid). You cannot modify the value of a constant or a literal of type '" + lhsToken + L"'.",
                 lineNum,
                 rawLine
                 });
@@ -449,7 +449,7 @@ public:
         if (m_inString && m_openedAtLine != -1) {
             errors.push_back({
                 DiagnosticLevel::OLI_ERROR, // ❌ Eroare critică (Blocantă)
-                L"Ghilimele neînchise. String-ul deschis la linia " + std::to_wstring(m_openedAtLine) + L" nu a fost închis până la finalul fișierului.",
+                L"Unquoted string. The string opened on line " + std::to_wstring(m_openedAtLine) + L" was not closed until the end of the file.",
                 m_openedAtLine,
                 m_openedRawLine
                 });

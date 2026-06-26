@@ -94,37 +94,7 @@ public:
     }
 
    
-   /*
-    ASTPtr parseUnary() {
-        // Adăugăm L"*" în lista de operatori unari
-        if (match({ L"-", L"!", L"NOT", L"*" })) {
-            std::wstring op = m_tokens[m_pos - 1];
-
-            // Citim recursiv ce urmează după operator (permite **$ptr)
-            ASTPtr child = parseUnary();
-
-            if (op == L"*") {
-                // Dacă ceea ce urmează este o variabilă, "lipim" asteriscul de ea
-                // pentru ca resolveVariable să o poată procesa dintr-o bucată.
-                if (child && child->type == ASTNodeType::Variable) {
-                    child->value = L"*" + child->value;
-                    return child;
-                }
-
-                // Dacă urmează o expresie complexă, ex: *(getPtr()), creăm un operator special
-                ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, L"DEREFERENCE");
-                node->addChild(child);
-                return node;
-            }
-
-            std::wstring internalOp = (op == L"-") ? L"UNARY_MINUS" : L"NOT";
-            ASTPtr node = std::make_shared<ASTNode>(ASTNodeType::Operator, internalOp);
-            node->addChild(child);
-            return node;
-        }
-        return parsePostfix();
-    }
-    */
+   
     ASTPtr parseUnary() {
         // Adăugăm L"~" pentru Bitwise NOT
         if (match({ L"-", L"!", L"NOT", L"~", L"*", L"**", L"&" })) {
@@ -183,39 +153,7 @@ public:
     
   
 
-    /*
-    ASTPtr parsePrimary() {
-        std::wstring current = peek();
-        if (current.empty()) return nullptr;
-
-        // 1. Variabile
-        if (current[0] == L'$' || current[0] == L'@') {
-            m_pos++;
-            return std::make_shared<ASTNode>(ASTNodeType::Variable, current);
-        }
-
-        // 2. Structuri (match consumă automat token-ul, deci e ok)
-        if (match({ L"[" })) return parseArray();
-        if (match({ L"{" })) return parseMap();
-        if (match({ L"(" })) {
-            ASTPtr node = parseCoalescing();
-            consume(L")", "Lipseste )");
-            return node;
-        }
-
-        // 3. Bariera (NU consumăm, doar verificăm)
-        if (current == L"}" || current == L"]" || current == L")" ||
-            current == L"," || current == L":") {
-            return nullptr;
-        }
-
-        // 4. Literale (Dacă am ajuns aici, e sigur un număr sau string)
-        // IMPORTANT: Folosim un token "proaspăt" de la m_pos
-        std::wstring literalValue = m_tokens[m_pos];
-        m_pos++;
-        return std::make_shared<ASTNode>(ASTNodeType::Literal, literalValue);
-    }
-*/
+    
 
     ASTPtr parsePrimary() {
         std::wstring current = peek();
@@ -250,18 +188,6 @@ public:
 
 
     // Utilitare pentru deplasarea în lista de tokeni
-    /*
-    bool match(std::initializer_list<std::wstring> ops) {
-        if (m_pos >= m_tokens.size()) return false;
-        for (auto op : ops) {
-            if (m_tokens[m_pos] == op) {
-                m_pos++;
-                return true;
-            }
-        }
-        return false;
-    }
-    */
     bool match(std::initializer_list<std::wstring> ops) {
         if (m_pos >= m_tokens.size()) return false;
         std::wstring current = to_upper(m_tokens[m_pos]); // Converteste tokenul actual la UPPER
@@ -374,82 +300,7 @@ public:
     }
    
     
-/*
-ASTPtr parsePostfix() {
-    // Începem cu unitatea de bază ($c1, "nume", 100, etc.)
-    ASTPtr node = parsePrimary();
-    if (!node) return nullptr;
-    // Bucla permite înlănțuiri: $c1.locatie.x sau $arr[0].nume
-    while (true) {
 
-        // --- 1. Operatorul DOT (Acces membru: $obj.prop) ---
-        if (match({ L"." })) {
-            // Ne asigurăm că după punct urmează un nume de câmp valid
-            if (m_pos >= m_tokens.size()) {
-                throw std::runtime_error("Eroare Sintaxa: Se astepta un nume de camp dupa '.'");
-            }
-
-            std::wstring fieldName = m_tokens[m_pos++];
-            // Validare opțională: poți verifica dacă fieldName nu începe cu '$' 
-            // deoarece membrii structurilor în Oli sunt identificatori simpli.
-
-            ASTPtr dotNode = std::make_shared<ASTNode>(ASTNodeType::Operator, L"DOT");
-            dotNode->addChild(node); // Stânga: obiectul (ex: nodul care reprezintă $c1.locatie)
-
-            // Dreapta: numele câmpului ca Literal
-            dotNode->addChild(std::make_shared<ASTNode>(ASTNodeType::Literal, fieldName));
-
-            node = dotNode; // Noul nod devine baza pentru următoarea iterație
-        }
-
-        // --- 2. INDEXARE (Acces array/map: $arr[index]) ---
-        else if (match({ L"[" })) {
-            ASTPtr indexNode = std::make_shared<ASTNode>(ASTNodeType::Operator, L"INDEX");
-            indexNode->addChild(node); // Containerul ($arr)
-
-            // Permitem orice expresie pentru index (ex: $i + 1)
-            indexNode->addChild(parseCoalescing());
-
-            consume(L"]", "Lipseste ']' la inchiderea indexului.");
-            node = indexNode;
-        }
-
-        // --- 3. APEL DINAMIC ($var() sau $obj.metoda()) ---
-        else if (match({ L"(" })) { // <-- Aici a fost eroarea (eliminat () din interior)
-            ASTPtr callNode = std::make_shared<ASTNode>(ASTNodeType::FunctionCall, L"DYNAMIC_CALL");
-            callNode->addChild(node);
-
-            if (!check(L")")) {
-                do {
-                    callNode->addChild(parseCoalescing());
-                } while (match({ L"," }));
-            }
-
-            consume(L")", "Asteptam ')' pentru inchiderea apelului.");
-            node = callNode;
-        }
-
-        // --- 4. POSTFIX INCREMENT/DECREMENT ($i++) ---
-        else if (match({ L"++", L"--" })) {
-            std::wstring op = m_tokens[m_pos - 1];
-            std::wstring internalOp = (op == L"++") ? L"POSTFIX_INC" : L"POSTFIX_DEC";
-
-            ASTPtr postfixNode = std::make_shared<ASTNode>(ASTNodeType::Operator, internalOp);
-            postfixNode->addChild(node);
-            node = postfixNode;
-
-            // Postfix-ul de obicei nu mai permite continuarea accesului în Oli
-            break;
-        }
-
-        else {
-            break; // Nu mai sunt operatori postfix
-        }
-    }
-
-    return node;
-}
-*/
     ASTPtr parsePostfix() {
         // Începem cu unitatea de bază (literal, variabilă, paranteze)
         ASTPtr node = parsePrimary();

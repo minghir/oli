@@ -202,21 +202,7 @@ std::wstring rm_char(const std::wstring& str, wchar_t c) {
     return res;
 }
 
-/*
-std::wstring str_to_wstr(const std::string& str) {
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    return converter.from_bytes(str);
-}
 
-std::wstring str_to_wstr(const std::string& str) {
-    return std::wstring(str.begin(), str.end());
-}
-/*
-std::string wstr_to_str(const std::wstring& wstr) {
-    std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
-    return converter.to_bytes(wstr);
-}
-*/
 std::wstring str_to_wstr(const std::string& str) {
     if (str.empty()) return L"";
 
@@ -347,17 +333,7 @@ std::string rpl_str_in_str(std::string str, const std::string& from, const std::
     return str;
 }
 
-/*
-std::wstring wstr_trim(const std::wstring& str) {
-    std::wstring t_str = str;
-    size_t start = t_str.find_first_not_of(L" \t\n\r\0");
-    size_t end = t_str.find_last_not_of(L" \t\n\r\0");
-    
-    t_str.erase(std::remove(t_str.begin(), t_str.end(), L'\0'), t_str.end());
 
-    return (start == std::wstring::npos || end == std::wstring::npos) ? L"" : t_str.substr(start, end - start + 1);
-}
-*/
 
 std::wstring wstr_trim(const std::wstring& str) {
 
@@ -389,61 +365,7 @@ std::string trim(const std::string& str) {
     return str.substr(first, (last - first + 1));
 }
 
-/*
-std::wstring wstr_trim(const std::wstring& str) {
-    size_t start = str.find_first_not_of(L" \t\n\r");
-    size_t end = str.find_last_not_of(L" \t\n\r");
 
-    if (start == std::wstring::npos || end == std::wstring::npos)
-        return L"";  // Dacă doar spații, returnează un șir gol
-
-    return str.substr(start, end - start + 1);
-}
-
-
-
-std::vector<std::wstring> wexplode(const std::wstring& str, wchar_t ch) {
-    std::vector<std::wstring> res;
-    size_t pos = 0, lpos = 0;
-    std::wstring tempStr = str;
-
-    // Eliminăm separatorul de la început, dacă există
-    if (!tempStr.empty() && tempStr[0] == ch)
-        tempStr = tempStr.substr(1);
-
-    // Eliminăm separatorul de la sfârșit, dacă există
-    if (!tempStr.empty() && tempStr[tempStr.size() - 1] == ch)
-        tempStr = tempStr.substr(0, tempStr.size() - 1);
-
-    // Dacă nu există separator, returnăm întreaga linie
-    if (tempStr.find(ch) == std::wstring::npos) {
-        res.push_back(tempStr);
-        return res;
-    }
-
-    std::wstring test, cut;
-    test = tempStr;
-
-    do {
-        lpos = (lpos == pos) ? pos : pos + 1;
-        pos = tempStr.find(ch, pos + 1);
-
-        if (pos == std::wstring::npos)
-            break;
-
-        cut = tempStr.substr(lpos, pos - lpos);
-        res.push_back(cut);
-
-        test = tempStr.substr(pos);
-    } while (pos != std::wstring::npos);
-
-    if (!test.empty()) {
-        res.push_back(test.substr(1));
-    }
-
-    return res;
-}
-*/
 
 std::vector<std::wstring> wexplode(const std::wstring& str, wchar_t ch) {
     std::vector<std::wstring> res;
@@ -486,44 +408,7 @@ std::vector<std::wstring> wexplodeQuoteSafe(const std::wstring& str, wchar_t ch)
     return res;
 }
 
-/*
-std::vector<std::wstring> wexplode(const std::wstring& str, wchar_t ch) {
-    std::vector<std::wstring> res;
-    size_t pos = 0, lpos = 0;
-    std::wstring tempStr = str;
 
-    // Eliminăm separatorul de la început și sfârșit
-    tempStr = wstr_trim(tempStr);
-
-    // Dacă nu există separator, returnăm întreaga linie
-    if (tempStr.find(ch) == std::wstring::npos) {
-        res.push_back(tempStr);
-        return res;
-    }
-
-    std::wstring test, cut;
-    test = tempStr;
-
-    do {
-        lpos = (lpos == pos) ? pos : pos + 1;
-        pos = tempStr.find(ch, pos + 1);
-
-        if (pos == std::wstring::npos)
-            break;
-
-        cut = wstr_trim(tempStr.substr(lpos, pos - lpos));
-        res.push_back(cut);
-
-        test = tempStr.substr(pos);
-    } while (pos != std::wstring::npos);
-
-    if (!test.empty()) {
-        res.push_back(wstr_trim(test.substr(1)));
-    }
-
-    return res;
-}
-*/
 
 
 std::wstring replaceSpecialCharacters(const std::wstring& input) {
@@ -671,14 +556,7 @@ std::wstring wstrToLower(const std::wstring& str) {
     return result;
 }
 
-/*
-std::wstring stripQuotes(const std::wstring& input) {
-    if (input.length() >= 2 && input.front() == L'"' && input.back() == L'"') {
-        return input.substr(1, input.length() - 2);
-    }
-    return input;
-}
-*/
+
 
 std::wstring stripQuotes(const std::wstring& str) {
     if (str.size() >= 2 &&
@@ -933,21 +811,7 @@ std::wstring to_lower(const std::wstring& input) {
     }
     return result;
 }
-/*
-std::wstring trim_zeros(const std::wstring& input) {
-    std::wstring s = input;
 
-    // elimină zerourile de la final dacă există un punct
-    while (s.find(L'.') != std::wstring::npos && !s.empty() && s.back() == L'0') {
-        s.pop_back();
-    }
-    // dacă rămâne doar punctul la final, îl eliminăm
-    if (!s.empty() && s.back() == L'.') {
-        s.pop_back();
-    }
-    return s;
-}
-*/
 std::wstring trim_zeros(const std::wstring& input, int max_dec ) {
     std::wstring s = input;
 
@@ -1107,44 +971,7 @@ std::wstring convertSingleByteToWideChar(const std::string& input, unsigned int 
 }
 
 
-/*
-std::vector<std::wstring> split_to_words(const std::wstring& text) {
-    std::vector<std::wstring> tokens;
-    std::wstring currentWord;
 
-    for (wchar_t ch : text) {
-        if (ch == L'\n' || ch == L'\f' || ch == L'\t') { // ⭐ ADĂUGARE L'\f' AICI
-            // 1. Dacă există un cuvânt acumulat, adaugă-l
-            if (!currentWord.empty()) {
-                tokens.push_back(currentWord);
-                currentWord.clear();
-            }
-            // 2. Adaugă \n sau \f ca token separat
-            tokens.push_back(std::wstring(1, ch)); // Creează un string de lungime 1
-        }
-        else if (iswspace(ch)) {
-            // Dacă întâlnești orice alt spațiu alb (spațiu, tab, etc.):
-            // Dacă există un cuvânt acumulat, adaugă-l.
-            if (!currentWord.empty()) {
-                tokens.push_back(currentWord);
-                currentWord.clear();
-            }
-            // Spațiile albe simple nu sunt adăugate ca token-uri.
-        }
-        else {
-            // Dacă este un caracter normal (non-spațiu, non-\n), adaugă-l la cuvântul curent.
-            currentWord += ch;
-        }
-    }
-
-    // 3. Adaugă ultimul cuvânt rămas (dacă nu s-a terminat cu un spațiu/newline)
-    if (!currentWord.empty()) {
-        tokens.push_back(currentWord);
-    }
-
-    return tokens;
-}
-*/
 
 std::vector<std::wstring> split_to_words(const std::wstring& text) {
     std::vector<std::wstring> tokens;

@@ -19,7 +19,7 @@ using OliCommandHandler = std::function<void(const ShellCommand&)>;
 
 // Definim semnătura funcției din DLL (LoadOliCommandPlugin)
 class IOliEngine; // Forward declaration
-//typedef void (*LoadCommandsFunc)(std::unordered_map<std::wstring, OliCommandHandler>&, IOliEngine*);
+
 class OliCompiler {
 
 

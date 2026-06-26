@@ -57,20 +57,7 @@ struct vData {
         }
         return *this;
     }
-    /*
-    // --- HELPERI PENTRU ACCES RAW ---
-    std::vector<vData>* rawArray() {
-        auto& trueData = getTrueData();
-        if (!trueData.isArray()) return nullptr;
-        return std::get<vDataArray>(trueData.value).get();
-    }
-
-    std::unordered_map<std::wstring, vData>* rawMap() {
-        auto& trueData = getTrueData();
-        if (!trueData.isMap()) return nullptr;
-        return std::get<vDataMap>(trueData.value).get();
-    }
-    */
+    
     // --- FACTORY METHODS ---
     static vData CreateMap() {
         //return vData{ std::make_shared<std::map<std::wstring, vData>>() };
@@ -94,18 +81,7 @@ struct vData {
     bool isNumber()  const { return isInt() || isFloat(); }
 
     // --- OPERATORI ---
-    /*
-    bool operator==(const vData& other) const {
-        const vData& t1 = this->getTrueData();
-        const vData& t2 = other.getTrueData();
-
-        // Dacă tipurile de bază după dereferențiere sunt diferite, nu sunt egale
-        if (t1.value.index() != t2.value.index()) return false;
-
-        // Comparăm valorile reale
-        return t1.value == t2.value;
-    }
-    */
+    
 
     double toDouble() const {
         // 1. Ne asigurăm că extragem valoarea reală dacă e pointer
@@ -278,13 +254,7 @@ struct vData {
 
     std::wstring toPlainString() const {
         const vData& actual = getTrueData();
-        /*
-        if (actual.isMap()) {
-            auto* m = actual.getTrueData().rawMap();
-            // Dacă map-ul are un singur element, probabil e valoarea variabilei
-            if (m && m->size() == 1) return m->begin()->second.getTrueData().toWString();
-        }
-        */
+        
         return actual.toWString();
     }
 

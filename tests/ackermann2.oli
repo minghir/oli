@@ -28,7 +28,7 @@ func mack($m, $n)
 endfunc
 
 $a = ticks()
-echo mack(4,1)
+echo mack(4,0)
 echo ticks() - $a
 dm
 input()

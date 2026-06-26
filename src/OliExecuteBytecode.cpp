@@ -242,7 +242,7 @@ case OpCode::OP_GET_INDIRECT: {
 
 case OpCode::OP_SET_INDIRECT: {
     if (stack.size() < 3) {
-        LOG_ERROR(L"OP_SET_INDIRECT Error: Stiva are prea putine elemente!");
+        LOG_ERROR(L"OP_SET_INDIRECT Error: Stack underflow (too few elements)!");
         this->m_executionStatus = OliStatus::ERR;
         break;
     }
@@ -301,7 +301,7 @@ case OpCode::OP_SET_INDIRECT: {
         }
     }
     else {
-        LOG_ERROR(L"OP_SET_INDIRECT Error: Obiectul nu este Map/Array! Tip actual: " + this->getVariantTypeName(container));
+        LOG_ERROR(L"OP_SET_INDIRECT Error: Object is not Map/Array! Current type: " + this->getVariantTypeName(container));
         this->m_executionStatus = OliStatus::ERR;
     }
     break;
@@ -320,7 +320,7 @@ case OpCode::OP_SET_INDIRECT: {
             else {
                 // Dacă slotul nu există, punem un NULL/Monostate implicit
                 stack.push_back(vData());
-                LOG_ERROR(L"VM: Încercare citire slot local neinițializat: " + std::to_wstring(slot));
+                LOG_ERROR(L"VM: Read attempt on uninitialized local slot: " + std::to_wstring(slot));
             }
             break;
         }
@@ -647,7 +647,7 @@ case OpCode::OP_SET_INDIRECT: {
         case OpCode::OP_CALL_NATIVE: {
             // 1. Citim metadatele (indexul numelui funcției și numărul de argumente)
             if (ip + 2 >= chunk.code.size()) {
-                LOG_ERROR(L"VM: Bytecode corupt la OP_CALL_NATIVE (lipsesc metadate).");
+                LOG_ERROR(L"VM: Corrupted bytecode at OP_CALL_NATIVE (metadata missing).");
                 this->m_executionStatus = OliStatus::ERR;
                 return;
             }
@@ -658,7 +658,7 @@ case OpCode::OP_SET_INDIRECT: {
 
             // Validăm indexul constantelor pentru a evita crash la citire
             if (nameIdx >= chunk.constants.size()) {
-                LOG_ERROR(L"VM: Index constanta invalid pentru numele functiei.");
+                LOG_ERROR(L"VM: Invalid constant index for function name.");
                 this->m_executionStatus = OliStatus::ERR;
                 return;
             }
@@ -703,7 +703,7 @@ case OpCode::OP_SET_INDIRECT: {
 
             for (int i = 0; i < argCount; ++i) {
                 if (stack.empty()) {
-                    LOG_ERROR(L"Runtime Error: Stiva goala la colectarea argumentelor pentru " + funcName);
+                    LOG_ERROR(L"Runtime Error: Stack underflow (too few elements) while collecting arguments for " + funcName);
                     this->m_executionStatus = OliStatus::ERR;
                     return;
                 }
@@ -731,14 +731,14 @@ case OpCode::OP_SET_INDIRECT: {
                     stack.push_back(result);
                 }
                 catch (...) {
-                    LOG_ERROR(L"VM: Crash detectat in interiorul functiei native: " + funcName);
+                    LOG_ERROR(L"VM: Crash detected within native function: " + funcName);
                     this->m_executionStatus = OliStatus::ERR;
                     return;
                 }
             }
             else {
-               LOG_ERROR(L"Runtime Error: Functia '" + upperName + L"' nu a fost gasita!");
-                LOG_INFO(L"Lista de functii disponibile in motor (" + std::to_wstring(m_functionsHandlers.size()) + L"):");
+               LOG_ERROR(L"Runtime Error: Function '" + upperName + L"' not found!");
+                LOG_INFO(L"List of available functions in engine (" + std::to_wstring(m_functionsHandlers.size()) + L"):");
                 for (auto const& [name, handler] : m_functionsHandlers) {
                     // Verificăm lungimea și caracterele brute
                     LOG_INFO(L"  - [" + name + L"] (len: " + std::to_wstring(name.length()) + L")");
@@ -829,7 +829,7 @@ case OpCode::OP_SET_INDIRECT: {
             }
 
             if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
-                LOG_DEBUG(L"VM_DEBUG: OP_CALL - Funcția apelată: " + funcName);
+               LOG_DEBUG(L"VM_DEBUG: OP_CALL - Target function: " + funcName);
             }
 
             vData result;
@@ -840,7 +840,7 @@ case OpCode::OP_SET_INDIRECT: {
                     result = this->m_functionsHandlers[funcName](callArgs);
                 }
                 catch (...) {
-                    LOG_ERROR(L"VM: Crash in functia nativa apelata dinamic: " + funcName);
+                    LOG_ERROR(L"VM: Crash in native function called dynamically: " + funcName);
                     this->m_executionStatus = OliStatus::ERR;
                     return;
                 }
@@ -875,7 +875,7 @@ case OpCode::OP_SET_INDIRECT: {
                 result = vData(mapObj);
             }
             else {
-                LOG_ERROR(L"Runtime Error: Funcția '" + funcName + L"' nu este înregistrată (nici nativă, nici bytecode)!");
+                LOG_ERROR(L"Runtime Error: Function '" + funcName + L"' is not registered (neither native nor bytecode)!");
                 this->m_executionStatus = OliStatus::ERR;
                 return;
             }
@@ -935,7 +935,7 @@ case OpCode::OP_SET_INDIRECT: {
 		
 		case OpCode::OP_ITER_NEXT: {
 			if (m_iterStack.empty()) {
-				LOG_ERROR(L"Runtime Error: OP_ITER_NEXT fără un context de iterație activ.");
+				LOG_ERROR(L"Runtime Error: OP_ITER_NEXT without an active iteration context.");
 				this->m_executionStatus = OliStatus::ERR;
 				break;
 			}
@@ -1024,11 +1024,11 @@ case OpCode::OP_SET_INDIRECT: {
                     // Moștenim metodele (inițial Boss::move va pointa către Inamic::move)
                     bp.methods = parentBp.methods;
                     if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
-                        LOG_DEBUG(L"[VM] " + typeName + L" mosteneste de la " + parentName);
+                        LOG_DEBUG(L"[VM] " + typeName + L" inherits from " + parentName);
                     }
                 }
                 else {
-                    LOG_ERROR(L"[VM] Eroare: Clasa parinte '" + parentName + L"' nu a fost gasita!");
+                    LOG_ERROR(L"[VM] Error: Parent class '" + parentName + L"' not found!");
                 }
             }
 
@@ -1038,7 +1038,7 @@ case OpCode::OP_SET_INDIRECT: {
             uint8_t methodCount = chunk.code[ip++];
 
             if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
-                LOG_DEBUG(L"[VM] Inregistrare " + std::wstring(bp.isClass ? L"CLASS: " : L"STRUCT: ") + typeName);
+                LOG_DEBUG(L"[VM] Registration " + std::wstring(bp.isClass ? L"CLASS: " : L"STRUCT: ") + typeName);
             }
 
             // 4. Citim indicii Câmpurilor (Adăugare sau Overlap)
@@ -1075,8 +1075,8 @@ case OpCode::OP_SET_INDIRECT: {
             // 6. Salvare Blueprint final
             m_blueprints[typeName] = bp;
 
-            LOG_SUCCESS(L"Blueprint " + typeName + L" gata! " +
-                (parentName.empty() ? L"" : L"(Mostenit din " + parentName + L")"));
+            LOG_SUCCESS(L"Blueprint " + typeName + L" ready! " +
+                (parentName.empty() ? L"" : L"(Inherited from " + parentName + L")"));
             break;
         }
  
@@ -1094,7 +1094,7 @@ case OpCode::OP_SET_INDIRECT: {
         vData contextObj = contextObjRaw.getTrueData();
 
         if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
-            LOG_DEBUG(L"[VM] Apel metoda: " + originalMethodName + L" pe obiect de tip " + getVariantTypeName(contextObj));
+           LOG_DEBUG(L"[VM] Calling method: " + originalMethodName + L" on object of type " + getVariantTypeName(contextObj));
         }
 
         if (contextObj.isMap()) {
@@ -1158,7 +1158,7 @@ case OpCode::OP_SET_INDIRECT: {
                         contextObj
                     );
                     stack.push_back(result);
-                    LOG_SUCCESS(L"[VM] Metoda SCRIPT executata dinamic: " + upperFinalFunc);
+                    LOG_SUCCESS(L"[VM] SCRIPT method executed dynamically: " + upperFinalFunc);
                 }
                 else {
                     // Fallback de siguranță cu numele original al funcției
@@ -1169,7 +1169,7 @@ case OpCode::OP_SET_INDIRECT: {
                         contextObj
                     );
                     stack.push_back(result);
-                    LOG_SUCCESS(L"[VM] Metoda SCRIPT executata dinamic (nume brut): " + finalFunc);
+                    LOG_SUCCESS(L"[VM] SCRIPT method executed dynamically (raw name): " + finalFunc);
                 }
 
                 break; // Ieșim cu succes din switch-ul principal pentru acest OpCode!
@@ -1178,8 +1178,8 @@ case OpCode::OP_SET_INDIRECT: {
 
         // --- Eroare dacă nu s-a putut rezolva prin nicio metodă ---
         std::wstring actualType = getVariantTypeName(contextObj);
-        LOG_ERROR(L"Runtime Error: Metoda '" + upperMethodName + L"' nu a putut fi rezolvata.");
-        LOG_ERROR(L"Contextul primit ARE TIPUL: " + actualType + L" (Valoare: " + contextObj.toWString() + L")");
+        LOG_ERROR(L"Runtime Error: Method '" + upperMethodName + L"' could not be resolved.");
+        LOG_ERROR(L"Context received HAS TYPE: " + actualType + L" (Value: " + contextObj.toWString() + L")");
 
         this->m_executionStatus = OliStatus::ERR;
         break;
@@ -1189,7 +1189,7 @@ case OpCode::OP_SET_INDIRECT: {
     case OpCode::OP_SET_PTR: {
         // Stiva conține: [Valoare_Noua, Adresa/Numele_Variabilei] <- top
         if (stack.size() < 2) {
-            LOG_ERROR(L"OP_SET_PTR Error: Stiva are prea putine elemente!");
+            LOG_ERROR(L"OP_SET_PTR Error: Stack underflow (too few elements)!");
             this->m_executionStatus = OliStatus::ERR;
             break;
         }
@@ -1202,11 +1202,11 @@ case OpCode::OP_SET_INDIRECT: {
             if (*addrPtr) {
                 **addrPtr = newValue;
                 if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
-                    LOG_DEBUG(L"[VM] Pointer brut Write SUCCESS: " + newValue.toWString());
+                    LOG_DEBUG(L"[VM] Raw pointer write SUCCESS: " + newValue.toWString());
                 }
             }
             else {
-                LOG_ERROR(L"Runtime Error: Încercare scriere prin Null Pointer brut.");
+                LOG_ERROR(L"Runtime Error: Attempt to write through null raw pointer.");
                 this->m_executionStatus = OliStatus::ERR;
             }
         }
@@ -1248,7 +1248,7 @@ case OpCode::OP_SET_INDIRECT: {
             }
         }
         else {
-            LOG_ERROR(L"Runtime Error: Se astepta un Pointer sau String pentru OP_SET_PTR, dar s-a primit: " + getVariantTypeName(ptrData));
+            LOG_ERROR(L"Runtime Error: Expected a Pointer or String for OP_SET_PTR, but received: " + getVariantTypeName(ptrData));
             this->m_executionStatus = OliStatus::ERR;
         }
         break;
@@ -1354,7 +1354,7 @@ case OpCode::OP_SET_INDIRECT: {
             uint8_t argCount = chunk.code[ip++];
 
             if (stack.empty()) {
-                LOG_ERROR(L"Runtime Error: Stiva este goala! Lipseste numele functiei pentru apelul dinamic.");
+                LOG_ERROR(L"Runtime Error: Stack is empty! Function name missing for dynamic call.");
                 this->m_executionStatus = OliStatus::ERR;
                 break;
             }
@@ -1369,7 +1369,7 @@ case OpCode::OP_SET_INDIRECT: {
             std::vector<vData> args(argCount);
             for (int i = argCount - 1; i >= 0; --i) {
                 if (stack.empty()) {
-                    LOG_ERROR(L"Runtime Error: Stiva s-a golit prematur in timpul colectarii argumentelor pentru: " + funcName);
+                    LOG_ERROR(L"Runtime Error: Stack underflow (too few elements) while collecting arguments for: " + funcName);
                     this->m_executionStatus = OliStatus::ERR;
                     break;
                 }
@@ -1383,7 +1383,7 @@ case OpCode::OP_SET_INDIRECT: {
             // 4. 🔥 Rutare nativă direct prin map-ul clasei vOliEngine
             if (this->m_functionsHandlers.count(funcName)) {
                 if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
-                    LOG_DEBUG(L"VM_DEBUG: OP_CALL_DYNAMIC (NATIV) - Funcția: " + funcName);
+                    LOG_DEBUG(L"VM_DEBUG: OP_CALL_DYNAMIC (NATIV) - Function: " + funcName);
                 }
                 // Apelăm direct handlerul C++ înregistrat, trimițându-i vectorul de argumente
                 result = this->m_functionsHandlers[funcName](args);
@@ -1391,7 +1391,7 @@ case OpCode::OP_SET_INDIRECT: {
             else {
                 // Rutare către funcțiile utilizator (Bytecode)
                 if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
-                    LOG_DEBUG(L"VM_DEBUG: OP_CALL_DYNAMIC (BYTECODE) - Funcția: " + funcName);
+                    LOG_DEBUG(L"VM_DEBUG: OP_CALL_DYNAMIC (BYTECODE) - Function: " + funcName);
                 }
                 result = this->callUserByteCodeFunction(
                     funcName.c_str(),   // Transformă std::wstring în const wchar_t*
@@ -1415,7 +1415,7 @@ case OpCode::OP_SET_INDIRECT: {
 
 		
         default:
-            LOG_ERROR(L"VM Error: OpCode necunoscut [0x" + std::to_wstring((int)instruction) + L"] la IP: " + std::to_wstring(ip - 1));
+            LOG_ERROR(L"VM Error: Unknown OpCode [0x" + std::to_wstring((int)instruction) + L"] at IP: " + std::to_wstring(ip - 1));
             this->m_executionStatus = OliStatus::ERR; return;
         }
 
@@ -1512,17 +1512,17 @@ vData* vOliEngine::resolveVMPath(const std::wstring& rootName, const std::vector
 
 bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
 	 //ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
-    LOG_INFO(L"=== internalLoadPlugin APELAT === Nume: " + pluginName);
+    LOG_INFO(L"=== internalLoadPlugin CALLED === Name: " + pluginName);
 
     if (pluginName.empty()) {
-        LOG_ERROR(L"EROARE: pluginName este gol!");
+        LOG_ERROR(L"ERROR: pluginName is empty!");
         return false;
     }
 
-    // 1. Curățare ghilimele
+    // 1. Clean quotes
     if (pluginName.size() >= 2 && pluginName.front() == L'"' && pluginName.back() == L'"') {
         pluginName = pluginName.substr(1, pluginName.size() - 2);
-        LOG_INFO(L"Ghilimele curatate: " + pluginName);
+        LOG_INFO(L"Cleaned quotes: " + pluginName);
     }
 
     // 2. Determinăm folderul executabilului principal (cross-platform)
@@ -1545,15 +1545,15 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
     std::filesystem::path exeDir = exeFullPath.parent_path();
 
 #ifdef _WIN32
-    LOG_INFO(L"Rezolutie cale: Exe=" + std::wstring(exePathBuffer) + L" | Dir=" + exeDir.wstring());
+    LOG_INFO(L"Path resolution: Exe=" + std::wstring(exePathBuffer) + L" | Dir=" + exeDir.wstring());
 #else
-    LOG_INFO(L"Rezolutie cale: Dir=" + exeDir.wstring());
+    LOG_INFO(L"Path resolution: Dir=" + exeDir.wstring());
 #endif
 
     // 3. Extragem numele curat
     std::filesystem::path rawPath(pluginName);
     std::wstring pureName = rawPath.stem().wstring();
-    LOG_INFO(L"Nume pur extras: " + pureName);
+    LOG_INFO(L"Cleaned name: " + pureName);
 
     // 4. Construim calea către subfolderul plugins
     std::filesystem::path finalDllPath = exeDir / "plugins" / pureName;
@@ -1564,25 +1564,25 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
         dllPath += ext;
     }
 
-    LOG_INFO(L"Cale finala DLL: " + dllPath);
+    LOG_INFO(L"Final DLL path: " + dllPath);
 
     // Verificare existență fișier
     if (std::filesystem::exists(dllPath)) {
-        LOG_SUCCESS(L"Validare FS: DLL exista la locatie.");
+        LOG_SUCCESS(L"FS Validation: DLL exists at location.");
     } else {
-        LOG_ERROR(L"⚠️ ATENTIE: DLL NU EXISTA la calea: " + dllPath);
+        LOG_ERROR(L"⚠️ ERROR: DLL NOT FOUND at path: " + dllPath);
     }
 
     // 5. Încărcare bibliotecă
-    LOG_INFO(L"Apel PortTools::loadDynamicLibrary...");
+    LOG_INFO(L"Calling PortTools::loadDynamicLibrary...");
     PortTools::LibHandle hLib = PortTools::loadDynamicLibrary(dllPath);
     
     if (!hLib) {
-        LOG_ERROR(L"❌ CRITICAL: Nu s-a putut incarca plugin-ul. Cod Eroare Win32: " + PortTools::getLastErrorString());
+        LOG_ERROR(L"❌ CRITICAL: Could not load plugin. Win32 Error Code: " + PortTools::getLastErrorString());
         return false;
     }
 
-    LOG_SUCCESS(L"✅ DLL incarcat in memorie.");
+    LOG_SUCCESS(L"✅ DLL loaded into memory.");
 
     // Sincronizare consolă
     typedef void (*SetConsoleManagerFunc)(ConsoleManager*);
@@ -1590,9 +1590,9 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
     
     if (setConsoleFn) {
         setConsoleFn(&ConsoleManager::getInstance());
-        LOG_INFO(L"SetPluginConsoleManager apelat cu succes.");
+        LOG_INFO(L"SetPluginConsoleManager called successfully.");
     } else {
-        LOG_ERROR(L"setConsoleFn lipseste! Plugin-ul nu poate partaja consola: " + pureName);
+        LOG_ERROR(L"setConsoleFn missing! Plugin cannot share console: " + pureName);
     }
 
     bool loadedAnything = false;
@@ -1614,18 +1614,18 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
                 LOG_DEBUG(L"Injected: " + upName);
             }
             loadedAnything = true;
-            LOG_SUCCESS(L"Functii native injectate.");
+            LOG_SUCCESS(L"Native functions injected.");
         }
         catch (...) { LOG_ERROR(L"Exception in LoadOliPlugin"); }
     } else {
-        LOG_INFO(L"LoadOliPlugin nu a fost gasit (optional).");
+        LOG_INFO(L"LoadOliPlugin not found.");
     }
 
     // --- B. ÎNCĂRCARE COMENZI (Aliniat 100% cu interpretorul) ---
     LoadCommandsFunc regCmds = (LoadCommandsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliCommandPlugin");
 
     if (regCmds) {
-        LOG_INFO(L"Gasit LoadOliCommandPlugin. Se injecteaza direct...");
+        LOG_INFO(L"Found LoadOliCommandPlugin. Injecting directly...");
         try {
             // Trimitem direct map-ul principal al motorului, exact ca în handlePluginCommand!
             regCmds(this->m_commandHandlers, this);
@@ -1636,7 +1636,7 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
             }
 
             loadedAnything = true;
-            LOG_SUCCESS(L"Comenzi injectate cu succes direct in structura VM.");
+            LOG_SUCCESS(L"Commands injected successfully directly into VM structure.");
         }
         catch (...) {
             LOG_ERROR(L"Exception in LoadOliCommandPlugin");
@@ -1647,7 +1647,7 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
         LOG_SUCCESS(L"Plugin '" + pureName + L"' operational.");
         return true;
     } else {
-        LOG_ERROR(L"❌ EROARE: Niciun punct de export valid in " + dllPath);
+        LOG_ERROR(L"❌ ERROR: No valid export points found in " + dllPath);
         PortTools::freeDynamicLibrary(hLib);
         return false;
     }
@@ -1657,16 +1657,16 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
 
 
 vData vOliEngine::callUserByteCodeFunction(const wchar_t* funcName, const vData* argsArray, size_t argCount, vData context) {
-    LOG_INFO(L"Sunt în callUserByteCodeFunction");
+    
     std::wstring name(funcName);
     for (auto& c : name) c = std::towupper(c);
     std::vector<vData> args(argsArray, argsArray + argCount);
 
-    LOG_INFO(L"[VM] Pregătire apel funcție: " + name + L" (" + std::to_wstring(args.size()) + L" argumente)");
+    LOG_INFO(L"[VM] Preparing function call: " + name + L" (" + std::to_wstring(args.size()) + L" arguments)");
 
     auto it = m_bytecodeFunctions.find(name);
     if (it == m_bytecodeFunctions.end()) {
-        LOG_ERROR(L"-> EROARE: Funcția " + name + L" nu este înregistrată!");
+        LOG_ERROR(L"-> ERROR: Function " + name + L" is not registered!");
         return vData();
     }
 
@@ -1691,7 +1691,7 @@ vData vOliEngine::callUserByteCodeFunction(const wchar_t* funcName, const vData*
     }
 
     if (!func.compiledBody) {
-        LOG_ERROR(L"[VM] CRITIC: compiledBody este NULL pentru " + name);
+        LOG_ERROR(L"[VM] CRITIC: compiledBody is NULL for " + name);
         return vData();
     }
 
@@ -1717,7 +1717,7 @@ vData vOliEngine::callUserByteCodeFunction(const wchar_t* funcName, const vData*
         this->m_stack.pop_back();
     }
 
-    LOG_SUCCESS(L"-> Funcția " + name + L" a returnat: " + result.toWString());
+    LOG_SUCCESS(L"-> Function " + name + L" returned: " + result.toWString());
     return result;
 }
 
@@ -1728,7 +1728,7 @@ void vOliEngine::registerBytecodeFunction(const std::wstring& name, const ByteCo
 
     this->m_bytecodeFunctions[upperName] = proc;
     if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
-        LOG_DEBUG(L"[VM] Functie inregistrata in map: " + upperName);
+        LOG_DEBUG(L"[VM] Function registered in map: " + upperName);
     }
 }
 
@@ -1740,7 +1740,7 @@ void vDataSerialize::deserializeChunkToEngine(std::istream& in, OliChunk& outChu
     uint32_t constCount = 0;
     in.read(reinterpret_cast<char*>(&constCount), sizeof(constCount));
     if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
-        LOG_DEBUG(L"[SERIALIZE] Citim " + std::to_wstring(constCount) + L" constante.");
+        LOG_DEBUG(L"[SERIALIZE] Reading " + std::to_wstring(constCount) + L" constants.");
     }
 
     for (uint32_t i = 0; i < constCount; ++i) {
@@ -1751,7 +1751,7 @@ void vDataSerialize::deserializeChunkToEngine(std::istream& in, OliChunk& outChu
     uint32_t codeSize = 0;
     in.read(reinterpret_cast<char*>(&codeSize), sizeof(codeSize));
     if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
-        LOG_DEBUG(L"[SERIALIZE] Citim " + std::to_wstring(codeSize) + L" bytes de cod.");
+        LOG_DEBUG(L"[SERIALIZE] Reading " + std::to_wstring(codeSize) + L" bytes of code.");
     }
 
     outChunk.code.resize(codeSize);
@@ -1761,7 +1761,7 @@ void vDataSerialize::deserializeChunkToEngine(std::istream& in, OliChunk& outChu
     uint32_t procCount = 0;
     in.read(reinterpret_cast<char*>(&procCount), sizeof(procCount));
     if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
-        LOG_DEBUG(L"[SERIALIZE] Detectat procCount: " + std::to_wstring(procCount));
+        LOG_DEBUG(L"[SERIALIZE] Detected procCount: " + std::to_wstring(procCount));
     }
 
     for (uint32_t i = 0; i < procCount; ++i) {
@@ -1784,7 +1784,7 @@ void vDataSerialize::deserializeChunkToEngine(std::istream& in, OliChunk& outChu
         vDataSerialize::deserializeChunkToEngine(in, *proc.compiledBody, engine);
 
         if (engine) {
-            LOG_SUCCESS(L"[SERIALIZE] Inregistram functia: " + proc.name);
+            LOG_SUCCESS(L"[SERIALIZE] Registering function: " + proc.name);
             engine->registerBytecodeFunction(proc.name, proc);
         }
     }
@@ -1822,7 +1822,7 @@ void vOliEngine::assignToByteCodeVariable(const std::wstring& varName, const vDa
         // Aici am eliminat crearea de Map-uri inutile (Matrioșka).
         *rootPtr = newValue;
         if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
-            LOG_DEBUG(L"[VM] Atribuire directă: " + rootPart + L" = " + newValue.toWString());
+            LOG_DEBUG(L"[VM] Direct assignment: " + rootPart + L" = " + newValue.toWString());
         }
         return;
     }
@@ -1842,7 +1842,7 @@ void vOliEngine::assignToByteCodeVariable(const std::wstring& varName, const vDa
             if (m) {
                 (*m)[field] = newValue;
                 if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
-                    LOG_DEBUG(L"[VM] Actualizat câmp: " + rootPart + L" -> " + field);
+                    LOG_DEBUG(L"[VM] Updated field: " + rootPart + L" -> " + field);
                 }
             }
         }
@@ -1863,7 +1863,7 @@ void vOliEngine::assignToByteCodeVariable(const std::wstring& varName, const vDa
             *target = vData::CreateMap();
             (*target->rawMap())[field] = newValue;
             if (ConsoleManager::getInstance().getLogLevel() <= LogLevel::DEBUG) {
-                LOG_DEBUG(L"[VM] Creat structură nouă pentru calea: " + rootPart);
+                LOG_DEBUG(L"[VM] Created new structure for path: " + rootPart);
             }
         }
     }

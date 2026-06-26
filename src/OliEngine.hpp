@@ -119,12 +119,7 @@ public:
         initializeCommandsHandlers();
         initializeFunctionsHandlers();
     };
-    /*
-    std::wstring getPrompt() const override {
-        return m_accumulator.empty() || !m_isRecording ? L"\noli# " : L"  -> ";
-    }
-    */
-
+    
     std::wstring getPrompt() const override {
         if (m_isRecording) return L"  -> ";
         if(m_isRecordingFunc)return L"  -> ";
@@ -307,7 +302,6 @@ private:
         }
     
         ///bitecode
-        //void executeBytecode(const OliChunk& chunk);
 		void executeBytecode(const OliChunk& chunk, size_t framePtr);
         void loadAndRunBytecode(const std::string& path);
         vData* resolveVMPath(const std::wstring& rootName, const std::vector<std::wstring>& indexes, bool forceGlobal);

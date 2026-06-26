@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
                 uint64_t footer = (uint64_t)bytecode.size();
                 if (isGuiApp) {
                     footer |= (1ULL << 63);
-                    std::wcout << L"[BUILD] Configurare detectata: win_app = 1." << std::endl;
+                    std::wcout << L"[BUILD] Detected configuration: win_app = 1." << std::endl;
                 }
 
                 dst.write(reinterpret_cast<const char*>(&footer), 8);
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
                     dst.seekp(peOffset + 0x5C, std::ios::beg);
                     uint16_t subsystemGui = 2; // 2 = IMAGE_SUBSYSTEM_WINDOWS_GUI
                     dst.write(reinterpret_cast<const char*>(&subsystemGui), 2);
-                    std::wcout << L"[BUILD] Executabil modificat nativ pentru Windows GUI (Fara consola!)." << std::endl;
+                    std::wcout << L"[BUILD] Executable patched for native Windows GUI (Console disabled)." << std::endl;
                 }
 
                 dst.close();
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
             try {
                 std::wstring sourceCode = citeste_fisier_utf8(str_to_wstr(inputPath));
                 if (sourceCode.empty()) {
-                    throw std::runtime_error("Fisier sursa inexistent sau gol.");
+                    throw std::runtime_error("Source file does not exist or is empty.");
                 }
 
                 OliCompiler compiler;
@@ -153,7 +153,7 @@ int main(int argc, char* argv[]) {
                 // A. Salvare Bytecode (.olic)
                 std::ofstream ofs(outputPath, std::ios::binary);
                 if (!ofs.is_open()) {
-                    throw std::runtime_error("Nu s-a putut deschide sau crea fisierul de bytecode (.olic).");
+                    throw std::runtime_error("Could not open or create the bytecode file (.olic).");
                 }
                 vDataSerialize::serializeChunk(chunk, ofs);
                 ofs.close();
@@ -182,10 +182,10 @@ int main(int argc, char* argv[]) {
                     LOG_SUCCESS(L"Assembly listing generat: " + assemblyPath);
                 }
                 else {
-                    std::wcerr << L"[WARNING] Nu s-a putut genera fisierul de listing .olia (Permisiuni insuficiente)." << std::endl;
+                    std::wcerr << L"[WARNING] Could not generate the assembly listing file .olia (Insufficient permissions)." << std::endl;
                 }
 
-                LOG_INFO(L"Compilare reusita: " + str_to_wstr(outputPath));
+                LOG_INFO(L"Compilation successful: " + str_to_wstr(outputPath));
                 return 0;
             }
             catch (const std::exception& e) {
@@ -207,7 +207,7 @@ int main(int argc, char* argv[]) {
         else {
             std::wstring scriptContent = citeste_fisier_utf8(str_to_wstr(scriptPath));
             if (scriptContent.empty()) {
-                std::wcerr << L"[ERROR] Fisierul sursa '" << str_to_wstr(scriptPath) << L"' nu exista sau este gol." << std::endl;
+                std::wcerr << L"[ERROR] Source file '" << str_to_wstr(scriptPath) << L"' does not exist or is empty." << std::endl;
                 return 1;
             }
 

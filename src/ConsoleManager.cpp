@@ -140,16 +140,16 @@ void ConsoleManager::log(const std::wstring& message, LogLevel level) {
 
 // --- Implementarea metodei logTest ---
 void ConsoleManager::logTest() {
-    std::wcout << L"[TEST] Verificare diacritice în consolă: ș ț ă â î" << std::endl;
-    std::wcout << L"[TEST] Această linie ar trebui să apară albă." << std::endl;
+    std::wcout << L"[TEST] Checking diacritics/special characters in console: ș ț ă â î" << std::endl;
+    std::wcout << L"[TEST] This line should appear white." << std::endl;
     setColor(FOREGROUND_GREEN);
-    std::wcout << L"[TEST] Această linie ar trebui să apară verde." << std::endl;
+    std::wcout << L"[TEST] This line should appear green." << std::endl;
     setColor(FOREGROUND_RED);
-    std::wcout << L"[TEST] Această linie ar trebui să apară roșie." << std::endl;
+    std::wcout << L"[TEST] This line should appear red." << std::endl;
     setColor(FOREGROUND_BLUE);
-    std::wcout << L"[TEST] Această linie ar trebui să apară albastră." << std::endl;
+    std::wcout << L"[TEST] This line should appear blue." << std::endl;
     resetColor();
-    std::wcout << L"[TEST] Culoarea a fost resetată la alb." << std::endl;
+    std::wcout << L"[TEST] Color has been reset to white." << std::endl;
 }
 
 // --- Implementarea metodei shutdown (Opțional) ---
@@ -212,29 +212,6 @@ void ConsoleManager::writePlain(const std::wstring& message, WORD color) {
     }
 }
 
-
-/*
-void ConsoleManager::clear() {
-#ifdef _WIN32
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    COORD topLeft = { 0, 0 };
-
-    if (!GetConsoleScreenBufferInfo(hConsole, &csbi)) return;
-
-    DWORD dwConSize = csbi.dwSize.X * csbi.dwSize.Y;
-    DWORD dwCharsWritten;
-
-    FillConsoleOutputCharacter(hConsole, ' ', dwConSize, topLeft, &dwCharsWritten);
-    FillConsoleOutputAttribute(hConsole, csbi.wAttributes, dwConSize, topLeft, &dwCharsWritten);
-    SetConsoleCursorPosition(hConsole, topLeft);
-
-#else
-    // Linux: clear screen
-    std::cout << "\033[2J\033[H";
-#endif
-}
-*/
 void ConsoleManager::clear() {
     std::lock_guard<std::recursive_mutex> lock(mtxLog);
     // Codul ANSI pentru "Clear Screen" (\033[2J) și "Move to 0,0" (\033[H)
@@ -266,7 +243,7 @@ bool ConsoleManager::enableFileLogging(const std::wstring& filePath, bool append
 
     if (logFile.is_open()) {
         logToFileEnabled = true;
-        log(L"Logarea în fișier a fost activată (UTF-8)", LogLevel::SUCCESS);
+        log(L"Logging to file enabled (UTF-8)", LogLevel::SUCCESS);
         return true;
     }
     return false;

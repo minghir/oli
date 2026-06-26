@@ -13,42 +13,10 @@ endif
 endfunc
 
 $a = ticks()
-echo ack(3,5)
+echo ack(4,1)
 echo  ticks() - $a
 
 
-unset all
-
-set @cache = {}
-func mack($m, $n)
-    # Creăm o cheie unică din cele două argumente
-    $key = $m .. "," .. $n
-    
-    # Dacă am calculat deja această stare, o returnăm direct!
-    if @cache[$key] != NULL then
-        return @cache[$key]
-    endif
-
-    # Dacă nu e în cache, o calculăm normal
-    $res = 0
-    if $m == 0 then 
-        $res = $n + 1
-    else 
-        if $n == 0 then
-            $res = ack($m - 1, 1)
-        else
-            $res = ack($m - 1, ack($m, $n - 1))
-        endif
-    endif
-
-    # 🔥 Salvăm rezultatul în cache înainte de a-l trimite înapoi
-    set @cache[$key] = $res
-    return $res
-endfunc
-
-$a = ticks()
-echo mack(4,0)
-echo ticks() - $a
 dm
 input()
 

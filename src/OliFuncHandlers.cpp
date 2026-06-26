@@ -85,7 +85,7 @@ void vOliEngine::initializeFunctionsHandlers() {
             // IMPORTANT: Salvăm tipul tot UPPER pentru ca OP_CALL_METHOD să-l găsească
             (*instance)[L"__type__"] = vData(typeName);
 
-            LOG_DEBUG(L"[VM] Instantiere reusita pentru: " + typeName);
+           LOG_DEBUG(L"[VM] Successfully instantiated: " + typeName);
             return vData(instance);
         }
 
@@ -720,17 +720,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         return vData{ static_cast<long long>(str[0]) };
         };
     vOliKeyWords::registerNativeFunction(L"ASC");
-    /*
-    m_functionsHandlers[L"WRITE"] = [this](const std::vector<vData>& args) -> vData {
-        if (args.empty()) return { 0LL };
-
-        std::wstring str = vDataToWString(args[0]);
-        std::wcout << str; // FĂRĂ std::endl
-        std::wcout.flush(); // Ne asigurăm că apare pe ecran imediat
-
-        return { 0LL };
-        };
-    */
+    
 
     m_functionsHandlers[L"WRITE"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return { 0LL };
@@ -897,73 +887,13 @@ vData vOliEngine::handleEvalFunc(const std::vector<vData>& args) {
         return { std::monostate{} };
     }
 }
-/*
-vData vOliEngine::handleIntFunc(const std::vector<vData>& args) {
-    if (args.empty()) return vData{ 0LL }; // Default la 0 de tip long long
 
-    const vData& input = args[0];
-
-    // Dacă este deja Int, returnăm copia
-    if (input.isInt()) return input;
-
-    // Dacă este Float, facem cast la long long (std::get<double>)
-    if (input.isFloat()) {
-        return vData{ static_cast<long long>(std::get<double>(input.value)) };
-    }
-
-    // Dacă este String, încercăm conversia numerică
-    if (input.isString()) {
-        try {
-            return vData{ std::stoll(std::get<std::wstring>(input.value)) };
-        }
-        catch (...) {
-            return vData{ 0LL }; // Conversie eșuată
-        }
-    }
-
-    return vData{ 0LL };
-}
-*/
 vData vOliEngine::handleIntFunc(const std::vector<vData>& args) {
     if (args.empty()) return vData{ 0LL };
     // getScalarValue() va "săpa" prin Map-uri până găsește numărul
     return vData{ args[0].getScalarValue().toInt() };
 }
-/*
-vData vOliEngine::handleFloatFunc(const std::vector<vData>& args) {
-    if (args.empty()) return vData{ 0.0 };
 
-    const vData& input = args[0];
-
-    // 1. Deja Float -> returnăm identic
-    if (input.isFloat()) return input;
-
-    // 2. Int -> Double
-    if (input.isInt()) {
-        return vData{ static_cast<double>(std::get<long long>(input.value)) };
-    }
-
-    // 3. String -> Double
-    if (input.isString()) {
-        try {
-            // std::stod se ocupă de conversia wstring -> double
-            return vData{ std::stod(std::get<std::wstring>(input.value)) };
-        }
-        catch (...) {
-            return vData{ 0.0 }; // Fallback la eroare
-        }
-    }
-
-    // 4. Bool -> Double (1.0 sau 0.0)
-    if (input.isBool()) {
-        return vData{ std::get<bool>(input.value) ? 1.0 : 0.0 };
-    }
-   
-
-
-    return vData{ 0.0 };
-}
- */
 
 vData vOliEngine::handleFloatFunc(const std::vector<vData>& args) {
     if (args.empty()) return vData{ 0.0 };
@@ -990,32 +920,14 @@ vData vOliEngine::handleFloatFunc(const std::vector<vData>& args) {
 }
 
 
-/*
-vData vOliEngine::handleStrFunc(const std::vector<vData>& args) {
-    if (args.empty()) return vData{ L"" }; // Default: șir vid
 
-    const vData& input = args[0];
-
-    // 1. Dacă este deja String, returnăm o copie
-    if (input.isString()) return input;
-
-    // 2. Pentru restul tipurilor (Int, Float, Bool, Array, Map)
-    // Folosim funcția ta vDataToWString care se ocupă deja de formatare
-    return vData{ vDataToWString(input) };
-}
-*/
 
 vData vOliEngine::handleStrFunc(const std::vector<vData>& args) {
     if (args.empty()) return vData{ L"" };
     return vData{ args[0].getTrueData().toWString() };
 }
 
-/*
-vData vOliEngine::handleArrayFunc(const std::vector<vData>& args) {
-    // Creăm un shared_ptr care copiază conținutul lui 'args' direct în heap
-    return vData{ std::make_shared<std::vector<vData>>(args) };
-}
-*/
+
 
 vData vOliEngine::handleArrayFunc(const std::vector<vData>& args) {
     // 1. Dacă avem un singur argument numeric -> ALOCARE (pt. Cubul 3D)
@@ -1150,7 +1062,7 @@ vData vOliEngine::handleTrimFunc(const std::vector<vData>& args) {
 
 
 vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
-    LOG_ERROR(L"[readfile] Funcția readfile() a fost apelată cu " + std::to_wstring(args.size()) + L" argumente.");
+    LOG_ERROR(L"[readfile] Function readfile() called with " + std::to_wstring(args.size()) + L" arguments.");
     if (args.empty() || !args[0].isString()) {
         LOG_ERROR(L"[RUNTIME ERROR] readfile() requires a path string.");
         return vData(std::monostate{});
@@ -1159,16 +1071,6 @@ vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
     std::wstring pathW = std::get<std::wstring>(args[0].value);
     try {
         // 1. Convertim calea wide în string standard C++
-        /*
-
-        std::string utf8_path;
-                try {
-            std::wstring_convert<std::codecvt_utf8<wchar_t>> path_conv;
-            utf8_path = path_conv.to_bytes(pathW);
-        } catch (...) {
-            utf8_path = std::string(pathW.begin(), pathW.end());
-        }
-        */
         std::string utf8_path = PortTools::wstring_to_utf8(pathW);
 
         // Curățăm resturile de formatare Windows din cale
@@ -1187,16 +1089,6 @@ vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
         file.close();
 
         // 4. 🔥 CONVERSIE ANTIGLONȚ: Protejăm memoria împotriva dimensiunii wchar_t de Linux
-        /*
-        std::wstring wcontent;
-        try {
-            std::wstring_convert<std::codecvt_utf8<wchar_t>> content_conv;
-            wcontent = content_conv.from_bytes(buffer);
-        } catch (...) {
-            // Fallback în caz de caractere invalide: copiem brut octet cu octet
-            wcontent = std::wstring(buffer.begin(), buffer.end());
-        }
-        */
         std::wstring wcontent = PortTools::utf8_to_wstring(buffer);
 
         // Eliminare BOM (Byte Order Mark)
@@ -1207,7 +1099,7 @@ vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
         return vData(wcontent);
     }
     catch (...) {
-        LOG_ERROR(L"[readfile] Excepție critică interceptată la citirea fișierului!");
+        LOG_ERROR(L"[readfile] Critical exception intercepted while reading the file!");
         return vData(std::monostate{});
     }
 }
@@ -1233,7 +1125,7 @@ vData vOliEngine::handleWriteFileFunc(const std::vector<vData>& args) {
         std::ofstream file(path, std::ios::binary | std::ios::trunc);
 
         if (!file.is_open()) {
-            std::cerr << "[DEBUG writefile] EȘEC! Nu s-a putut deschide pentru scriere: [" << path << "]" << std::endl;
+            std::cerr << "[DEBUG writefile] FAILED! Failed to open for writing: [" << path << "]" << std::endl;
             return vData(0LL);
         }
 

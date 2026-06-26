@@ -1262,10 +1262,13 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                             std::wstring typeName = to_upper((*m)[L"__type__"].toWString());
                             std::wstring methodUpper = to_upper(rawMethodName);
 
-                            if (m_blueprints.count(typeName)) {
-                                auto& bp = m_blueprints[typeName];
-                                if (bp.methods.count(methodUpper)) {
-                                    funcName = bp.methods[methodUpper];
+                            if (!typeName.empty()) {
+                                std::wstring resolvedMethod = findMethodRecursive(typeName, methodUpper);
+                                if (!resolvedMethod.empty()) {
+                                    funcName = resolvedMethod;
+                                }
+                                else {
+                                    LOG_ERROR(L"[DEBUG] Method lookup failed for type='" + typeName + L"' method='" + methodUpper + L"'");
                                 }
                             }
                         }
@@ -3356,9 +3359,12 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
 }
 
 
-  
+  /*
   vData vOliEngine::callUserFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context) {
-      // 1. Căutăm funcția în map-ul de funcții utilizator
+    
+    
+    
+    // 1. Căutăm funcția în map-ul de funcții utilizator
       auto it = m_userFunctions.find(funcName);
       if (it == m_userFunctions.end()) {
           LOG_ERROR(L"Runtime Error: Function '" + funcName + L"' not found.");
@@ -3426,6 +3432,84 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
 
       return result;
   }
+*/
+
+vData vOliEngine::callUserFunction(const std::wstring& funcName,
+                                   const std::vector<vData>& args,
+                                   vData context)
+{
+    vData actualContext = context.getTrueData();
+
+    std::wstring className;
+    if (actualContext.isMap()) {
+        auto* map = actualContext.rawMap();
+        if (map && map->count(L"__type__")) {
+            className = to_upper((*map)[L"__type__"].toWString());
+        }
+    }
+
+    std::wstring resolved = funcName;
+    if (!className.empty()) {
+        std::wstring inherited = findMethodRecursive(className, funcName);
+        if (!inherited.empty()) {
+            resolved = inherited;
+        }
+    }
+
+    auto it = m_userFunctions.find(resolved);
+    if (it == m_userFunctions.end()) {
+        if (!className.empty()) {
+            LOG_ERROR(L"Unknown method: " + funcName + L" for class " + className);
+        }
+        else {
+            LOG_ERROR(L"Runtime Error: Function '" + funcName + L"' not found.");
+        }
+        return { std::monostate{} };
+    }
+
+    const Procedure& func = it->second;
+
+    StackFrame frame;
+    frame.functionName = resolved;
+    frame.localVariables[L"this"] = actualContext;
+
+    for (size_t i = 0; i < func.params.size(); ++i) {
+        std::wstring pName = func.params[i];
+        frame.localVariables[pName] =
+            (i < args.size()) ? args[i] : vData{ std::monostate{} };
+    }
+
+    if (func.isVariadic) {
+        vData extraParams = vData::CreateArray();
+        auto* vecPtr = extraParams.rawArray();
+        for (size_t i = func.params.size(); i < args.size(); ++i)
+            vecPtr->push_back(args[i]);
+        frame.localVariables[L"params"] = extraParams;
+    }
+
+    frame.localVariables[L"return"] = { std::monostate{} };
+
+    m_callStack.push_back(std::move(frame));
+    bool previousShouldReturn = m_shouldReturn;
+    m_shouldReturn = false;
+
+    std::wstring fullBody;
+    for (const auto& line : func.body) {
+        std::wstring cleanLine = trim(line);
+        if (!cleanLine.empty())
+            fullBody += cleanLine + (cleanLine.back() == L';' ? L"\n" : L";\n");
+    }
+
+    this->executeInternal(fullBody);
+
+    vData result = m_callStack.empty() ? vData{ std::monostate{} } : m_callStack.back().localVariables[L"return"];
+    if (!m_callStack.empty()) {
+        m_callStack.pop_back();
+    }
+
+    m_shouldReturn = previousShouldReturn;
+    return result;
+}
 
 
   void vOliEngine::handleReturnCommand(const ShellCommand& sc) {
@@ -3959,6 +4043,41 @@ void vOliEngine::setVariable(const std::wstring& name, const vData& value, bool 
       LOG_INFO(L"");
   }
   
+std::vector<std::wstring> wexplodeClassContent(const std::wstring& content) {
+    std::vector<std::wstring> tokens;
+    std::wstring currentToken;
+    int parenDepth = 0;
+    bool inQuotes = false;
+
+    for (wchar_t ch : content) {
+        if (ch == L'"') {
+            inQuotes = !inQuotes;
+            currentToken += ch;
+        }
+        else if (!inQuotes && ch == L'(') {
+            parenDepth++;
+            currentToken += ch;
+        }
+        else if (!inQuotes && ch == L')') {
+            if (parenDepth > 0) parenDepth--;
+            currentToken += ch;
+        }
+        else if (ch == L',' && parenDepth == 0 && !inQuotes) {
+            // Am găsit o virgulă de separare reală (la nivelul rădăcină al clasei)
+            tokens.push_back(currentToken);
+            currentToken.clear();
+        }
+        else {
+            currentToken += ch;
+        }
+    }
+    
+    if (!currentToken.empty()) {
+        tokens.push_back(currentToken);
+    }
+    
+    return tokens;
+}
 
 void vOliEngine::handleDefCommand(const ShellCommand& sc) {
     if (sc.args.size() < 3) {
@@ -3993,14 +4112,15 @@ void vOliEngine::handleDefCommand(const ShellCommand& sc) {
     }
 
     std::wstring content = fullLine.substr(start + 1, end - start - 1);
-    std::vector<std::wstring> tokens = wexplodeQuoteSafe(content, L',');
+    //std::vector<std::wstring> tokens = wexplodeQuoteSafe(content, L',');
+    std::vector<std::wstring> tokens = wexplodeClassContent(content);
 
     vTypeBlueprint bp;
     bp.name = typeName;
     bp.isClass = (subType == L"class");
 
     // Dacă structura ta vTypeBlueprint are un câmp pentru părinte, îl mapăm aici:
-    // bp.parentName = parentName; 
+    bp.parentName = parentName; 
 
     for (auto& t : tokens) {
         std::wstring item = trim(t);
@@ -4119,7 +4239,32 @@ void vOliEngine::handleDefCommand(const ShellCommand& sc) {
       }
   }
 
+
   
+std::wstring vOliEngine::findMethodRecursive(
+    const std::wstring& className,
+    const std::wstring& methodName)
+{
+    auto it = m_blueprints.find(className);
+    if (it == m_blueprints.end())
+        return L"";
+
+    const vTypeBlueprint& bp = it->second;
+
+    // 1. Caută în clasa curentă
+    auto m = bp.methods.find(methodName);
+    if (m != bp.methods.end())
+        return m->second;
+
+    // 2. Dacă are părinte, caută în părinte
+    if (!bp.parentName.empty())
+        return findMethodRecursive(bp.parentName, methodName);
+
+    // 3. Nu există
+    return L"";
+}
+
+
 
  
 

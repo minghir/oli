@@ -186,6 +186,8 @@ private:
 
     void callProcedure(const Procedure& proc, const std::vector<std::wstring>& passedArgs);
     vData callUserFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context = { std::monostate{} });
+    std::wstring findMethodRecursive( const std::wstring& className, const std::wstring& methodName);
+    
     void printTraceback();
     void dumpStackTrace();
 
@@ -245,6 +247,8 @@ private:
 
     void handleClearCommand(const ShellCommand& sc);
     void handleDefCommand(const ShellCommand& sc);
+
+    
 
     void handleHelpCommand(const ShellCommand& sc);
     void handleConfigCommand(const ShellCommand& sc);

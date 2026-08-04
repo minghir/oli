@@ -1,0 +1,25 @@
+
+func precedence($op)
+    if $op == "+" || $op == "-" then return 1 endif
+    if $op == "*" || $op == "/" then return 2 endif
+endfunc
+
+func operation($a, $b, $op) 
+    switch $op
+    case "+"
+         return $a + $b
+         break
+    case "-"
+         return $a - $b
+         break
+    case "*"
+         return $a * $b
+         break
+    case "/"
+         return $a / $b
+         break
+    endswitch
+    endfunc
+
+
+echo  operation(-2,3,"*")

@@ -1,0 +1,140 @@
+﻿--- OLI ASSEMBLY LISTING ---
+Source: ./tests/cls4.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_DEF_TYPE      0000 (Type: ENTITATE, CLASS, Fields: 3, Methods: 1)
+    Field [0]: 0002 (Name: x)
+    Field [1]: 0003 (Name: y)
+    Field [2]: 0004 (Name: id)
+    Method [0]: 0005 (Name: SET_POS)
+0016: OP_DEF_TYPE      0006 (Type: INAMIC EXTENDS ENTITATE, CLASS, Fields: 2, Methods: 1)
+    Field [0]: 0007 (Name: hp)
+    Field [1]: 0008 (Name: damage)
+    Method [0]: 0009 (Name: ATACA)
+0030: OP_DEF_TYPE      0010 (Type: BOSS EXTENDS INAMIC, CLASS, Fields: 1, Methods: 1)
+    Field [0]: 0011 (Name: scut)
+    Method [0]: 0009 (Name: ATACA)
+0042: OP_CONSTANT     0012 (Value: --- START TEST MOȘTENIRE ---)
+0045: OP_ECHO
+0046: OP_CONSTANT     0013 (Value: [1] Test Inamic (moștenește set_pos de la Entitate):)
+0049: OP_ECHO
+0050: OP_CONSTANT     0014 (Value: Inamic)
+0053: OP_CONSTANT     0015 (Value: new)
+0056: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0058: OP_SET_GLOBAL   0016 (Name: mob)
+0061: OP_GET_GLOBAL   0016 (Name: mob)
+0064: OP_CONSTANT     0004 (Value: id)
+0067: OP_CONSTANT     0017 (Value: 10)
+0070: OP_SET_INDIRECT
+0071: OP_GET_GLOBAL   0016 (Name: mob)
+0074: OP_CONSTANT     0008 (Value: damage)
+0077: OP_CONSTANT     0018 (Value: 15)
+0080: OP_SET_INDIRECT
+0081: OP_CONSTANT     0019 (Value: 100)
+0084: OP_CONSTANT     0020 (Value: 200)
+0087: OP_GET_GLOBAL   0016 (Name: mob)
+0090: OP_CONSTANT     0021 (Value: set_pos)
+0093: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0095: OP_POP
+0096: OP_GET_GLOBAL   0016 (Name: mob)
+0099: OP_CONSTANT     0022 (Value: ataca)
+0102: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0104: OP_POP
+0105: OP_CONSTANT     0001 (Value: )
+0108: OP_ECHO
+0109: OP_CONSTANT     0023 (Value: [2] Test Boss (moștenește de la Inamic, dar suprascrie ataca):)
+0112: OP_ECHO
+0113: OP_CONSTANT     0024 (Value: Boss)
+0116: OP_CONSTANT     0015 (Value: new)
+0119: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0121: OP_SET_GLOBAL   0025 (Name: boss)
+0124: OP_GET_GLOBAL   0025 (Name: boss)
+0127: OP_CONSTANT     0004 (Value: id)
+0130: OP_CONSTANT     0026 (Value: 99)
+0133: OP_SET_INDIRECT
+0134: OP_GET_GLOBAL   0025 (Name: boss)
+0137: OP_CONSTANT     0008 (Value: damage)
+0140: OP_CONSTANT     0027 (Value: 50)
+0143: OP_SET_INDIRECT
+0144: OP_CONSTANT     0028 (Value: 0)
+0147: OP_CONSTANT     0028 (Value: 0)
+0150: OP_GET_GLOBAL   0025 (Name: boss)
+0153: OP_CONSTANT     0021 (Value: set_pos)
+0156: OP_CALL_METHOD     (Args: 2, Context & Name on Stack)
+0158: OP_POP
+0159: OP_GET_GLOBAL   0025 (Name: boss)
+0162: OP_CONSTANT     0022 (Value: ataca)
+0165: OP_CALL_METHOD     (Args: 0, Context & Name on Stack)
+0167: OP_POP
+0168: OP_CONSTANT     0001 (Value: )
+0171: OP_ECHO
+0172: OP_CONSTANT     0029 (Value: --- TEST FINALIZAT ---)
+0175: OP_ECHO
+0176: OP_CONSTANT     0030 (Value: input)
+0179: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0181: OP_POP
+0182: OP_RETURN
+
+--- FUNCTION: BOSS::ATACA (Params: ) ---
+=== DISASSEMBLY: BOSS::ATACA ===
+0000: OP_CONSTANT     0000 (Value: !!! BOSS-UL #)
+0003: OP_GET_LOCAL     0000
+0005: OP_CONSTANT     0001 (Value: id)
+0008: OP_GET_INDIRECT
+0009: OP_CONCAT
+0010: OP_CONSTANT     0002 (Value:  LANSEAZA SUPER-ATAC ()
+0013: OP_CONCAT
+0014: OP_GET_LOCAL     0000
+0016: OP_CONSTANT     0003 (Value: damage)
+0019: OP_GET_INDIRECT
+0020: OP_CONSTANT     0004 (Value: 2)
+0023: OP_MUL
+0024: OP_CONCAT
+0025: OP_CONSTANT     0005 (Value:  DMG) !!!)
+0028: OP_CONCAT
+0029: OP_ECHO
+0030: OP_RETURN
+
+--- FUNCTION: INAMIC::ATACA (Params: ) ---
+=== DISASSEMBLY: INAMIC::ATACA ===
+0000: OP_CONSTANT     0000 (Value: Inamicul #)
+0003: OP_GET_LOCAL     0000
+0005: OP_CONSTANT     0001 (Value: id)
+0008: OP_GET_INDIRECT
+0009: OP_CONCAT
+0010: OP_CONSTANT     0002 (Value:  ataca cu )
+0013: OP_CONCAT
+0014: OP_GET_LOCAL     0000
+0016: OP_CONSTANT     0003 (Value: damage)
+0019: OP_GET_INDIRECT
+0020: OP_CONCAT
+0021: OP_CONSTANT     0004 (Value:  DMG!)
+0024: OP_CONCAT
+0025: OP_ECHO
+0026: OP_RETURN
+
+--- FUNCTION: ENTITATE::SET_POS (Params: $nx, $ny) ---
+=== DISASSEMBLY: ENTITATE::SET_POS ===
+0000: OP_GET_LOCAL     0000
+0002: OP_CONSTANT     0000 (Value: x)
+0005: OP_GET_LOCAL     0001
+0007: OP_SET_INDIRECT
+0008: OP_GET_LOCAL     0000
+0010: OP_CONSTANT     0001 (Value: y)
+0013: OP_GET_LOCAL     0002
+0015: OP_SET_INDIRECT
+0016: OP_CONSTANT     0002 (Value: Entitate mutata la: )
+0019: OP_GET_LOCAL     0000
+0021: OP_CONSTANT     0000 (Value: x)
+0024: OP_GET_INDIRECT
+0025: OP_CONCAT
+0026: OP_CONSTANT     0003 (Value: , )
+0029: OP_CONCAT
+0030: OP_GET_LOCAL     0000
+0032: OP_CONSTANT     0001 (Value: y)
+0035: OP_GET_INDIRECT
+0036: OP_CONCAT
+0037: OP_ECHO
+0038: OP_RETURN

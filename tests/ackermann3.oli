@@ -1,16 +1,14 @@
 plugin oli_time
 
 set @cache = {}
+
 func mack($m, $n)
-    # Creăm o cheie unică din cele două argumente
     $key = $m .. "," .. $n
     
-    # Dacă am calculat deja această stare, o returnăm direct!
     if @cache[$key] != NULL then
         return @cache[$key]
     endif
 
-    # Dacă nu e în cache, o calculăm normal
     $res = 0
     if $m == 0 then 
         $res = $n + 1
@@ -22,14 +20,17 @@ func mack($m, $n)
         endif
     endif
 
-    # 🔥 Salvăm rezultatul în cache înainte de a-l trimite înapoi
     set @cache[$key] = $res
     return $res
 endfunc
 
-$a = ticks()
-echo mack(3,7)
-echo ticks() - $a
-dm
-input()
+for $i = 0 to 32765 do
+    $dummy = mack(2, $i)
+endfor
 
+for $i = 0 to 13 do
+    $dummy = mack(3, $i)
+endfor
+
+echo mack(4, 1)
+input()

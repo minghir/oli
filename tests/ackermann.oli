@@ -13,7 +13,7 @@ endif
 endfunc
 
 $a = ticks()
-echo ack(4,1)
+echo ack(3,6)
 echo  ticks() - $a
 
 

@@ -9,14 +9,12 @@ func mul_str($num1, $num2)
     endfor
 
     # Pre-calculăm limitele de start pentru a evita expresiile complexe în for
-    $startI = $len1 - 1
-    $startJ = $len2 - 1
 
-    for  $i = $startI  to 0 by -1 do
+    for  $i =  $len1 - 1 to 0 by -1 do
         $c1 = SUBSTR($num1, $i, 1)
         $n1 = INT($c1)
         
-        for $j = $startJ to 0 by -1 do
+        for $j = $len2 - 1 to 0 by -1 do
             $c2 = SUBSTR($num2, $j, 1)
             $n2 = INT($c2)
             

@@ -1464,12 +1464,29 @@ void OliCompiler::compileStatement(const ShellCommand& sc, OliChunk& chunk, cons
             continueStack.push_back({});
             size_t currentStackLevel = continueStack.size();
 
+
+
             std::wstring varName = sc.args[0];
-            std::wstring startVal = sc.args[2];
+
+            // 2. Inițializare ($i = expresia de start dintre '=' și 'TO')
+            std::vector<std::wstring> startTokens(sc.args.begin() + 2, sc.args.begin() + toIdx);
+            ASTPtr startAST = OliExpressionParser(startTokens).parse();
+
+            if (startAST) {
+                generateFromAST(startAST, chunk, externalProcs);
+            }
+            else {
+                emitLoadOrConstant(sc.args[2], chunk);
+            }
+            emitStore(varName, chunk);
+
+
+
+            //std::wstring startVal = sc.args[2];
 
             // 2. Inițializare ($i = startVal)
-            emitLoadOrConstant(startVal, chunk);
-            emitStore(varName, chunk);
+            //emitLoadOrConstant(startVal, chunk);
+            //emitStore(varName, chunk);
 
             size_t loopStart = chunk.code.size();
 

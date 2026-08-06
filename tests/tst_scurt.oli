@@ -1,0 +1,13 @@
+# Test 1: Cum arată 2^32 ca string?
+$p32 = STR(2 ** 32)
+echo "Test 1 (p32): " .. $p32
+
+# Test 2: Indexarea SUBSTR (0 vs 1)
+echo "Test 2 (Substr 0): " .. SUBSTR("4294967296", 0, 1)
+echo "Test 2 (Substr 1): " .. SUBSTR("4294967296", 1, 1)
+
+# Test 3: Pasul negativ in bucla FOR
+echo "Test 3 (Bucla decremențială):"
+for $i = 3 to 0 by -1 do
+    echo $i
+endfor

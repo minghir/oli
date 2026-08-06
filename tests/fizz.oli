@@ -1,0 +1,10 @@
+
+
+$arr = {"10":"Fizz","01":"Buzz","11":"FizzBuzz","00":""}
+
+for $i=1 to 100 do 
+	$arr["00"] = $i
+	echo $arr[ INT(!($i%3)) .. INT(!($i%5)) ]
+endfor
+
+echo (((5**4)**3)**2)

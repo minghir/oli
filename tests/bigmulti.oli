@@ -1,0 +1,65 @@
+func mul_str($num1, $num2)
+    $len1 = LEN($num1)
+    $len2 = LEN($num2)
+    
+    # Inițializare Map
+    set $res = {}
+    for $k = 0 to ($len1 + $len2 - 1) do
+        set $res[STR($k)] = 0
+    endfor
+
+    # Pre-calculăm limitele de start pentru a evita expresiile complexe în for
+    $startI = $len1 - 1
+    $startJ = $len2 - 1
+
+    for  $i = $startI  to 0 by -1 do
+        $c1 = SUBSTR($num1, $i, 1)
+        $n1 = INT($c1)
+        
+        for $j = $startJ to 0 by -1 do
+            $c2 = SUBSTR($num2, $j, 1)
+            $n2 = INT($c2)
+            
+            $kLow = STR($i + $j + 1)
+            $kHigh = STR($i + $j)
+            
+            $prod = $n1 * $n2
+            $oldVal = $res[$kLow]
+            $sum = $prod + $oldVal
+            
+            set $res[$kLow] = $sum % 10
+            set $res[$kHigh] = $res[$kHigh] + INT($sum / 10)
+        endfor
+    endfor
+
+    # Construire string final
+    $out = ""
+    $skipZero = 1
+    for $k = 0 to ($len1 + $len2 - 1) do
+        $val = $res[STR($k)]
+        if $val != 0 then
+            $skipZero = 0
+        endif
+        if $skipZero == 0 then
+            $out = $out .. STR($val)
+        endif
+    endfor
+
+    if $out == "" then
+        return "0"
+    endif
+
+    return $out
+endfunc
+
+# Pasul 1: 2^32 în string
+$p32 = STR(2 ** 32)                 # "4294967296"
+
+# Pasul 2: 2^64 = 2^32 * 2^32
+$p64 = mul_str($p32, $p32)           # "18446744073709551616"
+
+# Pasul 3: 2^128 = 2^64 * 2^64
+$p128 = mul_str($p64, $p64)
+
+echo "2^128 exact:"
+echo $p128

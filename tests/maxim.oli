@@ -1,0 +1,11 @@
+func maxim($arr) 
+  $m = $arr[0]
+  cycle $arr as $v do 
+    if $m < $v 
+        then $m = $v 
+    endif 
+  endcycle
+  return $m
+endfunc
+
+echo maxim([2,3,4,55,6,7,9])

@@ -1,0 +1,32 @@
+func is_prime($n)
+    if $n < 2 then return false endif
+    if $n == 2 then return true endif
+    if $n % 2 == 0 then return false endif
+
+    set $d = 3
+    while $d * $d <= $n do
+        if $n % $d == 0 then
+            return false
+        endif
+        set $d = $d + 2
+    endwhile
+
+    return true
+endfunc
+
+func find_nth_prime($target)
+    set $count = 0
+    set $candidate = 1
+
+    while $count < $target do
+        set $candidate = $candidate + 1
+        if is_prime($candidate) == true then
+            set $count = $count + 1
+        endif
+    endwhile
+
+    return $candidate
+endfunc
+
+set $nth_prime = find_nth_prime(10001)
+echo $nth_prime

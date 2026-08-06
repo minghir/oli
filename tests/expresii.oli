@@ -1,25 +1,116 @@
-
 func precedence($op)
     if $op == "+" || $op == "-" then return 1 endif
     if $op == "*" || $op == "/" then return 2 endif
+    if $op == "^" then return 3 endif
+    return 0
+endfunc
+
+func is_operator($ch)
+    if $ch == "+" || $ch == "-" || $ch == "*" || $ch == "/" || $ch == "^" then
+        return true
+    endif
+    return false
 endfunc
 
 func operation($a, $b, $op) 
     switch $op
-    case "+"
-         return $a + $b
-         break
-    case "-"
-         return $a - $b
-         break
-    case "*"
-         return $a * $b
-         break
-    case "/"
-         return $a / $b
-         break
+        case "+"
+             return $a + $b
+             break
+        case "-"
+             return $a - $b
+             break
+        case "*"
+             return $a * $b
+             break
+        case "/"
+             return $a / $b
+             break
+        case "^"
+             return $a ** $b 
+             break
     endswitch
-    endfunc
+    return 0
+endfunc
 
+func infixToPostfix($expr)
+    set $ops = ARRAY()
+    set $postfix = ARRAY()
+    set $number = ""
+    set $len = LEN($expr)
 
-echo  operation(-2,3,"*")
+    for $i = 0 to $len - 1 do
+        set $ch = SUBSTR($expr, $i, 1)
+        set $asc = ASC($ch)
+
+        if ($asc >= 48 && $asc <= 57) || $ch == "." then
+            set $number = $number + $ch
+        else
+            if $number != "" then
+                PUSH($postfix, $number)
+                set $number = ""
+            endif
+
+            if $ch == "(" then
+                PUSH($ops, $ch)
+            else
+                if $ch == ")" then
+                    while LEN($ops) > 0 && $ops[LEN($ops) - 1] != "(" do
+                        PUSH($postfix, POP($ops))
+                    endwhile
+                    if LEN($ops) > 0 then
+                        POP($ops)
+                    endif
+                else
+                    if is_operator($ch) == true then
+                        while LEN($ops) > 0 && precedence($ops[LEN($ops) - 1]) >= precedence($ch) do
+                            PUSH($postfix, POP($ops))
+                        endwhile
+                        PUSH($ops, $ch)
+                    endif
+                endif
+            endif
+        endif
+    endfor
+
+    if $number != "" then
+        PUSH($postfix, $number)
+    endif
+
+    while LEN($ops) > 0 do
+        PUSH($postfix, POP($ops))
+    endwhile
+
+    return $postfix
+endfunc
+
+func evaluate_postfix($postfix)
+    set $values = ARRAY()
+
+    cycle $postfix as $token do
+        set $first_char = SUBSTR($token, 0, 1)
+        set $is_num = false
+
+        if (ASC($first_char) >= 48 && ASC($first_char) <= 57) || ($first_char == "-" && LEN($token) > 1) then
+            set $is_num = true
+        endif
+
+        if $is_num == true then
+            PUSH($values, FLOAT($token))
+        else
+            set $b = POP($values)
+            set $a = POP($values)
+            set $res = operation($a, $b, $token)
+            PUSH($values, $res)
+        endif
+    endcycle
+
+    return POP($values)
+endfunc
+
+set $input_str = "(3+4)*5-2^3"
+set $tokens = infixToPostfix($input_str)
+echo "Tokens: " + STR($tokens)
+
+set $rezultat = evaluate_postfix($tokens)
+echo "Rezult: " + STR($rezultat)

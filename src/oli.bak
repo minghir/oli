@@ -22,6 +22,8 @@
 #include <sys/stat.h>
 #endif
 
+
+
 class oli : public App {
 public:
     oli(RunMode rm) : App() { setRunMode(rm); };
@@ -33,22 +35,6 @@ public:
     }
 };
 
-// Helper function for displaying available CLI options
-void showHelp() {
-    std::wcout << L"Oli Engine v0.2 - Programming Language Interpreter & Compiler\n";
-    std::wcout << L"Usage: oli [options] [script_file]\n\n";
-    std::wcout << L"Options:\n";
-    std::wcout << L"  -h, --help                Displays this help message.\n";
-    std::wcout << L"  -v, --version             Displays the engine version and build date.\n";
-    std::wcout << L"  -b <input.oli> [output]   Compiles the script into a standalone executable (.exe).\n";
-    std::wcout << L"  -c <input.oli> [output]   Compiles the script to bytecode (.olic) and generates assembly (.olia).\n\n";
-    std::wcout << L"Examples:\n";
-    std::wcout << L"  oli                       Starts the interactive console (REPL).\n";
-    std::wcout << L"  oli script.oli            Executes an .oli source file.\n";
-    std::wcout << L"  oli script.olic           Executes a compiled binary .olic file.\n";
-    std::wcout << L"  oli -b main.oli app.exe   Generates a native standalone executable.\n";
-}
-
 int main(int argc, char* argv[]) {
 
     ConsoleManager::getInstance().initialize();
@@ -56,17 +42,11 @@ int main(int argc, char* argv[]) {
 
     if (vOliEngine::runEmbeddedIfPresent(argv[0])) return 0;
 
-    // --- SECTOR A: FLAGS (-h, -v, -b, -c) ---
+    // --- SECTOR A: FLAG-URI (-b, -c, -v) ---
     if (argc >= 2 && argv[1][0] == '-') {
         std::string cmd = argv[1];
 
-        // 0. HELP (-h, --help)
-        if (cmd == "--help" || cmd == "-h") {
-            showHelp();
-            return 0;
-        }
-
-        // 1. VERSION (-v, --version)
+        // 1. VERSION
         if (cmd == "--version" || cmd == "-v") {
             std::wcout << L"Oli Engine v0.2\nBuild Date: " << __DATE__ << std::endl;
             return 0;
@@ -74,48 +54,45 @@ int main(int argc, char* argv[]) {
 
         // 2. BUILD STANDALONE (-b)
         if (cmd == "-b") {
-            if (argc < 3) {
-                std::wcerr << L"[ERROR] Missing input file for flag -b." << std::endl;
-                std::wcout << L"Usage: oli -b <input.oli> [output_file]" << std::endl;
-                return 1;
-            }
+            if (argc < 3) return 1;
             std::string inputPath = argv[2];
 
-            // Generate executable in current working directory
+            // Generăm executabilul în directorul curent de lucru
             std::string outputPath = (argc > 3) ? argv[3] : std::filesystem::path(inputPath).stem().string();
 #ifdef _WIN32
             outputPath += ".exe";
 #endif
 
             try {
-                std::wcout << L"Oli Engine v0.2\nBuild Date: " << __DATE__ << std::endl;
+                std::wcout << L"Oli Engine v0.1\nBuild Date: " << __DATE__ << std::endl;
                 std::wcout << L"Building: " << str_to_wstr(inputPath) << std::endl;
 
+                // 🔥 FIX: Citim direct prin UTF-8 helper, eliminând obiectul wif blocant
                 std::wstring sourceCode = citeste_fisier_utf8(str_to_wstr(inputPath));
-                if (sourceCode.empty()) throw std::runtime_error("Source file does not exist or is empty.");
+                if (sourceCode.empty()) throw std::runtime_error("Fisier sursa inexistent sau gol.");
 
                 std::wstring upperSource = sourceCode;
                 std::transform(upperSource.begin(), upperSource.end(), upperSource.begin(), ::towupper);
 
-                // Check if Windows GUI application mode was explicitly requested
+                // Verificăm dacă s-a cerut explicit aplicație de Windows GUI
                 bool isGuiApp = (upperSource.find(L"CONFIG WIN_APP 1") != std::wstring::npos);
 
                 OliCompiler compiler;
                 OliChunk chunk = compiler.compile(sourceCode);
 
                 std::ifstream src(argv[0], std::ios::binary);
-                if (!src.is_open()) throw std::runtime_error("Could not open engine source executable.");
+                if (!src.is_open()) throw std::runtime_error("Nu s-a putut deschide executabilul sursa al motorului.");
 
-                // Read peOffset directly from 'src' (oli.exe) before copying
+                // Citim peOffset direct din 'src' (oli.exe) înainte de copiere
                 uint32_t peOffset = 0;
                 if (isGuiApp) {
                     src.seekg(0x3C, std::ios::beg);
                     src.read(reinterpret_cast<char*>(&peOffset), 4);
-                    src.seekg(0, std::ios::beg); // Reset stream index for buffer reading
+                    src.seekg(0, std::ios::beg); // Resetăm indexul pentru citirea bufferului
                 }
 
                 std::ofstream dst(outputPath, std::ios::binary);
-                if (!dst.is_open()) throw std::runtime_error("Could not create destination executable.");
+                if (!dst.is_open()) throw std::runtime_error("Nu s-a putut crea executabilul de destinatie.");
 
                 dst << src.rdbuf();
                 src.close();
@@ -133,7 +110,7 @@ int main(int argc, char* argv[]) {
 
                 dst.write(reinterpret_cast<const char*>(&footer), 8);
 
-                // Fast binary patch for Windows GUI subsystem (Hides console window)
+                // Patch binar rapid pentru subsistemul GUI Windows (Ascundere consolă)
                 if (isGuiApp && peOffset > 0) {
                     dst.seekp(peOffset + 0x5C, std::ios::beg);
                     uint16_t subsystemGui = 2; // 2 = IMAGE_SUBSYSTEM_WINDOWS_GUI
@@ -144,7 +121,7 @@ int main(int argc, char* argv[]) {
                 dst.close();
 
 #ifndef _WIN32
-                // On Linux, set execution permissions using chmod
+                // Pe Linux, setează drepturi de execuție folosind chmod
                 chmod(outputPath.c_str(), 0755);
 #endif
 
@@ -157,14 +134,10 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        // 3. COMPILE BYTECODE (-c) + GENERATE ASSEMBLY (.olia)
+        // 3. COMPILE BYTECODE (-c) + GENERARE ASSEMBLY (.olia)
         if (cmd == "-c") {
             ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
-            if (argc < 3) {
-                std::wcerr << L"[ERROR] Missing input file for flag -c." << std::endl;
-                std::wcout << L"Usage: oli -c <input.oli> [output_file]" << std::endl;
-                return 1;
-            }
+            if (argc < 3) return 1;
             std::string inputPath = argv[2];
             std::string outputPath = (argc > 3) ? argv[3] : inputPath + "c";
 
@@ -177,7 +150,7 @@ int main(int argc, char* argv[]) {
                 OliCompiler compiler;
                 OliChunk chunk = compiler.compile(sourceCode);
 
-                // A. Save Bytecode (.olic)
+                // A. Salvare Bytecode (.olic)
                 std::ofstream ofs(outputPath, std::ios::binary);
                 if (!ofs.is_open()) {
                     throw std::runtime_error("Could not open or create the bytecode file (.olic).");
@@ -185,7 +158,7 @@ int main(int argc, char* argv[]) {
                 vDataSerialize::serializeChunk(chunk, ofs);
                 ofs.close();
 
-                // B. Save Assembly Listing (.olia)
+                // B. Salvare Assembly Listing (.olia)
                 std::wstring assemblyPath = str_to_wstr(outputPath) + L".olia";
                 std::string assemblyPathNarrow = PortTools::wstring_to_utf8(assemblyPath);
                 std::ofstream asmf(assemblyPathNarrow, std::ios::binary);
@@ -196,14 +169,17 @@ int main(int argc, char* argv[]) {
                 if (asmf.is_open()) {
                     asmf << "\xEF\xBB\xBF"; 
 
-                    std::wstring content = L"--- OLI ASSEMBLY LISTING ---\n";
-                    content += L"Source: " + str_to_wstr(inputPath) + L"\n";
-                    content += L"Generated: 2026-05-11\n\n";
-                    content += disassembleChunk(chunk);
+					// 2. Construim string-ul și îl convertim
+					std::wstring content = L"--- OLI ASSEMBLY LISTING ---\n";
+					content += L"Source: " + str_to_wstr(inputPath) + L"\n";
+					content += L"Generated: 2026-05-11\n\n";
+					content += disassembleChunk(chunk);
 
-                    asmf << wstring_to_utf8(content);
+					// 3. Convertim la UTF-8 folosind funcția ta `utf8_encode` 
+					// (pe care o ai deja în ConsoleManager)
+					asmf << wstring_to_utf8(content);
                     asmf.close();
-                    LOG_SUCCESS(L"Assembly listing generated: " + assemblyPath);
+                    LOG_SUCCESS(L"Assembly listing generat: " + assemblyPath);
                 }
                 else {
                     std::wcerr << L"[WARNING] Could not generate the assembly listing file .olia (Insufficient permissions)." << std::endl;
@@ -217,14 +193,9 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
         }
-
-        // If the flag is unrecognized
-        std::wcerr << L"[ERROR] Unknown option: " << str_to_wstr(cmd) << std::endl;
-        showHelp();
-        return 1;
     }
 
-    // --- SECTOR B: EXECUTE SCRIPT OR SHELL DIRECTLY ---
+    // --- SECTOR B: RULARE SCRIPT SAU SHELL DIRECT ---
     if (argc > 1 && argv[1][0] != '-') {
         std::string scriptPath = argv[1];
         vOliEngine engine;
@@ -249,7 +220,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    // --- SECTOR C: PIPES SUPPORT (Ex: cat script.oli | oli.exe) ---
+    // --- SECTOR C: SUPORT PIPES (Ex: cat script.oli | oli.exe) ---
     if (!isatty(fileno(stdin))) {
         vOliEngine engine;
         wchar_t buffer[4096];
@@ -261,7 +232,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    // --- SECTOR D: INTERACTIVE REPL INTERFACE ---
+    // --- SECTOR D: INTERFAȚĂ REPL INTERACTIVĂ ---
     oli app(RunMode::CONSOLE);
     app.startConsole();
     return app.run();

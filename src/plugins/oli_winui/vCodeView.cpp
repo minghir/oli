@@ -648,6 +648,7 @@ void vCodeView::commentLines(bool comment) {
 
 
 // Fereastra de procedură pentru mini-dialogul de input (complet independent de resurse)
+/*
 static LRESULT CALLBACK GoToLineSubproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     static int* pLineOut = nullptr;
     switch (msg) {
@@ -674,6 +675,62 @@ static LRESULT CALLBACK GoToLineSubproc(HWND hwnd, UINT msg, WPARAM wParam, LPAR
             SendMessage(hChild, WM_SETFONT, hf, TRUE);
             return TRUE;
             }, (LPARAM)hFont);
+
+        SetFocus(hEdit);
+        break;
+    }
+    case WM_COMMAND: {
+        if (LOWORD(wParam) == IDOK) {
+            wchar_t buf[16] = { 0 };
+            GetDlgItemTextW(hwnd, 101, buf, 15);
+            if (pLineOut) *pLineOut = _wtoi(buf);
+            DestroyWindow(hwnd);
+        }
+        else if (LOWORD(wParam) == IDCANCEL) {
+            if (pLineOut) *pLineOut = -1;
+            DestroyWindow(hwnd);
+        }
+        break;
+    }
+    case WM_CLOSE:
+        if (pLineOut) *pLineOut = -1;
+        DestroyWindow(hwnd);
+        break;
+    }
+    return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+*/
+
+// callback cu calling convention corectă
+static BOOL CALLBACK SetFontEnumProc(HWND hChild, LPARAM hf)
+{
+    SendMessage(hChild, WM_SETFONT, (WPARAM)hf, TRUE);
+    return TRUE;
+}
+
+static LRESULT CALLBACK GoToLineSubproc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    static int* pLineOut = nullptr;
+    switch (msg) {
+    case WM_CREATE: {
+        CREATESTRUCT* cs = (CREATESTRUCT*)lParam;
+        pLineOut = (int*)cs->lpCreateParams;
+
+        // Etichetă text
+        CreateWindowW(L"STATIC", L"Introdu numărul liniei:", WS_CHILD | WS_VISIBLE,
+            15, 15, 200, 20, hwnd, NULL, NULL, NULL);
+        // Câmp de input (acceptă doar cifre prin ES_NUMBER)
+        HWND hEdit = CreateWindowW(L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_NUMBER,
+            15, 40, 220, 24, hwnd, (HMENU)101, NULL, NULL);
+        // Buton OK
+        CreateWindowW(L"BUTTON", L"OK", WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
+            50, 80, 80, 28, hwnd, (HMENU)IDOK, NULL, NULL);
+        // Buton Cancel
+        CreateWindowW(L"BUTTON", L"Cancel", WS_CHILD | WS_VISIBLE,
+            140, 80, 80, 28, hwnd, (HMENU)IDCANCEL, NULL, NULL);
+
+        // Aplicăm fontul standard de sistem peste controalele copil
+        HFONT hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+        EnumChildWindows(hwnd, SetFontEnumProc, (LPARAM)hFont);
 
         SetFocus(hEdit);
         break;

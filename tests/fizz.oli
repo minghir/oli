@@ -7,4 +7,3 @@ for $i=1 to 100 do
 	echo $arr[ INT(!($i%3)) .. INT(!($i%5)) ]
 endfor
 
-echo (((5**4)**3)**2)

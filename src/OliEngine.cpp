@@ -767,24 +767,24 @@ void vOliEngine::addToHistory(const std::wstring& command) {
             // 2. Adresa (MEMORY_REF)
             if (auto* p = std::get_if<vData*>(&data.value)) {
                 wchar_t buf[32];
-                swprintf(buf, 32, L"0x%p", (void*)*p);
+                swprintf(buf, 32, L"0x%llx", (unsigned long long)(uintptr_t)*p);
                 line << std::setw(20) << buf;
             }
             else if (auto* m = std::get_if<vDataMap>(&data.value)) {
                 wchar_t buf[32];
-                swprintf(buf, 32, L"M:0x%p", (void*)m->get());
+                swprintf(buf, 32, L"M:0x%llx", (unsigned long long)(uintptr_t)m->get());
                 line << std::setw(20) << buf;
             }
             else if (auto* a = std::get_if<vDataArray>(&data.value)) {
                 wchar_t buf[32];
-                swprintf(buf, 32, L"A:0x%p", (void*)a->get());
+                swprintf(buf, 32, L"A:0x%llx", (unsigned long long)(uintptr_t)a->get());
                 line << std::setw(20) << buf;
             }
             else {
                 line << std::setw(20) << L"[INTERNAL]";
             }
 
-            // 3. Valoarea (Lipiți valoarea direct pe același rând)
+            // 3. Valoarea
             line << vDataToWString(data);
 
             // Trimitem un singur log pe rând

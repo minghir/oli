@@ -1,0 +1,6 @@
+$a = [1,2,3]
+
+$c = &$a
+echo $c
+dm
+echo $a

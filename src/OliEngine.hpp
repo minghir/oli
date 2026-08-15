@@ -12,6 +12,9 @@
 #include <map>
 #include <functional>
 #include <variant>
+#include <shared_mutex>
+#include <memory>
+
 
 
 #include "vData.hpp"
@@ -65,6 +68,74 @@ struct StackFrame {
     int lineCalled; // Opțional, dacă ai un Line Counter
 };
 
+
+
+
+// Wrapper inteligent thread-safe care păstrează interfața std::unordered_map
+class ThreadSafeMap {
+private:
+    std::shared_ptr<std::unordered_map<std::wstring, vData>> m_data;
+    mutable std::shared_ptr<std::shared_mutex> m_mutex;
+
+public:
+    ThreadSafeMap()
+        : m_data(std::make_shared<std::unordered_map<std::wstring, vData>>()),
+          m_mutex(std::make_shared<std::shared_mutex>()) {}
+
+    ThreadSafeMap(const ThreadSafeMap&) = default;
+    ThreadSafeMap& operator=(const ThreadSafeMap&) = default;
+
+    using MapType = std::unordered_map<std::wstring, vData>;
+    using iterator = MapType::iterator;
+    using const_iterator = MapType::const_iterator;
+
+    size_t count(const std::wstring& key) const {
+        std::shared_lock<std::shared_mutex> lock(*m_mutex);
+        return m_data->count(key);
+    }
+
+    iterator find(const std::wstring& key) {
+        std::shared_lock<std::shared_mutex> lock(*m_mutex);
+        return m_data->find(key);
+    }
+
+    const_iterator find(const std::wstring& key) const {
+        std::shared_lock<std::shared_mutex> lock(*m_mutex);
+        return m_data->find(key);
+    }
+
+    iterator end() { return m_data->end(); }
+    const_iterator end() const { return m_data->end(); }
+
+    iterator begin() { return m_data->begin(); }
+    const_iterator begin() const { return m_data->begin(); }
+
+    vData& operator[](const std::wstring& key) {
+        std::unique_lock<std::shared_mutex> lock(*m_mutex);
+        return (*m_data)[key];
+    }
+
+    size_t erase(const std::wstring& key) {
+        std::unique_lock<std::shared_mutex> lock(*m_mutex);
+        return m_data->erase(key);
+    }
+
+    void clear() {
+        std::unique_lock<std::shared_mutex> lock(*m_mutex);
+        m_data->clear();
+    }
+
+    size_t size() const {
+        std::shared_lock<std::shared_mutex> lock(*m_mutex);
+        return m_data->size();
+    }
+
+    bool empty() const {
+        std::shared_lock<std::shared_mutex> lock(*m_mutex);
+        return m_data->empty();
+    }
+};
+
 class vOliEngine : public IShellEngine, public IOliEngine {
 
 private:
@@ -83,7 +154,10 @@ private:
     std::unordered_map<std::wstring, OliFunctionHandler> m_functionsHandlers;
 
     //std::map<std::wstring, vData> m_globalVariables;
-    std::unordered_map<std::wstring, vData> m_globalVariables;
+    //std::unordered_map<std::wstring, vData> m_globalVariables;
+    //std::shared_ptr<std::unordered_map<std::wstring, vData>> m_globalVariables;
+    ThreadSafeMap m_globalVariables;
+    std::shared_ptr<std::shared_mutex> m_globalsMutex;
 
     std::unordered_map<std::wstring, Procedure> m_procedures;
     bool m_isRecording = false;
@@ -116,6 +190,7 @@ private:
 public:
 
     vOliEngine(){
+       
         initializeCommandsHandlers();
         initializeFunctionsHandlers();
     };
@@ -325,6 +400,8 @@ private:
 		static bool runEmbeddedIfPresent(const std::string& exePath);
 
       vData callFunctionIsolated(const std::wstring& funcName, const std::vector<vData>& args) override;
+      vData getGlobalVariable(const std::wstring& name);
+      void setGlobalVariable(const std::wstring& name, const vData& value);
 
 };
 #endif

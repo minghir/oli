@@ -1,0 +1,38 @@
+plugin oli_threads
+
+func producator_array()
+    THREAD_SLEEP(100)
+    
+    $date = ARRAY()
+    PUSH($date, "Senzor_Temp")
+    PUSH($date, 42)
+    PUSH($date, 98.6)
+    
+    echo "LOG PRODUCATOR: Am creat si trimis array-ul: " .. STR($date)
+    QUEUE_PUSH("canal_array", $date)
+    return 1
+endfunc
+
+func consumator_array()
+    # Preluare blocantă a structurii vDataArray trimise
+    $pachet = QUEUE_POP("canal_array")
+    
+    echo "LOG CONSUMATOR: Am primit array-ul: " .. STR($pachet)
+    
+    # Procesare elemente din array-ul primit
+    $tag = SHIFT($pachet)
+    echo " -> Tag extras cu SHIFT: " .. STR($tag)
+    echo " -> Array ramas dupa SHIFT: " .. STR($pachet)
+    
+    return 1
+endfunc
+
+echo "=== TEST TRANSMITERE ARRAY PRIN CHANNELS ==="
+
+$t1 = THREAD_SPAWN("producator_array")
+$t2 = THREAD_SPAWN("consumator_array")
+
+THREAD_WAIT($t1)
+THREAD_WAIT($t2)
+
+echo "Test finalizat cu succes!"

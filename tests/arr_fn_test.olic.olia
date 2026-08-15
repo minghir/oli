@@ -1,0 +1,97 @@
+﻿--- OLI ASSEMBLY LISTING ---
+Source: ./tests/arr_fn_test.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_PLUGIN       0000 (Path: oli_threads)
+0003: OP_CONSTANT     0001 (Value: === TEST TRANSMITERE ARRAY PRIN CHANNELS ===)
+0006: OP_ECHO
+0007: OP_CONSTANT     0002 (Value: producator_array)
+0010: OP_CONSTANT     0003 (Value: THREAD_SPAWN)
+0013: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0015: OP_SET_GLOBAL   0004 (Name: t1)
+0018: OP_CONSTANT     0005 (Value: consumator_array)
+0021: OP_CONSTANT     0003 (Value: THREAD_SPAWN)
+0024: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0026: OP_SET_GLOBAL   0006 (Name: t2)
+0029: OP_GET_GLOBAL   0004 (Name: t1)
+0032: OP_CONSTANT     0007 (Value: THREAD_WAIT)
+0035: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0037: OP_POP
+0038: OP_GET_GLOBAL   0006 (Name: t2)
+0041: OP_CONSTANT     0007 (Value: THREAD_WAIT)
+0044: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0046: OP_POP
+0047: OP_CONSTANT     0008 (Value: Test finalizat cu succes!)
+0050: OP_ECHO
+0051: OP_RETURN
+
+--- FUNCTION: CONSUMATOR_ARRAY (Params: ) ---
+=== DISASSEMBLY: CONSUMATOR_ARRAY ===
+0000: OP_CONSTANT     0000 (Value: canal_array)
+0003: OP_CONSTANT     0001 (Value: QUEUE_POP)
+0006: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0008: OP_SET_LOCAL     0000
+0010: OP_CONSTANT     0002 (Value: LOG CONSUMATOR: Am primit array-ul: )
+0013: OP_GET_LOCAL     0000
+0015: OP_CONSTANT     0003 (Value: STR)
+0018: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0020: OP_CONCAT
+0021: OP_ECHO
+0022: OP_GET_LOCAL     0000
+0024: OP_CONSTANT     0004 (Value: SHIFT)
+0027: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0029: OP_SET_LOCAL     0001
+0031: OP_CONSTANT     0005 (Value:  -> Tag extras cu SHIFT: )
+0034: OP_GET_LOCAL     0001
+0036: OP_CONSTANT     0003 (Value: STR)
+0039: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0041: OP_CONCAT
+0042: OP_ECHO
+0043: OP_CONSTANT     0006 (Value:  -> Array ramas dupa SHIFT: )
+0046: OP_GET_LOCAL     0000
+0048: OP_CONSTANT     0003 (Value: STR)
+0051: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0053: OP_CONCAT
+0054: OP_ECHO
+0055: OP_CONSTANT     0007 (Value: 1)
+0058: OP_RETURN
+
+--- FUNCTION: PRODUCATOR_ARRAY (Params: ) ---
+=== DISASSEMBLY: PRODUCATOR_ARRAY ===
+0000: OP_CONSTANT     0000 (Value: 100)
+0003: OP_CONSTANT     0001 (Value: THREAD_SLEEP)
+0006: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0008: OP_POP
+0009: OP_CONSTANT     0002 (Value: ARRAY)
+0012: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0014: OP_SET_LOCAL     0000
+0016: OP_GET_LOCAL     0000
+0018: OP_CONSTANT     0003 (Value: Senzor_Temp)
+0021: OP_CONSTANT     0004 (Value: PUSH)
+0024: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
+0026: OP_POP
+0027: OP_GET_LOCAL     0000
+0029: OP_CONSTANT     0005 (Value: 42)
+0032: OP_CONSTANT     0004 (Value: PUSH)
+0035: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
+0037: OP_POP
+0038: OP_GET_LOCAL     0000
+0040: OP_CONSTANT     0006 (Value: 98.6)
+0043: OP_CONSTANT     0004 (Value: PUSH)
+0046: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
+0048: OP_POP
+0049: OP_CONSTANT     0007 (Value: LOG PRODUCATOR: Am creat si trimis array-ul: )
+0052: OP_GET_LOCAL     0000
+0054: OP_CONSTANT     0008 (Value: STR)
+0057: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0059: OP_CONCAT
+0060: OP_ECHO
+0061: OP_CONSTANT     0009 (Value: canal_array)
+0064: OP_GET_LOCAL     0000
+0066: OP_CONSTANT     0010 (Value: QUEUE_PUSH)
+0069: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
+0071: OP_POP
+0072: OP_CONSTANT     0011 (Value: 1)
+0075: OP_RETURN

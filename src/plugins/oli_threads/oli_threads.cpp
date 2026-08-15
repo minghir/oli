@@ -19,6 +19,7 @@
 #include <queue>
 #include <condition_variable>
 #include <chrono>
+#include <string>
 
 using PluginRegistry = std::unordered_map<std::wstring, std::function<vData(const std::vector<vData>&)>>;
 using CommandRegistry = std::unordered_map<std::wstring, std::function<void(const std::wstring&)>>;
@@ -209,10 +210,18 @@ public:
     }
 };
 
+// Conversie robustă pentru vData (long long, double, wstring)
 inline long long toInt(const vData& v) {
     if (std::holds_alternative<long long>(v.value)) return std::get<long long>(v.value);
     if (std::holds_alternative<double>(v.value)) return static_cast<long long>(std::get<double>(v.value));
-    return 0;
+    if (std::holds_alternative<std::wstring>(v.value)) {
+        try {
+            return std::stoll(std::get<std::wstring>(v.value));
+        } catch (...) {
+            return 0LL;
+        }
+    }
+    return 0LL;
 }
 
 // --- ÎNREGISTRARE FUNCȚII NATIVE OLI ---
@@ -330,7 +339,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         return vData{ running ? 1LL : 0LL };
     };
 
-    // 11. THREAD_CANCEL(handle) -> Semnalează anularea task-ului
+    // 11. THREAD_CANCEL(handle)
     registry[L"THREAD_CANCEL"] = [](const std::vector<vData>& a) -> vData {
         if (a.empty()) return vData{ 0LL };
         long long handle = toInt(a[0]);
@@ -338,11 +347,20 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         return vData{ 1LL };
     };
 
-    // 12. IS_THREAD_CANCELLED() -> Apelat din interiorul thread-ului pentru a verifica dacă s-a cerut oprirea
+    // 12. IS_THREAD_CANCELLED()
     registry[L"IS_THREAD_CANCELLED"] = [](const std::vector<vData>&) -> vData {
         if (g_currentCancelFlag && g_currentCancelFlag->load()) {
             return vData{ 1LL };
         }
         return vData{ 0LL };
     };
+
+    // 13. GET_CPU_CORES() / THREAD_CORE_COUNT() -> returnează numărul de nuclee/fire de execuție hardware
+    registry[L"GET_CPU_CORES"] = [](const std::vector<vData>&) -> vData {
+        unsigned int cores = std::thread::hardware_concurrency();
+        if (cores == 0) cores = 1; // Fallback dacă valoarea nu poate fi determinată
+        return vData{ static_cast<long long>(cores) };
+    };
+
+    registry[L"THREAD_CORE_COUNT"] = registry[L"GET_CPU_CORES"];
 }

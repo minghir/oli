@@ -285,87 +285,93 @@ void vOliEngine::initializeFunctionsHandlers() {
     vOliKeyWords::registerNativeFunction(L"MAP");
     m_functionsHandlers[L"TRIM"] = [this](const auto& args) { return handleTrimFunc(args); };
     vOliKeyWords::registerNativeFunction(L"TRIM");
+
     //functii array
-    // --- PUSH(array, value) -> Adaugă la final ---
+    // --- PUSH(array, value) ---
     m_functionsHandlers[L"PUSH"] = [this](const std::vector<vData>& args) -> vData {
         if (args.size() < 2 || !args[0].isArray()) return { 0LL };
-        auto arrPtr = std::get<vDataArray>(args[0].value);
+        auto arrPtr = const_cast<std::vector<vData>*>(args[0].rawArray());
         if (arrPtr) {
             arrPtr->push_back(args[1]);
             return { static_cast<long long>(arrPtr->size()) };
         }
         return { 0LL };
-        };
+    };
     vOliKeyWords::registerNativeFunction(L"PUSH");
+
     // --- POP(array) -> Scoate de la final și returnează valoarea ---
+    // --- POP(array) ---
     m_functionsHandlers[L"POP"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty() || !args[0].isArray()) return { std::monostate{} };
-        auto arrPtr = std::get<vDataArray>(args[0].value);
+        auto arrPtr = const_cast<std::vector<vData>*>(args[0].rawArray());
         if (arrPtr && !arrPtr->empty()) {
             vData val = arrPtr->back();
             arrPtr->pop_back();
             return val;
         }
         return { std::monostate{} };
-        };
+    };
+    
     vOliKeyWords::registerNativeFunction(L"POP");
     // --- SHIFT(array) -> Scoate de la început și returnează ---
+    // --- SHIFT(array) ---
     m_functionsHandlers[L"SHIFT"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty() || !args[0].isArray()) return { std::monostate{} };
-        auto arrPtr = std::get<vDataArray>(args[0].value);
+        auto arrPtr = const_cast<std::vector<vData>*>(args[0].rawArray());
         if (arrPtr && !arrPtr->empty()) {
             vData val = (*arrPtr)[0];
             arrPtr->erase(arrPtr->begin());
             return val;
         }
         return { std::monostate{} };
-        };
+    };
     vOliKeyWords::registerNativeFunction(L"SHIFT");
     // --- UNSHIFT(array, value) -> Adaugă la început ---
+    // --- UNSHIFT(array, value) ---
     m_functionsHandlers[L"UNSHIFT"] = [this](const std::vector<vData>& args) -> vData {
         if (args.size() < 2 || !args[0].isArray()) return { 0LL };
-        auto arrPtr = std::get<vDataArray>(args[0].value);
+        auto arrPtr = const_cast<std::vector<vData>*>(args[0].rawArray());
         if (arrPtr) {
             arrPtr->insert(arrPtr->begin(), args[1]);
             return { static_cast<long long>(arrPtr->size()) };
         }
         return { 0LL };
-        };
+    };
     vOliKeyWords::registerNativeFunction(L"UNSHIFT");
 
     // --- INDEXOF(array, value) -> Caută valoarea și returnează indexul sau -1 ---
+   // --- INDEXOF(array, value) -> Caută valoarea și returnează indexul sau -1 ---
     m_functionsHandlers[L"INDEXOF"] = [this](const std::vector<vData>& args) -> vData {
         if (args.size() < 2 || !args[0].isArray()) return { -1LL };
-        auto arrPtr = std::get<vDataArray>(args[0].value);
+        
+        // Folosim rawArray() la fel ca în celelalte funcții (nu e nevoie de const_cast fiind doar citire)
+        auto arrPtr = args[0].rawArray();
         if (arrPtr) {
             for (size_t i = 0; i < arrPtr->size(); ++i) {
-                // Presupunem că vData are operatorul == implementat corect
                 if ((*arrPtr)[i] == args[1]) return { static_cast<long long>(i) };
             }
         }
         return { -1LL };
-        };
+    };
     vOliKeyWords::registerNativeFunction(L"INDEXOF");
+    
     m_functionsHandlers[L"SET_AT"] = [this](const std::vector<vData>& args) -> vData {
         if (args.size() < 3 || !args[0].isArray()) return vData(0LL);
-
-        // Luăm shared_ptr-ul. Orice modificare pe arrPtr->at() 
-        // se va vedea în toate variabilele care dețin acest array.
-        auto arrPtr = std::get<vDataArray>(args[0].value);
+        auto arrPtr = const_cast<std::vector<vData>*>(args[0].rawArray());
         size_t idx = static_cast<size_t>(vDataToDouble(args[1]));
 
         if (arrPtr && idx < arrPtr->size()) {
-            (*arrPtr)[idx] = args[2]; // <--- Aceasta este scrierea critică
+            (*arrPtr)[idx] = args[2];
             return vData(1LL);
         }
         return vData(0LL);
-        };
+    };
     vOliKeyWords::registerNativeFunction(L"SET_AT");
     
     m_functionsHandlers[L"SORT"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty() || !args[0].isArray()) return { std::monostate{} };
 
-        auto arrPtr = std::get<vDataArray>(args[0].value);
+        auto arrPtr = const_cast<std::vector<vData>*>(args[0].rawArray());
         if (arrPtr && arrPtr->size() > 1) {
             std::sort(arrPtr->begin(), arrPtr->end(), [](const vData& a, const vData& b) -> bool {
                 if (a.value.index() != b.value.index()) {
@@ -381,28 +387,23 @@ void vOliEngine::initializeFunctionsHandlers() {
                     std::wstring s1 = std::get<std::wstring>(a.value);
                     std::wstring s2 = std::get<std::wstring>(b.value);
 
-                    // --- REPARAȚIE PENTRU TINY BASIC ---
-                    // Verificăm dacă ambele string-uri reprezintă numere
                     bool s1Numeric = !s1.empty() && std::all_of(s1.begin(), s1.end(), iswdigit);
                     bool s2Numeric = !s2.empty() && std::all_of(s2.begin(), s2.end(), iswdigit);
 
                     if (s1Numeric && s2Numeric) {
                         try {
-                            // Comparăm valorile numerice, nu caracterele
                             return std::stoll(s1) < std::stoll(s2);
-                        }
-                        catch (...) {
+                        } catch (...) {
                             return s1 < s2;
                         }
                     }
                     return s1 < s2;
                 }
-
                 return false;
-                });
+            });
         }
         return args[0];
-        };
+    };
     vOliKeyWords::registerNativeFunction(L"SORT");
     //functii pt map-uri
     // --- HASKEY(map, key) -> Returnează 1 dacă cheia există, altfel 0 ---

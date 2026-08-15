@@ -1,27 +1,25 @@
 plugin oli_threads
 
-func task_lung_bucla()
-    for $i = 1 to 100 do
-        THREAD_SLEEP(100)
-        
-        # Evaluăm direct valoarea de adevăr returnată de funcție
-        if IS_THREAD_CANCELLED() do
-            echo "LOG WORKER: Am detectat THREAD_CANCEL! Opresc bucla la pasul " .. STR($i)
-            return -1
-        endif
-    endfor
-    return 100
+$cores = GET_CPU_CORES()
+echo "Numar de nuclee CPU detectate: " .. STR($cores)
+
+func worker_task($id)
+    echo "Worker #" .. STR($id) .. " ruleaza pe un nucleu dedicat."
+    return $id
 endfunc
 
-echo "=== TEST THREAD_CANCEL ==="
+$handles = ARRAY()
 
-$t1 = THREAD_SPAWN("task_lung_bucla")
+# 1. Lansăm câte un worker per nucleu și salvăm handle-urile cu PUSH
+for $i = 1 to $cores do
+    $h = THREAD_SPAWN("worker_task", $i)
+    PUSH($handles, $h)
+endfor
 
-# Lăsăm worker-ul să ruleze 250ms (~2 iterații)
-THREAD_SLEEP(250)
+# 2. Extragere ordonată din coadă cu SHIFT și așteptare cu THREAD_WAIT
+for $i = 1 to $cores do
+    $h = SHIFT($handles)
+    THREAD_WAIT($h)
+endfor
 
-echo "LOG MAIN: Trimit semnalul THREAD_CANCEL..."
-THREAD_CANCEL($t1)
-
-$res = THREAD_WAIT($t1)
-echo "Rezultat final returnat de worker: " .. STR($res)
+echo "Toate cele " .. STR($cores) .. " thread-uri au fost procesate cu succes!"

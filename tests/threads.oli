@@ -1,22 +1,27 @@
 plugin oli_threads
 
-func consumator_cu_timeout()
-    echo "Consumatorul asteapta un mesaj maxim 500ms..."
-    
-    # Așteptăm maxim 500ms pe o coadă în care nu postează nimeni
-    $msg = QUEUE_POP_TIMEOUT("jobs_lipsa", 500)
-    
-    if STR($msg) == "" do
-        echo "LOG: A intervenit TIMEOUT! Niciun mesaj primit in 500ms."
-        return 0
-    endif
-
-    return 1
+func task_lung_bucla()
+    for $i = 1 to 100 do
+        THREAD_SLEEP(100)
+        
+        # Verificăm dacă thread-ul principal a trimis comanda de anulare
+        if IS_THREAD_CANCELLED() == 1 do
+            echo "LOG WORKER: Am detectat THREAD_CANCEL! Opresc bucla la pasul " .. STR($i)
+            return -1
+        endif
+    endfor
+    return 100
 endfunc
 
-echo "=== TEST QUEUE POP TIMEOUT ==="
+echo "=== TEST THREAD_CANCEL ==="
 
-$t1 = THREAD_SPAWN("consumator_cu_timeout")
-THREAD_WAIT($t1)
+$t1 = THREAD_SPAWN("task_lung_bucla")
 
-echo "Test finalizat cu succes!"
+# Lăsăm worker-ul să ruleze 250ms (să facă ~2 iterații)
+THREAD_SLEEP(250)
+
+echo "LOG MAIN: Trimit semnalul THREAD_CANCEL..."
+THREAD_CANCEL($t1)
+
+$res = THREAD_WAIT($t1)
+echo "Rezultat final returnat de worker: " .. STR($res)

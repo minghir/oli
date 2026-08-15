@@ -25,6 +25,9 @@ using CommandRegistry = std::unordered_map<std::wstring, std::function<void(cons
 
 static IOliEngine* g_engine = nullptr;
 
+// --- THREAD-LOCAL CANCELLATION TOKEN ---
+thread_local std::shared_ptr<std::atomic<bool>> g_currentCancelFlag = nullptr;
+
 // --- DUMMY EXPORTS ---
 typedef void(*ConsoleLogFn)(const wchar_t*);
 OLI_EXPORT void SetConsoleFn([[maybe_unused]] ConsoleLogFn fn) {}
@@ -35,7 +38,7 @@ OLI_EXPORT void LoadOliCommandPlugin([[maybe_unused]] CommandRegistry& handlers,
     g_engine = engine;
 }
 
-// --- COADĂ DE MESAJE THREAD-SAFE (DEFINIȚIE UNICĂ) ---
+// --- COADĂ DE MESAJE THREAD-SAFE ---
 struct ThreadSafeQueue {
     std::queue<vData> queue;
     std::mutex mtx;
@@ -57,16 +60,13 @@ struct ThreadSafeQueue {
         return val;
     }
 
-    // Extragere cu Timeout în milisecunde
     bool popTimeout(long long timeoutMs, vData& result) {
         std::unique_lock<std::mutex> lock(mtx);
         bool hasData = cv.wait_for(lock, std::chrono::milliseconds(timeoutMs), [this]() { 
             return !queue.empty(); 
         });
 
-        if (!hasData) {
-            return false; // Timeout atins
-        }
+        if (!hasData) return false;
 
         result = queue.front();
         queue.pop();
@@ -141,9 +141,15 @@ public:
     }
 };
 
+// --- GESTIONAR THREAD-URI CU SUPORT ANULARE ---
 class ThreadManager {
 private:
-    std::unordered_map<long long, std::future<vData>> m_tasks;
+    struct TaskInfo {
+        std::future<vData> fut;
+        std::shared_ptr<std::atomic<bool>> cancelFlag;
+    };
+
+    std::unordered_map<long long, TaskInfo> m_tasks;
     std::mutex m_mutex;
     std::atomic<long long> m_nextHandle{ 1 };
 
@@ -155,9 +161,36 @@ public:
 
     long long spawnTask(std::function<vData()> task) {
         long long handle = m_nextHandle++;
+        auto cancelFlag = std::make_shared<std::atomic<bool>>(false);
+
         std::lock_guard<std::mutex> lock(m_mutex);
-        m_tasks[handle] = std::async(std::launch::async, task);
+        m_tasks[handle] = TaskInfo{
+            std::async(std::launch::async, [task, cancelFlag]() {
+                g_currentCancelFlag = cancelFlag;
+                vData res = task();
+                g_currentCancelFlag = nullptr;
+                return res;
+            }),
+            cancelFlag
+        };
         return handle;
+    }
+
+    bool isTaskRunning(long long handle) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto it = m_tasks.find(handle);
+        if (it == m_tasks.end() || !it->second.fut.valid()) {
+            return false;
+        }
+        return it->second.fut.wait_for(std::chrono::seconds(0)) == std::future_status::timeout;
+    }
+
+    void cancelTask(long long handle) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto it = m_tasks.find(handle);
+        if (it != m_tasks.end() && it->second.cancelFlag) {
+            it->second.cancelFlag->store(true);
+        }
     }
 
     vData joinTask(long long handle) {
@@ -166,7 +199,7 @@ public:
             std::lock_guard<std::mutex> lock(m_mutex);
             auto it = m_tasks.find(handle);
             if (it == m_tasks.end()) return vData{ 0LL };
-            fut = std::move(it->second);
+            fut = std::move(it->second.fut);
             m_tasks.erase(it);
         }
         if (fut.valid()) {
@@ -286,7 +319,30 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
             return result;
         }
 
-        // Returnează un vData gol (monostate / null) la timeout
         return vData{ std::monostate{} };
+    };
+
+    // 10. IS_THREAD_RUNNING(handle)
+    registry[L"IS_THREAD_RUNNING"] = [](const std::vector<vData>& a) -> vData {
+        if (a.empty()) return vData{ 0LL };
+        long long handle = toInt(a[0]);
+        bool running = ThreadManager::getInstance().isTaskRunning(handle);
+        return vData{ running ? 1LL : 0LL };
+    };
+
+    // 11. THREAD_CANCEL(handle) -> Semnalează anularea task-ului
+    registry[L"THREAD_CANCEL"] = [](const std::vector<vData>& a) -> vData {
+        if (a.empty()) return vData{ 0LL };
+        long long handle = toInt(a[0]);
+        ThreadManager::getInstance().cancelTask(handle);
+        return vData{ 1LL };
+    };
+
+    // 12. IS_THREAD_CANCELLED() -> Apelat din interiorul thread-ului pentru a verifica dacă s-a cerut oprirea
+    registry[L"IS_THREAD_CANCELLED"] = [](const std::vector<vData>&) -> vData {
+        if (g_currentCancelFlag && g_currentCancelFlag->load()) {
+            return vData{ 1LL };
+        }
+        return vData{ 0LL };
     };
 }

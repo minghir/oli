@@ -5,28 +5,54 @@ Generated: 2026-05-11
 
 === DISASSEMBLY: Main ===
 0000: OP_PLUGIN       0000 (Path: oli_threads)
-0003: OP_CONSTANT     0001 (Value: === TEST QUEUE POP TIMEOUT ===)
+0003: OP_CONSTANT     0001 (Value: === TEST THREAD_CANCEL ===)
 0006: OP_ECHO
-0007: OP_CONSTANT     0002 (Value: consumator_cu_timeout)
+0007: OP_CONSTANT     0002 (Value: task_lung_bucla)
 0010: OP_CONSTANT     0003 (Value: THREAD_SPAWN)
 0013: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
 0015: OP_SET_GLOBAL   0004 (Name: t1)
-0018: OP_GET_GLOBAL   0004 (Name: t1)
-0021: OP_CONSTANT     0005 (Value: THREAD_WAIT)
+0018: OP_CONSTANT     0005 (Value: 250)
+0021: OP_CONSTANT     0006 (Value: THREAD_SLEEP)
 0024: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
 0026: OP_POP
-0027: OP_CONSTANT     0006 (Value: Test finalizat cu succes!)
+0027: OP_CONSTANT     0007 (Value: LOG MAIN: Trimit semnalul THREAD_CANCEL...)
 0030: OP_ECHO
-0031: OP_RETURN
+0031: OP_GET_GLOBAL   0004 (Name: t1)
+0034: OP_CONSTANT     0008 (Value: THREAD_CANCEL)
+0037: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0039: OP_POP
+0040: OP_GET_GLOBAL   0004 (Name: t1)
+0043: OP_CONSTANT     0009 (Value: THREAD_WAIT)
+0046: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0048: OP_SET_GLOBAL   0010 (Name: res)
+0051: OP_CONSTANT     0011 (Value: Rezultat final returnat de worker: )
+0054: OP_GET_GLOBAL   0010 (Name: res)
+0057: OP_CONSTANT     0012 (Value: STR)
+0060: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0062: OP_CONCAT
+0063: OP_ECHO
+0064: OP_RETURN
 
---- FUNCTION: CONSUMATOR_CU_TIMEOUT (Params: ) ---
-=== DISASSEMBLY: CONSUMATOR_CU_TIMEOUT ===
-0000: OP_CONSTANT     0000 (Value: Consumatorul asteapta un mesaj maxim 500ms...)
-0003: OP_ECHO
-0004: OP_CONSTANT     0001 (Value: jobs_lipsa)
-0007: OP_CONSTANT     0002 (Value: 500)
-0010: OP_CONSTANT     0003 (Value: QUEUE_POP_TIMEOUT)
-0013: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
-0015: OP_SET_LOCAL     0000
-0017: OP_CONSTANT     0004 (Value: 1)
-0020: OP_RETURN
+--- FUNCTION: TASK_LUNG_BUCLA (Params: ) ---
+=== DISASSEMBLY: TASK_LUNG_BUCLA ===
+0000: OP_CONSTANT     0000 (Value: 1)
+0003: OP_SET_LOCAL     0000
+0005: OP_GET_LOCAL     0000
+0007: OP_CONSTANT     0001 (Value: 100)
+0010: OP_SUB
+0011: OP_CONSTANT     0000 (Value: 1)
+0014: OP_MUL
+0015: OP_CONSTANT     0002 (Value: 0)
+0018: OP_GREATER
+0019: OP_JUMP_IF_TRUE  0020 (Sari la: 42)
+0022: OP_CONSTANT     0001 (Value: 100)
+0025: OP_CONSTANT     0003 (Value: THREAD_SLEEP)
+0028: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0030: OP_POP
+0031: OP_GET_LOCAL     0000
+0033: OP_CONSTANT     0000 (Value: 1)
+0036: OP_ADD
+0037: OP_SET_LOCAL     0000
+0039: OP_LOOP          0037 (Sari inapoi la: 5)
+0042: OP_CONSTANT     0001 (Value: 100)
+0045: OP_RETURN

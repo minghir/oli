@@ -4,8 +4,8 @@ func task_lung_bucla()
     for $i = 1 to 100 do
         THREAD_SLEEP(100)
         
-        # Verificăm dacă thread-ul principal a trimis comanda de anulare
-        if IS_THREAD_CANCELLED() == 1 do
+        # Evaluăm direct valoarea de adevăr returnată de funcție
+        if IS_THREAD_CANCELLED() do
             echo "LOG WORKER: Am detectat THREAD_CANCEL! Opresc bucla la pasul " .. STR($i)
             return -1
         endif
@@ -17,7 +17,7 @@ echo "=== TEST THREAD_CANCEL ==="
 
 $t1 = THREAD_SPAWN("task_lung_bucla")
 
-# Lăsăm worker-ul să ruleze 250ms (să facă ~2 iterații)
+# Lăsăm worker-ul să ruleze 250ms (~2 iterații)
 THREAD_SLEEP(250)
 
 echo "LOG MAIN: Trimit semnalul THREAD_CANCEL..."

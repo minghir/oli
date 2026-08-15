@@ -4512,3 +4512,41 @@ bool vOliEngine::runEmbeddedIfPresent(const std::string& exePath) {
         return false;
     }
 }
+
+
+vData vOliEngine::callFunctionIsolated(const std::wstring& funcName, const std::vector<vData>& args) {
+    vOliEngine workerVM;
+
+    // Copiem stările și tabelele de funcții pe worker-ul izolat
+    workerVM.m_bytecodeFunctions = this->m_bytecodeFunctions;
+    workerVM.m_userFunctions     = this->m_userFunctions;
+    workerVM.m_functionsHandlers = this->m_functionsHandlers;
+    workerVM.m_commandHandlers   = this->m_commandHandlers;
+    workerVM.m_blueprints        = this->m_blueprints;
+    workerVM.m_globalVariables   = this->m_globalVariables;
+
+    std::wstring upperName = to_upper(funcName);
+
+    const vData* argsPtr = args.empty() ? nullptr : args.data();
+    size_t argsSize = args.size();
+
+    // Execuție în bytecode (.olic)
+    auto itBytecode = workerVM.m_bytecodeFunctions.find(upperName);
+    if (itBytecode != workerVM.m_bytecodeFunctions.end()) {
+        return workerVM.callUserByteCodeFunction(upperName.c_str(), argsPtr, argsSize, { std::monostate{} });
+    }
+
+    // Execuție în script interpretat (.oli)
+    auto itUser = workerVM.m_userFunctions.find(upperName);
+    if (itUser != workerVM.m_userFunctions.end()) {
+        return workerVM.callUserFunction(funcName, args);
+    }
+
+    // Execuție funcții built-in
+    auto itHandler = workerVM.m_functionsHandlers.find(upperName);
+    if (itHandler != workerVM.m_functionsHandlers.end()) {
+        return itHandler->second(args);
+    }
+
+    return vData{ std::monostate{} };
+}

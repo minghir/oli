@@ -1,0 +1,42 @@
+plugin oli_threads
+
+# Variabile globale pentru stocarea rezultatelor parțiale din heap
+set $partial1 = 0
+set $partial2 = 0
+
+func calc_segment_1()
+    $s = 0
+    for $i = 1 to 500000 do
+        $s = $s + $i
+    endfor
+    set $partial1 = $s
+endfunc
+
+func calc_segment_2()
+    $s = 0
+    for $i = 500001 to 1000000 do
+        $s = $s + $i
+    endfor
+    set $partial2 = $s
+endfunc
+
+echo "=== DEMO CALCUL PARALEL (1 .. 1.000.000) ==="
+
+# 1. Lansăm ambele calcule în paralel pe thread-uri C++ separate
+$t1 = THREAD_EXEC("calc_segment_1()")
+$t2 = THREAD_EXEC("calc_segment_2()")
+
+echo "Thread-urile T1 si T2 ruleaza asincron..."
+
+# 2. Așteptăm ca ambele worker-e să își termine execuția
+THREAD_WAIT($t1)
+THREAD_WAIT($t2)
+
+# 3. Însumăm rezultatele parțiale
+$total = $partial1 + $partial2
+
+echo "--------------------------------------------"
+echo "Suma Segment 1 (1 - 500k):     " .. STR($partial1)
+echo "Suma Segment 2 (500k - 1M):    " .. STR($partial2)
+echo "--------------------------------------------"
+echo "Suma TOTALA obtinuta:          " .. STR($total)

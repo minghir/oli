@@ -1,6 +1,6 @@
-$a = [1,2,3]
+$a = [ASC("M"),ASC("I"),ASC("M"),ASC("I")]
 
 $c = &$a
-echo $c
+echo (*$c)[2]
 dm
-echo $a
+echo CHR($a[1])

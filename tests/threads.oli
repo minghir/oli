@@ -1,0 +1,30 @@
+plugin oli_threads
+
+# Funcție pură Oli care calculează o sumă parțială
+func calculeaza_segment($start, $end)
+    $sum = 0
+    for $i = $start to $end do
+        $sum = $sum + $i
+    endfor
+    return $sum
+endfunc
+
+echo "=== DEMO THREAD_SPAWN CU FUNCȚII OLI ==="
+
+# 1. Lansăm două funcții Oli în paralel pe thread-uri C++ separate!
+$t1 = THREAD_SPAWN("calculeaza_segment", 1, 500000)
+$t2 = THREAD_SPAWN("calculeaza_segment", 500001, 1000000)
+
+echo "Calculul ruleaza in paralel pe VM-uri Worker izolate..."
+
+# 2. Preluăm rezultatele returnate direct de funcțiile Oli
+$res1 = THREAD_WAIT($t1)
+$res2 = THREAD_WAIT($t2)
+
+$total = INT($res1) + INT($res2)
+
+echo "--------------------------------------------"
+echo "Suma Segment 1 (1 - 500k):  " .. STR($res1)
+echo "Suma Segment 2 (500k - 1M): " .. STR($res2)
+echo "--------------------------------------------"
+echo "Suma TOTALA:                " .. STR($total)

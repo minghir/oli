@@ -22,6 +22,8 @@ public:
         size_t argCount,
         vData context
     ) = 0;
+
+    virtual vData callFunctionIsolated(const std::wstring& funcName, const std::vector<vData>& args) = 0;
 };
 
 // Tipul de funcție pe care DLL-ul trebuie să o exporte

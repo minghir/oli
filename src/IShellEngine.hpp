@@ -13,7 +13,6 @@ public:
     // Informații cerute de UI (Shell)
     virtual std::wstring getPrompt() const = 0;
     virtual bool shouldExit() const = 0;
-    
 };
 
 #endif

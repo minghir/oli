@@ -1,0 +1,88 @@
+﻿--- OLI ASSEMBLY LISTING ---
+Source: ./tests/threads.oli
+Generated: 2026-05-11
+
+
+=== DISASSEMBLY: Main ===
+0000: OP_PLUGIN       0000 (Path: oli_threads)
+0003: OP_CONSTANT     0001 (Value: === DEMO THREAD_SPAWN CU FUNCȚII OLI ===)
+0006: OP_ECHO
+0007: OP_CONSTANT     0002 (Value: calculeaza_segment)
+0010: OP_CONSTANT     0003 (Value: 1)
+0013: OP_CONSTANT     0004 (Value: 500000)
+0016: OP_CONSTANT     0005 (Value: THREAD_SPAWN)
+0019: OP_CALL_DYNAMIC    (Args: 3, Context & Name on Stack)
+0021: OP_SET_GLOBAL   0006 (Name: t1)
+0024: OP_CONSTANT     0002 (Value: calculeaza_segment)
+0027: OP_CONSTANT     0007 (Value: 500001)
+0030: OP_CONSTANT     0008 (Value: 1000000)
+0033: OP_CONSTANT     0005 (Value: THREAD_SPAWN)
+0036: OP_CALL_DYNAMIC    (Args: 3, Context & Name on Stack)
+0038: OP_SET_GLOBAL   0009 (Name: t2)
+0041: OP_CONSTANT     0010 (Value: Calculul ruleaza in paralel pe VM-uri Worker izolate...)
+0044: OP_ECHO
+0045: OP_GET_GLOBAL   0006 (Name: t1)
+0048: OP_CONSTANT     0011 (Value: THREAD_WAIT)
+0051: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0053: OP_SET_GLOBAL   0012 (Name: res1)
+0056: OP_GET_GLOBAL   0009 (Name: t2)
+0059: OP_CONSTANT     0011 (Value: THREAD_WAIT)
+0062: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0064: OP_SET_GLOBAL   0013 (Name: res2)
+0067: OP_GET_GLOBAL   0012 (Name: res1)
+0070: OP_CONSTANT     0014 (Value: INT)
+0073: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0075: OP_GET_GLOBAL   0013 (Name: res2)
+0078: OP_CONSTANT     0014 (Value: INT)
+0081: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0083: OP_ADD
+0084: OP_SET_GLOBAL   0015 (Name: total)
+0087: OP_CONSTANT     0016 (Value: --------------------------------------------)
+0090: OP_ECHO
+0091: OP_CONSTANT     0017 (Value: Suma Segment 1 (1 - 500k):  )
+0094: OP_GET_GLOBAL   0012 (Name: res1)
+0097: OP_CONSTANT     0018 (Value: STR)
+0100: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0102: OP_CONCAT
+0103: OP_ECHO
+0104: OP_CONSTANT     0019 (Value: Suma Segment 2 (500k - 1M): )
+0107: OP_GET_GLOBAL   0013 (Name: res2)
+0110: OP_CONSTANT     0018 (Value: STR)
+0113: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0115: OP_CONCAT
+0116: OP_ECHO
+0117: OP_CONSTANT     0016 (Value: --------------------------------------------)
+0120: OP_ECHO
+0121: OP_CONSTANT     0020 (Value: Suma TOTALA:                )
+0124: OP_GET_GLOBAL   0015 (Name: total)
+0127: OP_CONSTANT     0018 (Value: STR)
+0130: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0132: OP_CONCAT
+0133: OP_ECHO
+0134: OP_RETURN
+
+--- FUNCTION: CALCULEAZA_SEGMENT (Params: $start, $end) ---
+=== DISASSEMBLY: CALCULEAZA_SEGMENT ===
+0000: OP_CONSTANT     0000 (Value: 0)
+0003: OP_SET_LOCAL     0002
+0005: OP_GET_LOCAL     0000
+0007: OP_SET_LOCAL     0003
+0009: OP_GET_LOCAL     0003
+0011: OP_GET_LOCAL     0001
+0013: OP_SUB
+0014: OP_CONSTANT     0001 (Value: 1)
+0017: OP_MUL
+0018: OP_CONSTANT     0000 (Value: 0)
+0021: OP_GREATER
+0022: OP_JUMP_IF_TRUE  0018 (Sari la: 43)
+0025: OP_GET_LOCAL     0002
+0027: OP_GET_LOCAL     0003
+0029: OP_ADD
+0030: OP_SET_LOCAL     0002
+0032: OP_GET_LOCAL     0003
+0034: OP_CONSTANT     0001 (Value: 1)
+0037: OP_ADD
+0038: OP_SET_LOCAL     0003
+0040: OP_LOOP          0034 (Sari inapoi la: 9)
+0043: OP_GET_LOCAL     0002
+0045: OP_RETURN

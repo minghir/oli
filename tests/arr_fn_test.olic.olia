@@ -4,94 +4,69 @@ Generated: 2026-05-11
 
 
 === DISASSEMBLY: Main ===
-0000: OP_PLUGIN       0000 (Path: oli_threads)
-0003: OP_CONSTANT     0001 (Value: === TEST TRANSMITERE ARRAY PRIN CHANNELS ===)
-0006: OP_ECHO
-0007: OP_CONSTANT     0002 (Value: producator_array)
-0010: OP_CONSTANT     0003 (Value: THREAD_SPAWN)
-0013: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0015: OP_SET_GLOBAL   0004 (Name: t1)
-0018: OP_CONSTANT     0005 (Value: consumator_array)
-0021: OP_CONSTANT     0003 (Value: THREAD_SPAWN)
-0024: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0026: OP_SET_GLOBAL   0006 (Name: t2)
-0029: OP_GET_GLOBAL   0004 (Name: t1)
-0032: OP_CONSTANT     0007 (Value: THREAD_WAIT)
-0035: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0037: OP_POP
-0038: OP_GET_GLOBAL   0006 (Name: t2)
-0041: OP_CONSTANT     0007 (Value: THREAD_WAIT)
-0044: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0046: OP_POP
-0047: OP_CONSTANT     0008 (Value: Test finalizat cu succes!)
-0050: OP_ECHO
-0051: OP_RETURN
-
---- FUNCTION: CONSUMATOR_ARRAY (Params: ) ---
-=== DISASSEMBLY: CONSUMATOR_ARRAY ===
-0000: OP_CONSTANT     0000 (Value: canal_array)
-0003: OP_CONSTANT     0001 (Value: QUEUE_POP)
-0006: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0008: OP_SET_LOCAL     0000
-0010: OP_CONSTANT     0002 (Value: LOG CONSUMATOR: Am primit array-ul: )
-0013: OP_GET_LOCAL     0000
-0015: OP_CONSTANT     0003 (Value: STR)
-0018: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0020: OP_CONCAT
-0021: OP_ECHO
-0022: OP_GET_LOCAL     0000
-0024: OP_CONSTANT     0004 (Value: SHIFT)
-0027: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0029: OP_SET_LOCAL     0001
-0031: OP_CONSTANT     0005 (Value:  -> Tag extras cu SHIFT: )
-0034: OP_GET_LOCAL     0001
-0036: OP_CONSTANT     0003 (Value: STR)
-0039: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0041: OP_CONCAT
-0042: OP_ECHO
-0043: OP_CONSTANT     0006 (Value:  -> Array ramas dupa SHIFT: )
-0046: OP_GET_LOCAL     0000
-0048: OP_CONSTANT     0003 (Value: STR)
+0000: OP_CONSTANT     0000 (Value: === TEST MANIPULARE MAP ===)
+0003: OP_ECHO
+0004: OP_CONSTANT     0001 (Value: MAP)
+0007: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
+0009: OP_SET_GLOBAL   0002 (Name: m)
+0012: OP_GET_GLOBAL   0002 (Name: m)
+0015: OP_CONSTANT     0003 (Value: nume)
+0018: OP_CONSTANT     0004 (Value: Oli Engine)
+0021: OP_SET_INDIRECT
+0022: OP_GET_GLOBAL   0002 (Name: m)
+0025: OP_CONSTANT     0005 (Value: versiune)
+0028: OP_CONSTANT     0006 (Value: 0.2)
+0031: OP_SET_INDIRECT
+0032: OP_GET_GLOBAL   0002 (Name: m)
+0035: OP_CONSTANT     0007 (Value: autor)
+0038: OP_CONSTANT     0008 (Value: Minghir)
+0041: OP_SET_INDIRECT
+0042: OP_CONSTANT     0009 (Value: 1. Map initial: )
+0045: OP_GET_GLOBAL   0002 (Name: m)
+0048: OP_CONSTANT     0010 (Value: STR)
 0051: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
 0053: OP_CONCAT
 0054: OP_ECHO
-0055: OP_CONSTANT     0007 (Value: 1)
-0058: OP_RETURN
-
---- FUNCTION: PRODUCATOR_ARRAY (Params: ) ---
-=== DISASSEMBLY: PRODUCATOR_ARRAY ===
-0000: OP_CONSTANT     0000 (Value: 100)
-0003: OP_CONSTANT     0001 (Value: THREAD_SLEEP)
-0006: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0008: OP_POP
-0009: OP_CONSTANT     0002 (Value: ARRAY)
-0012: OP_CALL_DYNAMIC    (Args: 0, Context & Name on Stack)
-0014: OP_SET_LOCAL     0000
-0016: OP_GET_LOCAL     0000
-0018: OP_CONSTANT     0003 (Value: Senzor_Temp)
-0021: OP_CONSTANT     0004 (Value: PUSH)
-0024: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
-0026: OP_POP
-0027: OP_GET_LOCAL     0000
-0029: OP_CONSTANT     0005 (Value: 42)
-0032: OP_CONSTANT     0004 (Value: PUSH)
-0035: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
-0037: OP_POP
-0038: OP_GET_LOCAL     0000
-0040: OP_CONSTANT     0006 (Value: 98.6)
-0043: OP_CONSTANT     0004 (Value: PUSH)
-0046: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
-0048: OP_POP
-0049: OP_CONSTANT     0007 (Value: LOG PRODUCATOR: Am creat si trimis array-ul: )
-0052: OP_GET_LOCAL     0000
-0054: OP_CONSTANT     0008 (Value: STR)
-0057: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
-0059: OP_CONCAT
-0060: OP_ECHO
-0061: OP_CONSTANT     0009 (Value: canal_array)
-0064: OP_GET_LOCAL     0000
-0066: OP_CONSTANT     0010 (Value: QUEUE_PUSH)
-0069: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
-0071: OP_POP
-0072: OP_CONSTANT     0011 (Value: 1)
-0075: OP_RETURN
+0055: OP_GET_GLOBAL   0002 (Name: m)
+0058: OP_CONSTANT     0003 (Value: nume)
+0061: OP_CONSTANT     0011 (Value: HASKEY)
+0064: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
+0066: OP_SET_GLOBAL   0012 (Name: has_nume)
+0069: OP_GET_GLOBAL   0002 (Name: m)
+0072: OP_CONSTANT     0013 (Value: pret)
+0075: OP_CONSTANT     0011 (Value: HASKEY)
+0078: OP_CALL_DYNAMIC    (Args: 2, Context & Name on Stack)
+0080: OP_SET_GLOBAL   0014 (Name: has_pret)
+0083: OP_CONSTANT     0015 (Value: 2. HASKEY('nume'): )
+0086: OP_GET_GLOBAL   0012 (Name: has_nume)
+0089: OP_CONSTANT     0010 (Value: STR)
+0092: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0094: OP_CONCAT
+0095: OP_CONSTANT     0016 (Value:  | HASKEY('pret'): )
+0098: OP_CONCAT
+0099: OP_GET_GLOBAL   0014 (Name: has_pret)
+0102: OP_CONSTANT     0010 (Value: STR)
+0105: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0107: OP_CONCAT
+0108: OP_ECHO
+0109: OP_GET_GLOBAL   0002 (Name: m)
+0112: OP_CONSTANT     0017 (Value: KEYS)
+0115: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0117: OP_SET_GLOBAL   0018 (Name: chei)
+0120: OP_CONSTANT     0019 (Value: 3. Chei extrase cu KEYS: )
+0123: OP_GET_GLOBAL   0018 (Name: chei)
+0126: OP_CONSTANT     0010 (Value: STR)
+0129: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0131: OP_CONCAT
+0132: OP_ECHO
+0133: OP_GET_GLOBAL   0002 (Name: m)
+0136: OP_CONSTANT     0020 (Value: VALUES)
+0139: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0141: OP_SET_GLOBAL   0021 (Name: valori)
+0144: OP_CONSTANT     0022 (Value: 4. Valori extrase cu VALUES: )
+0147: OP_GET_GLOBAL   0021 (Name: valori)
+0150: OP_CONSTANT     0010 (Value: STR)
+0153: OP_CALL_DYNAMIC    (Args: 1, Context & Name on Stack)
+0155: OP_CONCAT
+0156: OP_ECHO
+0157: OP_RETURN

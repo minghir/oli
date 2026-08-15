@@ -1,38 +1,21 @@
-plugin oli_threads
+echo "=== TEST MANIPULARE MAP ==="
 
-func producator_array()
-    THREAD_SLEEP(100)
-    
-    $date = ARRAY()
-    PUSH($date, "Senzor_Temp")
-    PUSH($date, 42)
-    PUSH($date, 98.6)
-    
-    echo "LOG PRODUCATOR: Am creat si trimis array-ul: " .. STR($date)
-    QUEUE_PUSH("canal_array", $date)
-    return 1
-endfunc
+$m = MAP()
+$m["nume"] = "Oli Engine"
+$m["versiune"] = 0.2
+$m["autor"] = "Minghir"
 
-func consumator_array()
-    # Preluare blocantă a structurii vDataArray trimise
-    $pachet = QUEUE_POP("canal_array")
-    
-    echo "LOG CONSUMATOR: Am primit array-ul: " .. STR($pachet)
-    
-    # Procesare elemente din array-ul primit
-    $tag = SHIFT($pachet)
-    echo " -> Tag extras cu SHIFT: " .. STR($tag)
-    echo " -> Array ramas dupa SHIFT: " .. STR($pachet)
-    
-    return 1
-endfunc
+echo "1. Map initial: " .. STR($m)
 
-echo "=== TEST TRANSMITERE ARRAY PRIN CHANNELS ==="
+# 2. HASKEY - Verificare existență chei
+$has_nume = HASKEY($m, "nume")
+$has_pret = HASKEY($m, "pret")
+echo "2. HASKEY('nume'): " .. STR($has_nume) .. " | HASKEY('pret'): " .. STR($has_pret)
 
-$t1 = THREAD_SPAWN("producator_array")
-$t2 = THREAD_SPAWN("consumator_array")
+# 3. KEYS - Extragere chei sub formă de Array
+$chei = KEYS($m)
+echo "3. Chei extrase cu KEYS: " .. STR($chei)
 
-THREAD_WAIT($t1)
-THREAD_WAIT($t2)
-
-echo "Test finalizat cu succes!"
+# 4. VALUES - Extragere valori sub formă de Array
+$valori = VALUES($m)
+echo "4. Valori extrase cu VALUES: " .. STR($valori)

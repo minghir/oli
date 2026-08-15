@@ -354,7 +354,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         return { -1LL };
     };
     vOliKeyWords::registerNativeFunction(L"INDEXOF");
-    
+
     m_functionsHandlers[L"SET_AT"] = [this](const std::vector<vData>& args) -> vData {
         if (args.size() < 3 || !args[0].isArray()) return vData(0LL);
         auto arrPtr = const_cast<std::vector<vData>*>(args[0].rawArray());
@@ -410,53 +410,46 @@ void vOliEngine::initializeFunctionsHandlers() {
     m_functionsHandlers[L"HASKEY"] = [this](const std::vector<vData>& args) -> vData {
         if (args.size() < 2 || !args[0].isMap()) return { 0LL };
 
-        auto mapPtr = std::get<vDataMap>(args[0].value);
+        auto mapPtr = args[0].rawMap(); // Folosim rawMap() în loc de std::get
         std::wstring key = vDataToWString(args[1]);
 
         if (mapPtr && mapPtr->count(key)) {
             return { 1LL };
         }
         return { 0LL };
-        };
+    };
     vOliKeyWords::registerNativeFunction(L"HASKEY");
     // --- KEYS(map) -> Returnează un ARRAY cu toate cheile (string-uri) ---
     m_functionsHandlers[L"KEYS"] = [this](const std::vector<vData>& args) -> vData {
-        // 1. Verificăm dacă avem argumente și dacă datele REALE sunt un Map
-        if (args.empty() || !args[0].isMap()) {
-            return vData::CreateArray();
-        }
+        if (args.empty() || !args[0].isMap()) return vData::CreateArray();
 
-        // 2. Extragem pointerul către map-ul real folosind helper-ul tău robust
-        auto mapPtr = args[0].rawMap(); // rawMap() apelează intern getTrueData()
-
+        auto mapPtr = args[0].rawMap();
         vData result = vData::CreateArray();
         auto arrPtr = result.rawArray();
 
         if (mapPtr && arrPtr) {
             for (auto const& [key, val] : *mapPtr) {
-                // Adăugăm cheia în noul array
                 arrPtr->push_back(vData{ key });
             }
         }
-
         return result;
-        };
+    };
     vOliKeyWords::registerNativeFunction(L"KEYS");
     // --- VALUES(map) -> Returnează un ARRAY cu toate valorile ---
     m_functionsHandlers[L"VALUES"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty() || !args[0].isMap()) return vData::CreateArray();
 
-        auto mapPtr = std::get<vDataMap>(args[0].value);
+        auto mapPtr = args[0].rawMap(); // Folosim rawMap()
         vData result = vData::CreateArray();
         auto arrPtr = result.rawArray();
 
-        if (mapPtr) {
+        if (mapPtr && arrPtr) { // Verificăm ambii pointeri
             for (auto const& [key, val] : *mapPtr) {
-                arrPtr->push_back(val); // Aici adăugăm valoarea (deep copy sau referință vData)
+                arrPtr->push_back(val);
             }
         }
         return result;
-        };
+    };
     vOliKeyWords::registerNativeFunction(L"VALUES");
     // functii pt stringuri
     m_functionsHandlers[L"SPLIT"] = [this](const auto& args) {return this->handleSplitFunc(args); };

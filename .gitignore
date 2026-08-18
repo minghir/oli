@@ -103,6 +103,12 @@ StyleCopReport.xml
 *.exe
 *.dll
 *.o
+*.so
+*.so.*
+*.a
+*.dylib
+*.olic
+*.olia
 
 # Chutzpah Test files
 _Chutzpah*

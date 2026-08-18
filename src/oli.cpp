@@ -38,15 +38,16 @@ void showHelp() {
     std::wcout << L"Oli Engine v0.2 - Programming Language Interpreter & Compiler\n";
     std::wcout << L"Usage: oli [options] [script_file]\n\n";
     std::wcout << L"Options:\n";
-    std::wcout << L"  -h, --help                Displays this help message.\n";
-    std::wcout << L"  -v, --version             Displays the engine version and build date.\n";
-    std::wcout << L"  -b <input.oli> [output]   Compiles the script into a standalone executable (.exe).\n";
-    std::wcout << L"  -c <input.oli> [output]   Compiles the script to bytecode (.olic) and generates assembly (.olia).\n\n";
+    std::wcout << L"  -h, --help                     Displays this help message.\n";
+    std::wcout << L"  -v, --version                  Displays the engine version and build date.\n";
+    std::wcout << L"  -b <input.oli> [-o output]     Compiles the script into a standalone executable (.exe).\n";
+    std::wcout << L"  -c <input.oli> [-o output]     Compiles the script to bytecode (.olic) and generates assembly (.olia).\n\n";
     std::wcout << L"Examples:\n";
-    std::wcout << L"  oli                       Starts the interactive console (REPL).\n";
-    std::wcout << L"  oli script.oli            Executes an .oli source file.\n";
-    std::wcout << L"  oli script.olic           Executes a compiled binary .olic file.\n";
-    std::wcout << L"  oli -b main.oli app.exe   Generates a native standalone executable.\n";
+    std::wcout << L"  oli                             Starts the interactive console (REPL).\n";
+    std::wcout << L"  oli script.oli                  Executes an .oli source file.\n";
+    std::wcout << L"  oli script.olic                 Executes a compiled binary .olic file.\n";
+    std::wcout << L"  oli -b main.oli -o build/app    Generates a native standalone executable.\n";
+    std::wcout << L"  oli -b main.oli app.exe         Legacy positional output form.\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -74,18 +75,49 @@ int main(int argc, char* argv[]) {
 
         // 2. BUILD STANDALONE (-b)
         if (cmd == "-b") {
-            if (argc < 3) {
-                std::wcerr << L"[ERROR] Missing input file for flag -b." << std::endl;
-                std::wcout << L"Usage: oli -b <input.oli> [output_file]" << std::endl;
+            std::string inputPath;
+            std::string outputPath;
+
+            for (int i = 2; i < argc; ++i) {
+                std::string arg = argv[i];
+
+                if (arg == "-o") {
+                    if (i + 1 >= argc) {
+                        std::wcerr << L"[ERROR] Missing output path for flag -o." << std::endl;
+                        std::wcout << L"Usage: oli -b <input.oli> [-o output_file]" << std::endl;
+                        return 1;
+                    }
+                    outputPath = argv[++i];
+                    continue;
+                }
+
+                if (inputPath.empty()) {
+                    inputPath = arg;
+                    continue;
+                }
+
+                if (outputPath.empty()) {
+                    outputPath = arg;
+                    continue;
+                }
+
+                std::wcerr << L"[ERROR] Unexpected argument: " << str_to_wstr(arg) << std::endl;
+                std::wcout << L"Usage: oli -b <input.oli> [-o output_file]" << std::endl;
                 return 1;
             }
-            std::string inputPath = argv[2];
 
-            // Generate executable in current working directory
-            std::string outputPath = (argc > 3) ? argv[3] : std::filesystem::path(inputPath).stem().string();
+            if (inputPath.empty()) {
+                std::wcerr << L"[ERROR] Missing input file for flag -b." << std::endl;
+                std::wcout << L"Usage: oli -b <input.oli> [-o output_file]" << std::endl;
+                return 1;
+            }
+
+            if (outputPath.empty()) {
+                outputPath = std::filesystem::path(inputPath).stem().string();
 #ifdef _WIN32
-            outputPath += ".exe";
+                outputPath += ".exe";
 #endif
+            }
 
             try {
                 std::wcout << L"Oli Engine v0.2\nBuild Date: " << __DATE__ << std::endl;
@@ -160,13 +192,46 @@ int main(int argc, char* argv[]) {
         // 3. COMPILE BYTECODE (-c) + GENERATE ASSEMBLY (.olia)
         if (cmd == "-c") {
             ConsoleManager::getInstance().setMinLogLevel(LogLevel::DEBUG);
-            if (argc < 3) {
-                std::wcerr << L"[ERROR] Missing input file for flag -c." << std::endl;
-                std::wcout << L"Usage: oli -c <input.oli> [output_file]" << std::endl;
+            std::string inputPath;
+            std::string outputPath;
+
+            for (int i = 2; i < argc; ++i) {
+                std::string arg = argv[i];
+
+                if (arg == "-o") {
+                    if (i + 1 >= argc) {
+                        std::wcerr << L"[ERROR] Missing output path for flag -o." << std::endl;
+                        std::wcout << L"Usage: oli -c <input.oli> [-o output_file]" << std::endl;
+                        return 1;
+                    }
+                    outputPath = argv[++i];
+                    continue;
+                }
+
+                if (inputPath.empty()) {
+                    inputPath = arg;
+                    continue;
+                }
+
+                if (outputPath.empty()) {
+                    outputPath = arg;
+                    continue;
+                }
+
+                std::wcerr << L"[ERROR] Unexpected argument: " << str_to_wstr(arg) << std::endl;
+                std::wcout << L"Usage: oli -c <input.oli> [-o output_file]" << std::endl;
                 return 1;
             }
-            std::string inputPath = argv[2];
-            std::string outputPath = (argc > 3) ? argv[3] : inputPath + "c";
+
+            if (inputPath.empty()) {
+                std::wcerr << L"[ERROR] Missing input file for flag -c." << std::endl;
+                std::wcout << L"Usage: oli -c <input.oli> [-o output_file]" << std::endl;
+                return 1;
+            }
+
+            if (outputPath.empty()) {
+                outputPath = inputPath + "c";
+            }
 
             try {
                 std::wstring sourceCode = citeste_fisier_utf8(str_to_wstr(inputPath));

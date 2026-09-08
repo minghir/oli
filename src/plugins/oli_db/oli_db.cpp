@@ -5,6 +5,7 @@
 #include "dbManger.hpp"
 #include "dbfConnection.hpp"
 #include "csvConnection.hpp"
+#include "odbcConnection.hpp"
 
 #if defined(_WIN32) || defined(_WIN64)
 #define OLI_EXPORT extern "C" __declspec(dllexport)
@@ -77,6 +78,10 @@ void RegisterSystemFunctions(PluginRegistry &registry)
         else if (type == L"CSV")
         {
             conn = std::make_unique<csvConnection>("CSV_NATIVE", dsn);
+        }
+		else if (type == L"ODBC")
+        {
+            conn = std::make_unique<odbcConnection>("ODBC_NATIVE", dsn);
         }
         else
         {

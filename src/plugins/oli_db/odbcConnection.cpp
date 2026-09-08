@@ -430,7 +430,13 @@ bool odbcConnection::execQuery(const std::wstring& query, std::string stm_name) 
  */
 
 bool odbcConnection::fetchNextRow(std::string stm_name) {
-    SQLHSTMT hstmt = hstmts[stm_name];
+	auto it = hstmts.find(stm_name);
+    if (it == hstmts.end() || it->second == SQL_NULL_HSTMT) {
+        LOG_ERROR(L"fetchNextRow: Statement-ul nu a fost găsit sau este nul.");
+        return false;
+    }
+	
+    SQLHSTMT hstmt = it->second;
     SQLRETURN ret = SQLFetch(hstmt);
     std::wstring w_stm_name(stm_name.begin(), stm_name.end());
 
@@ -508,10 +514,12 @@ bool odbcConnection::setColNames(std::string stm_name) {
 
         if (SQL_SUCCEEDED(ret)) {
             // Salvează numele, tipul și dimensiunea coloanei
-            colNames[stm_name].push_back(std::wstring(columnName, nameLength));
-            colTypes[stm_name].push_back(colType);
-            colSizes[stm_name].push_back(colSize);
-            colNameIndexes[stm_name][columnName] = i;
+            std::wstring colNameStr(columnName, nameLength); // Creat în siguranță cu lungimea exactă
+
+			colNames[stm_name].push_back(colNameStr);
+			colTypes[stm_name].push_back(colType);
+			colSizes[stm_name].push_back(colSize);
+			colNameIndexes[stm_name][colNameStr] = i; // Folosim obiectul `colNameStr` deja validat
         }
         else {
             logMsg = L"odbcConnection::setColNames: Eșec la SQLDescribeColW pentru coloana " +

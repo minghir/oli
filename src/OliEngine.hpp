@@ -403,5 +403,9 @@ private:
       vData getGlobalVariable(const std::wstring& name);
       void setGlobalVariable(const std::wstring& name, const vData& value);
 
+      // --- GETTERI STARE EXECUȚIE ---
+      OliStatus getExecutionStatus() const { return m_executionStatus; }
+      OliStatus getStatus() const { return m_executionStatus; }
+
 };
 #endif

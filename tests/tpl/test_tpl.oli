@@ -1,0 +1,21 @@
+plugin "oli_db"
+plugin "oli_tpl"
+
+# 1. Obținere date din Baza de Date
+DB_CON("my_db", "ODBC", "ANC_Server")
+DB_EXEC("SELECT registration, operator_id, mtow FROM date_aviatie.fleet LIMIT 20", "stm", "my_db")
+set $fleet = DB_FETCH_ALL("stm", "my_db")
+DB_CLOSE("my_db")
+
+# 2. Construire Map Context
+set $ctx = MAP()
+set $ctx["companie"] = "Compania Națională TAROM"
+set $ctx["fleet"] = $fleet
+set $ctx["data_curenta"] = "2026-09-08"
+
+# 3. Generare Raport RTF (escaparea RTF și diacriticele sunt gestionate automat)
+set $ok = TPL_RENDER_FILE("tests/tpl/flota.rtf.tpl", $ctx)#, "tests/tpl/flota.rtf")
+
+echo $ok
+
+set $ok2 = TPL_RENDER_FILE("tests/tpl/flota.rtf.tpl", $ctx,"tests/tpl/flota.rtf")

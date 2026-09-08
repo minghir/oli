@@ -409,7 +409,7 @@ void RegisterSystemFunctions(PluginRegistry &registry)
         return resultArray;
     };
 }
-
+/*
 OLI_EXPORT void LoadOliPlugin(PluginRegistry &registry)
 {
     RegisterSystemFunctions(registry);
@@ -421,4 +421,22 @@ OLI_EXPORT void SetPluginConsoleManager(ConsoleManager *hostCm)
     {
         ConsoleManager::setInstance(hostCm);
     }
+}
+*/
+// --- EXPORT INTERFACE ---
+extern "C" {
+
+    OLI_EXPORT void LoadOliPlugin(PluginRegistry &registry)
+    {
+        RegisterSystemFunctions(registry);
+    }
+
+    OLI_EXPORT void SetPluginConsoleManager(ConsoleManager *hostCm)
+    {
+        if (hostCm != nullptr)
+        {
+            ConsoleManager::setInstance(hostCm);
+        }
+    }
+
 }

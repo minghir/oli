@@ -1,0 +1,4 @@
+LIBRARY oli_db.dll
+EXPORTS
+    LoadOliPlugin
+    SetPluginConsoleManager

@@ -26,6 +26,7 @@ using socket_t = int;
 #endif
 
 #include "../../OliEngine.hpp"
+#include "../../StringUtils.hpp"
 
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
 

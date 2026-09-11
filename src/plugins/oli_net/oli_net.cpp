@@ -41,6 +41,7 @@ static bool set_nonblocking(socket_t sock) {
 #endif
 }
 
+/*
 // Helpers conversie std::wstring <-> std::string
 static std::string wstr_to_str(const std::wstring& wstr) {
     return std::string(wstr.begin(), wstr.end());
@@ -49,7 +50,7 @@ static std::string wstr_to_str(const std::wstring& wstr) {
 static std::wstring str_to_wstr(const std::string& str) {
     return std::wstring(str.begin(), str.end());
 }
-
+*/
 void RegisterNetFunctions(PluginRegistry& registry) {
 #ifdef _WIN32
     WSADATA wsaData;

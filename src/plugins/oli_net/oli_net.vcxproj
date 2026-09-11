@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{2edd3148-c4e5-4c60-95d4-31c22e42aa78}</ProjectGuid>
-    <RootNamespace>olidb</RootNamespace>
+    <ProjectGuid>{34080da2-e911-4440-9cc4-aa426b34d27f}</ProjectGuid>
+    <RootNamespace>olinet</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -145,33 +145,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\ConsoleManager.cpp" />
-    <ClCompile Include="..\..\StringUtils.cpp" />
-    <ClCompile Include="csvConnection.cpp" />
-    <ClCompile Include="dbConnection.cpp" />
-    <ClCompile Include="dbfConnection.cpp" />
-    <ClCompile Include="fileUtils.cpp" />
-    <ClCompile Include="odbcConnection.cpp" />
-    <ClCompile Include="oli_db.cpp" />
-    <ClCompile Include="SqlQueryAnalyzer.cpp" />
-    <ClCompile Include="SqlQueryEngine.cpp" />
-    <ClCompile Include="SqlQueryParser.cpp" />
-    <ClCompile Include="vmath.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\ConsoleManager.hpp" />
-    <ClInclude Include="..\..\StringUtils.hpp" />
-    <ClInclude Include="csvConnection.hpp" />
-    <ClInclude Include="dbConnection.hpp" />
-    <ClInclude Include="dbfConnection.hpp" />
-    <ClInclude Include="dbManger.hpp" />
-    <ClInclude Include="fileUtils.hpp" />
-    <ClInclude Include="odbcConnection.hpp" />
-    <ClInclude Include="SqlQueryAnalyzer.hpp" />
-    <ClInclude Include="SqlQueryBuilder.hpp" />
-    <ClInclude Include="SqlQueryEngine.hpp" />
-    <ClInclude Include="SqlQueryParser.hpp" />
-    <ClInclude Include="vmath.hpp" />
+    <ClCompile Include="oli_net.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

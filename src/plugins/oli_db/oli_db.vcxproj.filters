@@ -48,6 +48,9 @@
     <ClCompile Include="oli_db.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="odbcConnection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="csvConnection.hpp">
@@ -84,6 +87,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\StringUtils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="odbcConnection.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

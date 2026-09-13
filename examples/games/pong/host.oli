@@ -1,0 +1,53 @@
+plugin oli_net
+plugin oli_opengl
+
+$sock = NET_BIND(8080)
+$client_ip = "127.0.0.1"
+$client_port = 8081
+
+# Stare Joc
+$p1_y = 250
+$p2_y = 250
+$ball_x = 400
+$ball_y = 300
+$ball_vx = 4
+$ball_vy = 3
+
+# Deschidere fereastră OpenGL + Proiecție Ortogonală 2D (800x600)
+GL_INIT("Oli Pong OpenGL 1v1", 800, 600)
+GL_ORTHO(0, 800, 600, 0) # Origine stânga-sus (0,0) ca în 2D
+
+while GL_IS_OPEN() do
+    # 1. Input local prin OpenGL
+    if GL_KEY_DOWN("W") then $p1_y = $p1_y - 6 endif
+    if GL_KEY_DOWN("S") then $p1_y = $p1_y + 6 endif
+
+    # 2. Rețea: Citire poziție Client
+    $pkt = NET_RECV_FROM($sock)
+    if HASKEY($pkt, "data") and $pkt["data"] != "" then
+        $p2_y = INT($pkt["data"])
+    endif
+
+    # 3. Fizică Minge
+    $ball_x = $ball_x + $ball_vx
+    $ball_y = $ball_y + $ball_vy
+
+    if $ball_y <= 10 or $ball_y >= 580 then $ball_vy = $ball_vy * -1 endif
+
+    # 4. Trimitere stare joc prin UDP
+    $state = STR($p1_y) .. "," .. STR($ball_x) .. "," .. STR($ball_y)
+    NET_SEND_TO($sock, $client_ip, $client_port, $state)
+
+    # 5. Randare OpenGL
+    GL_CLEAR(0, 0, 0) # Fundal negru
+
+    # Palete și Minge (Dreptunghiuri/Cerc 2D prin OpenGL)
+    GL_DRAW_RECT(10, $p1_y, 15, 100, 255, 255, 255)   # Paletă P1
+    GL_DRAW_RECT(775, $p2_y, 15, 100, 255, 255, 255)  # Paletă P2
+    GL_DRAW_RECT($ball_x, $ball_y, 12, 12, 255, 255, 0) # Minge (pătrat/cerc)
+
+    GL_SWAP_BUFFERS()
+    WAIT(16) # ~60 FPS
+endwhile
+
+NET_CLOSE($sock)

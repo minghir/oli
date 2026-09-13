@@ -216,7 +216,8 @@ void vOliEngine::initializeFunctionsHandlers() {
         };
 
     vOliKeyWords::registerNativeFunction(L"LEN");
-
+    m_functionsHandlers[L"SIZE"] = m_functionsHandlers[L"LEN"];
+    vOliKeyWords::registerNativeFunction(L"SIZE");
 
     m_functionsHandlers[L"INPUT"] = [this](const std::vector<vData>& args) -> vData {
         return this->handleInputFunc(args);

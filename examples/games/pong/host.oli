@@ -1,53 +1,117 @@
 plugin oli_net
 plugin oli_opengl
 
+echo "=== PONG HOST ==="
+
 $sock = NET_BIND(8080)
+if $sock < 0 then
+    echo "Eroare Socket!"
+    return 0
+endif
+
 $client_ip = "127.0.0.1"
 $client_port = 8081
 
-# Stare Joc
-$p1_y = 250
-$p2_y = 250
+$p1_y = 300
+$p2_y = 300
 $ball_x = 400
 $ball_y = 300
-$ball_vx = 4
+$ball_vx = 5
 $ball_vy = 3
+$score1 = 0
+$score2 = 0
 
-# Deschidere fereastră OpenGL + Proiecție Ortogonală 2D (800x600)
-GL_INIT("Oli Pong OpenGL 1v1", 800, 600)
-GL_ORTHO(0, 800, 600, 0) # Origine stânga-sus (0,0) ca în 2D
+GL_INIT(800, 600, "Oli Pong 1v1 - HOST")
 
-while GL_IS_OPEN() do
-    # 1. Input local prin OpenGL
-    if GL_KEY_DOWN("W") then $p1_y = $p1_y - 6 endif
-    if GL_KEY_DOWN("S") then $p1_y = $p1_y + 6 endif
+$running = 1
+while $running do
+    # 1. Control Paletă Locală (Mouse sau Poziție Fixă)
+    $m_y = GL_MOUSE_Y()
+    if $m_y > 0 then
+        $p1_y = $m_y
+    endif
 
     # 2. Rețea: Citire poziție Client
     $pkt = NET_RECV_FROM($sock)
-    if HASKEY($pkt, "data") and $pkt["data"] != "" then
-        $p2_y = INT($pkt["data"])
+    if HASKEY($pkt, "data") then
+        if $pkt["data"] != "" then
+            $p2_y = INT($pkt["data"])
+        endif
     endif
 
+    # 3. Fizică Minge
     # 3. Fizică Minge
     $ball_x = $ball_x + $ball_vx
     $ball_y = $ball_y + $ball_vy
 
-    if $ball_y <= 10 or $ball_y >= 580 then $ball_vy = $ball_vy * -1 endif
+    # Coliziune perete sus (forțează direcția în jos)
+    if $ball_y <= 15 then
+        $ball_y = 15
+        $ball_vy = ABS($ball_vy)
+    endif
 
-    # 4. Trimitere stare joc prin UDP
-    $state = STR($p1_y) .. "," .. STR($ball_x) .. "," .. STR($ball_y)
+    # Coliziune perete jos (forțează direcția în sus)
+    if $ball_y >= 585 then
+        $ball_y = 585
+        $ball_vy = ABS($ball_vy) * -1
+    endif
+
+    # Coliziune Paletă 1 (Stânga)
+    if $ball_x <= 30 and $ball_y >= ($p1_y - 50) and $ball_y <= ($p1_y + 50) then
+        $ball_x = 30
+        $ball_vx = ABS($ball_vx)
+    endif
+
+    # Coliziune Paletă 2 (Dreapta)
+    if $ball_x >= 770 and $ball_y >= ($p2_y - 50) and $ball_y <= ($p2_y + 50) then
+        $ball_x = 770
+        $ball_vx = ABS($ball_vx) * -1
+    endif
+
+    # Siguranță: Reset la centru dacă iese complet din ecran
+    if $ball_x < 0 or $ball_y < -20 or $ball_y > 620 then
+        $score2 = $score2 + 1
+        $ball_x = 400
+        $ball_y = 300
+        $ball_vx = 5
+        $ball_vy = 3
+    endif
+
+    if $ball_x > 800 then
+        $score1 = $score1 + 1
+        $ball_x = 400
+        $ball_y = 300
+        $ball_vx = -5
+        $ball_vy = 3
+    endif
+
+    # 4. Trimitere Stare Joc
+    $state = STR($p1_y) .. "," .. STR($ball_x) .. "," .. STR($ball_y) .. "," .. STR($score1) .. "," .. STR($score2)
     NET_SEND_TO($sock, $client_ip, $client_port, $state)
 
-    # 5. Randare OpenGL
-    GL_CLEAR(0, 0, 0) # Fundal negru
+    # 5. Randare (16777215  Alb, 16776960  Galben)
+    GL_CLEAR(0)
 
-    # Palete și Minge (Dreptunghiuri/Cerc 2D prin OpenGL)
-    GL_DRAW_RECT(10, $p1_y, 15, 100, 255, 255, 255)   # Paletă P1
-    GL_DRAW_RECT(775, $p2_y, 15, 100, 255, 255, 255)  # Paletă P2
-    GL_DRAW_RECT($ball_x, $ball_y, 12, 12, 255, 255, 0) # Minge (pătrat/cerc)
+    # Paletă Host (Stânga - mai multe linii pentru grosime)
+    GL_LINE(15, $p1_y - 40, 15, $p1_y + 40, 16777215)
+    GL_LINE(16, $p1_y - 40, 16, $p1_y + 40, 16777215)
+    GL_LINE(17, $p1_y - 40, 17, $p1_y + 40, 16777215)
 
-    GL_SWAP_BUFFERS()
-    WAIT(16) # ~60 FPS
+    # Paletă Client (Dreapta)
+    GL_LINE(783, $p2_y - 40, 783, $p2_y + 40, 16777215)
+    GL_LINE(784, $p2_y - 40, 784, $p2_y + 40, 16777215)
+    GL_LINE(785, $p2_y - 40, 785, $p2_y + 40, 16777215)
+
+    # Minge Galbenă
+    GL_FILL_CIRCLE($ball_x, $ball_y, 10, 16776960)
+
+    # Scor
+    GL_TEXT(200, 30, "P1: " .. STR($score1))
+    GL_TEXT(550, 30, "P2: " .. STR($score2))
+
+    $running = GL_PRESENT()
+    WAIT(16)
 endwhile
 
 NET_CLOSE($sock)
+GL_CLOSE()

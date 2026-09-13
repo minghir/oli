@@ -424,8 +424,10 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         if (g_GL.hdc) SwapBuffers(g_GL.hdc);
         MSG msg;
         while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
+            if (msg.message == WM_QUIT) return vData{ 0LL }; // Flag oprire pe Windows
             TranslateMessage(&msg); DispatchMessageW(&msg);
         }
+        if (!g_GL.hwnd) return vData{ 0LL };
 #else
         if (g_GL.display && g_GL.window) glXSwapBuffers(g_GL.display, g_GL.window);
         while (XPending(g_GL.display)) {

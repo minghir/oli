@@ -1,0 +1,70 @@
+plugin oli_net
+plugin oli_opengl
+
+echo "=== PONG CLIENT ==="
+
+$sock = NET_BIND(8081)
+if $sock < 0 then
+    echo "Eroare Socket Client!"
+    return 0
+endif
+
+$host_ip = "127.0.0.1"
+$host_port = 8080
+
+$p1_y = 300
+$p2_y = 300
+$ball_x = 400
+$ball_y = 300
+$score1 = 0
+$score2 = 0
+
+GL_INIT(800, 600, "Oli Pong 1v1 - CLIENT")
+
+$running = 1
+while $running do
+    $m_y = GL_MOUSE_Y()
+    if $m_y > 0 then
+        $p2_y = $m_y
+    endif
+
+    # Trimite poziția paletei locale
+    NET_SEND_TO($sock, $host_ip, $host_port, STR($p2_y))
+
+    # Primește starea de la Host
+    $pkt = NET_RECV_FROM($sock)
+    if HASKEY($pkt, "data") then
+        if $pkt["data"] != "" then
+            $parts = SPLIT($pkt["data"], ",")
+            if LEN($parts) >= 5 then
+                $p1_y = INT($parts[0])
+                $ball_x = INT($parts[1])
+                $ball_y = INT($parts[2])
+                $score1 = INT($parts[3])
+                $score2 = INT($parts[4])
+            endif
+        endif
+    endif
+
+    # Randare
+    GL_CLEAR(0)
+
+    GL_LINE(15, $p1_y - 40, 15, $p1_y + 40, 16777215)
+    GL_LINE(16, $p1_y - 40, 16, $p1_y + 40, 16777215)
+    GL_LINE(17, $p1_y - 40, 17, $p1_y + 40, 16777215)
+
+    GL_LINE(783, $p2_y - 40, 783, $p2_y + 40, 16777215)
+    GL_LINE(784, $p2_y - 40, 784, $p2_y + 40, 16777215)
+    GL_LINE(785, $p2_y - 40, 785, $p2_y + 40, 16777215)
+
+    GL_FILL_CIRCLE($ball_x, $ball_y, 10, 16776960)
+
+    GL_TEXT(200, 30, "P1: " .. STR($score1))
+    GL_TEXT(550, 30, "P2: " .. STR($score2))
+
+    $running = GL_PRESENT()
+    WAIT(16)
+endwhile
+
+NET_CLOSE($sock)
+GL_CLOSE()

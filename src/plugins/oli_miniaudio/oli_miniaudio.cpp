@@ -98,17 +98,30 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         };
 
     // --- SND_STOP(id) ---
-    registry[L"SND_STOP"] = [](const std::vector<vData>& args) -> vData {
+    registry[L"SND_PLAY"] = [](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData{ 0LL };
         int id = (int)toDouble(args[0]);
 
         if (g_Audio.soundMap.count(id)) {
-            ma_sound_stop(g_Audio.soundMap[id]);
-            ma_sound_seek_to_pcm_frame(g_Audio.soundMap[id], 0); // Resetăm la început
+            // Repunem capul de redare la cadrul 0 înainte de start
+            ma_sound_seek_to_pcm_frame(g_Audio.soundMap[id], 0);
+            ma_sound_start(g_Audio.soundMap[id]);
             return vData{ 1LL };
         }
         return vData{ 0LL };
         };
+
+    // --- SND_PLAY_ONESHOT("cale/sunet.wav") ---
+    // Redă sunetul polifonic (suprapus) fără a depinde de un ID fix
+    registry[L"SND_PLAY_ONESHOT"] = [](const std::vector<vData>& args) -> vData {
+        if (!g_Audio.isInitialized || args.empty()) return vData{ 0LL };
+
+        std::wstring wPath = std::get<std::wstring>(args[0].getTrueData().value);
+        std::string path = toUtf8(wPath);
+
+        ma_result result = ma_engine_play_sound(&g_Audio.engine, path.c_str(), NULL);
+        return vData{ (result == MA_SUCCESS) ? 1LL : 0LL };
+     };
 
     // --- SND_SET_VOL(id, volume) ---
     // volum: 0.0 (mut) -> 1.0 (normal) -> + (amplificat)

@@ -9,7 +9,7 @@ if $sock < 0 then
     return 0
 endif
 
-$host_ip = "127.0.0.1"
+$host_ip = "192.168.88.37"
 $host_port = 8080
 
 $p1_y = 300
@@ -18,6 +18,11 @@ $ball_x = 400
 $ball_y = 300
 $score1 = 0
 $score2 = 0
+
+# Valori tinta pentru LERP (interpolare lina)
+$target_p1_y = 300
+$target_ball_x = 400
+$target_ball_y = 300
 
 GL_INIT(800, 600, "Oli Pong 1v1 - CLIENT")
 
@@ -31,20 +36,24 @@ while $running do
     # Trimite poziția paletei locale
     NET_SEND_TO($sock, $host_ip, $host_port, STR($p2_y))
 
-    # Primește starea de la Host
+    # Rețea: Drenare coadă UDP și actualizare ținte
     $pkt = NET_RECV_FROM($sock)
-    if HASKEY($pkt, "data") then
-        if $pkt["data"] != "" then
-            $parts = SPLIT($pkt["data"], ",")
-            if LEN($parts) >= 5 then
-                $p1_y = INT($parts[0])
-                $ball_x = INT($parts[1])
-                $ball_y = INT($parts[2])
-                $score1 = INT($parts[3])
-                $score2 = INT($parts[4])
-            endif
+    while HASKEY($pkt, "data") and $pkt["data"] != "" do
+        $parts = SPLIT($pkt["data"], ",")
+        if LEN($parts) >= 5 then
+            $target_p1_y = INT($parts[0])
+            $target_ball_x = INT($parts[1])
+            $target_ball_y = INT($parts[2])
+            $score1 = INT($parts[3])
+            $score2 = INT($parts[4])
         endif
-    endif
+        $pkt = NET_RECV_FROM($sock)
+    endwhile
+
+    # Interpolare Liniară (LERP) pentru mișcarea lină a entităților primite
+    $p1_y = $p1_y + ($target_p1_y - $p1_y) * 0.35
+    $ball_x = $ball_x + ($target_ball_x - $ball_x) * 0.45
+    $ball_y = $ball_y + ($target_ball_y - $ball_y) * 0.45
 
     # Randare
     GL_CLEAR(0)

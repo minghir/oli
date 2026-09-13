@@ -340,17 +340,56 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 #else
         g_GL.display = XOpenDisplay(nullptr);
         if (!g_GL.display) return vData{0LL};
-        Window root = DefaultRootWindow(g_GL.display);
-        GLint att[] = { GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None };
-        XVisualInfo* vi = glXChooseVisual(g_GL.display, 0, att);
+
+        int screen = DefaultScreen(g_GL.display);
+        Window root = RootWindow(g_GL.display, screen);
+
+        // 1. Încercăm mai întâi atributele ideale
+        GLint att[] = { GLX_RGBA, GLX_DOUBLEBUFFER, GLX_DEPTH_SIZE, 24, None };
+        XVisualInfo* vi = glXChooseVisual(g_GL.display, screen, att);
+
+        // 2. Fallback dacă driverul/mediul X11 nu suportă Depth 24 bit
+        if (!vi) {
+            GLint attFallback[] = { GLX_RGBA, GLX_DOUBLEBUFFER, None };
+            vi = glXChooseVisual(g_GL.display, screen, attFallback);
+        }
+
+        // 3. Verificare de siguranță anti-crash
+        if (!vi) {
+            std::cerr << "[GL_INIT Error] glXChooseVisual a eșuat! Nu s-a găsit niciun VisualInfo OpenGL compatibil." << std::endl;
+            XCloseDisplay(g_GL.display);
+            g_GL.display = nullptr;
+            return vData{0LL};
+        }
+
         XSetWindowAttributes swa;
         swa.colormap = XCreateColormap(g_GL.display, root, vi->visual, AllocNone);
         swa.event_mask = ExposureMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask;
+
         g_GL.window = XCreateWindow(g_GL.display, root, 0, 0, w, h, 0, vi->depth,
                                     InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
+
+        if (!g_GL.window) {
+            XFree(vi);
+            XCloseDisplay(g_GL.display);
+            g_GL.display = nullptr;
+            return vData{0LL};
+        }
+
         XMapWindow(g_GL.display, g_GL.window);
         XStoreName(g_GL.display, g_GL.window, sTitle.c_str());
+
         g_GL.context = glXCreateContext(g_GL.display, vi, nullptr, GL_TRUE);
+        XFree(vi); // Eliberăm structura XVisualInfo din memorie
+
+        if (!g_GL.context) {
+            XDestroyWindow(g_GL.display, g_GL.window);
+            XCloseDisplay(g_GL.display);
+            g_GL.display = nullptr;
+            g_GL.window = 0;
+            return vData{0LL};
+        }
+
         glXMakeCurrent(g_GL.display, g_GL.window, g_GL.context);
         g_GL.wmDeleteMessage = XInternAtom(g_GL.display, "WM_DELETE_WINDOW", False);
         XSetWMProtocols(g_GL.display, g_GL.window, &g_GL.wmDeleteMessage, 1);

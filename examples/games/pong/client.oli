@@ -12,14 +12,20 @@ endif
 $host_ip = "192.168.88.37"
 $host_port = 8080
 
+# Stare Joc
 $p1_y = 300
 $p2_y = 300
 $ball_x = 400
 $ball_y = 300
+$ball_vx = 0
+$ball_vy = 0
 $score1 = 0
 $score2 = 0
+$game_state = 0
+$winner = 0
+$start_delay = 0
 
-# Valori tinta pentru LERP (interpolare lina)
+# Valori țintă pentru sincronizare și LERP
 $target_p1_y = 300
 $target_ball_x = 400
 $target_ball_y = 300
@@ -33,43 +39,87 @@ while $running do
         $p2_y = $m_y
     endif
 
-    # Trimite poziția paletei locale
+    # 1. Trimite poziția paletei locale către Host
     NET_SEND_TO($sock, $host_ip, $host_port, STR($p2_y))
 
-    # Rețea: Drenare coadă UDP și actualizare ținte
-    $pkt = NET_RECV_FROM($sock)
-    while HASKEY($pkt, "data") and $pkt["data"] != "" do
-        $parts = SPLIT($pkt["data"], ",")
-        if LEN($parts) >= 5 then
-            $target_p1_y = INT($parts[0])
-            $target_ball_x = INT($parts[1])
-            $target_ball_y = INT($parts[2])
-            $score1 = INT($parts[3])
-            $score2 = INT($parts[4])
-        endif
+    # 2. Rețea: Drenare coadă UDP și citire 10 parametri
+    $drain = 1
+    while $drain == 1 do
         $pkt = NET_RECV_FROM($sock)
+        if HASKEY($pkt, "data") then
+            $data_str = $pkt["data"]
+            if $data_str != "" then
+                $parts = SPLIT($data_str, ",")
+                if LEN($parts) >= 10 then
+                    $target_p1_y   = INT($parts[0])
+                    $target_ball_x = INT($parts[1])
+                    $target_ball_y = INT($parts[2])
+                    $ball_vx       = INT($parts[3])
+                    $ball_vy       = INT($parts[4])
+                    $score1        = INT($parts[5])
+                    $score2        = INT($parts[6])
+                    $game_state    = INT($parts[7])
+                    $winner        = INT($parts[8])
+                    $start_delay   = INT($parts[9])
+                endif
+            else
+                $drain = 0
+            endif
+        else
+            $drain = 0
+        endif
     endwhile
 
-    # Interpolare Liniară (LERP) pentru mișcarea lină a entităților primite
-    $p1_y = $p1_y + ($target_p1_y - $p1_y) * 0.35
-    $ball_x = $ball_x + ($target_ball_x - $ball_x) * 0.45
-    $ball_y = $ball_y + ($target_ball_y - $ball_y) * 0.45
+    # 3. Predicție locală minge + corecție lină a deviațiilor (Drift Correction)
+    if $game_state == 0 then
+        $ball_x = $ball_x + $ball_vx
+        $ball_y = $ball_y + $ball_vy
 
-    # Randare
+        # Corecție fină (10%) către poziția reală trimisă de Host
+        $ball_x = $ball_x + ($target_ball_x - $ball_x) * 0.10
+        $ball_y = $ball_y + ($target_ball_y - $ball_y) * 0.10
+    endif
+
+    # 4. Interpolare LERP pentru paleta P1 (Host)
+    $p1_y = $p1_y + ($target_p1_y - $p1_y) * 0.35
+
+    # 5. Randare Ecran
     GL_CLEAR(0)
 
+    # Paletă Host (P1 - Stânga)
     GL_LINE(15, $p1_y - 40, 15, $p1_y + 40, 16777215)
     GL_LINE(16, $p1_y - 40, 16, $p1_y + 40, 16777215)
     GL_LINE(17, $p1_y - 40, 17, $p1_y + 40, 16777215)
 
+    # Paletă Client (P2 - Dreapta)
     GL_LINE(783, $p2_y - 40, 783, $p2_y + 40, 16777215)
     GL_LINE(784, $p2_y - 40, 784, $p2_y + 40, 16777215)
     GL_LINE(785, $p2_y - 40, 785, $p2_y + 40, 16777215)
 
+    # Minge
     GL_FILL_CIRCLE($ball_x, $ball_y, 10, 16776960)
 
+    # Afișare Scor
     GL_TEXT(200, 30, "P1: " .. STR($score1))
     GL_TEXT(550, 30, "P2: " .. STR($score2))
+
+    # Afișare Numărătoare Inversă / Stare Start
+    if $game_state == 0 then
+        if $start_delay > 0 then
+            $sec_left = INT($start_delay / 60) + 1
+            GL_TEXT(310, 200, "START IN: " .. STR($sec_left) .. " SECUNDE")
+        endif
+    endif
+
+    # Afișare Stare Game Over
+    if $game_state == 1 then
+        if $winner == 2 then
+            GL_TEXT(330, 280, "AI CASTIGAT (P2)!")
+        endif
+        if $winner == 1 then
+            GL_TEXT(310, 280, "AI PIERDUT (P1 a castigat)!")
+        endif
+    endif
 
     $running = GL_PRESENT()
     WAIT(16)

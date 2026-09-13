@@ -1,7 +1,8 @@
 plugin oli_net
 plugin oli_opengl
 
-echo "=== PONG CLIENT ==="
+#echo "=== PONG CLIENT ==="
+CONFIG WIN_APP 1
 
 $sock = NET_BIND(8081)
 if $sock < 0 then

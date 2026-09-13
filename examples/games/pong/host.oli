@@ -2,7 +2,8 @@ plugin oli_net
 plugin oli_opengl
 plugin oli_miniaudio
 
-echo "=== PONG HOST (Mod Ping-Pong 11 Puncte + Auto-Restart) ==="
+#echo "=== PONG HOST (Mod Ping-Pong 11 Puncte + Auto-Restart) ==="
+CONFIG WIN_APP 1
 
 $audio_ok = SND_INIT()
 if $audio_ok == 0 then

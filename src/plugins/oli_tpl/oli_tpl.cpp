@@ -1,8 +1,11 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "../../OliEngine.hpp"
 #include "../../vData.hpp"
-#include "../../ConsoleManager.hpp"
+#include "../../OliConsoleManager.hpp"
 #include "../../OliKeyWords.hpp"
 
+#include <cwchar>
 #include <string>
 #include <vector>
 #include <map>
@@ -52,6 +55,7 @@ static std::string wstringToUtf8(const std::wstring& wstr) {
     if (wstr.empty()) return "";
 #if defined(_WIN32) || defined(_WIN64)
     int count = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), (int)wstr.length(), NULL, 0, NULL, NULL);
+    if (count <= 0) return ""; // <--- PROTECȚIE CONTRA CRASH-ULUI
     std::string str(count, 0);
     WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), (int)wstr.length(), &str[0], count, NULL, NULL);
     return str;
@@ -178,29 +182,75 @@ static std::wstring filterDateFormat(const std::wstring& input, const std::vecto
     std::wstring fmt = (args.size() >= 1) ? args[0] : L"d.m.Y";
 
     int y = 0, m = 0, d = 0, H = 0, i = 0, s = 0;
-    if (swscanf(input.c_str(), L"%d-%d-%d %d:%d:%d", &y, &m, &d, &H, &i, &s) < 3) {
-        if (swscanf(input.c_str(), L"%d-%d-%d", &y, &m, &d) < 3) {
-            return input; // Format nedetectat
-        }
-    }
+    bool parsed = false;
 
-    wchar_t buf[128];
-    std::wstring res = fmt;
+    // 1. Detectare format de intrare (ISO: 2026-01-01, RO: 01.01.2026 sau 01/01/2026, cu/fără oră)
+    if (!parsed && swscanf(input.c_str(), L"%d-%d-%d %d:%d:%d", &y, &m, &d, &H, &i, &s) >= 3) parsed = true;
+    if (!parsed && swscanf(input.c_str(), L"%d-%d-%d", &y, &m, &d) == 3) parsed = true;
+    if (!parsed && swscanf(input.c_str(), L"%d.%d.%d %d:%d:%d", &d, &m, &y, &H, &i, &s) >= 3) parsed = true;
+    if (!parsed && swscanf(input.c_str(), L"%d.%d.%d", &d, &m, &y) == 3) parsed = true;
+    if (!parsed && swscanf(input.c_str(), L"%d/%d/%d", &d, &m, &y) == 3) parsed = true;
 
-    auto replaceTag = [&](const std::wstring& tag, int val, int width) {
-        swprintf(buf, 128, (width == 4) ? L"%04d" : L"%02d", val);
-        size_t p;
-        while ((p = res.find(tag)) != std::wstring::npos) {
-            res.replace(p, tag.length(), buf);
-        }
+    // Dacă formatul nu este recunoscut, se returnează valoarea brută
+    if (!parsed) return input;
+
+    static const wchar_t* MONTHS_RO[] = {
+        L"", L"Ianuarie", L"Februarie", L"Martie", L"Aprilie", L"Mai", L"Iunie",
+        L"Iulie", L"August", L"Septembrie", L"Octombrie", L"Noiembrie", L"Decembrie"
     };
 
-    replaceTag(L"Y", y, 4);
-    replaceTag(L"m", m, 2);
-    replaceTag(L"d", d, 2);
-    replaceTag(L"H", H, 2);
-    replaceTag(L"i", i, 2);
-    replaceTag(L"s", s, 2);
+    static const wchar_t* MONTHS_SHORT_RO[] = {
+        L"", L"Ian", L"Feb", L"Mar", L"Apr", L"Mai", L"Iun",
+        L"Iul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec"
+    };
+
+    wchar_t buf[32];
+    std::wstring res;
+    res.reserve(fmt.length() + 32);
+
+    // 2. Parcurgere caracter cu caracter (evită alterarea literelor din numele lunilor)
+    for (size_t idx = 0; idx < fmt.length(); ++idx) {
+        wchar_t c = fmt[idx];
+        switch (c) {
+        case L'Y':
+            swprintf(buf, 32, L"%04d", y);
+            res += buf;
+            break;
+        case L'y':
+            swprintf(buf, 32, L"%02d", y % 100);
+            res += buf;
+            break;
+        case L'm':
+            swprintf(buf, 32, L"%02d", m);
+            res += buf;
+            break;
+        case L'F':
+            if (m >= 1 && m <= 12) res += MONTHS_RO[m];
+            break;
+        case L'M':
+            if (m >= 1 && m <= 12) res += MONTHS_SHORT_RO[m];
+            break;
+        case L'd':
+            swprintf(buf, 32, L"%02d", d);
+            res += buf;
+            break;
+        case L'H':
+            swprintf(buf, 32, L"%02d", H);
+            res += buf;
+            break;
+        case L'i':
+            swprintf(buf, 32, L"%02d", i);
+            res += buf;
+            break;
+        case L's':
+            swprintf(buf, 32, L"%02d", s);
+            res += buf;
+            break;
+        default:
+            res += c;
+            break;
+        }
+    }
 
     return res;
 }
@@ -212,6 +262,7 @@ struct FilterCall {
 };
 
 // Parser pentru expresia de filtre (ex: "number_format:2:',':'.'")
+// Parser pentru expresia de filtre (suportă atât date("format") cât și date:format)
 static std::wstring applyFilterChain(std::wstring valStr, const std::wstring& rawDirective) {
     size_t pipePos = rawDirective.find(L"|");
     if (pipePos == std::wstring::npos) return valStr;
@@ -224,31 +275,59 @@ static std::wstring applyFilterChain(std::wstring valStr, const std::wstring& ra
         filterSegment = trimWString(filterSegment);
         if (filterSegment.empty()) continue;
 
-        // Extragere nume filtru și argumente delimitate prin ':'
-        std::wstringstream fss(filterSegment);
-        std::wstring fName, arg;
+        // Ignorăm flag-urile speciale de escapare RTF/RAW
+        if (filterSegment == L"raw" || filterSegment == L"rtf") continue;
+
+        std::wstring fName;
         std::vector<std::wstring> fArgs;
 
-        std::getline(fss, fName, L':');
-        fName = trimWString(fName);
+        // 1. Verificăm dacă sintaxa este de tip funcție: filter_name("arg1", "arg2")
+        size_t openP = filterSegment.find(L'(');
+        size_t closeP = filterSegment.rfind(L')');
 
-        while (std::getline(fss, arg, L':')) {
-            arg = trimWString(arg);
-            // Curățare ghilimele din argumente
-            if (arg.length() >= 2 && (arg.front() == L'"' || arg.front() == L'\'')) {
-                arg = arg.substr(1, arg.length() - 2);
+        if (openP != std::wstring::npos && closeP != std::wstring::npos && closeP > openP) {
+            fName = trimWString(filterSegment.substr(0, openP));
+            std::wstring argsInside = filterSegment.substr(openP + 1, closeP - openP - 1);
+
+            std::wstringstream ass(argsInside);
+            std::wstring aToken;
+            while (std::getline(ass, aToken, L',')) {
+                aToken = trimWString(aToken);
+                // Curățăm ghilimelele " sau '
+                if (aToken.length() >= 2 && (aToken.front() == L'"' || aToken.front() == L'\'')) {
+                    aToken = aToken.substr(1, aToken.length() - 2);
+                }
+                fArgs.push_back(aToken);
             }
-            fArgs.push_back(arg);
+        }
+        else {
+            // 2. Sintaxa alternativă cu două puncte: filter_name:arg1:arg2
+            std::wstringstream fss(filterSegment);
+            std::wstring arg;
+
+            std::getline(fss, fName, L':');
+            fName = trimWString(fName);
+
+            while (std::getline(fss, arg, L':')) {
+                arg = trimWString(arg);
+                if (arg.length() >= 2 && (arg.front() == L'"' || arg.front() == L'\'')) {
+                    arg = arg.substr(1, arg.length() - 2);
+                }
+                fArgs.push_back(arg);
+            }
         }
 
-        // Execuție filtru
-        if (fName == L"number_format") {
+        // 3. Execuție filtru (am adăugat alias-urile "date" și "number")
+        if (fName == L"number_format" || fName == L"number") {
             valStr = filterNumberFormat(valStr, fArgs);
-        } else if (fName == L"date_format") {
+        }
+        else if (fName == L"date_format" || fName == L"date") {
             valStr = filterDateFormat(valStr, fArgs);
-        } else if (fName == L"upper") {
+        }
+        else if (fName == L"upper") {
             for (auto& c : valStr) c = std::towupper(c);
-        } else if (fName == L"lower") {
+        }
+        else if (fName == L"lower") {
             for (auto& c : valStr) c = std::towlower(c);
         }
     }
@@ -261,8 +340,8 @@ static std::wstring applyFilterChain(std::wstring valStr, const std::wstring& ra
 // EVALUATOR ȘI LOOKUP ÎN CONTEXTUL DE DATE
 // ============================================================================
 static vData resolveVar(
-    const std::wstring& rawExpr, 
-    const std::vector<Scope>& scopeStack, 
+    const std::wstring& rawExpr,
+    const std::vector<Scope>& scopeStack,
     const PluginRegistry& registry = {}
 ) {
     std::wstring expr = trimWString(rawExpr);
@@ -275,7 +354,8 @@ static vData resolveVar(
             try {
                 std::wstring s = trimWString(v.toWString());
                 if (!s.empty()) return std::stod(s);
-            } catch (...) {}
+            }
+            catch (...) {}
         }
         return 0.0;
     };
@@ -301,7 +381,8 @@ static vData resolveVar(
         }
         if (wrapsAll) {
             expr = trimWString(expr.substr(1, expr.length() - 2));
-        } else {
+        }
+        else {
             break;
         }
     }
@@ -322,11 +403,14 @@ static vData resolveVar(
         if ((ch == L'"' || ch == L'\'') && (qChar == 0 || qChar == ch)) {
             inQ = !inQ;
             qChar = inQ ? ch : 0;
-        } else if (!inQ && ch == L')') {
+        }
+        else if (!inQ && ch == L')') {
             parenDepth++;
-        } else if (!inQ && ch == L'(') {
+        }
+        else if (!inQ && ch == L'(') {
             parenDepth--;
-        } else if (!inQ && parenDepth == 0) {
+        }
+        else if (!inQ && parenDepth == 0) {
             if (ch == L'+' || ch == L'-') {
                 if (ch == L'-') {
                     if (i == 0) continue;
@@ -350,11 +434,14 @@ static vData resolveVar(
             if ((ch == L'"' || ch == L'\'') && (qChar == 0 || qChar == ch)) {
                 inQ = !inQ;
                 qChar = inQ ? ch : 0;
-            } else if (!inQ && ch == L')') {
+            }
+            else if (!inQ && ch == L')') {
                 parenDepth++;
-            } else if (!inQ && ch == L'(') {
+            }
+            else if (!inQ && ch == L'(') {
                 parenDepth--;
-            } else if (!inQ && parenDepth == 0) {
+            }
+            else if (!inQ && parenDepth == 0) {
                 if (ch == L'*' || ch == L'/') {
                     lowestOpPos = i;
                     lowestOp = ch;
@@ -384,7 +471,7 @@ static vData resolveVar(
         if (lowestOp == L'/') {
             if (rNum == 0.0) return vData(0LL);
             double res = lNum / rNum;
-            if (std::floor(res) == res) return vData((long long)res); // Afișează curat "54" în loc de "54.000000"
+            if (std::floor(res) == res) return vData((long long)res);
             return vData(res);
         }
     }
@@ -402,12 +489,12 @@ static vData resolveVar(
 
         vOliKeyWords::populateNativeFunctions();
 
-        bool isFunc = vOliKeyWords::isNativeFunction(uFuncName) || 
-                      (registry.find(uFuncName) != registry.end()) ||
-                      (uFuncName == L"TRIM" || uFuncName == L"UPPER" || uFuncName == L"LOWER" || 
-                       uFuncName == L"STR" || uFuncName == L"LEN" || uFuncName == L"LENGTH" || 
-                       uFuncName == L"SUBSTR" || uFuncName == L"SUBSTRING" || uFuncName == L"COALESCE" || 
-                       uFuncName == L"NVL" || uFuncName == L"IFNULL" || uFuncName == L"EVAL" || uFuncName == L"ROUND");
+        bool isFunc = vOliKeyWords::isNativeFunction(uFuncName) ||
+            (registry.find(uFuncName) != registry.end()) ||
+            (uFuncName == L"TRIM" || uFuncName == L"UPPER" || uFuncName == L"LOWER" ||
+                uFuncName == L"STR" || uFuncName == L"LEN" || uFuncName == L"LENGTH" ||
+                uFuncName == L"SUBSTR" || uFuncName == L"SUBSTRING" || uFuncName == L"COALESCE" ||
+                uFuncName == L"NVL" || uFuncName == L"IFNULL" || uFuncName == L"EVAL" || uFuncName == L"ROUND");
 
         if (isFunc) {
             std::wstring innerArgs = trimWString(expr.substr(openParen + 1, closeParen - openParen - 1));
@@ -425,25 +512,31 @@ static vData resolveVar(
                         inQArg = !inQArg;
                         qCharArg = inQArg ? ch : 0;
                         currentArg += ch;
-                    } else if (!inQArg && ch == L'(') {
+                    }
+                    else if (!inQArg && ch == L'(') {
                         pDepthArg++;
                         currentArg += ch;
-                    } else if (!inQArg && ch == L')') {
+                    }
+                    else if (!inQArg && ch == L')') {
                         pDepthArg--;
                         currentArg += ch;
-                    } else if (!inQArg && pDepthArg == 0 && ch == L',') {
+                    }
+                    else if (!inQArg && pDepthArg == 0 && ch == L',') {
                         currentArg = trimWString(currentArg);
                         if (!currentArg.empty()) {
                             if ((currentArg.front() == L'"' || currentArg.front() == L'\'') && currentArg.back() == currentArg.front()) {
                                 evalArgs.push_back(vData(currentArg.substr(1, currentArg.length() - 2)));
-                            } else {
+                            }
+                            else {
                                 evalArgs.push_back(resolveVar(currentArg, scopeStack, registry));
                             }
-                        } else {
+                        }
+                        else {
                             evalArgs.push_back(vData(L""));
                         }
                         currentArg.clear();
-                    } else {
+                    }
+                    else {
                         currentArg += ch;
                     }
                 }
@@ -452,7 +545,8 @@ static vData resolveVar(
                 if (!currentArg.empty()) {
                     if ((currentArg.front() == L'"' || currentArg.front() == L'\'') && currentArg.back() == currentArg.front()) {
                         evalArgs.push_back(vData(currentArg.substr(1, currentArg.length() - 2)));
-                    } else {
+                    }
+                    else {
                         evalArgs.push_back(resolveVar(currentArg, scopeStack, registry));
                     }
                 }
@@ -506,7 +600,85 @@ static vData resolveVar(
     }
 
     // ========================================================================
-    // 5. REZOLVARE VARIABILE ($p.registration) SAU LITERALE NUMERICE / TEXT
+    // 5. ACCES DINAMIC PRIN PARANTEZE DREPTE: map[expr] / array[idx]
+    // ========================================================================
+    size_t bOpen = expr.find(L'[');
+    size_t bClose = expr.rfind(L']');
+
+    if (bOpen != std::wstring::npos && bClose != std::wstring::npos && bClose > bOpen) {
+        std::wstring mapVarName = trimWString(expr.substr(0, bOpen));
+        std::wstring keyExpr = trimWString(expr.substr(bOpen + 1, bClose - bOpen - 1));
+
+        vData mapVal = resolveVar(mapVarName, scopeStack, registry);
+        vData keyVal = resolveVar(keyExpr, scopeStack, registry);
+
+        std::wstring keyStr = trimWString(keyVal.toWString());
+
+        // 1. Logare informații cheie prin OliConsoleManager
+        std::wstring debugMsg = L"[TPL_KEY] Brut: '" + keyVal.toWString() +
+            L"' | Len brut: " + std::to_wstring(keyVal.toWString().length()) +
+            L" | Len trim: " + std::to_wstring(keyStr.length());
+        LOG_INFO(debugMsg);
+
+        // 2. Logare coduri ASCII ale fiecărui caracter (pentru identificat spații sau null-byte)
+        std::wstring asciiBuf = L"[TPL_CHARS]: ";
+        for (wchar_t c : keyVal.toWString()) {
+            asciiBuf += L"[" + std::to_wstring((int)c) + L"]";
+        }
+        LOG_INFO(asciiBuf);
+
+        // Caz 1: Structură de tip MAP (Dicționar)
+        if (mapVal.isMap() && mapVal.rawMap() != nullptr) {
+            auto* m = mapVal.rawMap();
+
+            auto stripQuotes = [](std::wstring s) {
+                s = trimWString(s);
+                if (s.length() >= 2 && (s.front() == L'"' || s.front() == L'\'') && s.back() == s.front()) {
+                    s = s.substr(1, s.length() - 2);
+                }
+                return trimWString(s);
+            };
+
+            std::wstring cleanKey = stripQuotes(keyStr);
+
+            // 1. Căutare directă
+            auto it = m->find(cleanKey);
+            if (it != m->end()) return it->second;
+
+            // 2. Căutare alternativă cu/fără $
+            std::wstring altKey = (cleanKey.empty() || cleanKey[0] != L'$') ? (L"$" + cleanKey) : cleanKey.substr(1);
+            it = m->find(altKey);
+            if (it != m->end()) return it->second;
+
+            // 3. Fallback robust
+            std::wstring cleanKeyUpper = cleanKey;
+            for (auto& c : cleanKeyUpper) c = std::towupper(c);
+
+            for (const auto& [k, v] : *m) {
+                std::wstring tk = stripQuotes(k);
+                std::wstring tkUpper = tk;
+                for (auto& c : tkUpper) c = std::towupper(c);
+
+                if (tk == cleanKey || tk == altKey || tkUpper == cleanKeyUpper) {
+                    return v;
+                }
+            }
+        }
+        // Caz 2: Structură de tip ARRAY (Listă indexată)
+        else if (mapVal.isArray() && mapVal.rawArray() != nullptr) {
+            auto* arr = mapVal.rawArray();
+            try {
+                size_t idx = std::stoul(keyStr);
+                if (idx < arr->size()) return (*arr)[idx];
+            }
+            catch (...) {}
+        }
+
+        return vData(L"");
+    }
+
+    // ========================================================================
+    // 6. REZOLVARE VARIABILE STANDARD ($p.registration) SAU LITERALE
     // ========================================================================
     std::vector<std::wstring> tokens;
     std::wstring curToken;
@@ -516,12 +688,14 @@ static vData resolveVar(
         wchar_t ch = expr[i];
         if (ch == L'"' || ch == L'\'') {
             inQuotes = !inQuotes;
-        } else if (!inQuotes && (ch == L'.' || ch == L'[' || ch == L']')) {
+        }
+        else if (!inQuotes && (ch == L'.' || ch == L'[' || ch == L']')) {
             if (!curToken.empty()) {
                 tokens.push_back(curToken);
                 curToken.clear();
             }
-        } else {
+        }
+        else {
             curToken += ch;
         }
     }
@@ -563,11 +737,13 @@ static vData resolveVar(
             if (rootKey.find(L'.') != std::wstring::npos) {
                 double d = std::stod(rootKey, &idx);
                 if (idx == rootKey.length()) return vData(d);
-            } else {
+            }
+            else {
                 long long l = std::stoll(rootKey, &idx);
                 if (idx == rootKey.length()) return vData(l);
             }
-        } catch (...) {}
+        }
+        catch (...) {}
         return vData(L"");
     }
 
@@ -587,22 +763,27 @@ static vData resolveVar(
 
             if (mIt != m->end()) {
                 current = mIt->second;
-            } else {
+            }
+            else {
                 return vData(L"");
             }
-        } else if (current.isArray() && current.rawArray() != nullptr) {
+        }
+        else if (current.isArray() && current.rawArray() != nullptr) {
             auto* arr = current.rawArray();
             try {
                 size_t idx = std::stoul(key);
                 if (idx < arr->size()) {
                     current = (*arr)[idx];
-                } else {
+                }
+                else {
                     return vData(L"");
                 }
-            } catch (...) {
+            }
+            catch (...) {
                 return vData(L"");
             }
-        } else {
+        }
+        else {
             return vData(L"");
         }
     }
@@ -1014,11 +1195,11 @@ extern "C" {
         RegisterTplFunctions(registry);
     }
 
-    OLI_EXPORT void SetPluginConsoleManager(ConsoleManager *hostCm)
+    OLI_EXPORT void SetPluginConsoleManager(OliConsoleManager *hostCm)
     {
         if (hostCm != nullptr)
         {
-            ConsoleManager::setInstance(hostCm);
+            OliConsoleManager::setInstance(hostCm);
         }
     }
 

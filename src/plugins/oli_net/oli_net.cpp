@@ -8,7 +8,7 @@
 #pragma comment(lib, "ws2_32.lib")
 
 using socket_t = SOCKET;
-using ssize_t = SSIZE_T;
+//using ssize_t = SSIZE_T;
 #define IS_INVALID_SOCKET(s) ((s) == INVALID_SOCKET)
 #define CLOSE_SOCKET(s) closesocket(s)
 #else

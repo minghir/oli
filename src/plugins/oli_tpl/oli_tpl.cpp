@@ -2,7 +2,7 @@
 
 #include "../../OliEngine.hpp"
 #include "../../vData.hpp"
-#include "../../OliConsoleManager.hpp"
+#include "../../ConsoleManager.hpp"
 #include "../../OliKeyWords.hpp"
 
 #include <cwchar>
@@ -1195,11 +1195,11 @@ extern "C" {
         RegisterTplFunctions(registry);
     }
 
-    OLI_EXPORT void SetPluginConsoleManager(OliConsoleManager *hostCm)
+    OLI_EXPORT void SetPluginConsoleManager(ConsoleManager *hostCm)
     {
         if (hostCm != nullptr)
         {
-            OliConsoleManager::setInstance(hostCm);
+            ConsoleManager::setInstance(hostCm);
         }
     }
 

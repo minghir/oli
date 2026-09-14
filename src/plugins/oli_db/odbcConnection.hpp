@@ -8,7 +8,9 @@
 #include <map>
 #include <algorithm> // pentru std::find
 
+
 #include <windows.h> 
+
 #include <sql.h>
 #include <sqlext.h>
 

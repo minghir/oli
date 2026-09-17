@@ -9,7 +9,6 @@ private:
 
 public:
     OliSyntaxValidator() {
-        // Înregistrăm regulile în pipeline
         m_rules.push_back(std::make_unique<SetCommandRule>());
         m_rules.push_back(std::make_unique<StructureValidatorRule>());
         m_rules.push_back(std::make_unique<StrictVariableSyntaxRule>());
@@ -25,41 +24,81 @@ public:
         std::wstring line;
         int currentLineNum = 0;
 
+        bool inMultilineString = false;
+        wchar_t activeQuote = L'\0';
+
         while (std::getline(ss, line)) {
             currentLineNum++;
             std::wstring cleanLine = trim(line);
+
+            bool lineWasInMultiline = inMultilineString;
+
+            // 1. Scanăm ghilimelele din linia curentă pentru starea multiline
+            for (size_t i = 0; i < line.length(); ++i) {
+                wchar_t c = line[i];
+                if (c == L'\\') { i++; continue; }
+                if (c == L'#' && activeQuote == L'\0') break;
+
+                if (c == L'"' || c == L'\'') {
+                    if (activeQuote == L'\0') {
+                        activeQuote = c;
+                    }
+                    else if (activeQuote == c) {
+                        activeQuote = L'\0';
+                    }
+                }
+            }
+
+            bool lineEndsInMultiline = (activeQuote != L'\0');
+
+            // 2. Rulăm StringQuotesRule pe TOATE liniile pentru a-i menține starea internă sincronizată
+            for (const auto& rule : m_rules) {
+                if (dynamic_cast<StringQuotesRule*>(rule.get())) {
+                    ShellCommand dummySC;
+                    rule->check(dummySC, currentLineNum, line, errors);
+                }
+            }
+
+            // 3. Dacă linia este conținut din interiorul unui string multiline (ex: C++ CUDA),
+            // ignorăm doar regulile de structură Oli
+            if (lineWasInMultiline) {
+                inMultilineString = lineEndsInMultiline;
+                continue;
+            }
+
+            inMultilineString = lineEndsInMultiline;
+
             if (cleanLine.empty() || cleanLine[0] == L'#') continue;
 
-            // Împărțim linia dacă conține mai multe comenzi separate prin ';'
+            // 4. Executăm regulile de structură Oli pentru liniile de cod normale
             std::vector<std::wstring> subCommands = splitBySemicolon(cleanLine);
 
             for (const auto& subCmdStr : subCommands) {
                 std::wstring trimmedCmd = trim(subCmdStr);
                 if (trimmedCmd.empty()) continue;
 
-                // Parsăm comanda individuală
                 ShellCommand sc = vOliCommandParser::parse(trimmedCmd);
 
-                // Rulăm toate regulile din pipeline pentru instrucțiunea curentă
                 for (const auto& rule : m_rules) {
-                    rule->check(sc, currentLineNum, line, errors);
+                    if (!dynamic_cast<StringQuotesRule*>(rule.get())) {
+                        rule->check(sc, currentLineNum, line, errors);
+                    }
                 }
             }
         }
 
-        // Faza finală: Verificăm echilibrul blocurilor la nivel global de fișier
+        // Faza finală (verificare globală la sfârșit de fișier)
         for (const auto& rule : m_rules) {
             rule->finalize(errors);
         }
 
-        // Blocăm executarea doar dacă avem erori critice (OLI_ERROR)
         for (const auto& err : errors) {
             if (err.level == DiagnosticLevel::OLI_ERROR) {
                 return false;
             }
         }
 
-        return true; // Scriptul este executabil (poate avea doar avertismente)
+        return true;
     }
 
 private:

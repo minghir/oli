@@ -1,0 +1,36 @@
+plugin oli_cuda
+
+echo "=== TEST OLI CUDA JIT & VRAM ==="
+
+$gpu_ok = CUDA_INIT(0)
+if $gpu_ok == 0 then
+    echo "Eroare: Nu s-a putut inițializa placa video!"
+    return 0
+endif
+echo "[1/5] Placă GPU inițializată cu succes!"
+
+$d_arr = CUDA_MALLOC(40)
+echo "[2/5] Memorie VRAM alocată la adresa: " .. STR($d_arr)
+
+CUDA_MEMCPY_H2D($d_arr, 10, 20, 30, 40, 50)
+echo "[3/5] Date copiate pe GPU: [10, 20, 30, 40, 50]"
+
+# Citim kernel-ul C++ direct din fișier fără riscul de erori de sintaxă multiline
+$kernel_code = READFILE("tmp\cu\kernel.cu")
+
+$kernel_id = CUDA_COMPILE_KERNEL($kernel_code, "double_elements")
+if $kernel_id == 0 then
+    echo "Eroare la compilarea JIT!"
+    return 0
+endif
+echo "[4/5] Kernel CUDA compilat JIT! ID Kernel: " .. STR($kernel_id)
+
+CUDA_RUN_KERNEL($kernel_id, 1, 256, $d_arr, 5)
+echo "[5/5] Kernel executat cu succes pe GPU!"
+
+set $rez = CUDA_MEMCPY_D2H($d_arr, 5)
+echo "Rezultat GPU: " .. STR($rez[0]) .. ", " .. STR($rez[1]) .. ", " .. STR($rez[2]) .. ", " .. STR($rez[3]) .. ", " .. STR($rez[4])
+
+CUDA_FREE($d_arr)
+echo "=== TEST CUDA FINALIZAT CU SUCCES ==="
+input()

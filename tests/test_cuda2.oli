@@ -1,0 +1,86 @@
+plugin oli_cuda
+plugin oli_opengl
+
+echo "=== PARTICULE CUDA: ATRACȚIE CU MOUSE-UL ==="
+
+$gpu_ok = CUDA_INIT(0)
+if $gpu_ok == 0 then
+    echo "Eroare: Nu s-a putut inițializa GPU-ul!"
+    return 0
+endif
+
+GL_INIT(800, 600, "Oli CUDA + OpenGL Mouse Gravity")
+
+$count = 300
+$bytes = $count * 32
+$d_particles = CUDA_MALLOC($bytes)
+
+# Generare particule inițiale
+set $init_data = array(0)
+set $i = 0
+while $i < $count do
+    $px = 100 + ($i * 7) % 600
+    $py = 50 + ($i * 11) % 200
+    $pvx = ($i % 7) - 3
+    $pvy = ($i % 5) + 1
+
+    PUSH($init_data, $px)
+    PUSH($init_data, $py)
+    PUSH($init_data, $pvx)
+    PUSH($init_data, $pvy)
+    $i = $i + 1
+endwhile
+
+CUDA_MEMCPY_H2D($d_particles, $init_data)
+
+$kernel_code = READFILE("tmp\cu\kernel2.cu")
+$kernel_id = CUDA_COMPILE_KERNEL($kernel_code, "update_particles")
+
+if $kernel_id == 0 then
+    echo "Eroare compilare CUDA!"
+    GL_CLOSE()
+    return 0
+endif
+
+while GL_PRESENT() do
+    GL_CLEAR(724500)
+
+    # Citim poziția și starea butonului stânga mouse (0 = Left Click)
+    $mx = GL_MOUSE_X()
+    $my = GL_MOUSE_Y()
+    $btn_down = GL_MOUSE_BTN(0)
+
+    # Rulăm kernel-ul CUDA cu noile argumente dinamice
+    CUDA_RUN_KERNEL($kernel_id, 1, 256, $d_particles, $count, 800, 600, $mx, $my, $btn_down)
+
+    # Preluăm datele actualizate din GPU
+    set $p_state = CUDA_MEMCPY_D2H($d_particles, $count * 4)
+
+    # Randare particule
+    set $p = 0
+    while $p < $count do
+        $idx = $p * 4
+        $x = $p_state[$idx]
+        $y = $p_state[$idx + 1]
+
+        # Schimbăm culoarea dacă click-ul este activ (Roșu/Portocaliu pe atracție)
+        if $btn_down == 1 then
+            GL_FILL_CIRCLE($x, $y, 6, 16737792)
+        else
+            GL_FILL_CIRCLE($x, $y, 5, 16768000)
+        endif
+
+        $p = $p + 1
+    endwhile
+
+    # Indicat vizual pe ecran
+    if $btn_down == 1 then
+        GL_CIRCLE($mx, $my, 20, 16711680)
+        GL_TEXT(10, 25, "Gravitatie GPU Activa! Magnetizare particule...")
+    else
+        GL_TEXT(10, 25, "Tine Apasat Click Stanga pentru Atractie GPU")
+    endif
+endwhile
+
+CUDA_FREE($d_particles)
+GL_CLOSE()

@@ -1057,7 +1057,9 @@ vData vOliEngine::handleTrimFunc(const std::vector<vData>& args) {
 
 
 vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
-    LOG_ERROR(L"[readfile] Function readfile() called with " + std::to_wstring(args.size()) + L" arguments.");
+    // Schimbat din LOG_ERROR în LOG_DEBUG pentru a nu polua consola
+    LOG_DEBUG(L"[readfile] Function readfile() called with " + std::to_wstring(args.size()) + L" arguments.");
+
     if (args.empty() || !args[0].isString()) {
         LOG_ERROR(L"[RUNTIME ERROR] readfile() requires a path string.");
         return vData(std::monostate{});
@@ -1083,7 +1085,7 @@ vData vOliEngine::handleReadFileFunc(const std::vector<vData>& args) {
         std::string buffer((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         file.close();
 
-        // 4. 🔥 CONVERSIE ANTIGLONȚ: Protejăm memoria împotriva dimensiunii wchar_t de Linux
+        // 4. Protejăm memoria împotriva dimensiunii wchar_t pe Linux/Windows
         std::wstring wcontent = PortTools::utf8_to_wstring(buffer);
 
         // Eliminare BOM (Byte Order Mark)

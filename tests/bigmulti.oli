@@ -61,3 +61,4 @@ $p128 = mul_str($p64, $p64)
 
 echo "2^128 exact:"
 echo $p128
+input()

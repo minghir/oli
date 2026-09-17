@@ -1,6 +1,6 @@
 plugin oli_threads
 
-$cores = GET_CPU_CORES()
+$cores =GET_CPU_CORES()
 echo "Numar de nuclee CPU detectate: " .. STR($cores)
 
 func worker_task($id)
@@ -23,3 +23,4 @@ for $i = 1 to $cores do
 endfor
 
 echo "Toate cele " .. STR($cores) .. " thread-uri au fost procesate cu succes!"
+input()

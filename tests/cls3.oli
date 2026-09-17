@@ -78,8 +78,12 @@ set $lista[1] = $d
 
 
 echo "[5] Test apel via referinta din array prin pointer:"
-$ref2 = &$lista
-*$ref2[1].salute()
+$ref2 = REF($lista)
+echo "111111111111111"
+
+(*$ref2)[1].salute()
+
+echo "||||||||||||"
 set $ref2[1].x = 300
 $ref2[1].salute()
 

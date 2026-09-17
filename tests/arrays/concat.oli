@@ -3,3 +3,4 @@ $b = ["cc","dd","ee"]
 $c = clone($a)
 cycle $b as $val do push($c,$val) endcycle
 echo $c
+input()

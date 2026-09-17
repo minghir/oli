@@ -1,5 +1,514 @@
 ﻿#pragma once
 #include "OliSyntaxChecker.hpp"
+#include "OliKeyWords.hpp"
+#include <algorithm>
+#include <vector>
+#include <cwctype>
+
+// ❌ Regula 1: Validează structura comenzii SET
+class SetCommandRule : public ISyntaxRule {
+public:
+    bool check(const ShellCommand& sc, int lineNum, const std::wstring& rawLine, std::vector<SyntaxError>& errors) override {
+        std::wstring cmdUpper = sc.name;
+        std::transform(cmdUpper.begin(), cmdUpper.end(), cmdUpper.begin(), ::towupper);
+
+        if (cmdUpper != L"SET") return true;
+
+        if (sc.args.empty()) {
+            errors.push_back({ DiagnosticLevel::OLI_ERROR, L"'SET' command expects arguments.", lineNum, rawLine });
+            return false;
+        }
+
+        // ❌ EROARE CRITICĂ: Atribuirea în lanț prăbușește parserul de expresii
+        int equalCount = 0;
+        for (const auto& arg : sc.args) {
+            if (arg.find(L';') != std::wstring::npos) {
+                if (arg.find(L'=') != std::wstring::npos) {
+                    equalCount++;
+                }
+                break;
+            }
+
+            if (arg == L"=" || arg.find(L'=') != std::wstring::npos) {
+                equalCount++;
+            }
+        }
+
+        if (equalCount > 1) {
+            errors.push_back({ DiagnosticLevel::OLI_ERROR, L"Multiple assignment in chain (X = Y = Z) is not supported.", lineNum, rawLine });
+            return false;
+        }
+
+        // ℹ️ NOTICE: Verifica de out-of-bounds adaugata
+        if (!sc.args[0].empty() && sc.args[0][0] == L'@') {
+            errors.push_back({ DiagnosticLevel::OLI_NOTICE, L"Explicit global variable (@) used. Ensure it is defined in the global scope.", lineNum, rawLine });
+        }
+
+        return true;
+    }
+};
+
+// ❌ Regula 2: Verifică comenzi necunoscute sau markeri orfani
+class StructureValidatorRule : public ISyntaxRule {
+public:
+    bool check(const ShellCommand& sc, [[maybe_unused]] int lineNum, [[maybe_unused]] const std::wstring& rawLine, [[maybe_unused]] std::vector<SyntaxError>& errors) override {
+        std::wstring cmdUpper = sc.name;
+        std::transform(cmdUpper.begin(), cmdUpper.end(), cmdUpper.begin(), ::towupper);
+
+        if (cmdUpper == L"ENDIF" || cmdUpper == L"ENDWHILE" || cmdUpper == L"ENDFOR" || cmdUpper == L"ENDFUNC") {
+            return true;
+        }
+
+        return true;
+    }
+};
+
+// ⚠️ Regula: Avertizează când se folosesc identificatori fără prefix ($ sau @), dar ignoră comentariile, punctuația, funcțiile, câmpurile ($obj.field) și referințele (&var)
+class StrictVariableSyntaxRule : public ISyntaxRule {
+private:
+    bool isStructuralToken(const std::wstring& token, bool isNextTokenOpenParen) {
+        std::wstring upper = token;
+        std::transform(upper.begin(), upper.end(), upper.begin(), ::towupper);
+
+        if (upper == L"(" || upper == L")" || upper == L"[" || upper == L"]" ||
+            upper == L"{" || upper == L"}" || upper == L"," || upper == L";" ||
+            upper == L"." || upper == L":" || upper == L"&")
+        {
+            return true;
+        }
+
+        if (upper == L"ALL" || upper == L"STEP" || upper == L"ON" || upper == L"OFF" ||
+            vOliKeyWords::isOliCommand(upper) ||
+            vOliKeyWords::isNativeFunction(upper) ||
+            vOliKeyWords::isKeyword(upper))
+        {
+            return true;
+        }
+
+        if (isNextTokenOpenParen) {
+            return true;
+        }
+
+        return false;
+    }
+
+    void validateToken(const std::wstring& token, int lineNum, const std::wstring& rawLine, std::vector<SyntaxError>& errors) {
+        if (token.empty()) return;
+
+        std::wstring upper = token;
+        std::transform(upper.begin(), upper.end(), upper.begin(), ::towupper);
+
+        if (vOliKeyWords::isOliCommand(upper) || vOliKeyWords::isNativeFunction(upper)) {
+            return;
+        }
+
+        wchar_t firstChar = token[0];
+
+        if (firstChar == L'"' || firstChar == L'\'') return;
+
+        if (firstChar != L'$' && firstChar != L'@' && firstChar != L'&' &&
+            !std::iswdigit(firstChar) && firstChar != L'-' &&
+            upper != L"TRUE" && upper != L"FALSE" && upper != L"NULL")
+        {
+            if (token.find_first_of(L"+-*/%^=<>&|.:") == std::wstring::npos) {
+                errors.push_back({
+                    DiagnosticLevel::OLI_WARNING,
+                    L"Identifier '" + token + L"' does not have a prefix ($ or @). It will be treated as an implicit global variable.",
+                    lineNum,
+                    rawLine
+                    });
+            }
+        }
+    }
+
+public:
+    bool check(const ShellCommand& sc, int lineNum, const std::wstring& rawLine, std::vector<SyntaxError>& errors) override {
+        std::wstring cleanLine = rawLine; // presupunem trim efectuat
+        if (!cleanLine.empty() && cleanLine[0] == L'#') {
+            return true;
+        }
+
+        std::wstring cmdUpper = sc.name;
+        std::transform(cmdUpper.begin(), cmdUpper.end(), cmdUpper.begin(), ::towupper);
+
+        if (cmdUpper == L"CONFIG" || cmdUpper == L"PLUGIN") {
+            return true;
+        }
+
+        bool prevIsDot = false;
+        bool prevIsAmpersand = false;
+
+        for (size_t i = 0; i < sc.args.size(); ++i) {
+            std::wstring token = sc.args[i];
+
+            if (token == L"#" || (!token.empty() && token[0] == L'#')) {
+                break;
+            }
+
+            if (prevIsDot || prevIsAmpersand) {
+                prevIsDot = (token == L".");
+                prevIsAmpersand = (token == L"&");
+                continue;
+            }
+
+            if (token == L".") {
+                prevIsDot = true;
+                continue;
+            }
+
+            if (token == L"&") {
+                prevIsAmpersand = true;
+                continue;
+            }
+
+            if (!token.empty() && token.back() == L'.') {
+                prevIsDot = true;
+            }
+            else {
+                prevIsDot = false;
+            }
+            prevIsAmpersand = false;
+
+            bool nextIsParen = (i + 1 < sc.args.size() && sc.args[i + 1] == L"(");
+
+            if (isStructuralToken(token, nextIsParen)) {
+                continue;
+            }
+
+            validateToken(token, lineNum, rawLine, errors);
+        }
+
+        if (!sc.args.empty() && sc.args[0] == L"=") {
+            if (sc.name != L"#" && (sc.name.empty() || sc.name[0] != L'#')) {
+                validateToken(sc.name, lineNum, rawLine, errors);
+            }
+        }
+
+        return true;
+    }
+};
+
+// ❌ EROARE CRITICĂ: Validează BREAK și CONTINUE în funcție de ierarhia de bucle și switch-uri
+class LoopContextRule : public ISyntaxRule {
+private:
+    std::vector<std::wstring> m_contextStack;
+
+public:
+    bool check(const ShellCommand& sc, int lineNum, const std::wstring& rawLine, std::vector<SyntaxError>& errors) override {
+        std::wstring cmdUpper = sc.name;
+        std::transform(cmdUpper.begin(), cmdUpper.end(), cmdUpper.begin(), ::towupper);
+
+        if (cmdUpper == L"WHILE" || cmdUpper == L"FOR" || cmdUpper == L"CYCLE" || cmdUpper == L"REPEAT") {
+            m_contextStack.push_back(L"LOOP");
+            return true;
+        }
+
+        if (cmdUpper == L"SWITCH") {
+            m_contextStack.push_back(L"SWITCH");
+            return true;
+        }
+
+        if (cmdUpper == L"ENDWHILE" || cmdUpper == L"ENDFOR" || cmdUpper == L"ENDCYCLE" || cmdUpper == L"ENDREPEAT") {
+            if (!m_contextStack.empty() && m_contextStack.back() == L"LOOP") {
+                m_contextStack.pop_back();
+            }
+            return true;
+        }
+
+        if (cmdUpper == L"ENDSWITCH") {
+            if (!m_contextStack.empty() && m_contextStack.back() == L"SWITCH") {
+                m_contextStack.pop_back();
+            }
+            return true;
+        }
+
+        if (cmdUpper == L"BREAK") {
+            if (m_contextStack.empty()) {
+                errors.push_back({
+                    DiagnosticLevel::OLI_ERROR,
+                    L"Instruction 'BREAK' cannot be used outside a loop or a SWITCH block.",
+                    lineNum,
+                    rawLine
+                    });
+                return false;
+            }
+        }
+
+        if (cmdUpper == L"CONTINUE") {
+            bool hasLoopContext = false;
+            for (const auto& ctx : m_contextStack) {
+                if (ctx == L"LOOP") {
+                    hasLoopContext = true;
+                    break;
+                }
+            }
+
+            if (!hasLoopContext) {
+                errors.push_back({
+                    DiagnosticLevel::OLI_ERROR,
+                    L"Instruction 'CONTINUE' can only be used inside a loop (WHILE, FOR, CYCLE, REPEAT).",
+                    lineNum,
+                    rawLine
+                    });
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    void finalize([[maybe_unused]] std::vector<SyntaxError>& errors) override {
+        // Curățăm stiva la final pentru a evita scurgerea de stare între validări
+        m_contextStack.clear();
+    }
+};
+
+struct BlockOpenInfo {
+    std::wstring type;
+    int lineNumber;
+    std::wstring rawLine;
+};
+
+class NestingBalanceRule : public ISyntaxRule {
+private:
+    std::vector<BlockOpenInfo> m_openedBlocks;
+
+    std::wstring getExpectedStartToken(const std::wstring& endCmd) {
+        if (endCmd == L"ENDIF")     return L"IF";
+        if (endCmd == L"ENDWHILE")   return L"WHILE";
+        if (endCmd == L"ENDFOR")     return L"FOR";
+        if (endCmd == L"ENDFUNC")    return L"FUNC";
+        if (endCmd == L"ENDPROC")    return L"PROC";
+        if (endCmd == L"ENDCYCLE")   return L"CYCLE";
+        if (endCmd == L"ENDSWITCH")  return L"SWITCH";
+        if (endCmd == L"ENDREPEAT")  return L"REPEAT";
+        return L"";
+    }
+
+public:
+    bool check(const ShellCommand& sc, int lineNum, const std::wstring& rawLine, std::vector<SyntaxError>& errors) override {
+        std::wstring cmdUpper = sc.name;
+        std::transform(cmdUpper.begin(), cmdUpper.end(), cmdUpper.begin(), ::towupper);
+
+        if (cmdUpper == L"IF" || cmdUpper == L"WHILE" || cmdUpper == L"FOR" ||
+            cmdUpper == L"FUNC" || cmdUpper == L"PROC" || cmdUpper == L"CYCLE" ||
+            cmdUpper == L"SWITCH" || cmdUpper == L"REPEAT")
+        {
+            std::wstring expectedEnd = L"END" + cmdUpper;
+            bool closedOnSameLine = false;
+
+            for (const auto& arg : sc.args) {
+                std::wstring argUpper = arg;
+                std::transform(argUpper.begin(), argUpper.end(), argUpper.begin(), ::towupper);
+                if (argUpper == expectedEnd) {
+                    closedOnSameLine = true;
+                    break;
+                }
+            }
+
+            if (!closedOnSameLine) {
+                m_openedBlocks.push_back({ cmdUpper, lineNum, rawLine });
+            }
+            return true;
+        }
+
+        std::wstring expectedStart = getExpectedStartToken(cmdUpper);
+        if (!expectedStart.empty()) {
+            if (m_openedBlocks.empty()) {
+                errors.push_back({
+                    DiagnosticLevel::OLI_ERROR,
+                    L"Instruction '" + cmdUpper + L"' does not have a corresponding opening.",
+                    lineNum,
+                    rawLine
+                    });
+                return false;
+            }
+
+            if (m_openedBlocks.back().type != expectedStart) {
+                errors.push_back({
+                    DiagnosticLevel::OLI_ERROR,
+                    L"Invalid crossed syntax: '" + cmdUpper + L"' tries to close a block of type '" +
+                    m_openedBlocks.back().type + L"' opened on line " + std::to_wstring(m_openedBlocks.back().lineNumber) + L".",
+                    lineNum,
+                    rawLine
+                    });
+                return false;
+            }
+
+            m_openedBlocks.pop_back();
+        }
+
+        return true;
+    }
+
+    void finalize(std::vector<SyntaxError>& errors) override {
+        while (!m_openedBlocks.empty()) {
+            BlockOpenInfo unclosed = m_openedBlocks.back();
+            m_openedBlocks.pop_back();
+
+            errors.push_back({
+                DiagnosticLevel::OLI_ERROR,
+                L"Control structure '" + unclosed.type + L"' opened on line " +
+                std::to_wstring(unclosed.lineNumber) + L" was not closed (missing 'END" + unclosed.type + L"').",
+                unclosed.lineNumber,
+                unclosed.rawLine
+                });
+        }
+    }
+};
+
+// ❌ EROARE CRITICĂ: Prinde atribuiri libere sau explicite cu LHS invalid (ex: 10 = $b sau set 10 = $b)
+class InvalidLHSRule : public ISyntaxRule {
+public:
+    bool check(const ShellCommand& sc, int lineNum, const std::wstring& rawLine, std::vector<SyntaxError>& errors) override {
+        std::wstring lhsToken = L"";
+        bool foundEquals = false;
+
+        if (!sc.args.empty() && sc.args[0] == L"=") {
+            lhsToken = sc.name;
+            foundEquals = true;
+        }
+        else {
+            auto it = std::find(sc.args.begin(), sc.args.end(), L"=");
+            if (it != sc.args.end()) {
+                foundEquals = true;
+                if (it == sc.args.begin()) {
+                    lhsToken = L"";
+                }
+                else {
+                    lhsToken = *(it - 1);
+                }
+            }
+        }
+
+        if (!foundEquals) return true;
+
+        if (lhsToken.empty()) {
+            std::wstring cmdUpper = sc.name;
+            std::transform(cmdUpper.begin(), cmdUpper.end(), cmdUpper.begin(), ::towupper);
+            if (cmdUpper == L"SET") {
+                errors.push_back({
+                    DiagnosticLevel::OLI_ERROR,
+                    L"Missing data for assignment destination (LHS missing before '=').",
+                    lineNum,
+                    rawLine
+                    });
+                return false;
+            }
+            return true;
+        }
+
+        wchar_t firstChar = lhsToken[0];
+
+        bool isNumber = std::iswdigit(firstChar) || (lhsToken.size() > 1 && firstChar == L'-' && std::iswdigit(lhsToken[1]));
+        bool isString = (lhsToken.size() >= 2 && ((lhsToken.front() == L'\"' && lhsToken.back() == L'\"') || (lhsToken.front() == L'\'' && lhsToken.back() == L'\'')));
+
+        std::wstring lhsUpper = lhsToken;
+        std::transform(lhsUpper.begin(), lhsUpper.end(), lhsUpper.begin(), ::towupper);
+        bool isBooleanOrNull = (lhsUpper == L"TRUE" || lhsUpper == L"FALSE" || lhsUpper == L"NULL");
+
+        if (isNumber || isString || isBooleanOrNull) {
+            errors.push_back({
+                DiagnosticLevel::OLI_ERROR,
+                L"Invalid destination for assignment (LHS invalid). You cannot modify the value of a constant or a literal of type '" + lhsToken + L"'.",
+                lineNum,
+                rawLine
+                });
+            return false;
+        }
+
+        return true;
+    }
+};
+
+// ❌ EROARE CRITICĂ: Prinde ghilimelele neînchise la finalul fișierului
+class StringQuotesRule : public ISyntaxRule {
+private:
+    bool m_inString = false;
+    int m_openedAtLine = -1;
+    std::wstring m_openedRawLine;
+
+public:
+    bool check([[maybe_unused]] const ShellCommand& sc, int lineNum, const std::wstring& rawLine, [[maybe_unused]] std::vector<SyntaxError>& errors) override {
+        for (size_t i = 0; i < rawLine.length(); ++i) {
+            wchar_t c = rawLine[i];
+
+            if (c == L'\\') {
+                i++;
+                continue;
+            }
+
+            if (c == L'#' && !m_inString) {
+                break;
+            }
+
+            if (c == L'"') {
+                m_inString = !m_inString;
+
+                if (m_inString) {
+                    m_openedAtLine = lineNum;
+                    m_openedRawLine = rawLine;
+                }
+                else {
+                    m_openedAtLine = -1;
+                    m_openedRawLine = L"";
+                }
+            }
+        }
+
+        return true;
+    }
+
+    void finalize(std::vector<SyntaxError>& errors) override {
+        if (m_inString && m_openedAtLine != -1) {
+            errors.push_back({
+                DiagnosticLevel::OLI_ERROR,
+                L"Unquoted string. The string opened on line " + std::to_wstring(m_openedAtLine) + L" was not closed until the end of the file.",
+                m_openedAtLine,
+                m_openedRawLine
+                });
+        }
+        // Resetare stare
+        m_inString = false;
+        m_openedAtLine = -1;
+        m_openedRawLine = L"";
+    }
+};
+
+// ❌ EROARE CRITICĂ: Prinde operatori dubli invalizi (ex: = =, = =GET_CPU_CORES)
+class ConsecutiveOperatorSyntaxRule : public ISyntaxRule {
+public:
+    bool check(const ShellCommand& sc, int lineNum, const std::wstring& rawLine, std::vector<SyntaxError>& errors) override {
+        if (sc.args.empty()) return true;
+
+        // Verificăm dacă sc.name este variabilă și sc.args[0] este un operator dublu lipit (ex: $cores = =GET_CPU_CORES())
+        for (size_t i = 0; i < sc.args.size(); ++i) {
+            std::wstring current = sc.args[i];
+
+            if (current == L"=") {
+                if (i + 1 < sc.args.size()) {
+                    std::wstring next = sc.args[i + 1];
+                    // Dacă următorul token este '=' sau începe cu '=' dar nu este '==' (ex: =GET_CPU_CORES)
+                    if (next == L"=" || (next.size() > 1 && next[0] == L'=' && next[1] != L'=')) {
+                        errors.push_back({
+                            DiagnosticLevel::OLI_ERROR,
+                            L"Syntax error: Consecutive assignment operators ('= =') are not allowed.",
+                            lineNum,
+                            rawLine
+                            });
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+};
+
+/*
+#pragma once
+#include "OliSyntaxChecker.hpp"
+#include "OliKeyWords.hpp"
 #include <algorithm>
 #include <vector>
 #include <cwctype>
@@ -22,7 +531,17 @@ public:
         // ❌ EROARE CRITICĂ: Atribuirea în lanț prăbușește parserul de expresii
         int equalCount = 0;
         for (const auto& arg : sc.args) {
-            if (arg == L"=") equalCount++;
+            // Dacă întâlnim punct și virgulă, am ajuns la finalul primei instrucțiuni SET
+            if (arg.find(L';') != std::wstring::npos) {
+                if (arg.find(L'=') != std::wstring::npos) {
+                    equalCount++;
+                }
+                break; // Oprim verificarea pentru comanda curentă
+            }
+
+            if (arg == L"=" || arg.find(L'=') != std::wstring::npos) {
+                equalCount++;
+            }
         }
         if (equalCount > 1) {
             errors.push_back({ DiagnosticLevel::OLI_ERROR, L"Multiple assignment in chain (X = Y = Z) is not supported.", lineNum, rawLine });
@@ -57,26 +576,31 @@ public:
 
 
 
-
-// ⚠️ Regula: Avertizează când se folosesc identificatori fără prefix ($ sau @), dar ignoră comentariile, punctuația și funcțiile
+// ⚠️ Regula: Avertizează când se folosesc identificatori fără prefix ($ sau @), dar ignoră comentariile, punctuația, funcțiile, câmpurile ($obj.field) și referințele (&var)
 class StrictVariableSyntaxRule : public ISyntaxRule {
 private:
-    bool isStructuralToken(std::wstring token, bool isNextTokenOpenParen) {
+    bool isStructuralToken(const std::wstring& token, bool isNextTokenOpenParen) {
         std::wstring upper = token;
-        std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+        std::transform(upper.begin(), upper.end(), upper.begin(), ::towupper);
 
-        if (upper == L"(" || upper == L")" || upper == L"[" || upper == L"]" || upper == L",") {
-            return true;
-        }
-
-        // 🌟 FIX: Ignorăm toate cuvintele cheie structurale ale limbajului care pot apărea inline
-        if (upper == L"TO" || upper == L"DO" || upper == L"THEN" || upper == L"AS" || upper == L"STEP" ||
-            upper == L"SET" || upper == L"IF" || upper == L"ENDIF" || upper == L"WHILE" || upper == L"ENDWHILE" ||
-            upper == L"FOR" || upper == L"ENDFOR" || upper == L"FUNC" || upper == L"ENDFUNC" || upper == L"RETURN")
+        // 1. Ignorăm delimitatorii, punctuația și operatorul de referință &
+        if (upper == L"(" || upper == L")" || upper == L"[" || upper == L"]" ||
+            upper == L"{" || upper == L"}" || upper == L"," || upper == L";" ||
+            upper == L"." || upper == L":" || upper == L"&")
         {
             return true;
         }
 
+        // 2. Ignorăm modificatorii de comenzi și cuvintele cheie din vOliKeyWords
+        if (upper == L"ALL" || upper == L"STEP" || upper == L"ON" || upper == L"OFF" ||
+            vOliKeyWords::isOliCommand(upper) ||
+            vOliKeyWords::isNativeFunction(upper) ||
+            vOliKeyWords::isKeyword(upper))
+        {
+            return true;
+        }
+
+        // 3. Ignorăm numele de funcții înainte de paranteză deschisă: funcName(...)
         if (isNextTokenOpenParen) {
             return true;
         }
@@ -87,13 +611,25 @@ private:
     void validateToken(const std::wstring& token, int lineNum, const std::wstring& rawLine, std::vector<SyntaxError>& errors) {
         if (token.empty()) return;
 
+        std::wstring upper = token;
+        std::transform(upper.begin(), upper.end(), upper.begin(), ::towupper);
+
+        // Ignorăm comenzile și funcțiile native
+        if (vOliKeyWords::isOliCommand(upper) || vOliKeyWords::isNativeFunction(upper)) {
+            return;
+        }
+
         wchar_t firstChar = token[0];
 
-        if (firstChar != L'$' && firstChar != L'@' && firstChar != L'"' &&
+        // Ignorăm string-urile
+        if (firstChar == L'"' || firstChar == L'\'') return;
+
+        // Verificare identificator (acceptăm $, @ și & ca prefixe valide)
+        if (firstChar != L'$' && firstChar != L'@' && firstChar != L'&' &&
             !std::iswdigit(firstChar) && firstChar != L'-' &&
-            token != L"true" && token != L"false" && token != L"null" && token != L"NULL")
+            upper != L"TRUE" && upper != L"FALSE" && upper != L"NULL")
         {
-            if (token.find_first_of(L"+-*/%^=<>&|.") == std::wstring::npos) {
+            if (token.find_first_of(L"+-*%/^=<>&|.:") == std::wstring::npos) {
                 errors.push_back({
                     DiagnosticLevel::OLI_WARNING,
                     L"Identifier '" + token + L"' does not have a prefix ($ or @). It will be treated as an implicit global variable.",
@@ -112,12 +648,15 @@ public:
         }
 
         std::wstring cmdUpper = sc.name;
-        std::transform(cmdUpper.begin(), cmdUpper.end(), cmdUpper.begin(), ::toupper);
+        std::transform(cmdUpper.begin(), cmdUpper.end(), cmdUpper.begin(), ::towupper);
 
-        // 🌟 FIX: Ignorăm complet comenzile CONFIG și PLUGIN, parametrii lor sunt nume administrative libere
+        // Ignorăm complet comenzile administrative
         if (cmdUpper == L"CONFIG" || cmdUpper == L"PLUGIN") {
             return true;
         }
+
+        bool prevIsDot = false;
+        bool prevIsAmpersand = false;
 
         // PASUL 1: Scanăm argumentele
         for (size_t i = 0; i < sc.args.size(); ++i) {
@@ -126,6 +665,31 @@ public:
             if (token == L"#" || (!token.empty() && token[0] == L'#')) {
                 break;
             }
+
+            // Ignorăm token-ul de după punct ($obj.field) sau de după '&' (&var)
+            if (prevIsDot || prevIsAmpersand) {
+                prevIsDot = (token == L".");
+                prevIsAmpersand = (token == L"&");
+                continue;
+            }
+
+            if (token == L".") {
+                prevIsDot = true;
+                continue;
+            }
+
+            if (token == L"&") {
+                prevIsAmpersand = true;
+                continue;
+            }
+
+            if (!token.empty() && token.back() == L'.') {
+                prevIsDot = true;
+            }
+            else {
+                prevIsDot = false;
+            }
+            prevIsAmpersand = false;
 
             bool nextIsParen = (i + 1 < sc.args.size() && sc.args[i + 1] == L"(");
 
@@ -146,7 +710,6 @@ public:
         return true;
     }
 };
-
 
 // ❌ EROARE CRITICĂ: Validează BREAK și CONTINUE în funcție de ierarhia de bucle și switch-uri
 class LoopContextRule : public ISyntaxRule {
@@ -456,3 +1019,29 @@ public:
         }
     }
 };
+
+
+class ConsecutiveOperatorSyntaxRule : public ISyntaxRule {
+public:
+    bool check(const ShellCommand& sc, int lineNum, const std::wstring& rawLine, std::vector<SyntaxError>& errors) override {
+        if (sc.args.size() < 2) return true;
+
+        for (size_t i = 0; i < sc.args.size() - 1; ++i) {
+            std::wstring current = sc.args[i];
+            std::wstring next = sc.args[i + 1];
+
+            // Verificăm dacă avem operatori egali consecutivi (= =) sau alt operator invalid dublu
+            if (current == L"=" && next == L"=") {
+                errors.push_back({
+                    DiagnosticLevel::OLI_ERROR,
+                    L"Syntax error: Consecutive assignment operators ('= =') are not allowed.",
+                    lineNum,
+                    rawLine
+                    });
+                return false;
+            }
+        }
+        return true;
+    }
+};
+*/

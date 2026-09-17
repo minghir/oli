@@ -1,5 +1,5 @@
-﻿#ifndef VOLIKEYWORDS_HPP
-#define VOLIKEYWORDS_HPP
+﻿#ifndef OLIKEYWORDS_HPP
+#define OLIKEYWORDS_HPP
 
 #include <string>
 #include <unordered_set>

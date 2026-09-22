@@ -2,7 +2,7 @@
 
 #include "../../OliEngine.hpp"
 #include "../../vData.hpp"
-#include "../../ConsoleManager.hpp"
+#include "../../OliConsoleManager.hpp"
 #include "../../OliKeyWords.hpp"
 
 #include <cwchar>
@@ -640,17 +640,32 @@ static vData resolveVar(
             };
 
             std::wstring cleanKey = stripQuotes(keyStr);
+            std::wstring altKey = (cleanKey.empty() || cleanKey[0] != L'$') ? (L"$" + cleanKey) : cleanKey.substr(1);
 
-            // 1. Căutare directă
+            // 1. Căutare directă (String)
             auto it = m->find(cleanKey);
             if (it != m->end()) return it->second;
 
             // 2. Căutare alternativă cu/fără $
-            std::wstring altKey = (cleanKey.empty() || cleanKey[0] != L'$') ? (L"$" + cleanKey) : cleanKey.substr(1);
             it = m->find(altKey);
             if (it != m->end()) return it->second;
 
-            // 3. Fallback robust
+            // 3. Căutare după valoare numerică (dacă indexul vine ca număr/string numeric)
+            try {
+                if (keyVal.isNumber() || (!cleanKey.empty() && std::iswdigit(cleanKey[0]))) {
+                    long long numKey = keyVal.isInt() ? keyVal.toInt() : std::stoll(cleanKey);
+                    std::wstring numKeyStr = std::to_wstring(numKey);
+
+                    it = m->find(numKeyStr);
+                    if (it != m->end()) return it->second;
+
+                    it = m->find(L"$" + numKeyStr);
+                    if (it != m->end()) return it->second;
+                }
+            }
+            catch (...) {}
+
+            // 4. Fallback robust (Case Insensitive & Trim)
             std::wstring cleanKeyUpper = cleanKey;
             for (auto& c : cleanKeyUpper) c = std::towupper(c);
 
@@ -1195,11 +1210,11 @@ extern "C" {
         RegisterTplFunctions(registry);
     }
 
-    OLI_EXPORT void SetPluginConsoleManager(ConsoleManager *hostCm)
+    OLI_EXPORT void SetPluginConsoleManager(OliConsoleManager *hostCm)
     {
         if (hostCm != nullptr)
         {
-            ConsoleManager::setInstance(hostCm);
+            OliConsoleManager::setInstance(hostCm);
         }
     }
 

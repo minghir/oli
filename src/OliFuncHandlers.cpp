@@ -229,6 +229,8 @@ void vOliEngine::initializeFunctionsHandlers() {
     vOliKeyWords::registerNativeFunction(L"RANDOM");
     m_functionsHandlers[L"RND"] = m_functionsHandlers[L"RANDOM"];
     vOliKeyWords::registerNativeFunction(L"RND");
+    m_functionsHandlers[L"RAND"] = m_functionsHandlers[L"RANDOM"];
+    vOliKeyWords::registerNativeFunction(L"RAND");
 
     m_functionsHandlers[L"HASH"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData(0LL);
@@ -774,7 +776,7 @@ vData vOliEngine::handleInputFunc(const std::vector<vData>& args) {
     // 3. Curățăm eventualele caractere rămase (opțional, dar bun pentru stabilitate)
     return { userInput };
 }
-
+/*
 vData vOliEngine::handleRandomFunc(const std::vector<vData>& args) {
     long long min = 0, max = 100;
     if (args.size() >= 2) {
@@ -786,6 +788,30 @@ vData vOliEngine::handleRandomFunc(const std::vector<vData>& args) {
     static std::mt19937 gen(rd());
     std::uniform_int_distribution<long long> dis(min, max);
 
+    return { dis(gen) };
+}
+*/
+
+vData vOliEngine::handleRandomFunc(const std::vector<vData>& args) {
+    long long min = 0, max = 100;
+
+    if (args.size() == 1) {
+        // Dacă dăm un singur argument: RAND(max) -> [0, max]
+        max = vDataToLong(args[0]);
+    }
+    else if (args.size() >= 2) {
+        // Dacă dăm două argumente: RAND(min, max) -> [min, max]
+        min = vDataToLong(args[0]);
+        max = vDataToLong(args[1]);
+    }
+
+    static std::random_device rd;
+    static std::mt19937 gen(rd());
+
+    // Protecție dacă min > max din greșeală
+    if (min > max) std::swap(min, max);
+
+    std::uniform_int_distribution<long long> dis(min, max);
     return { dis(gen) };
 }
 

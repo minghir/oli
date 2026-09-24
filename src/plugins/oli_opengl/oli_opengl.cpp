@@ -56,11 +56,18 @@ int g_NextTexID = 1;
 std::string g_LastError = "";
 
 // -----------------------------------------------------------------------------
+// CONSTANTE REZOLUȚIE VIRTUALĂ FIXĂ
+// -----------------------------------------------------------------------------
+static const float VIRTUAL_WIDTH = 800.0f;
+static const float VIRTUAL_HEIGHT = 600.0f;
+
+// -----------------------------------------------------------------------------
 // CONTEXT OPERATING SYSTEM STATE (CROSS-PLATFORM)
 // -----------------------------------------------------------------------------
 struct GLState {
     int   width = 0;
     int   height = 0;
+    int vpX = 0, vpY = 0, vpW = 800, vpH = 600; // Viewport-ul scalat 4:3
     int   mouseX = 0;
     int   mouseY = 0;
     int   windowedW = 800; // Dimensiunea inițială salvată
@@ -148,9 +155,82 @@ std::wstring str_to_wstr(const std::string& str) {
 
 inline double toDouble(const vData& v) { return v.toDouble(); }
 
+
+
+static int g_CurrentFontSize = 0;
+
+void BuildFont(int fontSize = 18) {
+    if (fontSize < 10) fontSize = 10;
+
+    // Evităm re-crearea inutilă dacă fontul are deja dimensiunea corectă
+    if (g_CurrentFontSize == fontSize && g_GL.fontBase != 0) return;
+
+    if (g_GL.fontBase > 0) {
+        glDeleteLists(g_GL.fontBase, 96);
+    }
+    g_GL.fontBase = glGenLists(96);
+    g_CurrentFontSize = fontSize;
+
+#ifdef _WIN32
+    HFONT font = CreateFontA(-fontSize, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE,
+        ANSI_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS,
+        ANTIALIASED_QUALITY, FF_DONTCARE | DEFAULT_PITCH, "Arial");
+    HFONT oldFont = (HFONT)SelectObject(g_GL.hdc, font);
+    wglUseFontBitmapsA(g_GL.hdc, 32, 96, g_GL.fontBase);
+    SelectObject(g_GL.hdc, oldFont);
+    DeleteObject(font);
+#else
+    std::string fontName = "-*-fixed-bold-r-normal--" + std::to_string(fontSize) + "-*-*-*-*-*-iso8859-1";
+    XFontStruct* fontInfo = XLoadQueryFont(g_GL.display, fontName.c_str());
+    if (!fontInfo) fontInfo = XLoadQueryFont(g_GL.display, "-*-fixed-bold-r-normal--18-*-*-*-*-*-iso8859-1");
+    if (!fontInfo) fontInfo = XLoadQueryFont(g_GL.display, "fixed");
+
+    if (fontInfo) {
+        glXUseXFont(fontInfo->fid, 32, 96, g_GL.fontBase);
+        XFreeFont(g_GL.display, fontInfo);
+    }
+#endif
+}
+
+
+// Funcție helper care calculează zona 4:3 centrată pe orice monitor
+void SetAspectViewport() {
+    if (g_GL.width <= 0 || g_GL.height <= 0) return;
+
+    float targetAspect = 800.0f / 600.0f; // 4:3 = 1.3333
+    float windowAspect = (float)g_GL.width / (float)g_GL.height;
+
+    int vpX = 0, vpY = 0;
+    int vpW = g_GL.width;
+    int vpH = g_GL.height;
+
+    if (windowAspect > targetAspect) {
+        // Monitor mai lat (ex: 16:9 -> 2560x1440) -> Adăugăm benzi negre stânga/dreapta
+        vpW = static_cast<int>(g_GL.height * targetAspect);
+        vpX = (g_GL.width - vpW) / 2;
+    }
+    else if (windowAspect < targetAspect) {
+        // Monitor mai înalt -> Adăugăm benzi negre sus/jos
+        vpH = static_cast<int>(g_GL.width / targetAspect);
+        vpY = (g_GL.height - vpH) / 2;
+    }
+
+    g_GL.vpX = vpX;
+    g_GL.vpY = vpY;
+    g_GL.vpW = vpW;
+    g_GL.vpH = vpH;
+
+    glViewport(vpX, vpY, vpW, vpH);
+
+    int targetFontSize = static_cast<int>(18.0f * ((float)vpH / 600.0f));
+    BuildFont(targetFontSize);
+}
+
+
 // -----------------------------------------------------------------------------
 // ÎNCĂRCARE ETICHETE TEXT (CROSS-PLATFORM BITMAP FONTS)
 // -----------------------------------------------------------------------------
+/*
 void BuildFont() {
     g_GL.fontBase = glGenLists(96);
 #ifdef _WIN32
@@ -184,6 +264,9 @@ void BuildFont() {
     }
 #endif
 }
+*/
+
+
 
 // -----------------------------------------------------------------------------
 // PARSERE ȘI ÎNCĂRCĂTOARE TEXTURI / MODELE 3D
@@ -843,6 +926,7 @@ registry[L"GL_INIT"] = [](const std::vector<vData>& args) -> vData {
         };
 
     // GL_CLEAR(colorHex)
+    /*
     registry[L"GL_CLEAR"] = [](const std::vector<vData>& args) -> vData {
 #ifdef _WIN32
         if (g_GL.hdc && g_GL.hrc) wglMakeCurrent(g_GL.hdc, g_GL.hrc);
@@ -856,8 +940,39 @@ registry[L"GL_INIT"] = [](const std::vector<vData>& args) -> vData {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         return vData{ 1LL };
         };
+        */
+
+    registry[L"GL_CLEAR"] = [](const std::vector<vData>& args) -> vData {
+#ifdef _WIN32
+        if (g_GL.hdc && g_GL.hrc) wglMakeCurrent(g_GL.hdc, g_GL.hrc);
+#else
+        if (g_GL.display && g_GL.window && g_GL.context) glXMakeCurrent(g_GL.display, g_GL.window, g_GL.context);
+#endif
+
+        // 1. Curățăm mai întâi TOT ecranul cu Negru (pentru benzile laterale)
+        glViewport(0, 0, g_GL.width, g_GL.height);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // 2. Setăm Viewport-ul fixat pe raportul 4:3
+        SetAspectViewport();
+
+        // 3. Curățăm zona de joc cu culoarea cerută de script (ex: albastru închis spațial)
+        if (!args.empty()) {
+            GLColor c((unsigned int)args[0].toDouble());
+            glClearColor(c.r, c.g, c.b, 1.0f);
+        }
+        else {
+            glClearColor(0.02f, 0.02f, 0.07f, 1.0f);
+        }
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        return vData{ 1LL };
+        };
+
 
     // GL_LINE(x1, y1, x2, y2, color)
+    /*
     registry[L"GL_LINE"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 5) return vData{ 0LL };
         float x1 = (float)toDouble(args[0]); float y1 = (float)toDouble(args[1]);
@@ -879,8 +994,31 @@ registry[L"GL_INIT"] = [](const std::vector<vData>& args) -> vData {
         glMatrixMode(GL_MODELVIEW); glPopAttrib();
         return vData{ 1LL };
         };
+        */
+        // GL_LINE (Fixat la spațiu virtual 800x600)
+    registry[L"GL_LINE"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 5) return vData{ 0LL };
+        float x1 = (float)toDouble(args[0]); float y1 = (float)toDouble(args[1]);
+        float x2 = (float)toDouble(args[2]); float y2 = (float)toDouble(args[3]);
+        GLColor col((unsigned int)toDouble(args[4]));
+
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glDisable(GL_TEXTURE_2D); glDisable(GL_LIGHTING); glDisable(GL_DEPTH_TEST);
+
+        glMatrixMode(GL_PROJECTION); glPushMatrix(); glLoadIdentity();
+        glOrtho(0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, 0, -1, 1);
+        glMatrixMode(GL_MODELVIEW); glPushMatrix(); glLoadIdentity();
+
+        glColor3f(col.r, col.g, col.b);
+        glBegin(GL_LINES); glVertex2f(x1, y1); glVertex2f(x2, y2); glEnd();
+
+        glPopMatrix(); glMatrixMode(GL_PROJECTION); glPopMatrix();
+        glMatrixMode(GL_MODELVIEW); glPopAttrib();
+        return vData{ 1LL };
+        };
 
     // GL_POINT(x, y, size, color)
+    /*
     registry[L"GL_POINT"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 4) return vData{ 0LL };
         float x = (float)toDouble(args[0]); float y = (float)toDouble(args[1]);
@@ -900,6 +1038,28 @@ registry[L"GL_INIT"] = [](const std::vector<vData>& args) -> vData {
         glMatrixMode(GL_MODELVIEW); glPopAttrib();
         return vData{ 1LL };
         };
+    */
+    // GL_POINT (Fixat la spațiu virtual 800x600)
+    registry[L"GL_POINT"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 4) return vData{ 0LL };
+        float x = (float)toDouble(args[0]); float y = (float)toDouble(args[1]);
+        float sz = (float)toDouble(args[2]); GLColor c((unsigned int)toDouble(args[3]));
+
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glDisable(GL_TEXTURE_2D); glDisable(GL_LIGHTING); glDisable(GL_DEPTH_TEST);
+
+        glMatrixMode(GL_PROJECTION); glPushMatrix(); glLoadIdentity();
+        glOrtho(0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, 0, -1, 1);
+        glMatrixMode(GL_MODELVIEW); glPushMatrix(); glLoadIdentity();
+
+        glColor3f(c.r, c.g, c.b); glPointSize(sz);
+        glBegin(GL_POINTS); glVertex2f(x, y); glEnd();
+
+        glPopMatrix(); glMatrixMode(GL_PROJECTION); glPopMatrix();
+        glMatrixMode(GL_MODELVIEW); glPopAttrib();
+        return vData{ 1LL };
+        };
+
 
     // GL_CIRCLE(x, y, radius, color)
     registry[L"GL_CIRCLE"] = [](const std::vector<vData>& args) -> vData {
@@ -1031,10 +1191,15 @@ registry[L"GL_INIT"] = [](const std::vector<vData>& args) -> vData {
         return vData{ 1LL };
         };
 
-    registry[L"GL_WIDTH"] = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.width }; };
-    registry[L"GL_HEIGHT"] = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.height }; };
+    //registry[L"GL_WIDTH"] = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.width }; };
+    //registry[L"GL_HEIGHT"] = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.height }; };
+
+    // GL_WIDTH / GL_HEIGHT returnează acum mereu rezoluția virtuală internă (800x600)
+    registry[L"GL_WIDTH"] = [](const std::vector<vData>&) -> vData { return vData{ 800LL }; };
+    registry[L"GL_HEIGHT"] = [](const std::vector<vData>&) -> vData { return vData{ 600LL }; };
 
     // GL_TEXT(x, y, string)
+    /*
     registry[L"GL_TEXT"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 3) return vData{ 0LL };
         float x = (float)toDouble(args[0]); float y = (float)toDouble(args[1]);
@@ -1048,6 +1213,31 @@ registry[L"GL_INIT"] = [](const std::vector<vData>& args) -> vData {
         glDisable(GL_DEPTH_TEST); glDisable(GL_LIGHTING); glDisable(GL_TEXTURE_2D);
         if (glUseProgram) glUseProgram(0);
 
+        glColor3f(1.0f, 1.0f, 1.0f); glRasterPos2f(x, y);
+
+        if (g_GL.fontBase > 0) {
+            glListBase(g_GL.fontBase - 32);
+            glCallLists((GLsizei)text.length(), GL_UNSIGNED_BYTE, text.c_str());
+        }
+
+        glMatrixMode(GL_MODELVIEW); glPopMatrix(); glMatrixMode(GL_PROJECTION); glPopMatrix();
+        glPopAttrib();
+        return vData{ 1LL };
+        };
+    */
+
+    // GL_TEXT (Fixat la colț 0..800 pe X și 0..600 pe Y)
+    registry[L"GL_TEXT"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 3) return vData{ 0LL };
+        float x = (float)toDouble(args[0]); float y = (float)toDouble(args[1]);
+        std::string text = wstr_to_str(args[2].toWString());
+
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glMatrixMode(GL_PROJECTION); glPushMatrix(); glLoadIdentity();
+        glOrtho(0, VIRTUAL_WIDTH, VIRTUAL_HEIGHT, 0, -1, 1);
+        glMatrixMode(GL_MODELVIEW); glPushMatrix(); glLoadIdentity();
+
+        glDisable(GL_DEPTH_TEST); glDisable(GL_LIGHTING); glDisable(GL_TEXTURE_2D);
         glColor3f(1.0f, 1.0f, 1.0f); glRasterPos2f(x, y);
 
         if (g_GL.fontBase > 0) {
@@ -1136,6 +1326,7 @@ registry[L"GL_INIT"] = [](const std::vector<vData>& args) -> vData {
         return vData{ static_cast<long long>(texID) };
         };
     // GL_DRAW_SPRITE(id, x, y, w, h, rot)
+    /*
     registry[L"GL_DRAW_SPRITE"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 6) return vData{ 0LL };
         int id = (int)toDouble(args[0]);
@@ -1167,6 +1358,49 @@ registry[L"GL_INIT"] = [](const std::vector<vData>& args) -> vData {
         glMatrixMode(GL_MODELVIEW); glPopAttrib();
         return vData{ 1LL };
         };
+    */
+
+    // GL_DRAW_SPRITE (Fixat la spațiu -400..400 pe X și -300..300 pe Y)
+    registry[L"GL_DRAW_SPRITE"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 6) return vData{ 0LL };
+        int id = (int)toDouble(args[0]);
+        if (g_Textures.find(id) == g_Textures.end() || g_Textures[id] == 0) return vData{ 0LL };
+
+        float x = (float)toDouble(args[1]); float y = (float)toDouble(args[2]);
+        float w = (float)toDouble(args[3]); float h = (float)toDouble(args[4]);
+        float rot = (float)toDouble(args[5]);
+
+        glPushAttrib(GL_ALL_ATTRIB_BITS);
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, g_Textures[id]);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_DEPTH_TEST);
+
+        // 🔥 VIRTUAL ORTHO: Fixăm proiecția la 800x600 indiferent de rezoluția fizică a ecranului
+        glMatrixMode(GL_PROJECTION); glPushMatrix(); glLoadIdentity();
+        glOrtho(-VIRTUAL_WIDTH / 2.0f, VIRTUAL_WIDTH / 2.0f, -VIRTUAL_HEIGHT / 2.0f, VIRTUAL_HEIGHT / 2.0f, -1.0f, 1.0f);
+        glMatrixMode(GL_MODELVIEW); glPushMatrix(); glLoadIdentity();
+
+        glTranslatef(x, y, 0);
+        glRotatef(rot, 0, 0, 1);
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+        glBegin(GL_QUADS);
+        glTexCoord2f(0, 1); glVertex2f(-w / 2.0f, -h / 2.0f);
+        glTexCoord2f(1, 1); glVertex2f(w / 2.0f, -h / 2.0f);
+        glTexCoord2f(1, 0); glVertex2f(w / 2.0f, h / 2.0f);
+        glTexCoord2f(0, 0); glVertex2f(-w / 2.0f, h / 2.0f);
+        glEnd();
+
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopAttrib();
+        return vData{ 1LL };
+    };
 
     registry[L"GL_NODE"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 4) return vData{ 0LL };
@@ -1265,8 +1499,25 @@ registry[L"GL_INIT"] = [](const std::vector<vData>& args) -> vData {
         };
 
     // GL_MOUSE_X / Y / BTN
-    registry[L"GL_MOUSE_X"] = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.mouseX }; };
-    registry[L"GL_MOUSE_Y"] = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.mouseY }; };
+    //registry[L"GL_MOUSE_X"] = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.mouseX }; };
+    //registry[L"GL_MOUSE_Y"] = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.mouseY }; };
+
+    // MOUSE COORDINATES: Mapăm coordonatele reale ale ecranului la spațiul virtual 800x600
+    // Mapare ajustată pentru MOUSE în interiorul zonei 4:3
+    registry[L"GL_MOUSE_X"] = [](const std::vector<vData>&) -> vData {
+        if (g_GL.vpW <= 0) return vData{ 0LL };
+        float relX = (float)(g_GL.mouseX - g_GL.vpX);
+        float scaledX = relX * (800.0f / (float)g_GL.vpW);
+        return vData{ (long long)scaledX };
+        };
+
+    registry[L"GL_MOUSE_Y"] = [](const std::vector<vData>&) -> vData {
+        if (g_GL.vpH <= 0) return vData{ 0LL };
+        float relY = (float)(g_GL.mouseY - g_GL.vpY);
+        float scaledY = relY * (600.0f / (float)g_GL.vpH);
+        return vData{ (long long)scaledY };
+        };
+
     registry[L"GL_MOUSE_BTN"] = [](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData{ 0LL };
         int btn = (int)toDouble(args[0]);

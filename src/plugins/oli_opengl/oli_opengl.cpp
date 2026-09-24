@@ -11,19 +11,22 @@
 #include <unordered_map>
 #include <map>
 
+// Cache global de texturi în C++
+static std::unordered_map<std::string, GLuint> g_TextureCache;
+
 // Dynamic Loading pentru extensii OpenGL moderne (Shadere/GLSL)
 #ifdef _WIN32
-    #include <windows.h>
-    #include <GL/glext.h>
-    #define OLI_EXPORT extern "C" __declspec(dllexport)
-    #define GET_GL_PROC(name, type) name = (type)wglGetProcAddress(#name);
+#include <windows.h>
+#include <GL/glext.h>
+#define OLI_EXPORT extern "C" __declspec(dllexport)
+#define GET_GL_PROC(name, type) name = (type)wglGetProcAddress(#name);
 #else
-    #include <X11/Xlib.h>
-    #include <X11/Xutil.h>
-    #include <GL/glx.h>
-    #include <GL/glxext.h>
-    #define OLI_EXPORT extern "C" __attribute__((visibility("default")))
-    #define GET_GL_PROC(name, type) name = (type)glXGetProcAddress((const GLubyte*)#name);
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <GL/glx.h>
+#include <GL/glxext.h>
+#define OLI_EXPORT extern "C" __attribute__((visibility("default")))
+#define GET_GL_PROC(name, type) name = (type)glXGetProcAddress((const GLubyte*)#name);
 #endif
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -56,53 +59,65 @@ std::string g_LastError = "";
 // CONTEXT OPERATING SYSTEM STATE (CROSS-PLATFORM)
 // -----------------------------------------------------------------------------
 struct GLState {
-    int   width  = 0;
+    int   width = 0;
     int   height = 0;
     int   mouseX = 0;
     int   mouseY = 0;
+    int   windowedW = 800; // Dimensiunea inițială salvată
+    int   windowedH = 600;
+    bool  isFullscreen = false;
     bool  buttons[3] = { false, false, false }; // Left, Right, Middle
     GLuint fontBase = 0;
+    
 
 #ifdef _WIN32
-    HWND  hwnd   = nullptr;
-    HDC   hdc    = nullptr;
-    HGLRC hrc    = nullptr;
+    HWND  hwnd = nullptr;
+    HDC   hdc = nullptr;
+    HGLRC hrc = nullptr;
+
+    RECT  windowedRect = { 0, 0, 0, 0 };
+    DWORD windowedStyle = 0;
 #else
     Display* display = nullptr;
-    Window      window  = 0;
+    Window      window = 0;
     GLXContext  context = nullptr;
     Atom        wmDeleteMessage;
 #endif
 } g_GL;
 
+
+
+
+
+
 struct GLColor {
     float r, g, b;
     GLColor(unsigned int hex) {
         r = ((hex >> 16) & 0xFF) / 255.0f;
-        g = ((hex >> 8)  & 0xFF) / 255.0f;
-        b = ( hex        & 0xFF) / 255.0f;
+        g = ((hex >> 8) & 0xFF) / 255.0f;
+        b = (hex & 0xFF) / 255.0f;
     }
 };
 
 // -----------------------------------------------------------------------------
 // POINTERI SHADERE OPENGL (GLSL)
 // -----------------------------------------------------------------------------
-PFNGLCREATESHADERPROC       glCreateShader       = nullptr;
-PFNGLSHADERSOURCEPROC       glShaderSource       = nullptr;
-PFNGLCOMPILESHADERPROC      glCompileShader      = nullptr;
-PFNGLCREATEPROGRAMPROC      glCreateProgram      = nullptr;
-PFNGLATTACHSHADERPROC       glAttachShader       = nullptr;
-PFNGLLINKPROGRAMPROC        glLinkProgram        = nullptr;
-PFNGLUSEPROGRAMPROC         glUseProgram         = nullptr;
+PFNGLCREATESHADERPROC       glCreateShader = nullptr;
+PFNGLSHADERSOURCEPROC       glShaderSource = nullptr;
+PFNGLCOMPILESHADERPROC      glCompileShader = nullptr;
+PFNGLCREATEPROGRAMPROC      glCreateProgram = nullptr;
+PFNGLATTACHSHADERPROC       glAttachShader = nullptr;
+PFNGLLINKPROGRAMPROC        glLinkProgram = nullptr;
+PFNGLUSEPROGRAMPROC         glUseProgram = nullptr;
 PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation = nullptr;
-PFNGLUNIFORM1FPROC          glUniform1f          = nullptr;
-PFNGLGETSHADERIVPROC        glGetShaderiv        = nullptr;
-PFNGLGETSHADERINFOLOGPROC   glGetShaderInfoLog   = nullptr;
-PFNGLGETPROGRAMIVPROC       glGetProgramiv       = nullptr;
-PFNGLGETPROGRAMINFOLOGPROC  glGetProgramInfoLog  = nullptr;
-PFNGLUNIFORM2FPROC          glUniform2f          = nullptr;
-PFNGLUNIFORM4FPROC          glUniform4f          = nullptr;
-PFNGLDELETESHADERPROC       glDeleteShader       = nullptr;
+PFNGLUNIFORM1FPROC          glUniform1f = nullptr;
+PFNGLGETSHADERIVPROC        glGetShaderiv = nullptr;
+PFNGLGETSHADERINFOLOGPROC   glGetShaderInfoLog = nullptr;
+PFNGLGETPROGRAMIVPROC       glGetProgramiv = nullptr;
+PFNGLGETPROGRAMINFOLOGPROC  glGetProgramInfoLog = nullptr;
+PFNGLUNIFORM2FPROC          glUniform2f = nullptr;
+PFNGLUNIFORM4FPROC          glUniform4f = nullptr;
+PFNGLDELETESHADERPROC       glDeleteShader = nullptr;
 
 #ifdef _WIN32
 typedef bool (WINAPI* PFNWGLSWAPINTERVALEXTPROC)(int interval);
@@ -148,12 +163,12 @@ void BuildFont() {
     // Forțăm o deschidere safe. Nu folosim direct XLoadFont, care crapă la BadName,
     // ci încercăm să stângem informații despre structura fontului în mod securizat.
     XFontStruct* fontInfo = XLoadQueryFont(g_GL.display, "-*-fixed-bold-r-normal--18-*-*-*-*-*-iso8859-1");
-    
+
     if (!fontInfo) {
         // Fallback 1: Încercăm o dimensiune mai comună de fixed bold
         fontInfo = XLoadQueryFont(g_GL.display, "-*-fixed-medium-r-normal--16-*-*-*-*-*-iso8859-1");
     }
-    
+
     if (!fontInfo) {
         // Fallback 2: Încercăm fontul universal prezent în absolut orice distribuție Linux existentă
         fontInfo = XLoadQueryFont(g_GL.display, "fixed");
@@ -163,7 +178,8 @@ void BuildFont() {
         // Generăm bitmap-urile OpenGL pe baza structurii de font încărcate cu succes
         glXUseXFont(fontInfo->fid, 32, 96, g_GL.fontBase);
         XFreeFont(g_GL.display, fontInfo); // Eliberăm structura din memoria X11, acum e în GPU
-    } else {
+    }
+    else {
         std::cerr << "[OpenGL Plugin] AVERTISMENT CRITIC: Nu s-a putut încărca niciun font bitmap X11!" << std::endl;
     }
 #endif
@@ -209,7 +225,8 @@ int LoadOBJ(const std::string& path) {
                     if (firstSlash != std::string::npos && lastSlash != firstSlash) {
                         fv.nIdx = std::stoi(segment.substr(lastSlash + 1)) - 1;
                     }
-                } catch (...) { continue; }
+                }
+                catch (...) { continue; }
                 face.points.push_back(fv);
             }
             if (!face.points.empty()) model.faces.push_back(face);
@@ -246,12 +263,12 @@ void LoadShaderFunctions() {
     GET_GL_PROC(glGetShaderInfoLog, PFNGLGETSHADERINFOLOGPROC);
     GET_GL_PROC(glGetProgramiv, PFNGLGETPROGRAMIVPROC);
     GET_GL_PROC(glGetProgramInfoLog, PFNGLGETPROGRAMINFOLOGPROC);
-    
+
     // 🔥 ASIGURĂ-TE CĂ ACESTEA SUNT ÎNCĂRCATE PENTRU VEC2 ȘI VEC4:
     GET_GL_PROC(glUniform2f, PFNGLUNIFORM2FPROC);
     GET_GL_PROC(glUniform4f, PFNGLUNIFORM4FPROC);
     GET_GL_PROC(glDeleteShader, PFNGLDELETESHADERPROC);
-    
+
 #ifdef _WIN32
     glUniform1f = (PFNGLUNIFORM1FPROC)wglGetProcAddress("glUniform1f");
     wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
@@ -296,6 +313,78 @@ using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
 inline vOliEngine* g_LinkedOliEngine = nullptr;
 #endif
 
+
+
+void ToggleFullscreen() {
+    g_GL.isFullscreen = !g_GL.isFullscreen;
+
+#ifdef _WIN32
+    if (!g_GL.hwnd) return;
+
+    if (g_GL.isFullscreen) {
+        // Salvăm dimensiunea și stilul curente ale ferestrei
+        GetWindowRect(g_GL.hwnd, &g_GL.windowedRect);
+        g_GL.windowedStyle = GetWindowLong(g_GL.hwnd, GWL_STYLE);
+
+        int screenW = GetSystemMetrics(SM_CXSCREEN);
+        int screenH = GetSystemMetrics(SM_CYSCREEN);
+
+        SetWindowLong(g_GL.hwnd, GWL_STYLE, WS_POPUP | WS_VISIBLE);
+        SetWindowPos(g_GL.hwnd, HWND_TOP, 0, 0, screenW, screenH,
+            SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+
+        g_GL.width = screenW;
+        g_GL.height = screenH;
+    }
+    else {
+        SetWindowLong(g_GL.hwnd, GWL_STYLE, g_GL.windowedStyle);
+        int w = g_GL.windowedRect.right - g_GL.windowedRect.left;
+        int h = g_GL.windowedRect.bottom - g_GL.windowedRect.top;
+
+        SetWindowPos(g_GL.hwnd, NULL, g_GL.windowedRect.left, g_GL.windowedRect.top,
+            w, h, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+
+        g_GL.width = g_GL.windowedW;
+        g_GL.height = g_GL.windowedH;
+    }
+#else
+    if (!g_GL.display || !g_GL.window) return;
+
+    XEvent xev = { 0 };
+    xev.type = ClientMessage;
+    xev.xclient.window = g_GL.window;
+    xev.xclient.message_type = XInternAtom(g_GL.display, "_NET_WM_STATE", False);
+    xev.xclient.format = 32;
+    xev.xclient.data.l[0] = g_GL.isFullscreen ? 1 : 0; // 1 = add, 0 = remove
+    xev.xclient.data.l[1] = XInternAtom(g_GL.display, "_NET_WM_STATE_FULLSCREEN", False);
+    xev.xclient.data.l[2] = 0;
+    xev.xclient.data.l[3] = 1;
+
+    XSendEvent(g_GL.display, DefaultRootWindow(g_GL.display), False,
+        SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+    XFlush(g_GL.display);
+
+    if (g_GL.isFullscreen) {
+        int screen = DefaultScreen(g_GL.display);
+        g_GL.width = DisplayWidth(g_GL.display, screen);
+        g_GL.height = DisplayHeight(g_GL.display, screen);
+    }
+    else {
+        g_GL.width = g_GL.windowedW;
+        g_GL.height = g_GL.windowedH;
+    }
+#endif
+
+    // Actualizăm matricea OpenGL după schimbarea dimensiunii
+    glViewport(0, 0, g_GL.width, g_GL.height);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(45.0f, (float)g_GL.width / (float)g_GL.height, 0.1f, 1000.0f);
+    glMatrixMode(GL_MODELVIEW);
+}
+
+
+
 // -----------------------------------------------------------------------------
 // PUNCTUL DE INTRARE ÎN REGISTRUL PLUGINULUI OLI
 // -----------------------------------------------------------------------------
@@ -306,29 +395,32 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         g_LinkedOliEngine = static_cast<vOliEngine*>(enginePtr);
     }
     // GL_INIT(width, height, title)
+    /*
     registry[L"GL_INIT"] = [](const std::vector<vData>& args) -> vData {
-        if (args.size() < 2) return vData{0LL};
+        if (args.size() < 2) return vData{ 0LL };
         int w = (int)toDouble(args[0]);
         int h = (int)toDouble(args[1]);
         std::wstring title = (args.size() >= 3) ? args[2].toWString() : L"Oli OpenGL Native Window";
         std::string sTitle = wstr_to_str(title);
 
-        g_GL.width  = w;
+        g_GL.width = w;
         g_GL.height = h;
 
 #ifdef _WIN32
         HINSTANCE hInst = GetModuleHandle(NULL);
         static bool classRegistered = false;
         if (!classRegistered) {
-            WNDCLASSW wc = {0}; wc.lpfnWndProc = OliWndProc; wc.hInstance = hInst;
+            WNDCLASSW wc = { 0 }; wc.lpfnWndProc = OliWndProc; wc.hInstance = hInst;
             wc.lpszClassName = L"OliGLClass"; wc.hCursor = LoadCursor(NULL, IDC_ARROW);
             wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
             RegisterClassW(&wc); classRegistered = true;
         }
-        RECT rc = {0, 0, w, h}; DWORD dwStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+        RECT rc = { 0, 0, w, h }; 
+        //DWORD dwStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+        DWORD dwStyle = (WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX) | WS_VISIBLE;
         AdjustWindowRect(&rc, dwStyle, FALSE);
         g_GL.hwnd = CreateWindowExW(0, L"OliGLClass", title.c_str(), dwStyle, CW_USEDEFAULT, CW_USEDEFAULT,
-                                    rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, hInst, NULL);
+            rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, hInst, NULL);
         g_GL.hdc = GetDC(g_GL.hwnd);
         PIXELFORMATDESCRIPTOR pfd = { sizeof(PIXELFORMATDESCRIPTOR), 1 };
         pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
@@ -339,7 +431,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         wglMakeCurrent(g_GL.hdc, g_GL.hrc);
 #else
         g_GL.display = XOpenDisplay(nullptr);
-        if (!g_GL.display) return vData{0LL};
+        if (!g_GL.display) return vData{ 0LL };
 
         int screen = DefaultScreen(g_GL.display);
         Window root = RootWindow(g_GL.display, screen);
@@ -359,7 +451,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             std::cerr << "[GL_INIT Error] glXChooseVisual a eșuat! Nu s-a găsit niciun VisualInfo OpenGL compatibil." << std::endl;
             XCloseDisplay(g_GL.display);
             g_GL.display = nullptr;
-            return vData{0LL};
+            return vData{ 0LL };
         }
 
         XSetWindowAttributes swa;
@@ -367,13 +459,13 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         swa.event_mask = ExposureMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask;
 
         g_GL.window = XCreateWindow(g_GL.display, root, 0, 0, w, h, 0, vi->depth,
-                                    InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
+            InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
 
         if (!g_GL.window) {
             XFree(vi);
             XCloseDisplay(g_GL.display);
             g_GL.display = nullptr;
-            return vData{0LL};
+            return vData{ 0LL };
         }
 
         XMapWindow(g_GL.display, g_GL.window);
@@ -387,7 +479,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             XCloseDisplay(g_GL.display);
             g_GL.display = nullptr;
             g_GL.window = 0;
-            return vData{0LL};
+            return vData{ 0LL };
         }
 
         glXMakeCurrent(g_GL.display, g_GL.window, g_GL.context);
@@ -415,7 +507,294 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 
         BuildFont();
-        return vData{1LL};
+        return vData{ 1LL };
+        };
+        */
+/*
+registry[L"GL_INIT"] = [](const std::vector<vData>& args) -> vData {
+    if (args.size() < 2) return vData{ 0LL };
+    int w = (int)toDouble(args[0]);
+    int h = (int)toDouble(args[1]);
+    std::wstring title = (args.size() >= 3) ? args[2].toWString() : L"Oli OpenGL Native Window";
+    std::string sTitle = wstr_to_str(title);
+
+    g_GL.width = w;
+    g_GL.height = h;
+    g_GL.windowedW = w;
+    g_GL.windowedH = h;
+    g_GL.isFullscreen = false;
+
+#ifdef _WIN32
+    HINSTANCE hInst = GetModuleHandle(NULL);
+    static bool classRegistered = false;
+    if (!classRegistered) {
+        WNDCLASSW wc = { 0 }; wc.lpfnWndProc = OliWndProc; wc.hInstance = hInst;
+        wc.lpszClassName = L"OliGLClass"; wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+        wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+        wc.hbrBackground = NULL;
+        RegisterClassW(&wc); classRegistered = true;
+    }
+
+    RECT rc = { 0, 0, w, h };
+    DWORD dwStyle = (WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX) | WS_VISIBLE;
+    g_GL.windowedStyle = dwStyle;
+
+    AdjustWindowRect(&rc, dwStyle, FALSE);
+    g_GL.hwnd = CreateWindowExW(0, L"OliGLClass", title.c_str(), dwStyle, CW_USEDEFAULT, CW_USEDEFAULT,
+        rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, hInst, NULL);
+
+    if (!g_GL.hwnd) return vData{ 0LL };
+
+    g_GL.hdc = GetDC(g_GL.hwnd);
+    PIXELFORMATDESCRIPTOR pfd = { sizeof(PIXELFORMATDESCRIPTOR), 1 };
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.iPixelType = PFD_TYPE_RGBA; pfd.cColorBits = 32; pfd.cDepthBits = 24;
+
+    int format = ChoosePixelFormat(g_GL.hdc, &pfd);
+    SetPixelFormat(g_GL.hdc, format, &pfd);
+    g_GL.hrc = wglCreateContext(g_GL.hdc);
+    wglMakeCurrent(g_GL.hdc, g_GL.hrc);
+#else
+    g_GL.display = XOpenDisplay(nullptr);
+    if (!g_GL.display) return vData{ 0LL };
+
+    int screen = DefaultScreen(g_GL.display);
+    Window root = RootWindow(g_GL.display, screen);
+
+    GLint att[] = { GLX_RGBA, GLX_DOUBLEBUFFER, GLX_DEPTH_SIZE, 24, None };
+    XVisualInfo* vi = glXChooseVisual(g_GL.display, screen, att);
+
+    if (!vi) {
+        GLint attFallback[] = { GLX_RGBA, GLX_DOUBLEBUFFER, None };
+        vi = glXChooseVisual(g_GL.display, screen, attFallback);
+    }
+
+    if (!vi) {
+        XCloseDisplay(g_GL.display);
+        g_GL.display = nullptr;
+        return vData{ 0LL };
+    }
+
+    XSetWindowAttributes swa;
+    swa.colormap = XCreateColormap(g_GL.display, root, vi->visual, AllocNone);
+    swa.event_mask = ExposureMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask;
+
+    g_GL.window = XCreateWindow(g_GL.display, root, 0, 0, w, h, 0, vi->depth,
+        InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
+
+    if (!g_GL.window) {
+        XFree(vi);
+        XCloseDisplay(g_GL.display);
+        g_GL.display = nullptr;
+        return vData{ 0LL };
+    }
+
+    XMapWindow(g_GL.display, g_GL.window);
+    XStoreName(g_GL.display, g_GL.window, sTitle.c_str());
+
+    XSizeHints* hints = XAllocSizeHints();
+    if (hints) {
+        hints->flags = PMinSize | PMaxSize;
+        hints->min_width = hints->max_width = w;
+        hints->min_height = hints->max_height = h;
+        XSetWMNormalHints(g_GL.display, g_GL.window, hints);
+        XFree(hints);
+    }
+
+    g_GL.context = glXCreateContext(g_GL.display, vi, nullptr, GL_TRUE);
+    XFree(vi);
+
+    if (!g_GL.context) {
+        XDestroyWindow(g_GL.display, g_GL.window);
+        XCloseDisplay(g_GL.display);
+        g_GL.display = nullptr;
+        g_GL.window = 0;
+        return vData{ 0LL };
+    }
+
+    glXMakeCurrent(g_GL.display, g_GL.window, g_GL.context);
+    g_GL.wmDeleteMessage = XInternAtom(g_GL.display, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(g_GL.display, g_GL.window, &g_GL.wmDeleteMessage, 1);
+#endif
+
+    LoadShaderFunctions();
+#ifdef _WIN32
+    if (wglSwapIntervalEXT) wglSwapIntervalEXT(0);
+#else
+    if (glXSwapIntervalEXT) glXSwapIntervalEXT(g_GL.display, g_GL.window, 0);
+#endif
+
+    glViewport(0, 0, w, h);
+    glMatrixMode(GL_PROJECTION); glLoadIdentity();
+    gluPerspective(45.0f, (float)w / (float)h, 0.1f, 1000.0f);
+    glMatrixMode(GL_MODELVIEW); glLoadIdentity();
+
+    glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_DEPTH_TEST);
+
+    BuildFont();
+    return vData{ 1LL };
+    };
+    */
+
+registry[L"GL_INIT"] = [](const std::vector<vData>& args) -> vData {
+    if (args.size() < 2) return vData{ 0LL };
+    int w = (int)toDouble(args[0]);
+    int h = (int)toDouble(args[1]);
+    std::wstring title = (args.size() >= 3) ? args[2].toWString() : L"Oli OpenGL Native Window";
+    bool fullscreen = (args.size() >= 4) ? (toDouble(args[3]) != 0) : false;
+    std::string sTitle = wstr_to_str(title);
+
+    g_GL.windowedW = w;
+    g_GL.windowedH = h;
+    g_GL.isFullscreen = fullscreen;
+
+#ifdef _WIN32
+    HINSTANCE hInst = GetModuleHandle(NULL);
+    static bool classRegistered = false;
+    if (!classRegistered) {
+        WNDCLASSW wc = { 0 }; wc.lpfnWndProc = OliWndProc; wc.hInstance = hInst;
+        wc.lpszClassName = L"OliGLClass"; wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+        wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+        wc.hbrBackground = NULL;
+        RegisterClassW(&wc); classRegistered = true;
+    }
+
+    DWORD dwStyle;
+    int posX = CW_USEDEFAULT, posY = CW_USEDEFAULT;
+    int winW = w, winH = h;
+
+    if (fullscreen) {
+        winW = GetSystemMetrics(SM_CXSCREEN);
+        winH = GetSystemMetrics(SM_CYSCREEN);
+        dwStyle = WS_POPUP | WS_VISIBLE;
+        posX = 0;
+        posY = 0;
+    }
+    else {
+        dwStyle = (WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME & ~WS_MAXIMIZEBOX) | WS_VISIBLE;
+        RECT rc = { 0, 0, w, h };
+        AdjustWindowRect(&rc, dwStyle, FALSE);
+        winW = rc.right - rc.left;
+        winH = rc.bottom - rc.top;
+    }
+
+    g_GL.windowedStyle = dwStyle;
+    g_GL.width = fullscreen ? winW : w;
+    g_GL.height = fullscreen ? winH : h;
+
+    g_GL.hwnd = CreateWindowExW(0, L"OliGLClass", title.c_str(), dwStyle,
+        posX, posY, winW, winH, NULL, NULL, hInst, NULL);
+
+    if (!g_GL.hwnd) return vData{ 0LL };
+
+    g_GL.hdc = GetDC(g_GL.hwnd);
+    PIXELFORMATDESCRIPTOR pfd = { sizeof(PIXELFORMATDESCRIPTOR), 1 };
+    pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pfd.iPixelType = PFD_TYPE_RGBA; pfd.cColorBits = 32; pfd.cDepthBits = 24;
+
+    int format = ChoosePixelFormat(g_GL.hdc, &pfd);
+    SetPixelFormat(g_GL.hdc, format, &pfd);
+    g_GL.hrc = wglCreateContext(g_GL.hdc);
+    wglMakeCurrent(g_GL.hdc, g_GL.hrc);
+#else
+    g_GL.display = XOpenDisplay(nullptr);
+    if (!g_GL.display) return vData{ 0LL };
+
+    int screen = DefaultScreen(g_GL.display);
+    Window root = RootWindow(g_GL.display, screen);
+
+    if (fullscreen) {
+        w = DisplayWidth(g_GL.display, screen);
+        h = DisplayHeight(g_GL.display, screen);
+    }
+
+    g_GL.width = w;
+    g_GL.height = h;
+
+    GLint att[] = { GLX_RGBA, GLX_DOUBLEBUFFER, GLX_DEPTH_SIZE, 24, None };
+    XVisualInfo* vi = glXChooseVisual(g_GL.display, screen, att);
+
+    if (!vi) {
+        GLint attFallback[] = { GLX_RGBA, GLX_DOUBLEBUFFER, None };
+        vi = glXChooseVisual(g_GL.display, screen, attFallback);
+    }
+
+    if (!vi) {
+        XCloseDisplay(g_GL.display);
+        g_GL.display = nullptr;
+        return vData{ 0LL };
+    }
+
+    XSetWindowAttributes swa;
+    swa.colormap = XCreateColormap(g_GL.display, root, vi->visual, AllocNone);
+    swa.event_mask = ExposureMask | KeyPressMask | ButtonPressMask | ButtonReleaseMask | PointerMotionMask | StructureNotifyMask;
+
+    g_GL.window = XCreateWindow(g_GL.display, root, 0, 0, w, h, 0, vi->depth,
+        InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
+
+    if (!g_GL.window) {
+        XFree(vi);
+        XCloseDisplay(g_GL.display);
+        g_GL.display = nullptr;
+        return vData{ 0LL };
+    }
+
+    XMapWindow(g_GL.display, g_GL.window);
+    XStoreName(g_GL.display, g_GL.window, sTitle.c_str());
+
+    if (fullscreen) {
+        Atom wmState = XInternAtom(g_GL.display, "_NET_WM_STATE", False);
+        Atom wmFullscreen = XInternAtom(g_GL.display, "_NET_WM_STATE_FULLSCREEN", False);
+        XChangeProperty(g_GL.display, g_GL.window, wmState, XA_ATOM, 32,
+            PropModeReplace, (unsigned char*)&wmFullscreen, 1);
+    }
+    else {
+        XSizeHints* hints = XAllocSizeHints();
+        if (hints) {
+            hints->flags = PMinSize | PMaxSize;
+            hints->min_width = hints->max_width = w;
+            hints->min_height = hints->max_height = h;
+            XSetWMNormalHints(g_GL.display, g_GL.window, hints);
+            XFree(hints);
+        }
+    }
+
+    g_GL.context = glXCreateContext(g_GL.display, vi, nullptr, GL_TRUE);
+    XFree(vi);
+
+    if (!g_GL.context) {
+        XDestroyWindow(g_GL.display, g_GL.window);
+        XCloseDisplay(g_GL.display);
+        g_GL.display = nullptr;
+        g_GL.window = 0;
+        return vData{ 0LL };
+    }
+
+    glXMakeCurrent(g_GL.display, g_GL.window, g_GL.context);
+    g_GL.wmDeleteMessage = XInternAtom(g_GL.display, "WM_DELETE_WINDOW", False);
+    XSetWMProtocols(g_GL.display, g_GL.window, &g_GL.wmDeleteMessage, 1);
+#endif
+
+    LoadShaderFunctions();
+#ifdef _WIN32
+    if (wglSwapIntervalEXT) wglSwapIntervalEXT(0);
+#else
+    if (glXSwapIntervalEXT) glXSwapIntervalEXT(g_GL.display, g_GL.window, 0);
+#endif
+
+    glViewport(0, 0, g_GL.width, g_GL.height);
+    glMatrixMode(GL_PROJECTION); glLoadIdentity();
+    gluPerspective(45.0f, (float)g_GL.width / (float)g_GL.height, 0.1f, 1000.0f);
+    glMatrixMode(GL_MODELVIEW); glLoadIdentity();
+
+    glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_DEPTH_TEST);
+
+    BuildFont();
+    return vData{ 1LL };
     };
 
     // GL_PRESENT()
@@ -455,13 +834,13 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
             }
             else if (xev.type == ClientMessage) {
                 if ((Atom)xev.xclient.data.l[0] == g_GL.wmDeleteMessage) {
-                    fflush(stdout); return vData{0LL}; // Returnează 0 în script ca flag de oprire loop
+                    fflush(stdout); return vData{ 0LL }; // Returnează 0 în script ca flag de oprire loop
                 }
             }
         }
 #endif
         return vData{ 1LL };
-    };
+        };
 
     // GL_CLEAR(colorHex)
     registry[L"GL_CLEAR"] = [](const std::vector<vData>& args) -> vData {
@@ -476,7 +855,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         }
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         return vData{ 1LL };
-    };
+        };
 
     // GL_LINE(x1, y1, x2, y2, color)
     registry[L"GL_LINE"] = [](const std::vector<vData>& args) -> vData {
@@ -499,7 +878,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         glPopMatrix(); glMatrixMode(GL_PROJECTION); glPopMatrix();
         glMatrixMode(GL_MODELVIEW); glPopAttrib();
         return vData{ 1LL };
-    };
+        };
 
     // GL_POINT(x, y, size, color)
     registry[L"GL_POINT"] = [](const std::vector<vData>& args) -> vData {
@@ -520,7 +899,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         glPopMatrix(); glMatrixMode(GL_PROJECTION); glPopMatrix();
         glMatrixMode(GL_MODELVIEW); glPopAttrib();
         return vData{ 1LL };
-    };
+        };
 
     // GL_CIRCLE(x, y, radius, color)
     registry[L"GL_CIRCLE"] = [](const std::vector<vData>& args) -> vData {
@@ -545,7 +924,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         glPopMatrix(); glMatrixMode(GL_PROJECTION); glPopMatrix();
         glMatrixMode(GL_MODELVIEW); glPopAttrib();
         return vData{ 1LL };
-    };
+        };
 
     // GL_CLOSE()
     registry[L"GL_CLOSE"] = [](const std::vector<vData>&) -> vData {
@@ -566,8 +945,8 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         if (g_GL.display) { XCloseDisplay(g_GL.display); g_GL.display = nullptr; }
 #endif
         fflush(stdout);
-        return vData{1LL};
-    };
+        return vData{ 1LL };
+        };
 
     // GL_LOAD_SHADER(type, source)
     registry[L"GL_LOAD_SHADER"] = [](const std::vector<vData>& args) -> vData {
@@ -596,25 +975,25 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         }
         g_LastError = "No error";
         return vData{ (long long)shader };
-    };
+        };
 
     registry[L"GL_GET_ERROR"] = [](const std::vector<vData>&) -> vData { return vData{ str_to_wstr(g_LastError) }; };
 
     // GL_LINK_PROGRAM(vs, fs)
     registry[L"GL_LINK_PROGRAM"] = [](const std::vector<vData>& args) -> vData {
-        if (args.size() < 2) return vData{0LL};
+        if (args.size() < 2) return vData{ 0LL };
         GLuint vs = (GLuint)toDouble(args[0]); GLuint fs = (GLuint)toDouble(args[1]);
         GLuint program = glCreateProgram();
         glAttachShader(program, vs); glAttachShader(program, fs); glLinkProgram(program);
         return vData{ (long long)program };
-    };
+        };
 
     // GL_USE_PROGRAM(program)
     registry[L"GL_USE_PROGRAM"] = [](const std::vector<vData>& args) -> vData {
-        if (args.empty()) return vData{0LL};
+        if (args.empty()) return vData{ 0LL };
         glUseProgram((GLuint)toDouble(args[0]));
-        return vData{1LL};
-    };
+        return vData{ 1LL };
+        };
 
     // GL_DRAW_FULLSCREEN()
     registry[L"GL_DRAW_FULLSCREEN"] = [](const std::vector<vData>&) -> vData {
@@ -624,13 +1003,13 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         glMatrixMode(GL_MODELVIEW); glPushMatrix(); glLoadIdentity();
 
         glBegin(GL_TRIANGLES);
-            glVertex2f(-1.0f, -1.0f); glVertex2f( 3.0f, -1.0f); glVertex2f(-1.0f,  3.0f);
+        glVertex2f(-1.0f, -1.0f); glVertex2f(3.0f, -1.0f); glVertex2f(-1.0f, 3.0f);
         glEnd();
 
         glMatrixMode(GL_PROJECTION); glPopMatrix(); glMatrixMode(GL_MODELVIEW); glPopMatrix();
         glPopAttrib();
-        return vData{1LL};
-    };
+        return vData{ 1LL };
+        };
 
     // GL_SET_UNIFORM(program, name, values...)
     registry[L"GL_SET_UNIFORM"] = [](const std::vector<vData>& args) -> vData {
@@ -642,15 +1021,17 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
 
         if (args.size() == 6) {
             if (glUniform4f) glUniform4f(loc, (float)toDouble(args[2]), (float)toDouble(args[3]), (float)toDouble(args[4]), (float)toDouble(args[5]));
-        } else if (args.size() == 4) {
+        }
+        else if (args.size() == 4) {
             if (glUniform2f) glUniform2f(loc, (float)toDouble(args[2]), (float)toDouble(args[3]));
-        } else if (args.size() == 3) {
+        }
+        else if (args.size() == 3) {
             if (glUniform1f) glUniform1f(loc, (float)toDouble(args[2]));
         }
         return vData{ 1LL };
-    };
+        };
 
-    registry[L"GL_WIDTH"]  = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.width }; };
+    registry[L"GL_WIDTH"] = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.width }; };
     registry[L"GL_HEIGHT"] = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.height }; };
 
     // GL_TEXT(x, y, string)
@@ -677,14 +1058,14 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         glMatrixMode(GL_MODELVIEW); glPopMatrix(); glMatrixMode(GL_PROJECTION); glPopMatrix();
         glPopAttrib();
         return vData{ 1LL };
-    };
+        };
 
     // GL_LOAD_MODEL(path)
     registry[L"GL_LOAD_MODEL"] = [](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData{ 0LL };
         std::string path = wstr_to_str(args[0].toWString());
         return vData{ (long long)LoadOBJ(path) };
-    };
+        };
 
     // GL_DRAW_MODEL(id, x, y, z, rx, ry, rz, scale)
     registry[L"GL_DRAW_MODEL"] = [](const std::vector<vData>& args) -> vData {
@@ -728,15 +1109,32 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         }
         glDisable(GL_NORMALIZE); glPopMatrix();
         return vData{ 1LL };
-    };
+        };
 
     // GL_LOAD_TEXTURE(path)
+    /*
     registry[L"GL_LOAD_TEXTURE"] = [](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData{ 0LL };
         std::string path = wstr_to_str(args[0].toWString());
         return vData{ (long long)LoadTexture(path) };
-    };
+        };
+        */
+    registry[L"GL_LOAD_TEXTURE"] = [](const std::vector<vData>& args) -> vData {
+        if (args.empty()) return vData{ 0LL };
+        std::string path = wstr_to_str(args[0].toWString());
 
+        // 1. Verificăm dacă textura există deja în memorie
+        auto it = g_TextureCache.find(path);
+        if (it != g_TextureCache.end()) {
+            return vData{ static_cast<long long>(it->second) }; // Returnăm ID-ul instanței existente
+        }
+
+        // 2. Dacă nu există, o încărcăm o singură dată pe GPU și o salvăm în cache
+        GLuint texID = LoadTexture(path);
+        g_TextureCache[path] = texID;
+
+        return vData{ static_cast<long long>(texID) };
+        };
     // GL_DRAW_SPRITE(id, x, y, w, h, rot)
     registry[L"GL_DRAW_SPRITE"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 6) return vData{ 0LL };
@@ -759,16 +1157,16 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         glTranslatef(x, y, 0); glRotatef(rot, 0, 0, 1); glColor4f(1, 1, 1, 1);
 
         glBegin(GL_QUADS);
-            glTexCoord2f(0, 1); glVertex2f(-w / 2, -h / 2);
-            glTexCoord2f(1, 1); glVertex2f(w / 2, -h / 2);
-            glTexCoord2f(1, 0); glVertex2f(w / 2, h / 2);
-            glTexCoord2f(0, 0); glVertex2f(-w / 2, h / 2);
+        glTexCoord2f(0, 1); glVertex2f(-w / 2, -h / 2);
+        glTexCoord2f(1, 1); glVertex2f(w / 2, -h / 2);
+        glTexCoord2f(1, 0); glVertex2f(w / 2, h / 2);
+        glTexCoord2f(0, 0); glVertex2f(-w / 2, h / 2);
         glEnd();
 
         glPopMatrix(); glMatrixMode(GL_PROJECTION); glPopMatrix();
         glMatrixMode(GL_MODELVIEW); glPopAttrib();
         return vData{ 1LL };
-    };
+        };
 
     registry[L"GL_NODE"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 4) return vData{ 0LL };
@@ -793,7 +1191,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         glMatrixMode(GL_MODELVIEW); glPopAttrib();
 
         return vData{ 1LL };
-    };
+        };
 
     // 🔥 FIX: Înregistrare explicită GL_FILL_CIRCLE
     registry[L"GL_FILL_CIRCLE"] = [](const std::vector<vData>& args) -> vData {
@@ -825,7 +1223,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         glMatrixMode(GL_MODELVIEW); glPopAttrib();
 
         return vData{ 1LL };
-    };
+        };
 
     // 🔥 FIX: Înregistrare explicită GL_SET_VSYNC (Cross-Platform)
     // 🔥 VARIANTĂ ANTIGLONȚ: GL_SET_VSYNC (Nu mai permite crash-ul silențios)
@@ -848,10 +1246,12 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
                     glXSwapIntervalEXT(g_GL.display, g_GL.window, interval);
                     return vData{ 1LL };
                 }
-            } catch (...) {
+            }
+            catch (...) {
                 std::cerr << "[OpenGL] VSync a eșuat la nivel de driver, dar am prevenit crash-ul!" << std::endl;
             }
-        } else {
+        }
+        else {
             // FALLBACK SILENȚIOS: Dacă extensia nu e stabilă sau lipsește,
             // doar ignorăm apelul (mai bine fără VSync decât cu programul închis)
             static bool warned = false;
@@ -862,15 +1262,26 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
         }
 #endif
         return vData{ 0LL };
-    };
+        };
 
     // GL_MOUSE_X / Y / BTN
-    registry[L"GL_MOUSE_X"]   = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.mouseX }; };
-    registry[L"GL_MOUSE_Y"]   = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.mouseY }; };
+    registry[L"GL_MOUSE_X"] = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.mouseX }; };
+    registry[L"GL_MOUSE_Y"] = [](const std::vector<vData>&) -> vData { return vData{ (long long)g_GL.mouseY }; };
     registry[L"GL_MOUSE_BTN"] = [](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData{ 0LL };
         int btn = (int)toDouble(args[0]);
         if (btn >= 0 && btn < 3) return vData{ g_GL.buttons[btn] ? 1LL : 0LL };
         return vData{ 0LL };
-    };
+        };
+
+    registry[L"GL_SWITCH_FULLSCREEN"] = [](const std::vector<vData>&) -> vData {
+        ToggleFullscreen();
+        return vData{ g_GL.isFullscreen ? 1LL : 0LL };
+        };
+}
+
+OLI_EXPORT void SetPluginConsoleManager(ConsoleManager* hostCm) {
+    if (hostCm != nullptr) {
+
+    }
 }

@@ -14,6 +14,7 @@
 #include <cmath>
 #include <string>
 #include <algorithm>
+#include <random>
 
 using PluginRegistry = std::unordered_map<std::wstring, OliFunctionHandler>;
 
@@ -173,9 +174,25 @@ void RegisterMathFunctions(std::unordered_map<std::wstring, std::function<vData(
         // std::clamp se află în <algorithm>
         return vData{ std::clamp(val, low, high) };
         };
+
+    //determinarea aleatorie a direcției ($1$ sau $-1$)
+    registry[L"RAND_SIGN"] = [=](const std::vector<vData>&) -> vData {
+        static std::random_device rd;
+        static std::mt19937 gen(rd());
+        std::uniform_int_distribution<int> dis(0, 1);
+
+        // Returnează 1 sau -1 cu șanse egale (50%/50%)
+        return vData{ static_cast<long long>(dis(gen) == 0 ? 1 : -1) };
+        };
 }
 
 
 OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
     RegisterMathFunctions(registry);
+}
+
+OLI_EXPORT void SetPluginConsoleManager(ConsoleManager* hostCm) {
+    if (hostCm != nullptr) {
+
+    }
 }

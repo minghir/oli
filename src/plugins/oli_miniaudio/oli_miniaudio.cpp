@@ -98,7 +98,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         };
 
     // --- SND_STOP(id) ---
-    registry[L"SND_PLAY"] = [](const std::vector<vData>& args) -> vData {
+    registry[L"SND_STOP"] = [](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData{ 0LL };
         int id = (int)toDouble(args[0]);
 
@@ -229,7 +229,29 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry) {
         return vData{ 1LL };
         };
 
+	// --- SND_SET_MASTER_VOL(volume) ---
+    // Setează volumul global pentru tot motorul audio (0.0 = Mut, 1.0 = Normal)
+    registry[L"SND_SET_MASTER_VOL"] = [](const std::vector<vData>& args) -> vData {
+        if (!g_Audio.isInitialized || args.empty()) return vData{ 0LL };
+        float vol = (float)toDouble(args[0]);
+        ma_engine_set_volume(&g_Audio.engine, vol);
+        return vData{ 1LL };
+    };
+	
+	
+	// --- SND_SET_LOOPING(id, 1/0) ---
+    registry[L"SND_SET_LOOPING"] = [](const std::vector<vData>& args) -> vData {
+        if (args.size() < 2) return vData{ 0LL };
+        int id = (int)toDouble(args[0]);
+        bool loop = toDouble(args[1]) != 0.0;
 
+        if (g_Audio.soundMap.count(id)) {
+            ma_sound_set_looping(g_Audio.soundMap[id], loop ? MA_TRUE : MA_FALSE);
+            return vData{ 1LL };
+        }
+        return vData{ 0LL };
+    };
+	
     registry[L"SND_SAVE_WAV2"] = [](const std::vector<vData>& args) -> vData {
         if (args.size() < 2) return vData{ 0LL };
 

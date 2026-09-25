@@ -173,7 +173,7 @@ private:
 
     int m_blockDepth = 0; // Contor pentru IF/FOR/WHILE/CYCLE deschise
     bool m_isMultiLine = false; // Dacă suntem în mod de acumulare automată
-    
+    bool m_inBlockComment = false; // Tracking pentru comentariile block <# ... #>
 
     // Stiva de contexte (fiecare context este un map de variabile)
     std::vector<StackFrame> m_callStack;

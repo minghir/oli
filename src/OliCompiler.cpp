@@ -223,7 +223,77 @@ OliChunk OliCompiler::compile(const std::wstring& source,
 
     bool isMultilineString = false;
 
+    // 🔥 Stările pentru preprocesor (persistă pe durata întregului fișier)
+    bool inBlockComment = false;
+    bool inStringForComments = false;
+
     while (std::getline(ss, line)) {
+        // procesare comentarii block
+        // =========================================================================
+        // 1. PRE-PROCESOR: ELIMINARE COMENTARII BLOCK (<# ... #>) SIGURĂ
+        // =========================================================================
+        std::wstring processedLine = L"";
+        size_t lineIdx = 0;
+
+        while (lineIdx < line.length()) {
+            wchar_t c = line[lineIdx];
+
+            // A. Dacă suntem în string, respectăm caracterele escapate (ex: \")
+            if (inStringForComments && c == L'\\') {
+                processedLine += c;
+                if (lineIdx + 1 < line.length()) {
+                    processedLine += line[lineIdx + 1];
+                    lineIdx += 2;
+                }
+                else {
+                    lineIdx++;
+                }
+                continue;
+            }
+
+            // B. Comutare stare String (ignorată dacă suntem într-un block comment)
+            if (!inBlockComment && c == L'"') {
+                inStringForComments = !inStringForComments;
+                processedLine += c;
+                lineIdx++;
+                continue;
+            }
+
+            // C. Logica pentru Block Comments (activă doar în afara stringurilor)
+            if (!inStringForComments) {
+                if (!inBlockComment) {
+                    // Căutăm deschiderea <#
+                    if (lineIdx + 1 < line.length() && line[lineIdx] == L'<' && line[lineIdx + 1] == L'#') {
+                        inBlockComment = true;
+                        lineIdx += 2;
+                        continue;
+                    }
+                }
+                else {
+                    // Căutăm închiderea #>
+                    if (lineIdx + 1 < line.length() && line[lineIdx] == L'#' && line[lineIdx + 1] == L'>') {
+                        inBlockComment = false;
+                        lineIdx += 2;
+                        continue;
+                    }
+                }
+            }
+
+            // Adăugăm caracterul doar dacă NU ne aflăm în interiorul unui comentariu block
+            if (!inBlockComment) {
+                processedLine += c;
+            }
+            lineIdx++;
+        }
+
+        // Suprascriem linia originală cu varianta curățată
+        line = processedLine;
+        // =========================================================================
+
+
+
+
+
         //std::wstring cleanLine = trim(line);
         std::wstring cleanLine = isMultilineString ? line : trim(line);
         if (cleanLine.empty() && !isMultilineString) continue;

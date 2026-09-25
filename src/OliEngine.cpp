@@ -14,7 +14,7 @@
 #include <string_view>
 #include <algorithm> // Necesar pentru std::replace
 
-
+/*
 void vOliEngine::execute(const std::wstring& line) {
     // --- 1. CURĂȚARE INIȚIALĂ ---
     std::wstring cleanLine = trim(line);
@@ -139,6 +139,147 @@ void vOliEngine::execute(const std::wstring& line) {
 
     this->executeInternal(finalBlock);
 }
+*/
+void vOliEngine::execute(const std::wstring& line) {
+    // --- 1. EXTRAGERE COMENTARII (SINGLE ȘI BLOCK) ---
+    // Facem o singură trecere pentru a elimina <# ... #> și # ..., respectând string-urile.
+    std::wstring strippedLine;
+    bool inQuotesForComments = false;
+
+    for (size_t i = 0; i < line.length(); ++i) {
+        if (m_inBlockComment) {
+            // Dacă suntem într-un block comment, căutăm doar terminatorul #>
+            if (i + 1 < line.length() && line[i] == L'#' && line[i + 1] == L'>') {
+                m_inBlockComment = false;
+                i++; // Sărim peste '>'
+            }
+        }
+        else {
+            // Gestionăm string-urile pentru a nu interpreta <# sau # din interiorul lor
+            if (line[i] == L'"' && (i == 0 || line[i - 1] != L'\\')) {
+                inQuotesForComments = !inQuotesForComments;
+                strippedLine += line[i];
+            }
+            // Detectăm început de block comment <#
+            else if (!inQuotesForComments && i + 1 < line.length() && line[i] == L'<' && line[i + 1] == L'#') {
+                m_inBlockComment = true;
+                i++; // Sărim peste '#'
+            }
+            // Detectăm single-line comment #
+            else if (!inQuotesForComments && line[i] == L'#') {
+                break; // Ignorăm restul liniei actuale
+            }
+            else {
+                strippedLine += line[i];
+            }
+        }
+    }
+
+    std::wstring cleanLine = trim(strippedLine);
+
+    // Dacă am rămas fără conținut (era doar un comentariu) și nu avem nimic cumulat, ieșim
+    if (cleanLine.empty() && m_accumulator.empty()) return;
+
+    // --- 2. MASCARE GHILIMELE (PAS CRITIC) ---
+    // Aplicăm mascarea pe linia deja curățată de comentarii (folosită pentru paranteze/comenzi)
+    bool lineInQuotes = false;
+    std::wstring maskedLine = cleanLine;
+    for (size_t i = 0; i < maskedLine.length(); ++i) {
+        if (maskedLine[i] == L'"' && (i == 0 || maskedLine[i - 1] != L'\\')) {
+            lineInQuotes = !lineInQuotes;
+            maskedLine[i] = L' ';
+            continue;
+        }
+        if (lineInQuotes) {
+            maskedLine[i] = L' '; // Mascăm conținutul
+        }
+    }
+
+    // --- 3. ACTUALIZARE ADÂNCIME PARANTEZE (MAPS/ARRAYS) ---
+    // Folosim maskedLine pentru a fi siguri că nu numărăm paranteze din string-uri
+    for (wchar_t c : maskedLine) {
+        if (c == L'{' || c == L'[') m_bracketDepth++;
+        if (c == L'}' || c == L']') m_bracketDepth--;
+    }
+
+    // Pregătim o variantă Uppercase a liniei mascate pentru detectarea comenzilor
+    std::wstring upperMasked = maskedLine;
+    std::transform(upperMasked.begin(), upperMasked.end(), upperMasked.begin(), ::towupper);
+
+    // --- 4. GESTIONARE ÎNREGISTRARE FUNC/PROC ---
+    if (m_isRecording || m_isRecordingFunc) {
+        if (upperMasked == L"ENDPROC" || upperMasked == L"ENDFUNC") {
+            m_isRecording = false;
+            m_isRecordingFunc = false;
+            m_blockDepth = 0;
+            m_bracketDepth = 0;
+            vOliKeyWords::registerDynamicCommand(m_activeProcName);
+            LOG_SUCCESS(L"Procedure/Function saved.");
+            return;
+        }
+
+        if (m_isRecording) m_procedures[m_activeProcName].body.push_back(cleanLine);
+        else m_userFunctions[m_activeFuncName].body.push_back(cleanLine);
+        return;
+    }
+
+    // --- 5. CALCUL ADÂNCIME BLOCURI DE CONTROL ---
+    auto checkBlock = [&](const std::wstring& key, bool increment, bool mustBeStart = false) {
+        size_t p = upperMasked.find(key);
+        if (p != std::wstring::npos) {
+            if (mustBeStart && p != 0) return false;
+            bool startOk = (p == 0 || iswspace(upperMasked[p - 1]) || wcschr(L";()[]{}\"", upperMasked[p - 1]));
+            bool endOk = (p + key.length() >= upperMasked.length() || iswspace(upperMasked[p + key.length()]) || wcschr(L";()[]{}\"", upperMasked[p + key.length()]));
+            if (startOk && endOk) {
+                if (increment) m_blockDepth++;
+                else if (m_blockDepth > 0) m_blockDepth--;
+                return true;
+            }
+        }
+        return false;
+        };
+
+    checkBlock(L"IF", true);      checkBlock(L"WHILE", true);
+    checkBlock(L"FOR", true);     checkBlock(L"REPEAT", true);
+    checkBlock(L"CYCLE", true);   checkBlock(L"PROC", true, true);
+    checkBlock(L"FUNC", true, true);    checkBlock(L"SWITCH", true);
+
+    checkBlock(L"ENDIF", false);  checkBlock(L"ENDWHILE", false);
+    checkBlock(L"ENDFOR", false); checkBlock(L"ENDREPEAT", false);
+    checkBlock(L"ENDCYCLE", false); checkBlock(L"ENDPROC", false);
+    checkBlock(L"ENDFUNC", false); checkBlock(L"ENDSWITCH", false);
+
+    // --- 6. ACUMULARE ---
+    bool hasBackslash = (!cleanLine.empty() && cleanLine.back() == L'\\');
+    if (hasBackslash) cleanLine.pop_back();
+
+    if (!m_accumulator.empty()) m_accumulator += L"\n";
+    m_accumulator += cleanLine;
+
+    // Declanșare specială pentru început de PROC/FUNC
+    if (upperMasked.find(L"PROC ") == 0 || upperMasked.find(L"FUNC ") == 0) {
+        std::wstring startCmd = m_accumulator;
+        m_accumulator.clear();
+        this->executeInternal(startCmd);
+        return;
+    }
+
+    // --- 7. DECIZIA DE EXECUȚIE ---
+    if (m_blockDepth > 0 || m_bracketDepth > 0 || hasBackslash) {
+        return;
+    }
+
+    // Executăm blocul acumulat
+    std::wstring finalBlock = m_accumulator;
+    m_accumulator.clear();
+
+    // Resetări de siguranță pentru buffer
+    m_bracketDepth = 0;
+
+    if (trim(finalBlock).empty()) return;
+    this->executeInternal(finalBlock);
+}
+
 
 void vOliEngine::executeInternal(const std::wstring& fullInput) {
     std::wstring trimmedInput = trim(fullInput);

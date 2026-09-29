@@ -50,6 +50,8 @@ void sync_linux_keys_x11() {
     check_key(XK_space, 32);
     check_key(XK_q, 81);
     check_key(XK_Escape, 27);
+    check_key(XK_Return, 13);
+
 }
 #endif
 
@@ -125,8 +127,20 @@ void RegisterKeyboardFunctions(std::unordered_map<std::wstring, std::function<vD
         case 40: kc = 116; break; // Down
         case 32: kc = 65;  break; // Space
         case 81: kc = 24;  break; // Q
+        /*
         default: {
             KeyCode dynamic_kc = XKeysymToKeycode(g_KbdDisplay, vk == 27 ? XK_Escape : vk);
+            kc = (int)dynamic_kc;
+            break;
+        }
+        */
+        default: {
+            // Sau și mai sigur, folosind direct XKeysymToKeycode pentru simboluri mari:
+            KeySym keysym = vk;
+            if (vk == 13) keysym = XK_Return;
+            if (vk == 27) keysym = XK_Escape;
+            
+            KeyCode dynamic_kc = XKeysymToKeycode(g_KbdDisplay, keysym);
             kc = (int)dynamic_kc;
             break;
         }

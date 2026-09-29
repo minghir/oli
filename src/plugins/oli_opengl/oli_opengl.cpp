@@ -23,6 +23,7 @@ static std::unordered_map<std::string, GLuint> g_TextureCache;
 #else
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/Xatom.h>
 #include <GL/glx.h>
 #include <GL/glxext.h>
 #define OLI_EXPORT extern "C" __attribute__((visibility("default")))

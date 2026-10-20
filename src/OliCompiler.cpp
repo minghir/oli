@@ -2578,7 +2578,7 @@ void OliCompiler::loadPluginMetadata(std::wstring pluginName) {
     }
 
     // --- B. ÎNCĂRCARE FUNCȚII DIN PLUGIN ---
-    typedef void (*LoadFunctionsFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&, void*);
+    typedef void (*LoadFunctionsFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&, IOliEngine*);
     LoadFunctionsFunc regFuncs = (LoadFunctionsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliPlugin");
 
     if (regFuncs) {
@@ -2714,4 +2714,3 @@ std::wstring OliCompiler::cleanVariableName(const std::wstring& name) {
     }
     return clean;
 }
-

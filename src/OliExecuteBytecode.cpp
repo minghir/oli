@@ -1598,7 +1598,7 @@ bool vOliEngine::internalLoadPlugin(std::wstring pluginName) {
     bool loadedAnything = false;
 
     // --- A. ÎNCĂRCARE FUNCȚII ---
-    typedef void (*LoadFunctionsFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&, void*);
+    typedef void (*LoadFunctionsFunc)(std::unordered_map<std::wstring, OliFunctionHandler>&, IOliEngine*);
     LoadFunctionsFunc regFuncs = (LoadFunctionsFunc)PortTools::getFunctionSymbol(hLib, "LoadOliPlugin");
 
     if (regFuncs) {

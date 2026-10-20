@@ -71,14 +71,10 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, IOliEngine* enginePtr) {
 std::cout << "\n=======================================" << std::endl;
     std::cout << "🚀 [DEBUG CRITIC] BINARUL NOU XUI A FOST ÎNCĂRCAT CORECT!" << std::endl;
     std::cout << "=======================================\n" << std::endl;
-    if (g_LinkedOliEngine == nullptr) {
+    if (enginePtr != nullptr && g_LinkedOliEngine == nullptr) {
         g_LinkedOliEngine = enginePtr;
-        if (g_LinkedOliEngine) {
-            LOG_SUCCESS(L"✅ [oli_xui] Conexiune stabilă stabilită cu OliEngine-ul Gazdă!");
-        } else {
-            LOG_ERROR(L"❌ [oli_xui] Eroare critică: Am primit un pointer enginePtr de tip NULL!");
-        }
-    } else {
+        LOG_SUCCESS(L"✅ [oli_xui] Conexiune stabilă stabilită cu OliEngine-ul Gazdă!");
+    } else if (g_LinkedOliEngine != nullptr) {
         LOG_INFO(L"ℹ️ [oli_xui] LoadOliPlugin re-apelat. Păstrăm engine-ul gazdă intact.");
     }
 

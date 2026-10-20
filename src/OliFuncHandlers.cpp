@@ -14,7 +14,6 @@
 #include <locale>
 #include <codecvt>
 
-extern std::vector<std::wstring> splitStatementsSmart(const std::wstring& input);
 void vOliEngine::initializeFunctionsHandlers() {
 /*
     m_functionsHandlers[L"INCLUDE"] = [this](const std::vector<vData>& args) -> vData {
@@ -49,21 +48,12 @@ void vOliEngine::initializeFunctionsHandlers() {
         buffer << file.rdbuf();
         std::wstring includedSource = PortTools::utf8_to_wstring(buffer.str());
 
-        // 2. Lăsăm funcția ta inteligentă să împartă corect instrucțiunile (știe de stringuri, comentarii etc.)
-        std::vector<std::wstring> statements = splitStatementsSmart(includedSource);
-
-        for (auto& stmt : statements) {
-            std::wstring trimmedLine = trim(stmt);
-            if (trimmedLine.empty() || trimmedLine[0] == L'#') continue;
-
-            // 3. Aplatizăm: Înlocuim \n și \r cu spații ca să nu derutăm executeCommand!
-            // O clasă pe 5 rânduri devine o singură linie continuă și corectă.
-            std::replace(trimmedLine.begin(), trimmedLine.end(), L'\n', L' ');
-            std::replace(trimmedLine.begin(), trimmedLine.end(), L'\r', L' ');
-            std::replace(trimmedLine.begin(), trimmedLine.end(), L'\t', L' ');
-
-            // 4. Executăm instrucțiunea curată
-            this->executeCommand(trimmedLine);
+        // Refolosim fluxul normal al interpretorului pentru a păstra procesarea
+        // multi-linie a blocurilor, funcțiilor, comentariilor și expresiilor.
+        std::wistringstream sourceStream(includedSource);
+        std::wstring sourceLine;
+        while (std::getline(sourceStream, sourceLine)) {
+            this->execute(sourceLine);
         }
 
         return vData(1LL); // Succes
@@ -1587,4 +1577,3 @@ vData vOliEngine::handleExecFunc(const std::vector<vData>& args) {
         return { 0LL };
     }
 }
-

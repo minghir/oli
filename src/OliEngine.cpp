@@ -4685,6 +4685,10 @@ bool vOliEngine::runEmbeddedIfPresent(const std::string& exePath) {
 }
 
 
+vData vOliEngine::callScriptFunction(const std::wstring& funcName, const std::vector<vData>& args) {
+    return callUserFunction(to_upper(funcName), args);
+}
+
 vData vOliEngine::callFunctionIsolated(const std::wstring& funcName, const std::vector<vData>& args) {
     vOliEngine workerVM;
 

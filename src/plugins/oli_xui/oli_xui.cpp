@@ -432,7 +432,7 @@ std::cout << "\n=======================================" << std::endl;
         auto olicallback = [key]() {
             if (g_PersistentScriptCallbacks.count(key) && g_LinkedOliEngine) {
                 std::wstring funcName = g_PersistentScriptCallbacks[key];
-                g_LinkedOliEngine->callFunctionIsolated(funcName, {});
+                g_LinkedOliEngine->callScriptFunction(funcName, {});
             }
         };
 
@@ -461,7 +461,7 @@ std::cout << "\n=======================================" << std::endl;
             if (g_LinkedOliEngine) {
                 std::vector<vData> callArgs;
                 callArgs.push_back(vData(utf8_to_wstr(arg)));
-                g_LinkedOliEngine->callFunctionIsolated(wScriptFunc, callArgs);
+                g_LinkedOliEngine->callScriptFunction(wScriptFunc, callArgs);
             }
         };
 

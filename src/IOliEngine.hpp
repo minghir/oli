@@ -2,6 +2,7 @@
 #define IOLIENGINE_HPP
 
 #include <string>
+#include <vector>
 #include "vData.hpp"
 #include "OliCommandParser.hpp"
 
@@ -24,6 +25,7 @@ public:
     ) = 0;
 
     virtual vData callFunctionIsolated(const std::wstring& funcName, const std::vector<vData>& args) = 0;
+    virtual vData callScriptFunction(const std::wstring& funcName, const std::vector<vData>& args) = 0;
 };
 
 // Tipul de funcție pe care DLL-ul trebuie să o exporte

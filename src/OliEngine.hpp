@@ -402,6 +402,7 @@ private:
 		static bool runEmbeddedIfPresent(const std::string& exePath);
 
       vData callFunctionIsolated(const std::wstring& funcName, const std::vector<vData>& args) override;
+      vData callScriptFunction(const std::wstring& funcName, const std::vector<vData>& args) override;
       vData getGlobalVariable(const std::wstring& name);
       void setGlobalVariable(const std::wstring& name, const vData& value);
 

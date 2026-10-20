@@ -432,12 +432,16 @@ std::cout << "\n=======================================" << std::endl;
         auto olicallback = [key]() {
             if (g_PersistentScriptCallbacks.count(key) && g_LinkedOliEngine) {
                 std::wstring funcName = g_PersistentScriptCallbacks[key];
-                std::vector<vData> emptyArgs;
-                g_LinkedOliEngine->callUserByteCodeFunction(funcName.c_str(), emptyArgs.data(), 0, vData(0LL));
+                g_LinkedOliEngine->callFunctionIsolated(funcName, {});
             }
         };
 
-        g_XuiGui.appInstance->getEventDispatcher().registerHandler(eventName, id, olicallback);
+        const bool menuItemBinding = eventName.rfind("menu_", 0) == 0;
+        g_XuiGui.appInstance->getEventDispatcher().registerHandler(
+            menuItemBinding ? "click" : eventName,
+            menuItemBinding ? eventName : id,
+            olicallback
+        );
         return vData{ 1LL };
     };
 
@@ -457,7 +461,7 @@ std::cout << "\n=======================================" << std::endl;
             if (g_LinkedOliEngine) {
                 std::vector<vData> callArgs;
                 callArgs.push_back(vData(utf8_to_wstr(arg)));
-                g_LinkedOliEngine->callUserByteCodeFunction(wScriptFunc.c_str(), callArgs.data(), (int)callArgs.size(), vData(0LL));
+                g_LinkedOliEngine->callFunctionIsolated(wScriptFunc, callArgs);
             }
         };
 

@@ -30,10 +30,12 @@ void xMenu::addItem(const std::string& id, const std::wstring& text) {
     }
 
     GtkWidget* item = gtk_menu_item_new_with_label(utf8Text.c_str());
+    g_object_set_data_full(G_OBJECT(item), "oli-menu-item-id", g_strdup(id.c_str()), g_free);
     
-    g_signal_connect(item, "activate", G_CALLBACK(+[](GtkWidget* /*w*/, gpointer data) {
+    g_signal_connect(item, "activate", G_CALLBACK(+[](GtkWidget* widget, gpointer data) {
         auto* menu = static_cast<xMenu*>(data);
-        menu->getEventDispatcher().dispatch("click", menu->getId()); 
+        const char* itemId = static_cast<const char*>(g_object_get_data(G_OBJECT(widget), "oli-menu-item-id"));
+        menu->getEventDispatcher().dispatch("click", itemId ? itemId : menu->getId());
     }), this);
 
     // 🔥 Dacă suntem pe bara principală, adăugăm direct acolo

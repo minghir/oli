@@ -1660,7 +1660,14 @@ vData vOliEngine::callUserByteCodeFunction(const wchar_t* funcName, const vData*
     
     std::wstring name(funcName);
     for (auto& c : name) c = std::towupper(c);
-    std::vector<vData> args(argsArray, argsArray + argCount);
+    std::vector<vData> args;
+    if (argCount > 0) {
+        if (!argsArray) {
+            LOG_ERROR(L"[VM] Function call received a null argument array.");
+            return vData();
+        }
+        args.assign(argsArray, argsArray + argCount);
+    }
 
     LOG_INFO(L"[VM] Preparing function call: " + name + L" (" + std::to_wstring(args.size()) + L" arguments)");
 

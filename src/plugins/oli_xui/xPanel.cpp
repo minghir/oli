@@ -22,9 +22,9 @@ void xPanel::create(GtkWidget* parent) {
     // GTK necesită activarea explicită a evenimentelor pentru widget
     gtk_widget_add_events(m_widget, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK);
 
-    g_signal_connect(m_widget, "button-press-event", G_CALLBACK(+[](GtkWidget* w, GdkEventButton* e, gpointer data) -> gboolean {
+    g_signal_connect(m_widget, "button-press-event", G_CALLBACK(+[](GtkWidget* /*w*/, GdkEventButton* e, gpointer data) -> gboolean {
         static_cast<xPanel*>(data)->onMouseClick((int)e->x, (int)e->y);
-        return TRUE;
+        return FALSE;
     }), this);
 
     gtk_widget_show_all(m_widget);

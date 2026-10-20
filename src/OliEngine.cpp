@@ -4686,7 +4686,20 @@ bool vOliEngine::runEmbeddedIfPresent(const std::string& exePath) {
 
 
 vData vOliEngine::callScriptFunction(const std::wstring& funcName, const std::vector<vData>& args) {
-    return callUserFunction(to_upper(funcName), args);
+    const std::wstring upperName = to_upper(funcName);
+    auto bytecodeFunction = m_bytecodeFunctions.find(upperName);
+    if (bytecodeFunction != m_bytecodeFunctions.end()) {
+        const vData* argsPtr = args.empty() ? nullptr : args.data();
+        return callUserByteCodeFunction(upperName.c_str(), argsPtr, args.size(), vData{});
+    }
+
+    auto scriptFunction = m_userFunctions.find(upperName);
+    if (scriptFunction != m_userFunctions.end()) {
+        return callUserFunction(upperName, args);
+    }
+
+    LOG_ERROR(L"Callback function '" + funcName + L"' was not found in interpreter or bytecode.");
+    return vData{ std::monostate{} };
 }
 
 vData vOliEngine::callFunctionIsolated(const std::wstring& funcName, const std::vector<vData>& args) {

@@ -2,6 +2,7 @@
 #include "../../StringUtils.hpp"
 #include "../../ConsoleManager.hpp" 
 
+#include <cstring>
 #include <iostream>
 #include <iomanip> 
 
@@ -56,9 +57,16 @@ bool odbcConnection::openDatabase() {
 
     // 5. Conectare la DSN
     std::wstring odbcDsn = L"DSN=" + dsn;
+	
+#ifdef _WIN32
+    HWND hwndParent = GetDesktopWindow();
+#else
+    void* hwndParent = nullptr;
+#endif
+	
     SQLRETURN retcode = SQLDriverConnectW(
         hdbc,
-        GetDesktopWindow(), // Fereastra părinte
+        hwndParent, // Fereastra părinte
         (SQLWCHAR*)odbcDsn.c_str(),
         SQL_NTS,
         NULL,
@@ -206,8 +214,14 @@ void odbcConnection::showError(SQLSMALLINT handleType, SQLHANDLE handle) {
     // Verifică succesul apelului SQLGetDiagRecW
     if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) {
         // Creează mesajul de eroare complet (pentru membrul clasei 'error')
-        std::wstring w_state(state);
-        std::wstring w_message(message);
+        std::wstring w_state;
+        for (int k = 0; k < 5 && state[k] != 0; ++k) {
+            w_state += static_cast<wchar_t>(state[k]);
+        }
+        std::wstring w_message;
+        for (int k = 0; message[k] != 0; ++k) {
+            w_message += static_cast<wchar_t>(message[k]);
+        }
 
         // Formatează mesajul complet pentru logare internă (membrul 'error')
         error = L"ODBC State: " + w_state + L", Native: " + std::to_wstring(nativeError) + L", Message: " + w_message;
@@ -514,7 +528,11 @@ bool odbcConnection::setColNames(std::string stm_name) {
 
         if (SQL_SUCCEEDED(ret)) {
             // Salvează numele, tipul și dimensiunea coloanei
-            std::wstring colNameStr(columnName, nameLength); // Creat în siguranță cu lungimea exactă
+            //std::wstring colNameStr(columnName, nameLength); // Creat în siguranță cu lungimea exactă
+			std::wstring colNameStr;
+			for (int k = 0; k < nameLength && columnName[k] != 0; ++k) {
+				colNameStr += static_cast<wchar_t>(columnName[k]);
+			}
 
 			colNames[stm_name].push_back(colNameStr);
 			colTypes[stm_name].push_back(colType);
@@ -592,8 +610,13 @@ std::wstring odbcConnection::fetchFieldByNumber(int fieldNo, std::string stm_nam
         ret = SQLGetData(hstmt, fieldNo, SQL_C_TYPE_TIMESTAMP, &ts, sizeof(ts), &indicator);
         if ((ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) && indicator != SQL_NULL_DATA) {
             wchar_t buffer[64];
+#ifdef _WIN32
             swprintf_s(buffer, 64, L"%04d-%02d-%02d %02d:%02d:%02d",
                 ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second);
+#else
+            swprintf(buffer, 64, L"%04d-%02d-%02d %02d:%02d:%02d",
+                ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second);
+#endif
             return std::wstring(buffer);
         }
     }
@@ -645,7 +668,9 @@ std::wstring odbcConnection::fetchFieldByNumber(int fieldNo, std::string stm_nam
                 chunk[255] = 0;
 
                 // Adăugăm bucata citită
-                result.append(chunk);
+                for (int k = 0; k < 255 && chunk[k] != 0; ++k) {
+                    result += static_cast<wchar_t>(chunk[k]);
+                }
 
                 // Dacă am terminat, ieșim
                 if (ret == SQL_SUCCESS)
@@ -688,8 +713,6 @@ std::wstring odbcConnection::fetchFieldByNumber(int fieldNo, std::string stm_nam
     }
     // ❓ Tip necunoscut
     else {
-        //LOG_INFO(L"odbcConnection::fetchFieldByNumber: Tipul de coloană " + std::to_wstring(colType) + L" nu este tratat explicit. Încercare de citire ca text (SQL_C_WCHAR) pentru " + w_stm_name);
-        // Încercare de citire forțată ca Wide String (text)
         SQLULEN colSize = colSizes[stm_name][fieldNo - 1]; // Folosește dimensiunea salvată
         size_t bufferSize = (colSize + 1) * sizeof(SQLWCHAR);
         std::vector<SQLWCHAR> buffer(bufferSize / sizeof(SQLWCHAR));
@@ -698,8 +721,13 @@ std::wstring odbcConnection::fetchFieldByNumber(int fieldNo, std::string stm_nam
 
         if (indicator == SQL_NULL_DATA) return L"";
 
-        if ((ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) && indicator != SQL_NULL_DATA)
-            return std::wstring(buffer.data());
+        if ((ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO) && indicator != SQL_NULL_DATA) {
+            std::wstring fallbackStr;
+            for (size_t k = 0; k < buffer.size() && buffer[k] != 0; ++k) {
+                fallbackStr += static_cast<wchar_t>(buffer[k]);
+            }
+            return fallbackStr;
+        }
     }
 
     // ⚠️ NULL sau eroare
@@ -915,7 +943,10 @@ bool odbcConnection::isConnectionError(SQLSMALLINT handleType, SQLHANDLE handle)
     SQLRETURN retcode = SQLGetDiagRecW(handleType, handle, 1, sqlState, NULL, NULL, 0, NULL);
 
     if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO) {
-        std::wstring state(sqlState);
+        std::wstring state;
+        for (int k = 0; k < 5 && sqlState[k] != 0; ++k) {
+            state += static_cast<wchar_t>(sqlState[k]);
+        }
         if (state == L"08001" || state == L"08003" || state == L"08006" || state == L"08007" || state == L"08S01") {
             return true;
         }
@@ -1055,7 +1086,14 @@ const std::vector<vExternalColumnInfo> odbcConnection::getColumnsInfo(std::strin
         SQLDescribeColW(hstmt, i, colName, 256, &nameLen, &dataType, &columnSize, &decimalDigits, &nullable);
 
         vExternalColumnInfo info;
-        info.name = colName; // Conversie implicită de la SQLWCHAR* la std::wstring
+        
+        // Conversie sigură cross-platform pentru numele coloanei
+        std::wstring colNameStr;
+        for (int k = 0; k < nameLen && colName[k] != 0; ++k) {
+            colNameStr += static_cast<wchar_t>(colName[k]);
+        }
+        info.name = colNameStr;
+
         info.type = mapNativeOdbcToUniversal(dataType); // Folosim helper-ul aici
         info.length = static_cast<int>(columnSize);
         info.precision = static_cast<int>(decimalDigits);
@@ -1095,10 +1133,10 @@ std::vector<vExternalColumnInfo> odbcConnection::getTableSchema(const std::wstri
         bool found = false;
         while (SQLFetch(hstmtTemp) == SQL_SUCCESS) {
             found = true;
-            SQLWCHAR colName[256];
-            SQLSMALLINT dataType, decimalDigits, nullable;
-            SQLULEN columnSize;
-            SQLLEN cb;
+            SQLWCHAR colName[256] = {0};
+            SQLSMALLINT dataType = 0, decimalDigits = 0, nullable = 0;
+            SQLULEN columnSize = 0;
+            SQLLEN cb = 0;
 
             SQLGetData(hstmtTemp, 4, SQL_C_WCHAR, colName, sizeof(colName), &cb);
             SQLGetData(hstmtTemp, 5, SQL_C_SSHORT, &dataType, 0, &cb);
@@ -1107,7 +1145,14 @@ std::vector<vExternalColumnInfo> odbcConnection::getTableSchema(const std::wstri
             SQLGetData(hstmtTemp, 11, SQL_C_SSHORT, &nullable, 0, &cb);
 
             vExternalColumnInfo info;
-            info.name = colName;
+            
+            // Conversie sigură cross-platform pentru numele coloanei
+            std::wstring colNameStr;
+            for (int k = 0; k < 256 && colName[k] != 0; ++k) {
+                colNameStr += static_cast<wchar_t>(colName[k]);
+            }
+            info.name = colNameStr;
+
             info.type = mapNativeOdbcToUniversal(dataType);
             info.length = static_cast<int>(columnSize);
             info.precision = static_cast<int>(decimalDigits);

@@ -6,14 +6,18 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <algorithm> // pentru std::find
+#include <algorithm>
 
-
-#include <windows.h> 
-
+#ifdef _WIN32
+#include <windows.h>
 #include <sql.h>
 #include <sqlext.h>
-
+#else
+#include <sql.h>
+#include <sqlext.h>
+#// Pe Linux nu avem tipuri WinAPI, le mapăm dacă e nevoie sau folosim NULL
+#define HWND void*
+#endif
 
 class odbcConnection : public dbConnection{
 private:

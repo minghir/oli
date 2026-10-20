@@ -276,7 +276,11 @@ endfunc
 
 echo "CREEZ APP"
 set $app = new("XApp")
-$app.init() 
+$app_init_result = $app.init()
+if $app_init_result != 1 then
+    echo "[EROARE] Interfața GTK nu a putut fi inițializată."
+    exit()
+endif
 
 echo "CREEZ WIN"
 set $win = new("XWindow")

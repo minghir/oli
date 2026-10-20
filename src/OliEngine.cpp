@@ -1418,6 +1418,13 @@ void vOliEngine::handleIncludeCommand(const ShellCommand& sc) {
                 }
 
                 // --- 3. EXECUȚIE ---
+                if (!contextObj.isNull()) {
+                    auto itUserMethod = m_userFunctions.find(upperName);
+                    if (itUserMethod != m_userFunctions.end()) {
+                        return callUserFunction(upperName, evaluatedArgs, contextObj);
+                    }
+                }
+
                 auto itInternal = m_functionsHandlers.find(upperName);
                 if (itInternal != m_functionsHandlers.end()) {
                     return itInternal->second(evaluatedArgs);

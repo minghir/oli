@@ -54,7 +54,7 @@ struct GuiState {
     std::unordered_map<std::string, xControl*> controlsMap;
 } g_XuiGui;
 
-inline vOliEngine* g_LinkedOliEngine = nullptr;
+inline IOliEngine* g_LinkedOliEngine = nullptr;
 static std::map<std::string, std::wstring> g_PersistentScriptCallbacks;
 
 xControl* LocateAnyControl(const std::string& id) {
@@ -67,12 +67,12 @@ xControl* LocateAnyControl(const std::string& id) {
 }
 
 // ✅ PUNCTUL UNIC DE INTRARE ÎN PLUGIN
-OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
+OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, IOliEngine* enginePtr) {
 std::cout << "\n=======================================" << std::endl;
     std::cout << "🚀 [DEBUG CRITIC] BINARUL NOU XUI A FOST ÎNCĂRCAT CORECT!" << std::endl;
     std::cout << "=======================================\n" << std::endl;
     if (g_LinkedOliEngine == nullptr) {
-        g_LinkedOliEngine = static_cast<vOliEngine*>(enginePtr);
+        g_LinkedOliEngine = enginePtr;
         if (g_LinkedOliEngine) {
             LOG_SUCCESS(L"✅ [oli_xui] Conexiune stabilă stabilită cu OliEngine-ul Gazdă!");
         } else {

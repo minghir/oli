@@ -14,9 +14,9 @@
 #include <locale>
 #include <codecvt>
 
-
+extern std::vector<std::wstring> splitStatementsSmart(const std::wstring& input);
 void vOliEngine::initializeFunctionsHandlers() {
-
+/*
     m_functionsHandlers[L"INCLUDE"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData(0LL);
 
@@ -28,7 +28,53 @@ void vOliEngine::initializeFunctionsHandlers() {
         return vData(1LL);
         };
     vOliKeyWords::registerNativeFunction(L"INCLUDE");
+*/
 
+// 1. Punem toată logica într-o variabilă 'includeHandler'
+   auto includeHandler = [this](const std::vector<vData>& args) -> vData {
+        if (args.empty()) return vData(std::monostate{});
+
+        std::wstring path = args[0].toWString();
+        LOG_DEBUG(L"[INTERPRETER] Including file via function: " + path);
+
+        std::ifstream file;
+        PortTools::openIfstream(file, path);
+        if (!file.is_open()) {
+            LOG_ERROR(L"[INTERPRETER ERROR] Could not open included file: " + path);
+            return vData(std::monostate{});
+        }
+
+        // 1. Citim absolut tot fișierul deodată
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        std::wstring includedSource = PortTools::utf8_to_wstring(buffer.str());
+
+        // 2. Lăsăm funcția ta inteligentă să împartă corect instrucțiunile (știe de stringuri, comentarii etc.)
+        std::vector<std::wstring> statements = splitStatementsSmart(includedSource);
+
+        for (auto& stmt : statements) {
+            std::wstring trimmedLine = trim(stmt);
+            if (trimmedLine.empty() || trimmedLine[0] == L'#') continue;
+
+            // 3. Aplatizăm: Înlocuim \n și \r cu spații ca să nu derutăm executeCommand!
+            // O clasă pe 5 rânduri devine o singură linie continuă și corectă.
+            std::replace(trimmedLine.begin(), trimmedLine.end(), L'\n', L' ');
+            std::replace(trimmedLine.begin(), trimmedLine.end(), L'\r', L' ');
+            std::replace(trimmedLine.begin(), trimmedLine.end(), L'\t', L' ');
+
+            // 4. Executăm instrucțiunea curată
+            this->executeCommand(trimmedLine);
+        }
+
+        return vData(1LL); // Succes
+    };
+
+    m_functionsHandlers[L"INCLUDE"] = includeHandler;
+    m_functionsHandlers[L"include"] = includeHandler;
+    m_functionsHandlers[L"Include"] = includeHandler;
+
+    vOliKeyWords::registerNativeFunction(L"INCLUDE");
+    vOliKeyWords::registerNativeFunction(L"include");
 
 
 
@@ -62,7 +108,7 @@ void vOliEngine::initializeFunctionsHandlers() {
         };
     vOliKeyWords::registerNativeFunction(L"EXIT");
 
-
+	/*
     m_functionsHandlers[L"NEW"] = [this](const std::vector<vData>& args) -> vData {
         if (args.empty()) return vData(std::monostate{});
 
@@ -92,7 +138,54 @@ void vOliEngine::initializeFunctionsHandlers() {
         LOG_ERROR(L"Unknown blueprint: " + typeName + L" (Original: " + rawTypeName + L")");
         return vData(std::monostate{});
         };
+	*/
+	m_functionsHandlers[L"NEW"] = [this](const std::vector<vData>& args) -> vData {
+		if (args.empty()) return vData(std::monostate{});
 
+		// --- FIX CRITIC: Normalizăm numele la UPPERCASE ---
+		std::wstring rawTypeName = args[0].toWString();
+		std::wstring typeName = to_upper(rawTypeName);
+
+		auto it = m_blueprints.find(typeName);
+		if (it != m_blueprints.end()) {
+			vTypeBlueprint& bp = it->second;
+			vDataMap instance = std::make_shared<std::unordered_map<std::wstring, vData>>();
+
+			// IMPORTANT: Salvăm tipul tot UPPER pentru ca OP_CALL_METHOD să-l găsească
+			(*instance)[L"__type__"] = vData(typeName);
+
+			// --- FIX MOȘTENIRE: Copiem câmpurile din clasele părinte (extends) ---
+			std::wstring currParent = bp.parentName;
+			while (!currParent.empty()) {
+				auto parentBp = m_blueprints.find(currParent);
+				if (parentBp != m_blueprints.end()) {
+					for (const auto& pField : parentBp->second.fields) {
+						// Dacă nu există deja în instanță, îl adăugăm gol
+						if (instance->count(pField) == 0) {
+							(*instance)[pField] = vData(std::monostate{});
+						}
+					}
+					currParent = parentBp->second.parentName; // Urcăm în ierarhie la bunic, etc.
+				} else {
+					break;
+				}
+			}
+			// ----------------------------------------------------------------------
+
+			// Populăm instanța cu câmpurile proprii din blueprint
+			for (const auto& field : bp.fields) {
+				if (instance->count(field) == 0) {
+					(*instance)[field] = vData(std::monostate{});
+				}
+			}
+
+			LOG_DEBUG(L"[VM] Successfully instantiated: " + typeName);
+			return vData(instance);
+		}
+
+		LOG_ERROR(L"Unknown blueprint: " + typeName + L" (Original: " + rawTypeName + L")");
+		return vData(std::monostate{});
+	};
     vOliKeyWords::registerNativeFunction(L"NEW");
 
 

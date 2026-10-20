@@ -210,7 +210,13 @@ std::cout << "\n=======================================" << std::endl;
         // 1. LOCALIZARE PĂRINTE
         xControl* parentCtrl = LocateAnyControl(parentId);
         if (!parentCtrl) {
-            parentCtrl = g_XuiGui.appInstance->getWindow(parentId);
+            //parentCtrl = g_XuiGui.appInstance->getWindow(parentId);
+			if (g_XuiGui.appInstance != nullptr) {
+                parentCtrl = g_XuiGui.appInstance->getWindow(parentId);
+            } else {
+                LOG_ERROR(L"❌ [XUI_ERROR] Eroare fatala: appInstance este NULL! Fereastra principala lipseste.");
+                return vData{ 0LL }; // Oprim crearea controlului curat, fără crash!
+            }
         }
         
         if (!parentCtrl) {

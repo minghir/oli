@@ -40,7 +40,7 @@ func UiControl::set_height($val)      return $this.set_prop("height", $val) endf
 # =================================================================
 # INCAPSULARE XAPP (GTK Init)
 # =================================================================
-def class XApp { create(), init(), run() }
+def class XApp { id, create(), init(), run() }
 
 func XApp::create()
     $this = CREATE_XAPP()

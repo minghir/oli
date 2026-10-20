@@ -14,132 +14,7 @@
 #include <string_view>
 #include <algorithm> // Necesar pentru std::replace
 
-/*
-void vOliEngine::execute(const std::wstring& line) {
-    // --- 1. CURĂȚARE INIȚIALĂ ---
-    std::wstring cleanLine = trim(line);
-    if (cleanLine.empty() && m_accumulator.empty()) return;
 
-    // --- 2. MASCARE GHILIMELE (PAS CRITIC) ---
-    // Creăm o variantă a liniei unde tot ce e între ghilimele devine spațiu.
-    // Asta previne detectarea eronată a parantezelor sau cuvintelor cheie din string-uri.
-    bool lineInQuotes = false;
-    std::wstring maskedLine = cleanLine;
-    for (size_t i = 0; i < maskedLine.length(); ++i) {
-        // Detectăm ghilimelele și ignorăm escape-ul \"
-        if (maskedLine[i] == L'"' && (i == 0 || maskedLine[i - 1] != L'\\')) {
-            lineInQuotes = !lineInQuotes;
-            maskedLine[i] = L' ';
-            continue;
-        }
-        if (lineInQuotes) {
-            maskedLine[i] = L' '; // Mascăm conținutul string-ului
-        }
-    }
-
-    // --- 3. DETECTARE COMENTARII (DOAR ÎN AFARA GHILIMELELOR) ---
-    size_t commentPos = maskedLine.find(L'#');
-    if (commentPos != std::wstring::npos) {
-        cleanLine = trim(cleanLine.substr(0, commentPos));
-        maskedLine = trim(maskedLine.substr(0, commentPos));
-    }
-
-    if (cleanLine.empty() && m_accumulator.empty()) return;
-
-    // --- 4. ACTUALIZARE ADÂNCIME PARANTEZE (MAPS/ARRAYS) ---
-    // Folosim maskedLine pentru a fi siguri că nu numărăm paranteze din string-uri
-    for (wchar_t c : maskedLine) {
-        if (c == L'{' || c == L'[') m_bracketDepth++;
-        if (c == L'}' || c == L']') m_bracketDepth--;
-    }
-
-    // Pregătim o variantă Uppercase a liniei mascate pentru detectarea comenzilor
-    std::wstring upperMasked = maskedLine;
-    std::transform(upperMasked.begin(), upperMasked.end(), upperMasked.begin(), ::towupper);
-
-    // --- 5. GESTIONARE ÎNREGISTRARE FUNC/PROC ---
-    if (m_isRecording || m_isRecordingFunc) {
-        if (upperMasked == L"ENDPROC" || upperMasked == L"ENDFUNC") {
-            m_isRecording = false;
-            m_isRecordingFunc = false;
-            m_blockDepth = 0;
-            m_bracketDepth = 0;
-            vOliKeyWords::registerDynamicCommand(m_activeProcName);
-            LOG_SUCCESS(L"Procedure/Function saved.");
-            return;
-        }
-
-        if (m_isRecording) m_procedures[m_activeProcName].body.push_back(cleanLine);
-        else m_userFunctions[m_activeFuncName].body.push_back(cleanLine);
-        return;
-    }
-
-   
-    auto checkBlock = [&](const std::wstring& key, bool increment, bool mustBeStart = false) {
-        size_t p = upperMasked.find(key);
-        if (p != std::wstring::npos) {
-            // Dacă am setat mustBeStart, verificăm să fie la poziția 0
-            if (mustBeStart && p != 0) return false;
-
-            // Verificăm dacă este cuvânt de sine stătător
-            bool startOk = (p == 0 || iswspace(upperMasked[p - 1]) || wcschr(L";()[]{}\"", upperMasked[p - 1]));
-            bool endOk = (p + key.length() >= upperMasked.length() || iswspace(upperMasked[p + key.length()]) || wcschr(L";()[]{}\"", upperMasked[p + key.length()]));
-
-            if (startOk && endOk) {
-                if (increment) m_blockDepth++;
-                else if (m_blockDepth > 0) m_blockDepth--;
-                return true;
-            }
-        }
-        return false;
-        };
-
-    // Incrementări
-    checkBlock(L"IF", true);      checkBlock(L"WHILE", true);
-    checkBlock(L"FOR", true);     checkBlock(L"REPEAT", true);
-    checkBlock(L"CYCLE", true);   checkBlock(L"PROC", true, true);
-    checkBlock(L"FUNC", true, true);    checkBlock(L"SWITCH", true);
-
-    // Decrementări
-    checkBlock(L"ENDIF", false);  checkBlock(L"ENDWHILE", false);
-    checkBlock(L"ENDFOR", false); checkBlock(L"ENDREPEAT", false);
-    checkBlock(L"ENDCYCLE", false); checkBlock(L"ENDPROC", false);
-    checkBlock(L"ENDFUNC", false); checkBlock(L"ENDSWITCH", false);
-
-    // --- 7. ACUMULARE ---
-    bool hasBackslash = (!cleanLine.empty() && cleanLine.back() == L'\\');
-    if (hasBackslash) cleanLine.pop_back();
-
-    if (!m_accumulator.empty()) m_accumulator += L"\n";
-    m_accumulator += cleanLine;
-
-    // Declanșare specială pentru început de PROC/FUNC
-    // (trebuie să trimitem antetul la executeInternal pentru a activa m_isRecording)
-    if (upperMasked.find(L"PROC ") == 0 || upperMasked.find(L"FUNC ") == 0) {
-        std::wstring startCmd = m_accumulator;
-        m_accumulator.clear();
-        this->executeInternal(startCmd);
-        return;
-    }
-
-    // --- 8. DECIZIA DE EXECUȚIE ---
-    // Dacă suntem într-un bloc deschis (IF, WHILE), într-un Map/Array neînchis sau avem backslash, așteptăm.
-    if (m_blockDepth > 0 || m_bracketDepth > 0 || hasBackslash) {
-        return;
-    }
-
-    // Executăm blocul acumulat
-    std::wstring finalBlock = m_accumulator;
-    m_accumulator.clear();
-
-    // Resetări de siguranță pentru buffer
-    m_bracketDepth = 0;
-
-    if (trim(finalBlock).empty()) return;
-
-    this->executeInternal(finalBlock);
-}
-*/
 void vOliEngine::execute(const std::wstring& line) {
     // --- 1. EXTRAGERE COMENTARII (SINGLE ȘI BLOCK) ---
     // Facem o singură trecere pentru a elimina <# ... #> și # ..., respectând string-urile.
@@ -638,10 +513,65 @@ void vOliEngine::addToHistory(const std::wstring& command) {
 
         m_commandHandlers[L"CONFIG"] = wrap([this](const auto& sc) { handleConfigCommand(sc); });
         m_commandHandlers[L"CONF"] = m_commandHandlers[L"CONFIG"];
+		
+		//m_commandHandlers[L"INCLUDE"] = wrap([this](const auto& sc) { handleIncludeCommand(sc); });
+        //m_commandHandlers[L"INC"] = m_commandHandlers[L"INCLUDE"]; // Scurtătură opțională
 
         
     }
+	/*
+	extern std::vector<std::wstring> splitStatementsSmart(const std::wstring& input);
 
+void vOliEngine::handleIncludeCommand(const ShellCommand& sc) {
+    if (sc.args.empty()) return;
+
+    // 1. Reconstruim linia din argumente
+    std::wstring rawArgs = L"";
+    for (const auto& arg : sc.args) {
+        rawArgs += arg;
+    }
+
+    // 2. Extragem strict calea dintre ghilimele (la fel ca în compilator!)
+    std::wstring path = L"";
+    size_t startQuote = rawArgs.find(L'"');
+    size_t endQuote = rawArgs.find_last_of(L'"');
+
+    if (startQuote != std::wstring::npos && endQuote != std::wstring::npos && startQuote < endQuote) {
+        path = rawArgs.substr(startQuote + 1, endQuote - startQuote - 1);
+    } else {
+        // Fallback: dacă nu a pus ghilimele, curățăm doar parantezele
+        path = rawArgs;
+        path.erase(std::remove(path.begin(), path.end(), L'('), path.end());
+        path.erase(std::remove(path.begin(), path.end(), L')'), path.end());
+        path = trim(path);
+    }
+
+    if (path.empty()) return;
+
+    LOG_DEBUG(L"[INTERPRETER] Including file: " + path);
+
+    std::ifstream file;
+    PortTools::openIfstream(file, path);
+    if (file.is_open()) {
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        std::wstring includedSource = PortTools::utf8_to_wstring(buffer.str());
+
+        // Parsăm și executăm liniile din fișierul inclus
+        std::vector<std::wstring> lines = splitStatementsSmart(includedSource);
+        for (const auto& line : lines) {
+            std::wstring trimmedLine = trim(line);
+            if (trimmedLine.empty() || trimmedLine[0] == L'#') continue;
+            
+            // Executăm comanda în contextul interpretorului
+            this->executeCommand(trimmedLine); 
+        }
+    } else {
+        LOG_ERROR(L"[INTERPRETER ERROR] Could not open included file: " + path);
+    }
+}
+	*/
+	
     void vOliEngine::handleQuitCommand([[maybe_unused]] const ShellCommand& sc) {
         LOG_INFO(L"Oli is shutting down...");
         stop();
@@ -1441,12 +1371,45 @@ void vOliEngine::addToHistory(const std::wstring& command) {
                 if (funcName.empty()) return { std::monostate{} };
 
                 // --- 2. CONSTRUCTORI ---
+				/*
                 std::wstring upperName = to_upper(funcName);
                 auto itBlueprint = m_blueprints.find(upperName);
                 if (itBlueprint != m_blueprints.end()) {
                     vDataMap instance = std::make_shared<std::unordered_map<std::wstring, vData>>();
                     (*instance)[L"__type__"] = vData(itBlueprint->second.name);
 
+                    const auto& fields = itBlueprint->second.fields;
+                    for (size_t i = 0; i < fields.size(); ++i) {
+                        (*instance)[fields[i]] = (i < evaluatedArgs.size()) ? evaluatedArgs[i] : vData{ std::monostate{} };
+                    }
+                    return { instance };
+                }
+				*/
+				std::wstring upperName = to_upper(funcName);
+                auto itBlueprint = m_blueprints.find(upperName);
+                if (itBlueprint != m_blueprints.end()) {
+                    vDataMap instance = std::make_shared<std::unordered_map<std::wstring, vData>>();
+                    (*instance)[L"__type__"] = vData(itBlueprint->second.name);
+
+                    // --- MODIFICAREA AICI: Copiem și câmpurile din clasele părinte (Moștenire) ---
+                    std::wstring currParent = itBlueprint->second.parentName;
+                    while (!currParent.empty()) {
+                        auto parentBp = m_blueprints.find(currParent);
+                        if (parentBp != m_blueprints.end()) {
+                            // Adăugăm câmpurile părintelui care nu există deja
+                            for (const auto& pField : parentBp->second.fields) {
+                                if (instance->count(pField) == 0) {
+                                    (*instance)[pField] = vData{ std::monostate{} };
+                                }
+                            }
+                            currParent = parentBp->second.parentName; // Urcăm în ierarhie
+                        } else {
+                            break;
+                        }
+                    }
+                    // ------------------------------------------------------------------------------
+
+                    // Câmpurile proprii ale clasei
                     const auto& fields = itBlueprint->second.fields;
                     for (size_t i = 0; i < fields.size(); ++i) {
                         (*instance)[fields[i]] = (i < evaluatedArgs.size()) ? evaluatedArgs[i] : vData{ std::monostate{} };
@@ -3500,81 +3463,6 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
 }
 
 
-  /*
-  vData vOliEngine::callUserFunction(const std::wstring& funcName, const std::vector<vData>& args, vData context) {
-    
-    
-    
-    // 1. Căutăm funcția în map-ul de funcții utilizator
-      auto it = m_userFunctions.find(funcName);
-      if (it == m_userFunctions.end()) {
-          LOG_ERROR(L"Runtime Error: Function '" + funcName + L"' not found.");
-          return { std::monostate{} };
-      }
-
-      const Procedure& func = it->second;
-
-      // 2. Pregătirea noului cadru de stivă (Stack Frame)
-      StackFrame frame;
-      frame.functionName = funcName;
-
-      // 3. Injectarea contextului 'this' (pentru metode de obiect)
-      frame.localVariables[L"this"] = context;
-
-      // 4. Maparea parametrilor ficși
-      for (size_t i = 0; i < func.params.size(); ++i) {
-          std::wstring pName = func.params[i];
-          // Atribuim valoarea primită sau NULL dacă argumentul lipsește
-          frame.localVariables[pName] = (i < args.size()) ? args[i] : vData{ std::monostate{} };
-      }
-
-      // 5. Gestionarea argumentelor variadice (...)
-      if (func.isVariadic) {
-          // Creăm un vDataArray (shared_ptr către std::vector<vData>)
-          vData extraParams = vData::CreateArray();
-          std::vector<vData>* vecPtr = extraParams.rawArray();
-
-          if (vecPtr && args.size() > func.params.size()) {
-              for (size_t i = func.params.size(); i < args.size(); ++i) {
-                  vecPtr->push_back(args[i]);
-              }
-          }
-          // Injectăm lista de argumente extra în variabila locală 'params'
-          frame.localVariables[L"params"] = extraParams;
-      }
-
-      // Inițializăm variabila de return implicită
-      frame.localVariables[L"return"] = { std::monostate{} };
-
-      // 6. Adăugăm cadrul în stivă și pregătim execuția
-      m_callStack.push_back(std::move(frame));
-      bool previousShouldReturn = m_shouldReturn;
-      m_shouldReturn = false;
-
-      // 7. Construirea și execuția corpului funcției
-      std::wstring fullBody;
-      for (const auto& line : func.body) {
-          std::wstring cleanLine = trim(line);
-          if (cleanLine.empty()) continue;
-          fullBody += cleanLine + (cleanLine.back() == L';' ? L"\n" : L";\n");
-      }
-
-      this->executeInternal(fullBody);
-
-      // 8. Preluarea rezultatului din 'return' înainte de a elimina cadrul
-      vData result = { std::monostate{} };
-      if (!m_callStack.empty()) {
-          result = m_callStack.back().localVariables[L"return"];
-          m_callStack.pop_back();
-      }
-
-      // Restaurăm starea flag-ului de return pentru apelant
-      m_shouldReturn = previousShouldReturn;
-
-      return result;
-  }
-*/
-
 vData vOliEngine::callUserFunction(const std::wstring& funcName,
                                    const std::vector<vData>& args,
                                    vData context)
@@ -3582,10 +3470,21 @@ vData vOliEngine::callUserFunction(const std::wstring& funcName,
     vData actualContext = context.getTrueData();
 
     std::wstring className;
+	
     if (actualContext.isMap()) {
         auto* map = actualContext.rawMap();
+		
+		/*
         if (map && map->count(L"__type__")) {
             className = to_upper((*map)[L"__type__"].toWString());
+        }
+		*/
+		// VERIFICAREA ACEASTA ESTE CRITICĂ PENTRU A PREVENI SEGFAULT:
+        if (map && map->count(L"__type__")) { 
+            auto itType = map->find(L"__type__");
+            if (itType != map->end() && !itType->second.isNull()) {
+                className = to_upper(itType->second.toWString());
+            }
         }
     }
 
@@ -4220,6 +4119,7 @@ std::vector<std::wstring> wexplodeClassContent(const std::wstring& content) {
     return tokens;
 }
 
+/*
 void vOliEngine::handleDefCommand(const ShellCommand& sc) {
     if (sc.args.size() < 3) {
         LOG_ERROR(L"[SYNTAX ERROR] Usage: def class/struct Name [extends Parent] { field, method() }");
@@ -4291,6 +4191,101 @@ void vOliEngine::handleDefCommand(const ShellCommand& sc) {
     m_blueprints[typeName] = bp;
 
     LOG_SUCCESS(L"Interpreter Blueprint " + std::wstring(bp.isClass ? L"'CLASS " : L"'STRUCT ") + typeName + L"'" +
+        (parentName.empty() ? L"" : L" EXTENDS '" + parentName + L"'") +
+        L" registered with " + std::to_wstring(bp.fields.size()) + L" fields and " +
+        std::to_wstring(bp.methods.size()) + L" methods.");
+}
+*/
+
+void vOliEngine::handleDefCommand(const ShellCommand& sc) {
+    if (sc.args.size() < 3) {
+        LOG_ERROR(L"[SYNTAX ERROR] Usage: def class/struct Name [extends Parent] { field, method() }");
+        return;
+    }
+
+    std::wstring subType = to_lower(trim(sc.args[0]));
+    
+    // --- 💡 FIX 1: Curățare completă a numelui clasei (Protecție CRLF și Acolade lipite) ---
+    std::wstring rawName = trim(sc.args[1]);
+    size_t bracePos = rawName.find(L'{');
+    if (bracePos != std::wstring::npos) {
+        rawName = rawName.substr(0, bracePos); // Extragem doar numele dacă acolada era lipită
+    }
+    // Curățăm posibilele \r invizibile rămase de la formatul Windows
+    rawName.erase(std::remove(rawName.begin(), rawName.end(), L'\r'), rawName.end());
+    
+    std::wstring typeName = to_upper(rawName);
+
+    // --- DETECȚIE MOȘTENIRE (EXTENDS) ---
+    std::wstring parentName = L""; 
+    size_t bodyStartIndex = 2;
+
+    if (sc.args.size() > 4 && to_lower(trim(sc.args[2])) == L"extends") {
+        parentName = to_upper(trim(sc.args[3]));
+        bodyStartIndex = 4; 
+    }
+
+    // Reconstrucția corpului dintre acolade
+    std::wstring fullLine;
+    for (size_t i = bodyStartIndex; i < sc.args.size(); ++i) {
+        fullLine += sc.args[i] + L" "; // Adăugăm un spațiu de siguranță între tokeni
+    }
+
+    size_t start = fullLine.find(L'{');
+    size_t end = fullLine.find(L'}');
+    if (start == std::wstring::npos || end == std::wstring::npos) {
+        LOG_ERROR(L"[SYNTAX ERROR] Missing braces '{ }' in definition for " + typeName);
+        return;
+    }
+
+    std::wstring content = fullLine.substr(start + 1, end - start - 1);
+    std::vector<std::wstring> tokens = wexplodeClassContent(content);
+
+    vTypeBlueprint bp;
+    bp.name = typeName;
+    bp.isClass = (subType == L"class");
+    bp.parentName = parentName; 
+
+    // Procesarea conținutului (Metode vs Proprietăți)
+    for (auto& t : tokens) {
+        std::wstring item = trim(t);
+        item.erase(std::remove(item.begin(), item.end(), L'\r'), item.end()); // Protecție CRLF
+        if (item.empty()) continue;
+
+        size_t paren = item.find(L'(');
+
+        if (paren != std::wstring::npos) {
+            // Este o METODĂ
+            std::wstring methodName = to_upper(trim(item.substr(0, paren)));
+            if (!methodName.empty()) {
+                bp.methods[methodName] = typeName + L"::" + methodName;
+            }
+        }
+        else {
+            // Este un CÂMP
+            std::wstring fieldName = to_lower(item);
+
+            // --- 💡 FIX 2: Curățăm prefixele '$' sau '@' ---
+            if (!fieldName.empty() && (fieldName[0] == L'$' || fieldName[0] == L'@')) {
+                fieldName.erase(0, 1); 
+            }
+
+            if (!fieldName.empty()) {
+                bp.fields.push_back(fieldName);
+            }
+        }
+    }
+
+    // --- 💡 FIX 3: SCUTUL ANTI-CLASE GOALE ---
+    if (bp.fields.empty()) {
+        bp.fields.push_back(L"__dummy_id__");
+    }
+
+    // Salvăm în memorie
+    m_blueprints[typeName] = bp;
+
+    // Log de succes garantat
+    LOG_SUCCESS(L"[VM] Blueprint " + std::wstring(bp.isClass ? L"'CLASS " : L"'STRUCT ") + typeName + L"'" +
         (parentName.empty() ? L"" : L" EXTENDS '" + parentName + L"'") +
         L" registered with " + std::to_wstring(bp.fields.size()) + L" fields and " +
         std::to_wstring(bp.methods.size()) + L" methods.");

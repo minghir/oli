@@ -296,6 +296,8 @@ private:
     void updateRootSource(ASTPtr node, const vData& updatedValue);
     vData deepCopy(const vData& source);
 
+	//void handleIncludeCommand(const ShellCommand& sc);
+
     // Metodele de suport pentru handlere
     void handleQuitCommand(const ShellCommand& sc);
     void handleSetCommand(const ShellCommand& sc);

@@ -1,0 +1,10 @@
+set $main_value = 20
+<# comment starts on its own line
+this line is ignored completely
+the terminator resumes parsing #> echo "main-resumed"
+
+include("./tests/block_comments_include.oli")
+
+echo $main_value
+echo included_block_comment()
+echo "The markers <# and #> stay inside this string."

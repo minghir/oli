@@ -1,0 +1,12 @@
+<# Included files use the same block-comment state.
+This whole line must be ignored.
+#>
+
+func included_block_comment()
+    <# Comments inside recorded function bodies
+    must not become executable function statements.
+    #>
+    return "include-ok"
+endfunc
+
+echo "include-loaded"

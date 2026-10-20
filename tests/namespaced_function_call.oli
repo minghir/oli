@@ -1,0 +1,3 @@
+func XAPP::INIT($app) return "initialized" endfunc
+
+echo XAPP::INIT("app")

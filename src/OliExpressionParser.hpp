@@ -183,6 +183,14 @@ public:
         // 4. IDENTIFICATORI (test, CAN_CLS) și LITERALE (10, "text")
         // Aceasta este schimbarea cheie!
         std::wstring value = m_tokens[m_pos++];
+        if (value.empty() || value.front() != L'"') {
+            while (match({ L"::" })) {
+                if (m_pos >= m_tokens.size()) {
+                    throw std::runtime_error("Eroare Sintaxa: Numele funcției după '::' lipsește.");
+                }
+                value += L"::" + m_tokens[m_pos++];
+            }
+        }
         return std::make_shared<ASTNode>(ASTNodeType::Literal, value);
     }
 

@@ -1,0 +1,279 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="OpenXLSX">
+      <UniqueIdentifier>{df291d3b-d7a2-4383-89e1-8304f1d5ea7b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="miniz">
+      <UniqueIdentifier>{f11114c6-7323-4666-a806-169e06074435}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="oli_excel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\OliConsoleManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\OliStringUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLCell.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLCellIterator.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLCellRange.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLCellReference.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLCellValue.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLColor.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLColumn.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLComments.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLContentTypes.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLDateTime.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLDocument.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLDrawing.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLFormula.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLMergeCells.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLProperties.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLRelationships.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLRow.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLRowData.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLSharedStrings.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLSheet.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLStyles.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLTables.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLWorkbook.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLXmlData.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLXmlFile.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLXmlParser.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="OpenXLSX\sources\XLZipArchive.cpp">
+      <Filter>OpenXLSX</Filter>
+    </ClCompile>
+    <ClCompile Include="pugixml-1.15\src\pugixml.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="miniz_fetch\miniz_tdef.c">
+      <Filter>miniz</Filter>
+    </ClCompile>
+    <ClCompile Include="miniz_fetch\miniz_tinfl.c">
+      <Filter>miniz</Filter>
+    </ClCompile>
+    <ClCompile Include="miniz_fetch\miniz_zip.c">
+      <Filter>miniz</Filter>
+    </ClCompile>
+    <ClCompile Include="miniz_fetch\miniz.c">
+      <Filter>miniz</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\OliConsoleManager.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\OliStringUtils.hpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\IZipArchive.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLCell.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLCellIterator.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLCellRange.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLCellReference.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLCellValue.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLColor.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLColumn.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLCommandQuery.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLComments.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLConstants.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLContentTypes.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLDateTime.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLDocument.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLDrawing.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLException.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLFormula.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLIterator.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLMergeCells.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLProperties.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLRelationships.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLRow.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLRowData.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLSharedStrings.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLSheet.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLStyles.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLTables.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLWorkbook.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLXmlData.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLXmlFile.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLXmlParser.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLXmlParserForwardDeclarations.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\XLZipArchive.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\OpenXLSX.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\detail\LibZip.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\detail\OpenXLSXFileSystemTools.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\headers\detail\Zippy.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\sources\utilities\XLUtilities.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenXLSX\OpenXLSX-Exports.hpp">
+      <Filter>OpenXLSX</Filter>
+    </ClInclude>
+    <ClInclude Include="pugixml-1.15\src\pugiconfig.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pugixml-1.15\src\pugixml.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="miniz_fetch\miniz.h">
+      <Filter>miniz</Filter>
+    </ClInclude>
+    <ClInclude Include="miniz_fetch\miniz_common.h">
+      <Filter>miniz</Filter>
+    </ClInclude>
+    <ClInclude Include="miniz_fetch\miniz_tdef.h">
+      <Filter>miniz</Filter>
+    </ClInclude>
+    <ClInclude Include="miniz_fetch\miniz_tinfl.h">
+      <Filter>miniz</Filter>
+    </ClInclude>
+    <ClInclude Include="miniz_fetch\miniz_zip.h">
+      <Filter>miniz</Filter>
+    </ClInclude>
+    <ClInclude Include="miniz_fetch\miniz_export.h">
+      <Filter>miniz</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

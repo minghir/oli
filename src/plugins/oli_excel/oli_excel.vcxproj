@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{4e6f0b31-70a4-478b-aee5-a2135fdc0355}</ProjectGuid>
+    <RootNamespace>oliexcel</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>.\OpenXLSX;.\OpenXLSX\headers;.\OpenXLSX\headers\detail;.\OpenXLSX\sources;.\pugixml-1.15\src;.\miniz_fetch;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>.\OpenXLSX;.\OpenXLSX\headers;.\OpenXLSX\headers\detail;.\OpenXLSX\sources;.\pugixml-1.15\src;.\miniz_fetch;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>.\OpenXLSX;.\OpenXLSX\headers;.\OpenXLSX\headers\detail;.\OpenXLSX\sources;.\pugixml-1.15\src;.\miniz_fetch;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>.\OpenXLSX;.\OpenXLSX\headers;.\OpenXLSX\headers\detail;.\OpenXLSX\sources;.\pugixml-1.15\src;.\miniz_fetch;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DisableSpecificWarnings>4996;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\OliConsoleManager.cpp" />
+    <ClCompile Include="..\..\OliStringUtils.cpp" />
+    <ClCompile Include="miniz_fetch\miniz.c" />
+    <ClCompile Include="miniz_fetch\miniz_tdef.c" />
+    <ClCompile Include="miniz_fetch\miniz_tinfl.c" />
+    <ClCompile Include="miniz_fetch\miniz_zip.c" />
+    <ClCompile Include="oli_excel.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLCell.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLCellIterator.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLCellRange.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLCellReference.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLCellValue.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLColor.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLColumn.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLComments.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLContentTypes.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLDateTime.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLDocument.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLDrawing.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLFormula.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLMergeCells.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLProperties.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLRelationships.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLRow.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLRowData.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLSharedStrings.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLSheet.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLStyles.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLTables.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLWorkbook.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLXmlData.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLXmlFile.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLXmlParser.cpp" />
+    <ClCompile Include="OpenXLSX\sources\XLZipArchive.cpp" />
+    <ClCompile Include="pugixml-1.15\src\pugixml.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\OliConsoleManager.hpp" />
+    <ClInclude Include="..\..\OliStringUtils.hpp" />
+    <ClInclude Include="miniz_fetch\miniz.h" />
+    <ClInclude Include="miniz_fetch\miniz_common.h" />
+    <ClInclude Include="miniz_fetch\miniz_export.h" />
+    <ClInclude Include="miniz_fetch\miniz_tdef.h" />
+    <ClInclude Include="miniz_fetch\miniz_tinfl.h" />
+    <ClInclude Include="miniz_fetch\miniz_zip.h" />
+    <ClInclude Include="OpenXLSX\headers\detail\LibZip.hpp" />
+    <ClInclude Include="OpenXLSX\headers\detail\OpenXLSXFileSystemTools.hpp" />
+    <ClInclude Include="OpenXLSX\headers\detail\Zippy.hpp" />
+    <ClInclude Include="OpenXLSX\headers\IZipArchive.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLCell.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLCellIterator.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLCellRange.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLCellReference.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLCellValue.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLColor.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLColumn.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLCommandQuery.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLComments.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLConstants.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLContentTypes.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLDateTime.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLDocument.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLDrawing.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLException.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLFormula.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLIterator.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLMergeCells.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLProperties.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLRelationships.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLRow.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLRowData.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLSharedStrings.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLSheet.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLStyles.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLTables.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLWorkbook.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLXmlData.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLXmlFile.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLXmlParser.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLXmlParserForwardDeclarations.hpp" />
+    <ClInclude Include="OpenXLSX\headers\XLZipArchive.hpp" />
+    <ClInclude Include="OpenXLSX\OpenXLSX-Exports.hpp" />
+    <ClInclude Include="OpenXLSX\OpenXLSX.hpp" />
+    <ClInclude Include="OpenXLSX\sources\utilities\XLUtilities.hpp" />
+    <ClInclude Include="pugixml-1.15\src\pugiconfig.hpp" />
+    <ClInclude Include="pugixml-1.15\src\pugixml.hpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,115 @@
+plugin "oli_db"
+plugin "oli_excel"
+
+# ==========================================
+# 1. PARAMETRI INTRARE, FOAIE & CĂI
+# ==========================================
+set $airport    = "LRAR"
+set $data_start = "2026-09-01"
+set $data_end   = "2026-09-30"
+set $sheet_name = "venituri-tonaje"   # Numele foii din șablonul tău Excel
+
+# Extragere părți din dată pentru numele dinamic al fișierului
+set $day_start = INT(SUBSTR($data_start, 8, 2))
+set $day_end   = INT(SUBSTR($data_end, 8, 2))
+set $month     = INT(SUBSTR($data_start, 5, 2))
+set $year      = SUBSTR($data_start, 0, 4)
+
+# Construire nume fișier dinamic
+set $period_str = STR($day_start) .. "- " .. STR($day_end) .. STR($month) .. $year
+set $out_file   = "tmp/venituri_tonaje_perioada " .. $period_str .. " " .. $airport .. ".xlsx"
+set $tpl_file   = "tmp/venituri_tonaje_perioada.tpl.xlsx"
+
+echo "==================== GENERARE RAPORT ===================="
+echo "Fișier ieșire: " .. $out_file
+echo "Foaie lucru:   " .. $sheet_name
+
+# ==========================================
+# 2. INTEROGARE BAZĂ DE DATE
+# ==========================================
+DB_CON("Database", "ODBC", "Server")
+
+set $query = "SELECT ROW_NUMBER() OVER (ORDER BY TRIM(UPPER(aeroport))) AS id, \
+                    TRIM(UPPER(aeroport)) AS label, \
+                    SUM(romanesc) AS romanesti, \
+                    SUM(strain) AS straine, \
+                    SUM(romanesc) + SUM(strain) AS total_curse, \
+                    ROUND(SUM(mtow * romanesc), 2) AS mtow_romanesc, \
+                    ROUND(SUM(mtow * strain), 2) AS mtow_strain, \
+                    ROUND(SUM(mtow * romanesc) + SUM(mtow * strain), 2) AS mtow_total, \
+                    ROUND(SUM(total * romanesc), 2) AS total_romanesc, \
+                    ROUND(SUM(total * strain), 2) AS total_strain, \
+                    ROUND(SUM(total * romanesc) + SUM(total * strain), 2) AS total_ron \
+FROM terminal.view_decolari \
+WHERE aeroport IS NOT NULL \
+  AND data BETWEEN '" .. $data_start .. "' AND '" .. $data_end .. "' \
+  AND cod_exceptare IS NULL \
+  AND aeroport = '" .. $airport .. "' \
+GROUP BY TRIM(UPPER(aeroport))"
+
+DB_EXEC($query, "res_sna", "ANC")
+set $rows = DB_FETCH_ALL("res_sna", "ANC")
+DB_CLOSE("ANC")
+
+# ==========================================
+# 3. POPULARE ȘABLON EXCEL
+# ==========================================
+echo "-> Copiez template-ul..."
+EXCEL_CLONE($tpl_file, $out_file)
+
+set $count = LEN($rows)
+
+if $count == 0 then
+    echo "ATENȚIE: Nu s-au găsit date pentru aeroportul " .. $airport
+else
+    set $row = $rows[0]
+
+    # A. Pregătim Map-ul cu toate variabilele din șablon
+    set $vars = MAP()
+    $vars["{DATA_START}"]     = $data_start
+    $vars["{DATA_END}"]       = $data_end
+    $vars["{AEROPORT}"]       = $airport
+    $vars["{label}"]          = STR($row.label)
+    $vars["{romanesti}"]      = STR($row.romanesti)
+    $vars["{straine}"]        = STR($row.straine)
+    $vars["{total_curse}"]    = STR($row.total_curse)
+    $vars["{mtow_romanesc}"]  = STR($row.mtow_romanesc)
+    $vars["{mtow_strain}"]    = STR($row.mtow_strain)
+    $vars["{mtow_total}"]     = STR($row.mtow_total)
+    $vars["{total_romanesc}"] = STR($row.total_romanesc)
+    $vars["{total_strain}"]   = STR($row.total_strain)
+    $vars["{total_ron}"]      = STR($row.total_ron)
+
+    echo "-> Înlocuiesc toate variabilele din foaia '" .. $sheet_name .. "'..."
+    EXCEL_REPLACE_MAP($out_file, $sheet_name, $vars)
+	
+    # B. Populare în tabel dacă șablonul conține marker-ul {TABLE_START}
+    set $marker_pos = EXCEL_FIND_MARKER($out_file, $sheet_name, "{TABLE_START}")
+    if $marker_pos != false then
+        set $start_row = $marker_pos[0]
+        set $start_col = $marker_pos[1]
+        
+        echo "-> Populez rândul din tabel la pozitia R" .. STR($start_row) .. "C" .. STR($start_col)
+        
+        # Curățăm markerul
+        EXCEL_WRITE_SMART_RC($out_file, $sheet_name, $start_row, $start_col, "")
+
+        # Scriem celulele rândului
+        EXCEL_WRITE_SMART_RC($out_file, $sheet_name, $start_row, $start_col + 0, STR($row.id))
+        EXCEL_WRITE_SMART_RC($out_file, $sheet_name, $start_row, $start_col + 1, STR($row.label))
+        EXCEL_WRITE_SMART_RC($out_file, $sheet_name, $start_row, $start_col + 2, STR($row.romanesti))
+        EXCEL_WRITE_SMART_RC($out_file, $sheet_name, $start_row, $start_col + 3, STR($row.straine))
+        EXCEL_WRITE_SMART_RC($out_file, $sheet_name, $start_row, $start_col + 4, STR($row.total_curse))
+        EXCEL_WRITE_SMART_RC($out_file, $sheet_name, $start_row, $start_col + 5, STR($row.mtow_romanesc))
+        EXCEL_WRITE_SMART_RC($out_file, $sheet_name, $start_row, $start_col + 6, STR($row.mtow_strain))
+        EXCEL_WRITE_SMART_RC($out_file, $sheet_name, $start_row, $start_col + 7, STR($row.mtow_total))
+        EXCEL_WRITE_SMART_RC($out_file, $sheet_name, $start_row, $start_col + 8, STR($row.total_romanesc))
+        EXCEL_WRITE_SMART_RC($out_file, $sheet_name, $start_row, $start_col + 9, STR($row.total_strain))
+        EXCEL_WRITE_SMART_RC($out_file, $sheet_name, $start_row, $start_col + 10, STR($row.total_ron))
+    endif
+
+    # Force recalculate formule
+    EXCEL_REFRESH_FORMULAS($out_file, $sheet_name)
+    
+    echo "[SUCCESS] Raport generat cu succes în: " .. $out_file
+endif

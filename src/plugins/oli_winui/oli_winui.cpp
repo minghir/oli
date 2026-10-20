@@ -68,7 +68,7 @@ struct GuiState {
 } g_Gui;
 
 // Pointerul global legitim către mașina virtuală din EXE
-inline vOliEngine* g_LinkedOliEngine = nullptr;
+inline IOliEngine* g_LinkedOliEngine = nullptr;
 
 // Memoria persistentă a callback-urilor din script
 static std::map<std::string, std::wstring> g_PersistentScriptCallbacks;
@@ -83,10 +83,10 @@ vControl* LocateAnyControl(const std::string& id) {
 }
 
 // ✅ PUNCTUL UNIC DE INTRARE: Compilatorul și Linkerul vor expune doar această semnătură curată
-OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
+OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, IOliEngine* enginePtr) {
 
     if (g_LinkedOliEngine == nullptr) {
-        g_LinkedOliEngine = static_cast<vOliEngine*>(enginePtr);
+        g_LinkedOliEngine = enginePtr;
 
         if (g_LinkedOliEngine) {
             LOG_SUCCESS(L"✅ [DLL] Conexiune stabilă stabilită cu OliEngine-ul Gazdă!");
@@ -432,13 +432,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
                 std::wstring funcName = g_PersistentScriptCallbacks[key];
 
                 if (g_LinkedOliEngine) {
-                    std::vector<vData> emptyArgs;
-                    g_LinkedOliEngine->callUserByteCodeFunction(
-                        funcName.c_str(),
-                        emptyArgs.data(),
-                        0,
-                        vData(0LL)
-                    );
+                    g_LinkedOliEngine->callScriptFunction(funcName, {});
                 }
                 else {
                     LOG_ERROR(L"❌ [CRITIC] g_LinkedOliEngine este NULL la declanșarea evenimentului!");
@@ -468,12 +462,7 @@ OLI_EXPORT void LoadOliPlugin(PluginRegistry& registry, void* enginePtr) {
                 std::vector<vData> callArgs;
                 callArgs.push_back(vData(std::wstring(arg.begin(), arg.end())));
 
-                g_LinkedOliEngine->callUserByteCodeFunction(
-                    wScriptFunc.c_str(),
-                    callArgs.data(),
-                    (int)callArgs.size(),
-                    vData(0LL)
-                );
+                g_LinkedOliEngine->callScriptFunction(wScriptFunc, callArgs);
             }
             };
 

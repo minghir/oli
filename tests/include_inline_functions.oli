@@ -1,0 +1,4 @@
+include ("./tests/include_inline_functions_fixture.oli")
+
+set $app = new("XApp")
+echo $app.start()

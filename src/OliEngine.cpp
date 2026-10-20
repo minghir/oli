@@ -3455,11 +3455,39 @@ void vOliEngine::dumpProcedureDetails(const std::wstring& name) {
         }
     }
 
-    m_userFunctions[m_activeFuncName] = newFunc;
-    m_isRecordingFunc = true;
+    const bool isInlineFunction = to_upper(trim(sc.args.back())) == L"ENDFUNC";
+    if (isInlineFunction) {
+        size_t signatureEndToken = sc.args.size();
+        size_t tokenOffset = 0;
+        for (size_t i = 0; i < sc.args.size(); ++i) {
+            if (tokenOffset <= closeParen && closeParen < tokenOffset + sc.args[i].size()) {
+                signatureEndToken = i;
+                break;
+            }
+            tokenOffset += sc.args[i].size();
+        }
 
-    LOG_INFO(L"Started recording function: " + m_activeFuncName +
-        (newFunc.isVariadic ? L" (Variadic support enabled)" : L""));
+        std::wstring inlineBody;
+        for (size_t i = signatureEndToken + 1; i + 1 < sc.args.size(); ++i) {
+            if (!inlineBody.empty()) inlineBody += L' ';
+            inlineBody += sc.args[i];
+        }
+        inlineBody = trim(inlineBody);
+        if (!inlineBody.empty()) {
+            newFunc.body.push_back(inlineBody);
+        }
+    }
+
+    m_userFunctions[m_activeFuncName] = std::move(newFunc);
+    m_isRecordingFunc = !isInlineFunction;
+
+    if (isInlineFunction) {
+        LOG_SUCCESS(L"Function saved: " + m_activeFuncName);
+    }
+    else {
+        LOG_INFO(L"Started recording function: " + m_activeFuncName +
+            (m_userFunctions[m_activeFuncName].isVariadic ? L" (Variadic support enabled)" : L""));
+    }
 }
 
 

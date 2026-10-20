@@ -1,0 +1,5 @@
+func UiControl::set_prop($name, $value) return $value endfunc
+
+def class XApp { id, start() }
+
+func XApp::start() return "started" endfunc

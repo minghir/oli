@@ -1,0 +1,22 @@
+
+proc foreach $array $func
+    $type = UPPER(TYPE($array))
+    
+    if $type == "ARRAY" then
+        # Iterare nativă pentru Array-uri (key devine indexul numeric 0, 1, 2...)
+        $i = 0
+        cycle $array as $val do
+            $func($val, $i)
+            $i++
+        endcycle
+    else
+        # Iterare existentă pentru Map-uri (folosind cheile sortate)
+        $keys = SORT(KEYS($array))
+        $i = 0
+        cycle $array as $val do
+            $func($array[$keys[$i]], $keys[$i])
+            $i++
+        endcycle
+    endif
+endproc
+

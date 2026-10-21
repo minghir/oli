@@ -1,0 +1,21 @@
+include ("include/foreach.oli")
+
+$bb = map();
+$bb[1]="unu"
+$bb[2]="doi"
+$bb[3]="trei"
+
+$aa = array(3)
+$aa[0] = "unu"
+$aa[1] = "doi"
+$aa[2] = "trei"
+
+
+
+func test_func($val,$key) do
+	echo "Val:" .. $val .. " Key:" .. $key
+endfunc
+
+foreach $aa "test_func"
+echo "------------"
+foreach $bb "test_func"

@@ -4,7 +4,7 @@ func ARR_KEYS($array)
   set $iter = 0
   cycle $array as $val do push($keys,$iter++); endcycle
   return $keys
-  endfunc
+endfunc
 
 func ARR_2_MAP($array)
 	set $map = MAP()

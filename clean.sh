@@ -1,4 +1,9 @@
-rm ./tests/*.olic
-rm ./tests/*.olia
-rm ./examples/*.olic
-rm ./examples/*.olia
+rm -f ./tests/*.olic
+rm -f ./tests/*.olia
+rm -f ./examples/*.olic
+rm -f ./examples/*.olia
+rm -f ./plugins
+rm -f ./oli
+rm -f ./*.so
+rm -f ./*.dll
+rm -f ./olidex

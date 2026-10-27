@@ -1,0 +1,20 @@
+plugin "oli_dos"
+
+echo "Se genereaza programul interactiv DOS..."
+DOS_CLEAR()
+
+# 1. Inițializăm modul text curat (Mod 03h)
+DOS_INIT_MODE()
+
+echo "Scriem logica de citire a tastelor..."
+
+# 2. Apelăm funcția care generează bucla x86 de tastatură
+# Utilizatorul poate tasta orice, iar la 'ESC' programul se oprește.
+DOS_ECHO_KEY_LOOP()
+
+# 3. Revine la mod text și iese curat când se termină bucla
+DOS_TEXT_MODE()
+
+# 4. Construim executabilul
+DOS_BUILD("echo.com", "com")
+echo "Gata! Fişierul 'echo.com' a fost creat cu succes."
